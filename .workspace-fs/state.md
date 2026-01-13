@@ -14,6 +14,8 @@
 
 
 ## Done
-- [x] CLIのto-beからAPIサーバーの設計を考える → [api.md](api.md)
-- [x] CLIの実装方法を考える → [cli-implementation.md](cli-implementation.md)
+- [x] CLIのto-beからAPIサーバーの設計を考える → [to-be/api.md](to-be/api.md)
+- [x] CLIの実装方法を考える → [decisions/cli-implementation.md](decisions/cli-implementation.md)
 - [x] CLIの実装方法を再考: cmd-ts → 自作の薄いラッパーに変更
+- [x] プロジェクトの構成について考える → [decisions/project-structure.md](decisions/project-structure.md)
+- [x] `.workspace-fs` の構造を整理
