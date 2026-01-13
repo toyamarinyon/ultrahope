@@ -14,6 +14,7 @@
 
 
 ## Done
+- [x] 認証の実装方法について → [decisions/authentication.md](decisions/authentication.md) (Better Auth採用)
 - [x] CLIのto-beからAPIサーバーの設計を考える → [to-be/api.md](to-be/api.md)
 - [x] CLIの実装方法を考える → [decisions/cli-implementation.md](decisions/cli-implementation.md)
 - [x] CLIの実装方法を再考: cmd-ts → 自作の薄いラッパーに変更
