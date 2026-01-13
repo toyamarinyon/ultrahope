@@ -1,0 +1,5 @@
+{
+  "name": "ultrahope-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"]
+}
