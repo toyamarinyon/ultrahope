@@ -8,7 +8,8 @@
 │   └── api.md
 ├── decisions/       # 意思決定: どう作るか、なぜそうしたか (ADR的)
 │   ├── cli-implementation.md
-│   └── project-structure.md
+│   ├── project-structure.md
+│   └── monorepo-tooling.md
 └── docs/            # 外部ドキュメント: 参照用のライブラリ/フレームワーク情報
     └── elysiajs/
 ```
