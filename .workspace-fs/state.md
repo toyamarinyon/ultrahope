@@ -11,6 +11,7 @@
 - [ ] 環境変数をセットしてローカルで動作確認
 - [ ] DB schema生成 (`bunx @better-auth/cli generate`)
 - [ ] Web版 Device verification page (`/device`)
+- [x] コードフォーマット & dead code検出の仕組み導入 (Biome + knip)
 
 
 ## Task (Human)

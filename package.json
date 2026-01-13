@@ -1,5 +1,17 @@
 {
-  "name": "ultrahope-monorepo",
-  "private": true,
-  "workspaces": ["packages/*"]
+	"name": "ultrahope-monorepo",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"check": "biome check",
+		"format": "biome check --write",
+		"lint": "biome lint .",
+		"knip": "knip"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"knip": "5.80.2"
+	}
 }
