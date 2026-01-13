@@ -1,0 +1,83 @@
+# Ultrahope API
+
+> This document represents to-be, not as-is
+
+Base URL: `https://api.ultrahope.dev`
+
+## Authentication
+
+All endpoints except Device Flow require `Authorization: Bearer <token>` header.
+
+### Device Flow
+
+```
+POST /v1/auth/device/code
+```
+
+Response:
+```json
+{
+  "device_code": "xxx",
+  "user_code": "ABCD-1234",
+  "verification_uri": "https://ultrahope.dev/device",
+  "expires_in": 900,
+  "interval": 5
+}
+```
+
+```
+POST /v1/auth/device/token
+```
+
+Request:
+```json
+{
+  "device_code": "xxx"
+}
+```
+
+Response (success):
+```json
+{
+  "access_token": "xxx",
+  "token_type": "Bearer"
+}
+```
+
+Response (pending):
+```json
+{
+  "error": "authorization_pending"
+}
+```
+
+---
+
+## Translate
+
+```
+POST /v1/translate
+```
+
+Request:
+```json
+{
+  "input": "<stdin content from pipe>",
+  "target": "vcs-commit-message" | "pr-title-body" | "pr-intent"
+}
+```
+
+Response:
+```json
+{
+  "output": "<translated result>"
+}
+```
+
+### Target Types
+
+| target | input example | output |
+|--------|---------------|--------|
+| `vcs-commit-message` | `git diff` | Commit message |
+| `pr-title-body` | `git log main..HEAD -p` | PR title and body |
+| `pr-intent` | `gh pr diff --patch` | Intent/summary of PR |
