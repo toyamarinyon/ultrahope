@@ -21,3 +21,4 @@
 - [x] CLIの実装方法を再考: cmd-ts → 自作の薄いラッパーに変更
 - [x] プロジェクトの構成について考える → [decisions/project-structure.md](decisions/project-structure.md)
 - [x] `.workspace-fs` の構造を整理
+- [x] インフラ選定 → [decisions/infrastructure.md](decisions/infrastructure.md) (Vercel + Turso + Minimax + Resend)

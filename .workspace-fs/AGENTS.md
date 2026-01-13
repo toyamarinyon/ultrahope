@@ -10,6 +10,7 @@
 │   ├── authentication.md
 │   ├── billing.md
 │   ├── cli-implementation.md
+│   ├── infrastructure.md
 │   ├── project-structure.md
 │   └── monorepo-tooling.md
 └── docs/            # 外部ドキュメント: 参照用のライブラリ/フレームワーク情報
