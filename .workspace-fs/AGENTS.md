@@ -8,6 +8,7 @@
 │   └── api.md
 ├── decisions/       # 意思決定: どう作るか、なぜそうしたか (ADR的)
 │   ├── authentication.md
+│   ├── billing.md
 │   ├── cli-implementation.md
 │   ├── project-structure.md
 │   └── monorepo-tooling.md
