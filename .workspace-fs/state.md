@@ -10,9 +10,10 @@
 ## Next
 - [ ] プロジェクト初期化 (monorepo setup, packages/cli, packages/api)
 - [ ] API実装 (ElysiaJS)
-- [ ] CLI実装 (cmd-ts)
+- [ ] CLI実装 (自作の薄いラッパー)
 
 
 ## Done
 - [x] CLIのto-beからAPIサーバーの設計を考える → [api.md](api.md)
 - [x] CLIの実装方法を考える → [cli-implementation.md](cli-implementation.md)
+- [x] CLIの実装方法を再考: cmd-ts → 自作の薄いラッパーに変更

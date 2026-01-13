@@ -4,20 +4,19 @@
 
 ## Framework Selection
 
-### Recommended: `cmd-ts`
+### Recommended: 自作の薄いラッパー (No framework)
 
-**Why cmd-ts:**
-- Type-safe argument parsing (types flow into handler)
-- Built-in validation with nice error messages
-- Easy stdin pipe handling
-- Simple composition for subcommands
-- Lightweight, modern design
+**Why:**
+- コマンドが2つだけ (`translate`, `login`)
+- 複雑なネストやサブコマンドチェーンは不要
+- `process.argv` のパースは数十行で書ける
+- 依存を減らせる、バンドルサイズも小さい
+- cmd-tsは良いが、この規模ではオーバーキル
 
-**Alternatives considered:**
-- `commander` - Popular but `any` land, no type safety
-- `yargs` - Heavy, complex API
-- `oclif` - Overkill for simple CLI
-- `citty` - Good but less mature ecosystem
+**実装方針:**
+- `process.argv` を直接パース
+- 型安全は自前のパーサー関数で担保
+- エラーハンドリングも自前でシンプルに
 
 ## Project Structure
 
@@ -41,51 +40,74 @@ packages/
 
 ```json
 {
-  "dependencies": {
-    "cmd-ts": "^0.13.0"
-  }
+  "dependencies": {}
 }
 ```
+
+No external CLI framework needed.
 
 ## Implementation Details
 
 ### Entry Point
 
 ```typescript
-import { binary, run, subcommands } from 'cmd-ts';
+#!/usr/bin/env node
 import { translate } from './commands/translate';
 import { login } from './commands/login';
 
-const app = subcommands({
-  name: 'ultrahope',
-  cmds: { translate, login }
-});
+const [command, ...args] = process.argv.slice(2);
 
-run(binary(app), process.argv);
+switch (command) {
+  case 'translate':
+    await translate(args);
+    break;
+  case 'login':
+    await login(args);
+    break;
+  case '--help':
+  case '-h':
+  case undefined:
+    printHelp();
+    break;
+  default:
+    console.error(`Unknown command: ${command}`);
+    process.exit(1);
+}
+
+function printHelp() {
+  console.log(`Usage: ultrahope <command>
+
+Commands:
+  translate  Translate input to various formats
+  login      Authenticate with device flow`);
+}
 ```
 
 ### Translate Command
 
 ```typescript
-import { command, option, string } from 'cmd-ts';
-import { stdin } from './lib/stdin';
+type Target = 'vcs-commit-message' | 'pr-title-body' | 'pr-intent';
 
-export const translate = command({
-  name: 'translate',
-  args: {
-    target: option({
-      type: string,
-      long: 'target',
-      short: 't',
-      description: 'Target format: vcs-commit-message | pr-title-body | pr-intent'
-    })
-  },
-  async handler({ target }) {
-    const input = await stdin();
-    const result = await apiClient.translate({ input, target });
-    console.log(result.output);
+export async function translate(args: string[]) {
+  const target = parseTarget(args);
+  const input = await readStdin();
+  const result = await apiClient.translate({ input, target });
+  console.log(result.output);
+}
+
+function parseTarget(args: string[]): Target {
+  const idx = args.findIndex(a => a === '--target' || a === '-t');
+  if (idx === -1 || !args[idx + 1]) {
+    console.error('Missing --target option');
+    process.exit(1);
   }
-});
+  const value = args[idx + 1];
+  if (!['vcs-commit-message', 'pr-title-body', 'pr-intent'].includes(value)) {
+    console.error(`Invalid target: ${value}`);
+    process.exit(1);
+  }
+  return value as Target;
+}
 ```
 
 ### Stdin Handling
