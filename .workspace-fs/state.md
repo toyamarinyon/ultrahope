@@ -11,7 +11,6 @@
 - [ ] 環境変数をセットしてローカルで動作確認
 - [ ] DB schema生成 (`bunx @better-auth/cli generate`)
 - [ ] Web版 Device verification page (`/device`)
-- [x] コードフォーマット & dead code検出の仕組み導入 (Biome + knip)
 
 
 ## Task (Human)
@@ -33,6 +32,7 @@
 
 
 ## Done
+- [x] コードフォーマット & dead code検出の仕組み導入 (Biome + knip)
 - [x] 決済について → [decisions/billing.md](decisions/billing.md) (Polar.sh採用)
 - [x] 認証の実装方法について → [decisions/authentication.md](decisions/authentication.md) (Better Auth採用)
 - [x] CLIのto-beからAPIサーバーの設計を考える → [to-be/api.md](to-be/api.md)
