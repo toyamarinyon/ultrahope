@@ -12,7 +12,8 @@
 │   ├── cli-implementation.md
 │   ├── infrastructure.md
 │   ├── project-structure.md
-│   └── monorepo-tooling.md
+│   ├── monorepo-tooling.md
+│   └── web-package.md
 └── docs/            # 外部ドキュメント: 参照用のライブラリ/フレームワーク情報
     └── elysiajs/
 ```

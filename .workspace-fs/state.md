@@ -9,7 +9,12 @@
 
 ## Next
 
-- [ ] Web版 Device verification page (`/device`)
+- [ ] `packages/web` 作成 (Next.js) → [decisions/web-package.md](decisions/web-package.md)
+  - [ ] Landing page
+  - [ ] Device verification page (`/device`)
+  - [ ] Pricing / 決済 (Polar.sh連携)
+  - [ ] API Playground
+  - [ ] アカウント管理
 - [ ] ローカルで動作確認 (CLI login → API呼び出し)
 
 
