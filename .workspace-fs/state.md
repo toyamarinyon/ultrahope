@@ -8,21 +8,23 @@
 
 
 ## Next
-- [ ] 環境変数をセットしてローカルで動作確認
-- [ ] DB schema生成 (`bunx @better-auth/cli generate`)
+
+→ 詳細: [tasks/local-setup.md](tasks/local-setup.md)
+
 - [ ] Web版 Device verification page (`/device`)
+- [ ] ローカルで動作確認 (CLI login → API呼び出し)
 
 
 ## Task (Human)
 
 開発と並行して準備が必要な環境変数:
 
-- [ ] **Turso** — `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`
+- [x] **Turso** — `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`
     - `turso auth signup` → `turso db create ultrahope` → `turso db tokens create ultrahope`
-- [ ] **GitHub OAuth** — `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+- [x] **GitHub OAuth** — `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
     - GitHub Settings > Developer settings > OAuth Apps
     - Callback URL: `https://api.ultrahope.dev/auth/callback/github` (本番) / `http://localhost:3000/auth/callback/github` (開発)
-- [ ] **Resend** — `RESEND_API_KEY`
+- [x] **Resend** — `RESEND_API_KEY`
     - https://resend.com でアカウント作成 → API Keys
 
 後で必要:
@@ -44,3 +46,5 @@
 - [x] プロジェクト初期化 (Bun workspaces + packages/cli, packages/api)
 - [x] API実装 (Better Auth + Device Flow + translate endpoint)
 - [x] CLI実装 (translate, login コマンド)
+- [x] 環境変数セットアップ (Turso, GitHub OAuth, Resend)
+- [x] DB schema生成 & push (Better Auth CLI + drizzle-kit)
