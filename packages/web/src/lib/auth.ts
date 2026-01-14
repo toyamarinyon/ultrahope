@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
-import { db } from "../db/client";
+import { db } from "@/db/client";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

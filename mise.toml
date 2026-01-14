@@ -6,7 +6,7 @@ bun = "latest"
 description = "Run format, typecheck, and knip checks"
 run = [
   { task = "format" },
-  { tasks = ["typecheck:api", "typecheck:cli", "typecheck:web"] },
+  { tasks = ["typecheck:cli", "typecheck:web"] },
   { task = "knip" },
 ]
 
@@ -17,10 +17,6 @@ run = "bun run --silent format"
 [tasks.knip]
 description = "Check for unused exports and dependencies"
 run = "bun run --silent knip"
-
-[tasks."typecheck:api"]
-description = "Typecheck packages/api"
-run = "bun run --silent --cwd packages/api typecheck"
 
 [tasks."typecheck:cli"]
 description = "Typecheck packages/cli"

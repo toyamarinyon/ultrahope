@@ -9,12 +9,10 @@
 
 ## Next
 
-- [ ] `packages/web` 作成 (Next.js) → [decisions/web-package.md](decisions/web-package.md)
-  - [ ] Landing page
-  - [ ] Device verification page (`/device`)
+- [ ] `packages/web` 残作業 → [decisions/web-package.md](decisions/web-package.md)
+  - [ ] アカウント管理
   - [ ] Pricing / 決済 (Polar.sh連携)
   - [ ] API Playground
-  - [ ] アカウント管理
 - [ ] ローカルで動作確認 (CLI login → API呼び出し)
 
 
@@ -37,6 +35,12 @@
 
 
 ## Done
+- [x] **モノリス化: API を Web に統合** → [decisions/monolith-migration.md](decisions/monolith-migration.md)
+  - `packages/api` のコードを `packages/web/src/{db,lib}` に移動
+  - Route Handler (`app/api/[[...slugs]]/route.ts`) で Elysia export
+  - `vercel.json` に `"bunVersion": "1.x"` 追加
+  - `packages/api` 削除
+- [x] `packages/web` 初期構築 (Next.js + Landing page + Device verification page)
 - [x] tsc --noEmitを実行できるようにして、error 0にする
 - [x] コードフォーマット & dead code検出の仕組み導入 (Biome + knip)
 - [x] 決済について → [decisions/billing.md](decisions/billing.md) (Polar.sh採用)

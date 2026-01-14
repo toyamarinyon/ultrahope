@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
-import { auth } from "./lib/auth";
-import { translate } from "./lib/llm";
+import { auth } from "@/lib/auth";
+import { translate } from "@/lib/llm";
 
 const betterAuthPlugin = new Elysia({ name: "better-auth" })
 	.mount(auth.handler)
@@ -17,7 +17,7 @@ const betterAuthPlugin = new Elysia({ name: "better-auth" })
 		},
 	});
 
-const app = new Elysia()
+const app = new Elysia({ prefix: "/api" })
 	.use(betterAuthPlugin)
 	.post(
 		"/v1/translate",
@@ -42,7 +42,11 @@ const app = new Elysia()
 		},
 		{ auth: true },
 	)
-	.get("/health", () => ({ status: "ok" }))
-	.listen(3000);
+	.get("/health", () => ({ status: "ok" }));
 
-console.log(`🚀 Ultrahope API running at http://localhost:${app.server?.port}`);
+export const GET = app.handle;
+export const POST = app.handle;
+export const PUT = app.handle;
+export const DELETE = app.handle;
+export const PATCH = app.handle;
+export const OPTIONS = app.handle;

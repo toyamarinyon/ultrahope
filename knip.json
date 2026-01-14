@@ -2,7 +2,9 @@
 	"$schema": "https://unpkg.com/knip@5/schema.json",
 	"workspaces": {
 		".": {},
-		"packages/api": {},
-		"packages/cli": {}
+		"packages/cli": {},
+		"packages/web": {
+			"ignore": ["src/db/schema.ts"]
+		}
 	}
 }

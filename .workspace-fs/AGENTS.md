@@ -13,6 +13,7 @@
 │   ├── infrastructure.md
 │   ├── project-structure.md
 │   ├── monorepo-tooling.md
+│   ├── monolith-migration.md
 │   └── web-package.md
 └── docs/            # 外部ドキュメント: 参照用のライブラリ/フレームワーク情報
     ├── elysiajs/ 
