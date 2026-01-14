@@ -1,5 +1,4 @@
-const API_BASE_URL =
-	process.env.ULTRAHOPE_API_URL ?? "https://api.ultrahope.dev";
+const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
@@ -49,7 +48,7 @@ export function createApiClient(token?: string) {
 		},
 
 		async requestDeviceCode(): Promise<DeviceCodeResponse> {
-			const res = await fetch(`${API_BASE_URL}/api/device/code`, {
+			const res = await fetch(`${API_BASE_URL}/api/auth/device/code`, {
 				method: "POST",
 				headers,
 				body: JSON.stringify({ client_id: "ultrahope-cli" }),
@@ -62,7 +61,7 @@ export function createApiClient(token?: string) {
 		},
 
 		async pollDeviceToken(deviceCode: string): Promise<TokenResponse> {
-			const res = await fetch(`${API_BASE_URL}/api/device/token`, {
+			const res = await fetch(`${API_BASE_URL}/api/auth/device/token`, {
 				method: "POST",
 				headers,
 				body: JSON.stringify({

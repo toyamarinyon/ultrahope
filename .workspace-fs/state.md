@@ -9,11 +9,14 @@
 
 ## Next
 
+- [ ] `packages/cli` publish準備
+  - [ ] translateコマンドの動作確認 (Minimax API実装後)
+  - [ ] npm publish
 - [ ] `packages/web` 残作業 → [decisions/web-package.md](decisions/web-package.md)
   - [ ] アカウント管理
   - [ ] Pricing / 決済 (Polar.sh連携)
   - [ ] API Playground
-- [ ] ローカルで動作確認 (CLI login → API呼び出し)
+- [ ] 本番デプロイ (Vercel + ultrahope.devドメイン)
 
 
 ## Task (Human)
@@ -56,3 +59,5 @@
 - [x] CLI実装 (translate, login コマンド)
 - [x] 環境変数セットアップ (Turso, GitHub OAuth, Resend)
 - [x] DB schema生成 & push (Better Auth CLI + drizzle-kit)
+- [x] ローカルで動作確認 (CLI login → Device Flow認証成功)
+- [x] CLI README.md作成 & package.json整備 (npm publish準備)
