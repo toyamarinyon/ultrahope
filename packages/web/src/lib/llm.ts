@@ -1,3 +1,5 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
 const PROMPTS: Record<Target, string> = {
@@ -30,30 +32,18 @@ export async function translate(
 		throw new Error("MINIMAX_API_KEY not configured");
 	}
 
-	const response = await fetch(
-		"https://api.minimax.chat/v1/text/chatcompletion_v2",
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${apiKey}`,
-			},
-			body: JSON.stringify({
-				model: "MiniMax-Text-01",
-				messages: [
-					{ role: "system", content: PROMPTS[target] },
-					{ role: "user", content: input },
-				],
-				max_tokens: 1024,
-			}),
-		},
-	);
+	const client = new Anthropic({
+		apiKey,
+		baseURL: "https://api.minimax.io/anthropic",
+	});
 
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(`LLM API error: ${response.status} ${text}`);
-	}
+	const message = await client.messages.create({
+		model: "MiniMax-M2.1",
+		max_tokens: 1024,
+		system: PROMPTS[target],
+		messages: [{ role: "user", content: input }],
+	});
 
-	const data = await response.json();
-	return data.choices?.[0]?.message?.content ?? "";
+	const textBlock = message.content.find((block) => block.type === "text");
+	return textBlock?.text ?? "";
 }

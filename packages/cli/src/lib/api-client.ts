@@ -35,7 +35,7 @@ export function createApiClient(token?: string) {
 
 	return {
 		async translate(req: TranslateRequest): Promise<TranslateResponse> {
-			const res = await fetch(`${API_BASE_URL}/v1/translate`, {
+			const res = await fetch(`${API_BASE_URL}/api/v1/translate`, {
 				method: "POST",
 				headers,
 				body: JSON.stringify(req),

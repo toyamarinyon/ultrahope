@@ -10,7 +10,7 @@
 ## Next
 
 - [ ] `packages/cli` publish準備
-  - [ ] translateコマンドの動作確認 (Minimax API実装後)
+  - [x] translateコマンドの動作確認 (Minimax API実装後)
   - [ ] npm publish
 - [ ] `packages/web` 残作業 → [decisions/web-package.md](decisions/web-package.md)
   - [ ] アカウント管理
@@ -32,9 +32,9 @@
     - https://resend.com でアカウント作成 → API Keys
 
 後で必要:
-- [ ] **Minimax API** — `MINIMAX_API_KEY` (translate実装時)
+- [x] **Minimax API** — `MINIMAX_API_KEY` (translate実装時)
 - [ ] **Polar.sh** — アカウント + プラン設定 (課金実装時)
-- [ ] **ドメイン** — ultrahope.dev 等 (デプロイ時)
+- [x] **ドメイン** — ultrahope.dev を取得しました
 
 
 ## Done

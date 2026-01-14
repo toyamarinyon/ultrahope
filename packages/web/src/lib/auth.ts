@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins/bearer";
 import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
@@ -21,6 +22,7 @@ export const auth = betterAuth({
 		},
 	},
 	plugins: [
+		bearer(),
 		deviceAuthorization({
 			verificationUri: process.env.DEVICE_VERIFICATION_URI ?? "/device",
 			expiresIn: "30m",
