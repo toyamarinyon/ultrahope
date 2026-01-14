@@ -9,8 +9,7 @@
 
 ## Next
 
-→ 詳細: [tasks/local-setup.md](tasks/local-setup.md)
-
+- [ ] tsc --noEmitを実行できるようにして、error 0にする
 - [ ] Web版 Device verification page (`/device`)
 - [ ] ローカルで動作確認 (CLI login → API呼び出し)
 
