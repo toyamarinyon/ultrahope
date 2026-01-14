@@ -2,46 +2,36 @@ import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
 import { translate } from "@/lib/llm";
 
-const betterAuthPlugin = new Elysia({ name: "better-auth" })
-	.mount(auth.handler)
-	.macro({
-		auth: {
-			async resolve({ status, request: { headers } }) {
-				const session = await auth.api.getSession({ headers });
-				if (!session) return status(401);
-				return {
-					user: session.user,
-					session: session.session,
-				};
-			},
-		},
-	});
-
 const app = new Elysia({ prefix: "/api" })
-	.use(betterAuthPlugin)
-	.post(
-		"/v1/translate",
-		async ({ body }) => {
-			const { input, target } = body as { input: string; target: string };
+	.derive(async ({ request: { headers } }) => {
+		const session = await auth.api.getSession({ headers });
+		return { session };
+	})
+	.post("/v1/translate", async ({ body, session }) => {
+		if (!session) {
+			return new Response(JSON.stringify({ error: "Unauthorized" }), {
+				status: 401,
+			});
+		}
 
-			const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
-			if (!validTargets.includes(target)) {
-				return new Response(
-					JSON.stringify({ error: `Invalid target: ${target}` }),
-					{
-						status: 400,
-					},
-				);
-			}
+		const { input, target } = body as { input: string; target: string };
 
-			const output = await translate(
-				input,
-				target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+		const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
+		if (!validTargets.includes(target)) {
+			return new Response(
+				JSON.stringify({ error: `Invalid target: ${target}` }),
+				{
+					status: 400,
+				},
 			);
-			return { output };
-		},
-		{ auth: true },
-	)
+		}
+
+		const output = await translate(
+			input,
+			target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+		);
+		return { output };
+	})
 	.get("/health", () => ({ status: "ok" }));
 
 export const GET = app.handle;
