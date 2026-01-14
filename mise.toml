@@ -4,8 +4,28 @@ bun = "latest"
 
 [tasks.ok]
 description = "Run format, typecheck, and knip checks"
-run = """
-bun run format
-bun run typecheck
-bun run knip
-"""
+run = [
+  { task = "format" },
+  { tasks = ["typecheck:api", "typecheck:cli", "typecheck:web"] },
+  { task = "knip" },
+]
+
+[tasks.format]
+description = "Format code with Biome"
+run = "bun run --silent format"
+
+[tasks.knip]
+description = "Check for unused exports and dependencies"
+run = "bun run --silent knip"
+
+[tasks."typecheck:api"]
+description = "Typecheck packages/api"
+run = "bun run --silent --cwd packages/api typecheck"
+
+[tasks."typecheck:cli"]
+description = "Typecheck packages/cli"
+run = "bun run --silent --cwd packages/cli typecheck"
+
+[tasks."typecheck:web"]
+description = "Typecheck packages/web"
+run = "bun run --silent --cwd packages/web typecheck"
