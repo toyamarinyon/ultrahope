@@ -1,3 +1,11 @@
 [tools]
 node = "latest"
 bun = "latest"
+
+[tasks.ok]
+description = "Run format, typecheck, and knip checks"
+run = """
+bun run format
+bun run typecheck
+bun run knip
+"""

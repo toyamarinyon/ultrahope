@@ -9,7 +9,6 @@
 
 ## Next
 
-- [ ] tsc --noEmitを実行できるようにして、error 0にする
 - [ ] Web版 Device verification page (`/device`)
 - [ ] ローカルで動作確認 (CLI login → API呼び出し)
 
@@ -33,6 +32,7 @@
 
 
 ## Done
+- [x] tsc --noEmitを実行できるようにして、error 0にする
 - [x] コードフォーマット & dead code検出の仕組み導入 (Biome + knip)
 - [x] 決済について → [decisions/billing.md](decisions/billing.md) (Polar.sh採用)
 - [x] 認証の実装方法について → [decisions/authentication.md](decisions/authentication.md) (Better Auth採用)
