@@ -12,7 +12,10 @@ export async function POST(request: Request) {
 
 	const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
 	if (!validTargets.includes(target)) {
-		return Response.json({ error: `Invalid target: ${target}` }, { status: 400 });
+		return Response.json(
+			{ error: `Invalid target: ${target}` },
+			{ status: 400 },
+		);
 	}
 
 	const output = await translate(
