@@ -23,7 +23,10 @@ export default async function RootPage() {
 					</ul>
 				</section>
 
-				<Link href="/login">Get Started</Link>
+				<p>
+					<Link href="/login">Get Started</Link> |{" "}
+					<Link href="/pricing">Pricing</Link>
+				</p>
 			</main>
 		);
 	}
@@ -43,6 +46,13 @@ export default async function RootPage() {
 				<pre>
 					<code>ultrahope login</code>
 				</pre>
+			</section>
+
+			<section>
+				<h2>Subscription</h2>
+				<p>
+					<Link href="/pricing">View Plans</Link>
+				</p>
 			</section>
 
 			<SignOutButton />

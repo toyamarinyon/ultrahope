@@ -14,7 +14,7 @@
   - [ ] npm publish
 - [ ] `packages/web` 残作業 → [decisions/web-package.md](decisions/web-package.md)
   - [ ] アカウント管理
-  - [ ] Pricing / 決済 (Polar.sh連携)
+  - [x] Pricing / 決済 (Polar.sh連携) — Better Auth Polar plugin統合完了
   - [ ] API Playground
 - [ ] 本番デプロイ (Vercel + ultrahope.devドメイン)
 
@@ -33,7 +33,12 @@
 
 後で必要:
 - [x] **Minimax API** — `MINIMAX_API_KEY` (translate実装時)
-- [ ] **Polar.sh** — アカウント + プラン設定 (課金実装時)
+- [x] **Polar.sh** — 以下の環境変数が必要:
+    - `POLAR_ACCESS_TOKEN` — Organization Settings > Access Tokens で作成
+    - `POLAR_WEBHOOK_SECRET` — Webhook設定時に生成
+    - `POLAR_PRODUCT_FREE_ID` — Free プラン Product ID
+    - `POLAR_PRODUCT_PRO_ID` — Pro プラン Product ID
+    - `POLAR_PRODUCT_TEAM_ID` — Team プラン Product ID
 - [x] **ドメイン** — ultrahope.dev を取得しました
 
 

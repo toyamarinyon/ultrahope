@@ -1,3 +1,5 @@
+import { checkout, polar, portal, webhooks } from "@polar-sh/better-auth";
+import { Polar } from "@polar-sh/sdk";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins/bearer";
@@ -6,6 +8,11 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
 import { db } from "@/db/client";
 import * as schema from "@/db/schema";
+
+const polarClient = new Polar({
+	accessToken: process.env.POLAR_ACCESS_TOKEN,
+	server: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -39,6 +46,34 @@ export const auth = betterAuth({
 					html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p>`,
 				});
 			},
+		}),
+		polar({
+			client: polarClient,
+			createCustomerOnSignUp: true,
+			use: [
+				checkout({
+					products: [
+						{
+							productId: process.env.POLAR_PRODUCT_FREE_ID ?? "",
+							slug: "free",
+						},
+						{ productId: process.env.POLAR_PRODUCT_PRO_ID ?? "", slug: "pro" },
+						{
+							productId: process.env.POLAR_PRODUCT_TEAM_ID ?? "",
+							slug: "team",
+						},
+					],
+					successUrl: "/checkout/success?checkout_id={CHECKOUT_ID}",
+					authenticatedUsersOnly: true,
+				}),
+				portal(),
+				webhooks({
+					secret: process.env.POLAR_WEBHOOK_SECRET ?? "",
+					onPayload: async (payload) => {
+						console.log("Polar webhook received:", payload.type);
+					},
+				}),
+			],
 		}),
 	],
 });
