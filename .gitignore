@@ -4,7 +4,6 @@ dist
 .mise.toml
 .mise.*.toml
 .next
-liffy/
 
 # opensrc - source code for packages
 opensrc/
