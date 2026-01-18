@@ -13,8 +13,10 @@ create the token for production or sandbox.
 
 Required scopes:
 - `customers:write` - create customers on signup (`POST /v1/customers/`)
+- `customers:read` - get customer state for idempotency check (`GET /v1/customers/external/{id}/state`)
 - `checkouts:write` - create checkout sessions (`POST /v1/checkouts/`)
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
+- `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
 
 ![./configured.png](./configured.png)
 

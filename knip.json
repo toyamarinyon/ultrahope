@@ -4,7 +4,7 @@
 		".": {},
 		"packages/cli": {},
 		"packages/web": {
-			"ignore": ["src/db/schema.ts"]
+			"ignore": ["src/db/schema.ts", "scripts/**"]
 		}
 	}
 }

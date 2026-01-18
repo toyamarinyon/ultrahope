@@ -1,0 +1,11 @@
+# Scripts tasks for packages/web
+# See .workspace-fs/docs/mise/tasks/environment-separation.md for pattern details
+
+[tasks."script:clear-test-user"]
+description = "Clear test user from Turso and Polar"
+run = "bun run scripts/clear-test-user.ts {{arg(name='email')}}"
+dir = "{{config_root}}/.."
+
+[tasks."sandbox:clear-test-user"]
+description = "Clear test user (sandbox env)"
+run = "mise -E sandbox run script:clear-test-user {{arg(name='email')}}"

@@ -19,6 +19,11 @@ Here's my favorite features about mise's task runner:
 
 There are 2 ways to define tasks: [inside of `mise.toml` files](./toml-tasks.html) or as [standalone shell scripts](./file-tasks.html).
 
+## Environment-separated tasks
+
+We use config environments plus task wrappers to force sandbox/production
+execution. See [Environment-separated tasks](./environment-separation.html).
+
 ## Tasks in `mise.toml` files
 
 Tasks are defined in the `[tasks]` section of the `mise.toml` file.

@@ -28,6 +28,50 @@ export const auth = betterAuth({
 			clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
 		},
 	},
+	databaseHooks: {
+		user: {
+			create: {
+				after: async (user) => {
+					const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
+					if (!freeProductId) {
+						console.error(
+							"[polar] POLAR_PRODUCT_FREE_ID not set, skipping free subscription creation",
+						);
+						return;
+					}
+
+					try {
+						const customerState = await polarClient.customers.getStateExternal({
+							externalId: user.id,
+						});
+
+						const hasFreePlan = customerState.activeSubscriptions.some(
+							(sub) => sub.productId === freeProductId,
+						);
+						if (hasFreePlan) {
+							console.log(
+								`[polar] User ${user.id} already has free subscription, skipping`,
+							);
+							return;
+						}
+
+						await polarClient.subscriptions.create({
+							productId: freeProductId,
+							externalCustomerId: user.id,
+						});
+						console.log(
+							`[polar] Created free subscription for user ${user.id}`,
+						);
+					} catch (error) {
+						console.error(
+							`[polar] Failed to create free subscription for user ${user.id}:`,
+							error,
+						);
+					}
+				},
+			},
+		},
+	},
 	plugins: [
 		bearer(),
 		deviceAuthorization({
