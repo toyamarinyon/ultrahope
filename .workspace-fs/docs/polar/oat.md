@@ -16,6 +16,8 @@ Required scopes:
 - `checkouts:write` - create checkout sessions (`POST /v1/checkouts/`)
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
 
+![./configured.png](./configured.png)
+
 No OAT scope is required for webhook signature verification itself.
 
 Optional scopes (only if features are enabled later):
