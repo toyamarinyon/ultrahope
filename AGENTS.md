@@ -51,6 +51,16 @@ npx opensrc <owner>/<repo>      # GitHub repo (e.g., npx opensrc vercel/ai)
 
 <!-- opensrc:end -->
 
+## Environment Variables for Scripts
+
+When running scripts that require access tokens or API keys, use `MISE_ENV=amp` before the command:
+
+```bash
+MISE_ENV=amp <your-command>
+```
+
+If authentication or authorization fails due to missing values, please notify the user.
+
 <!-- llms-furl:start -->
 
 ## llms-full reference

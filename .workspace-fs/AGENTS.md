@@ -9,6 +9,8 @@
 ├── decisions/       # 意思決定: どう作るか、なぜそうしたか (ADR的)
 │   ├── authentication.md
 │   ├── billing.md
+│   ├── billing-meter-design.md
+│   ├── billing-free-plan-auto-subscription.md
 │   ├── cli-implementation.md
 │   ├── infrastructure.md
 │   ├── project-structure.md
