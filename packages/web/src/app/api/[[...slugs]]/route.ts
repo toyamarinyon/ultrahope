@@ -29,6 +29,7 @@ const app = new Elysia({ prefix: "/api" })
 		const output = await translate(
 			input,
 			target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+			{ externalCustomerId: session.user.id, operation: target },
 		);
 		return { output };
 	})

@@ -16,6 +16,9 @@
   - [ ] アカウント管理
   - [x] Pricing / 決済 (Polar.sh連携) — Better Auth Polar plugin統合完了
   - [ ] API Playground
+- [x] Polar.shのBenefit/Meter調整（詳細: [decisions/billing-meter-design.md](decisions/billing-meter-design.md)）
+  - Consumed Tokens Meter作成 (sum over `tokens`)
+  - Token-based Benefits: Free 10K, Pro 100K, Team 1M tokens/month
 - [ ] 本番デプロイ (Vercel + ultrahope.devドメイン)
 
 

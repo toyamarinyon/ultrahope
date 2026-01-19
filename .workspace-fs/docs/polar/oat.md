@@ -17,15 +17,14 @@ Required scopes:
 - `checkouts:write` - create checkout sessions (`POST /v1/checkouts/`)
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
 - `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
+- `events:write` - ingest token consumption events for usage-based billing (`POST /v1/events/ingest`)
 
 ![./configured.png](./configured.png)
 
 No OAT scope is required for webhook signature verification itself.
 
 Optional scopes (only if features are enabled later):
-- `events:write` - usage plugin event ingestion (`POST /v1/events/ingest`)
 - `meters:read` - usage plugin reads meters (`GET /v1/meters/`)
-- `customers:read` - any explicit customer lookups or state reads
 
 ## Environment notes
 

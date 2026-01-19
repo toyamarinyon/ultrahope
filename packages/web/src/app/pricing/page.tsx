@@ -8,7 +8,7 @@ const plans = [
 		name: "Free",
 		price: "$0",
 		description: "Get started with Ultrahope",
-		features: ["10 requests/month", "Basic input size", "Community support"],
+		features: ["10,000 tokens/month", "Basic input size", "Community support"],
 		slug: "free",
 	},
 	{
@@ -16,7 +16,7 @@ const plans = [
 		price: "$9",
 		description: "For power users",
 		features: [
-			"100 requests/month",
+			"100,000 tokens/month",
 			"Larger input size",
 			"Priority support",
 			"Early access to new features",
@@ -28,7 +28,7 @@ const plans = [
 		price: "$29",
 		description: "For teams and businesses",
 		features: [
-			"Unlimited requests",
+			"Unlimited tokens",
 			"Maximum input size",
 			"Dedicated support",
 			"Team management",

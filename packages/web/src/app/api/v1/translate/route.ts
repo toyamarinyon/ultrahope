@@ -21,6 +21,7 @@ export async function POST(request: Request) {
 	const output = await translate(
 		input,
 		target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+		{ externalCustomerId: session.user.id, operation: target },
 	);
 	return Response.json({ output });
 }
