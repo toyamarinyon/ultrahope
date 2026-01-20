@@ -38,9 +38,10 @@ export function createCerebrasProvider(apiKey: string): LLMProvider {
 
 			return {
 				content,
+				vendor: "cerebras",
+				model: MODEL,
 				inputTokens: response.usage.prompt_tokens ?? 0,
 				outputTokens: response.usage.completion_tokens ?? 0,
-				model: MODEL,
 			};
 		},
 	};

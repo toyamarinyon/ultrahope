@@ -1,43 +1,47 @@
-import { translate as coreTranslate, type Target } from "@ultrahope/core";
+import {
+	translate as coreTranslate,
+	type LLMResponse,
+	type Target,
+} from "@ultrahope/core";
 import { polarClient } from "@/lib/auth";
+import type { LLMMetadata } from "@polar-sh/sdk/models/components/llmmetadata";
 
 type TranslateOptions = {
 	externalCustomerId?: string;
-	operation?: string;
 };
 
-async function recordTokenConsumption(params: {
-	externalCustomerId?: string;
-	tokens: number;
-	inputTokens: number;
-	outputTokens: number;
-	model: string;
-	operation: string;
-}): Promise<void> {
-	if (!params.externalCustomerId) {
+async function recordTokenConsumption(
+	externalCustomerId: string | undefined,
+	response: LLMResponse,
+): Promise<void> {
+	if (!externalCustomerId) {
 		return;
 	}
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		console.warn("[polar] POLAR_ACCESS_TOKEN not set, skipping usage ingest");
 		return;
 	}
-	if (!Number.isFinite(params.tokens) || params.tokens <= 0) {
+	const totalTokens = response.inputTokens + response.outputTokens;
+	if (!Number.isFinite(totalTokens) || totalTokens <= 0) {
 		return;
 	}
+
+	const metadata: LLMMetadata = {
+		vendor: response.vendor,
+		model: response.model,
+		inputTokens: response.inputTokens,
+		outputTokens: response.outputTokens,
+		totalTokens,
+		cachedInputTokens: response.cachedInputTokens,
+	};
 
 	try {
 		await polarClient.events.ingest({
 			events: [
 				{
 					name: "token_consumption",
-					externalCustomerId: params.externalCustomerId,
-					metadata: {
-						tokens: params.tokens,
-						input_tokens: params.inputTokens,
-						output_tokens: params.outputTokens,
-						model: params.model,
-						operation: params.operation,
-					},
+					externalCustomerId,
+					metadata: metadata as unknown as Record<string, string | number>,
 				},
 			],
 		});
@@ -53,16 +57,7 @@ export async function translate(
 ): Promise<string> {
 	const response = await coreTranslate(input, target);
 
-	const totalTokens = response.inputTokens + response.outputTokens;
-
-	void recordTokenConsumption({
-		externalCustomerId: options.externalCustomerId,
-		tokens: totalTokens,
-		inputTokens: response.inputTokens,
-		outputTokens: response.outputTokens,
-		model: response.model,
-		operation: options.operation ?? target,
-	});
+	void recordTokenConsumption(options.externalCustomerId, response);
 
 	return response.content;
 }

@@ -9,11 +9,11 @@
 
 ## Next
 
-- [ ] **packages/core 作成: LLMロジック分離** → [decisions/core-package.md](decisions/core-package.md)
+- [x] **packages/core 作成: LLMロジック分離** → [decisions/core-package.md](decisions/core-package.md)
   - [x] `packages/core/` 初期化 (package.json, tsconfig.json)
   - [x] types, prompts, providers を移動
   - [x] `packages/web/src/lib/llm/` を core 利用 + billing wrapper に変更
-  - [ ] 動作確認
+  - [x] 動作確認 (web → core → Cerebras API, device auth, CLI translate)
 - [ ] `packages/cli` publish準備
   - [x] translateコマンドの動作確認 (Minimax API実装後)
   - [ ] npm publish
