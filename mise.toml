@@ -33,3 +33,11 @@ run = "bun run --cwd packages/web dev"
 [tasks.web]
 description = "Start web dev server (sandbox env)"
 run = "mise -E sandbox run dev:web"
+
+[tasks."dev:translate"]
+description = "translate "
+run = "bun run scripts/translate.ts"
+
+[tasks.translate]
+description = "Run translate "
+run = "mise -E sandbox run dev:translate"
