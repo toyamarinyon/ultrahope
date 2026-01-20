@@ -1,10 +1,11 @@
+import type { LLMMetadata } from "@polar-sh/sdk/models/components/llmmetadata";
 import {
 	translate as coreTranslate,
 	type LLMResponse,
 	type Target,
 } from "@ultrahope/core";
+import { after } from "next/server";
 import { polarClient } from "@/lib/auth";
-import type { LLMMetadata } from "@polar-sh/sdk/models/components/llmmetadata";
 
 type TranslateOptions = {
 	externalCustomerId?: string;
@@ -32,7 +33,9 @@ async function recordTokenConsumption(
 		inputTokens: response.inputTokens,
 		outputTokens: response.outputTokens,
 		totalTokens,
-		cachedInputTokens: response.cachedInputTokens,
+		...(response.cachedInputTokens !== undefined && {
+			cachedInputTokens: response.cachedInputTokens,
+		}),
 	};
 
 	try {
@@ -57,7 +60,9 @@ export async function translate(
 ): Promise<string> {
 	const response = await coreTranslate(input, target);
 
-	void recordTokenConsumption(options.externalCustomerId, response);
+	after(async () => {
+		await recordTokenConsumption(options.externalCustomerId, response);
+	});
 
 	return response.content;
 }
