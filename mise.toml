@@ -28,7 +28,7 @@ run = "bun run --silent --cwd packages/web typecheck"
 
 [tasks."dev:web"]
 description = "Start web dev server"
-run = "bun run --cwd packages/web dev"
+run = "bun run --cwd packages/web next dev --port ${PORT:-3000}"
 
 [tasks.web]
 description = "Start web dev server (sandbox env)"

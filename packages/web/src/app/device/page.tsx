@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { device, useSession } from "@/lib/auth-client";
+import { device, signIn, useSession } from "@/lib/auth-client";
 
 type Status =
 	| "idle"
@@ -92,9 +92,22 @@ export default function DevicePage() {
 			<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
 				<h1 style={{ marginBottom: 16 }}>Device Authorization</h1>
 				<p style={{ marginBottom: 16 }}>Sign in to authorize your CLI.</p>
-				<a href="/api/auth/signin/github" style={{ color: "#0070f3" }}>
+				<button
+					type="button"
+					onClick={() =>
+						signIn.social({ provider: "github", callbackURL: "/device" })
+					}
+					style={{
+						padding: "12px 24px",
+						backgroundColor: "#24292e",
+						color: "white",
+						border: "none",
+						borderRadius: 4,
+						cursor: "pointer",
+					}}
+				>
 					Sign in with GitHub
-				</a>
+				</button>
 			</main>
 		);
 	}
