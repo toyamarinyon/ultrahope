@@ -102,10 +102,6 @@ export const auth = betterAuth({
 							slug: "free",
 						},
 						{ productId: process.env.POLAR_PRODUCT_PRO_ID ?? "", slug: "pro" },
-						{
-							productId: process.env.POLAR_PRODUCT_TEAM_ID ?? "",
-							slug: "team",
-						},
 					],
 					successUrl: "/checkout/success?checkout_id={CHECKOUT_ID}",
 					authenticatedUsersOnly: true,

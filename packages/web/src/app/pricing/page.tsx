@@ -8,7 +8,7 @@ const plans = [
 		name: "Free",
 		price: "$0",
 		description: "Get started with Ultrahope",
-		features: ["10,000 tokens/month", "Basic input size", "Community support"],
+		features: ["400,000 tokens/month", "Community support"],
 		slug: "free",
 	},
 	{
@@ -16,31 +16,17 @@ const plans = [
 		price: "$9",
 		description: "For power users",
 		features: [
-			"100,000 tokens/month",
-			"Larger input size",
+			"1,000,000 tokens/month",
 			"Priority support",
 			"Early access to new features",
 		],
 		slug: "pro",
-	},
-	{
-		name: "Team",
-		price: "$29",
-		description: "For teams and businesses",
-		features: [
-			"Unlimited tokens",
-			"Maximum input size",
-			"Dedicated support",
-			"Team management",
-		],
-		slug: "team",
 	},
 ];
 
 const productIdToSlug: Record<string, string> = {
 	[process.env.POLAR_PRODUCT_FREE_ID ?? ""]: "free",
 	[process.env.POLAR_PRODUCT_PRO_ID ?? ""]: "pro",
-	[process.env.POLAR_PRODUCT_TEAM_ID ?? ""]: "team",
 };
 
 async function getActiveSubscriptions(userId: string): Promise<string[]> {

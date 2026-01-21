@@ -23,7 +23,7 @@
   - [ ] API Playground
 - [x] Polar.shのBenefit/Meter調整（詳細: [decisions/billing-meter-design.md](decisions/billing-meter-design.md)）
   - Consumed Tokens Meter作成 (sum over `tokens`)
-  - Token-based Benefits: Free 10K, Pro 100K, Team 1M tokens/month
+  - Token-based Benefits: Free 400K, Pro 1M tokens/month
 - [ ] 本番デプロイ (Vercel + ultrahope.devドメイン)
 
 
@@ -46,7 +46,6 @@
     - `POLAR_WEBHOOK_SECRET` — Webhook設定時に生成
     - `POLAR_PRODUCT_FREE_ID` — Free プラン Product ID
     - `POLAR_PRODUCT_PRO_ID` — Pro プラン Product ID
-    - `POLAR_PRODUCT_TEAM_ID` — Team プラン Product ID
 - [x] **ドメイン** — ultrahope.dev を取得しました
 
 
