@@ -74,21 +74,24 @@ The `name` property is the event's name field in the ingestion payload.
 ```
 Name: "Consumed Tokens"
 Filter: name == "token_consumption"
-Aggregation: sum (over "tokens" property in metadata)
+Aggregation: sum (over "totalTokens" property in metadata)
 ```
 
 #### Event Ingestion
 
-When processing LLM requests, ingest events with actual token count:
+When processing LLM requests, ingest events using the Polar SDK's `LLMMetadata` type:
 
 ```json
 {
   "name": "token_consumption",
-  "customer_id": "<polar_customer_id>",
+  "externalCustomerId": "<external_customer_id>",
   "metadata": {
-    "tokens": 1500,
-    "model": "gpt-4",
-    "operation": "generate"
+    "vendor": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "inputTokens": 500,
+    "outputTokens": 1000,
+    "totalTokens": 1500,
+    "cachedInputTokens": 100
   }
 }
 ```

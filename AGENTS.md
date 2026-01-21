@@ -53,10 +53,10 @@ npx opensrc <owner>/<repo>      # GitHub repo (e.g., npx opensrc vercel/ai)
 
 ## Environment Variables for Scripts
 
-When running scripts that require access tokens or API keys, use `MISE_ENV=amp` before the command:
+When running scripts that require access tokens or API keys, use `mise -E amp env` to load environment variables:
 
 ```bash
-MISE_ENV=amp <your-command>
+eval "$(mise -E amp env)" && <your-command>
 ```
 
 If authentication or authorization fails due to missing values, please notify the user.
