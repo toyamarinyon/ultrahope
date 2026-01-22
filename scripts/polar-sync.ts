@@ -5,17 +5,20 @@
  * It ensures resources exist with the correct configuration, creating or updating as needed.
  *
  * Usage:
- *   # Sandbox (default)
+ *   # Sandbox (default) - shows changes and prompts for confirmation
  *   bun run scripts/polar-sync.ts
  *
- *   # Production
+ *   # Production - shows changes and prompts for confirmation
  *   bun run scripts/polar-sync.ts --production
  *
- *   # Dry-run (show what would be done without making changes)
+ *   # Dry-run (show what would be done without prompting)
  *   bun run scripts/polar-sync.ts --dry-run
  *
+ *   # Skip confirmation prompt
+ *   bun run scripts/polar-sync.ts --yes
+ *
  * Environment:
- *   POLAR_ACCESS_TOKEN - Organization Access Token with required scopes
+ *   POLAR_SYNC_ACCESS_TOKEN - Organization Access Token with required scopes
  *
  * Required OAT scopes:
  *   - meters:read, meters:write
@@ -436,10 +439,23 @@ async function syncProducts(ctx: SyncContext): Promise<void> {
 // Main
 // =============================================================================
 
+async function prompt(message: string): Promise<boolean> {
+	process.stdout.write(`${message} [y/N] `);
+	const response = await new Promise<string>((resolve) => {
+		const stdin = process.stdin;
+		stdin.setEncoding("utf8");
+		stdin.once("data", (data) => {
+			resolve(data.toString().trim().toLowerCase());
+		});
+	});
+	return response === "y" || response === "yes";
+}
+
 async function main() {
 	const args = process.argv.slice(2);
 	const isProduction = args.includes("--production");
 	const dryRun = args.includes("--dry-run");
+	const autoConfirm = args.includes("--yes") || args.includes("-y");
 	const server = isProduction ? "production" : "sandbox";
 
 	console.log(`Polar Sync - ${server}${dryRun ? " (dry-run)" : ""}`);
@@ -469,12 +485,36 @@ async function main() {
 
 	const ctx: SyncContext = {
 		polar,
-		dryRun,
+		dryRun: true,
 		meters,
 		benefits,
 		products,
 	};
 
+	console.log("\nPlanned changes:");
+	await syncMeters(ctx);
+	await syncBenefits(ctx);
+	await syncProducts(ctx);
+
+	if (dryRun) {
+		console.log(`\n${"=".repeat(50)}`);
+		console.log("Dry-run complete. No changes were made.");
+		return;
+	}
+
+	console.log("");
+	const confirmed = autoConfirm || (await prompt("Apply these changes?"));
+	if (!confirmed) {
+		console.log("Aborted.");
+		process.exit(0);
+	}
+
+	ctx.dryRun = false;
+	ctx.meters = await fetchAllMeters(polar);
+	ctx.benefits = await fetchAllBenefits(polar);
+	ctx.products = await fetchAllProducts(polar);
+
+	console.log("\nApplying changes:");
 	await syncMeters(ctx);
 	await syncBenefits(ctx);
 	await syncProducts(ctx);
@@ -482,14 +522,12 @@ async function main() {
 	console.log(`\n${"=".repeat(50)}`);
 	console.log("Sync complete!");
 
-	if (!dryRun) {
-		console.log("\nProduct IDs for environment variables:");
-		for (const productConfig of CONFIG.products) {
-			const product = ctx.products.get(productConfig.name);
-			if (product) {
-				const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase()}_ID`;
-				console.log(`  ${envKey}=${product.id}`);
-			}
+	console.log("\nProduct IDs for environment variables:");
+	for (const productConfig of CONFIG.products) {
+		const product = ctx.products.get(productConfig.name);
+		if (product) {
+			const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase()}_ID`;
+			console.log(`  ${envKey}=${product.id}`);
 		}
 	}
 }

@@ -44,12 +44,12 @@ run = "mise -E sandbox run dev:translate"
 
 [tasks."script:polar-sync"]
 description = "Sync Polar.sh configuration (meters, benefits, products)"
-run = "bun run --cwd scripts polar-sync.ts {{arg(name='flags', var=true)}}"
+run = "bun run --cwd scripts polar-sync.ts {{option(name='flags', var=true)}}"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
-run = "mise -E sandbox run script:polar-sync {{arg(name='flags', var=true)}}"
+run = "mise -E sandbox run script:polar-sync {{option(name='flags', var=true)}}"
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "mise -E production run script:polar-sync --production {{arg(name='flags', var=true)}}"
+run = "bun run --cwd scripts polar-sync.ts --production"
