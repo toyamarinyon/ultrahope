@@ -9,10 +9,11 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@ultrahope/core": "workspace:*",
 		"@libsql/client": "0.17.0",
+		"@libsql/isomorphic-ws": "0.1.5",
 		"@polar-sh/better-auth": "^1.6.4",
 		"@polar-sh/sdk": "^0.42.2",
+		"@ultrahope/core": "workspace:*",
 		"better-auth": "^1.2.8",
 		"drizzle-orm": "^0.44.2",
 		"elysia": "^1.3.2",
