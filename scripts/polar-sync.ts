@@ -445,9 +445,9 @@ async function main() {
 	console.log(`Polar Sync - ${server}${dryRun ? " (dry-run)" : ""}`);
 	console.log("=".repeat(50));
 
-	const accessToken = process.env.POLAR_ACCESS_TOKEN;
+	const accessToken = process.env.POLAR_SYNC_ACCESS_TOKEN;
 	if (!accessToken) {
-		console.error("Error: POLAR_ACCESS_TOKEN is not set");
+		console.error("Error: POLAR_SYNC_ACCESS_TOKEN is not set");
 		process.exit(1);
 	}
 

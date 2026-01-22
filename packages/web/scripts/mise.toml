@@ -9,16 +9,3 @@ dir = "{{config_root}}/.."
 [tasks."sandbox:clear-test-user"]
 description = "Clear test user (sandbox env)"
 run = "mise -E sandbox run script:clear-test-user {{arg(name='email')}}"
-
-[tasks."script:polar-sync"]
-description = "Sync Polar.sh configuration (meters, benefits, products)"
-run = "bun run scripts/polar-sync.ts {{arg(name='flags', var=true)}}"
-dir = "{{config_root}}/.."
-
-[tasks."sandbox:polar-sync"]
-description = "Sync Polar.sh configuration (sandbox)"
-run = "mise -E sandbox run script:polar-sync {{arg(name='flags', var=true)}}"
-
-[tasks."production:polar-sync"]
-description = "Sync Polar.sh configuration (production)"
-run = "mise -E production run script:polar-sync --production {{arg(name='flags', var=true)}}"

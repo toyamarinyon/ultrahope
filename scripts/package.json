@@ -1,0 +1,8 @@
+{
+	"name": "scripts",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@polar-sh/sdk": "^0.42.2"
+	}
+}
