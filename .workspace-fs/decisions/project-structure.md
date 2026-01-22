@@ -1,24 +1,24 @@
-# プロジェクトの構造
+# Project structure
 
 ## Decision: Single Monorepo + npm files whitelist
 
-**1つのpublic monorepoで、npmにはCLIだけpublish**
+**Single public monorepo, publish only the CLI to npm**
 
 ```
 ultrahope/                    # public repo
   packages/
-    cli/                      # npm publish対象
+    cli/                      # npm publish target
       package.json
       src/
-    api/                      # npm publish対象外
+    api/                      # not published to npm
       src/
-    web/                      # npm publish対象外 (future)
+    web/                      # not published to npm (future)
       src/
 ```
 
-### 仕組み
+### Mechanism
 
-`packages/cli/package.json` の `files` フィールドでpublish対象を制限:
+Limit publish targets via the `files` field in `packages/cli/package.json`:
 
 ```json
 {
@@ -28,11 +28,11 @@ ultrahope/                    # public repo
 }
 ```
 
-`npm publish` は `packages/cli` ディレクトリからのみ実行。apiやwebはnpmに一切上がらない。
+Run `npm publish` only from the `packages/cli` directory. The api/web packages are never published to npm.
 
-### メリット
+### Benefits
 
-- **1つのrepo** - dev server, commit, CI/CDが一元管理
-- **コード共有** - 型やユーティリティを `packages/shared` で共有可能
-- **CLIだけpublish** - `files` フィールドで制御
-- **api/webは非公開** - repoはpublicでもデプロイ先(Fly.io, Vercel等)で環境変数管理
+- **Single repo** - dev server, commits, CI/CD are centrally managed
+- **Code sharing** - share types/utilities in `packages/shared`
+- **Publish only CLI** - controlled via the `files` field
+- **api/web remain private** - even if repo is public, manage env vars on deploy targets (Fly.io, Vercel, etc.)

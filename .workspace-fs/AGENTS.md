@@ -2,11 +2,11 @@
 
 ```
 .workspace-fs/
-├── state.md         # Index: 現在の状態、Next/Done、他ファイルへのリンク
-├── to-be/           # 仕様: 何を作るか (as-isではなくto-be)
+├── state.md         # Index: current status, Next/Done, links to other files
+├── to-be/           # Spec: what to build (to-be, not as-is)
 │   ├── cli.md
 │   └── api.md
-├── decisions/       # 意思決定: どう作るか、なぜそうしたか (ADR的)
+├── decisions/       # Decisions: how we build and why (ADR-like)
 │   ├── authentication.md
 │   ├── billing.md
 │   ├── billing-meter-design.md
@@ -17,17 +17,17 @@
 │   ├── monorepo-tooling.md
 │   ├── monolith-migration.md
 │   └── web-package.md
-└── docs/            # 外部ドキュメント: 参照用のライブラリ/フレームワーク情報
+└── docs/            # External docs: reference info for libraries/frameworks
     ├── elysiajs/ 
     └── mise/tasks
 ```
 
 ## Naming conventions
 
-- **to-be/** — 「あるべき姿」。現状(as-is)ではなく目指す仕様を書く
-- **decisions/** — 技術選定や設計判断の記録。後から「なぜこうしたか」を追える
-- **docs/** — 外部リソースのローカルコピー。LLMが参照しやすい形式で保存
+- **to-be/** — The intended target state. Write the target spec, not the current as-is state.
+- **decisions/** — Records of technical choices and design decisions. Allows tracing “why we did it this way” later.
+- **docs/** — Local copies of external resources, saved in a format that is easy for an LLM to reference.
 
 ## docs/
 
-- [docs/elysiajs/llms-full.txt](docs/elysiajs/llms-full.txt) — API実装に利用するElysiaJSの情報
+- [docs/elysiajs/llms-full.txt](docs/elysiajs/llms-full.txt) — ElysiaJS information used for API implementation

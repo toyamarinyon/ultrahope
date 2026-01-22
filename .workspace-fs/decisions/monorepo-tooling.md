@@ -2,16 +2,16 @@
 
 ## Decision: pnpm Workspaces
 
-**pnpm workspacesでmonorepoを管理し、CLIはNode向けにビルドしてnpm publish**
+**Manage the monorepo with pnpm workspaces, build the CLI for Node, and publish to npm**
 
-### 理由
+### Reasons
 
-- VercelのBun Runtime依存を避け、Node.jsランタイムに統一する
-- pnpmはnpm互換の `workspaces` フィールドを利用できる
-- tsupでNode.js向けに単一ファイル出力できる
-- ツールチェーンを統一することで複雑さを減らす
+- Avoid dependence on Vercel’s Bun runtime and standardize on Node.js
+- pnpm supports the npm-compatible `workspaces` field
+- tsup can output a single file for Node.js
+- Unifying the toolchain reduces complexity
 
-### 構成
+### Structure
 
 ```
 ultrahope/
@@ -21,10 +21,10 @@ ultrahope/
   packages/
     cli/                # tsup build → npm publish
     web/                # Next.js + ElysiaJS API
-    shared/             # 共有型・ユーティリティ (future)
+    shared/             # Shared types/utilities (future)
 ```
 
-### CLIビルド
+### CLI build
 
 ```bash
 cd packages/cli
@@ -32,7 +32,7 @@ pnpm run build
 npm publish
 ```
 
-### 参考
+### References
 
 - https://pnpm.io/workspaces
 - https://tsup.egoist.dev/

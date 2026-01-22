@@ -2,25 +2,25 @@
 
 ## Deploy: Vercel
 
-**Decision**: Vercel を使う
+**Decision**: Use Vercel
 
 **Rationale**:
-- ElysiaJS は Edge Runtime 対応
-- Turso との統合実績あり（Val Town, Prisma Optimize等）
-- ドメイン管理も Vercel Domains で統一できる
+- ElysiaJS supports the Edge Runtime
+- Proven integration with Turso (Val Town, Prisma Optimize, etc.)
+- Domain management can be unified with Vercel Domains
 
 ## Database: Turso (SQLite)
 
-**Decision**: Turso を使う
+**Decision**: Use Turso
 
 **Rationale**:
-- API仕様がシンプル（Device Flow + translate endpoint）で複雑なリレーション不要
-- SaaS認証/課金での利用実績多数
+- API surface is simple (Device Flow + translate endpoint), no complex relationships needed
+- Widely used for SaaS auth/billing
 - Free tier: 500 databases / Scaler: 10,000 databases ($29/mo)
-- Drizzle ORM との相性良好
-- Edge から低レイテンシアクセス可能
+- Good compatibility with Drizzle ORM
+- Low-latency access from the Edge
 
-**Schema概要** (想定):
+**Schema overview** (expected):
 ```sql
 -- users
 CREATE TABLE users (
@@ -46,27 +46,27 @@ CREATE TABLE access_tokens (
 );
 ```
 
-## LLM API: Minimax 2.1 (初期)
+## LLM API: Minimax 2.1 (initial)
 
-**Decision**: 初期は Minimax 2.1 (Claude互換API) を使う
+**Decision**: Start with Minimax 2.1 (Claude-compatible API)
 
 **Rationale**:
-- Claude互換APIで実装しやすい
-- 将来的に grok-code-fast-1, Gemini-3 Flash, GPT-5.2 等への切り替えを想定
-- Provider抽象化レイヤーを設ける
+- Claude-compatible API is easy to implement
+- Plan to switch to grok-code-fast-1, Gemini-3 Flash, GPT-5.2, etc. later
+- Provide an abstraction layer for providers
 
 ## Email: Resend
 
-**Decision**: Resend を使う（Magic Link用）
+**Decision**: Use Resend (for Magic Link)
 
 **Rationale**:
-- シンプルなAPI
-- 開発者向けサービスとの相性良い
+- Simple API
+- Good fit for developer-focused services
 
 ## Monitoring: Vercel Observability
 
-**Decision**: 初期は Vercel Observability で十分
+**Decision**: Vercel Observability is sufficient initially
 
 **Rationale**:
-- 追加設定不要
-- 将来的に必要なら Sentry 等を追加
+- No extra configuration required
+- Add Sentry, etc. later if needed

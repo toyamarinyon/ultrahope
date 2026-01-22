@@ -6,6 +6,7 @@
 	],
 	"scripts": {
 		"check": "biome check",
+		"check:i18n": "rg --hidden --glob '!.git' \"[\\p{Hiragana}\\p{Katakana}\\p{Han}]\" . && { echo \"Non-English text found. Please translate to English.\"; exit 1; } || exit 0",
 		"format": "biome check --write",
 		"knip": "knip"
 	},

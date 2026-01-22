@@ -1,72 +1,72 @@
-# API/Web モノリス化
+# API/Web monolith
 
-## 結論: packages/api を packages/web に統合
+## Conclusion: merge packages/api into packages/web
 
-### 背景
+### Background
 
-現状の構成:
+Current structure:
 - `packages/api` — ElysiaJS (Better Auth + Device Flow + translate)
 - `packages/web` — Next.js (Landing page + Device verification page)
 
-**問題:**
-- Vercelに2プロジェクト必要 → コスト増
-- CORS/セッション共有の複雑さ
-- デプロイ・運用の手間
+**Problems:**
+- Two projects on Vercel → higher cost
+- CORS/session sharing complexity
+- Deployment/operations overhead
 
-### 解決策
+### Solution
 
-Next.js App Router の Route Handler で ElysiaJS を動かす。
+Run ElysiaJS within a Next.js App Router Route Handler.
 
 ```
 packages/web/src/app/api/[[...slugs]]/route.ts
 ```
 
-ElysiaJS は WinterTC 準拠なので、Next.js の Route Handler として export するだけで動く。
+ElysiaJS is WinterTC-compliant, so it works by exporting it as a Next.js Route Handler.
 
-### 技術的根拠
+### Technical basis
 
-1. **ElysiaJS + Next.js 公式サポート**
+1. **Official ElysiaJS + Next.js support**
    - https://elysiajs.com/integrations/nextjs
 
-2. **Vercel Bun ランタイム (Public Beta)**
+2. **Vercel Bun runtime (Public Beta)**
    - https://vercel.com/blog/bun-runtime-on-vercel-functions
-   - `vercel.json` に `"bunVersion": "1.x"` を追加するだけ
-   - ElysiaJS の Bun 最適化がそのまま活きる
-   - `@elysiajs/node` アダプター不要
+   - Add `"bunVersion": "1.x"` to `vercel.json`
+   - Preserve ElysiaJS Bun optimizations
+   - No `@elysiajs/node` adapter needed
 
-3. **Eden による End-to-End Type Safety**
-   - フロントエンドから API を型安全に呼び出せる
-   - tRPC 的な DX
+3. **End-to-end type safety via Eden**
+   - Type-safe API calls from the frontend
+   - tRPC-like DX
 
-### 実装手順
+### Implementation steps
 
-1. `packages/web/src/app/api/[[...slugs]]/route.ts` 作成
-2. `packages/api/src` のコードを移動
+1. Create `packages/web/src/app/api/[[...slugs]]/route.ts`
+2. Move code from `packages/api/src`
    - `lib/auth.ts` → `packages/web/src/lib/auth.ts`
    - `lib/llm.ts` → `packages/web/src/lib/llm.ts`
    - `db/` → `packages/web/src/db/`
-3. Route Handler で Elysia app を export
-4. `vercel.json` に Bun ランタイム設定追加
-5. `packages/api` を削除
-6. root の `package.json` から api workspace を削除
+3. Export the Elysia app from the Route Handler
+4. Add Bun runtime setting to `vercel.json`
+5. Remove `packages/api`
+6. Remove the api workspace from root `package.json`
 
-### 考慮事項
+### Considerations
 
-#### Better Auth の basePath
+#### Better Auth basePath
 
-現在 `basePath: "/api"` で設定されている。Next.js 統合後も同じパスで動くか確認必要。
+Currently set to `basePath: "/api"`. Verify it still works after Next.js integration.
 
 ```typescript
-// 現在
+// current
 export const auth = betterAuth({
   basePath: "/api",
   // ...
 })
 ```
 
-#### 環境変数
+#### Environment variables
 
-`packages/api` 用の環境変数を `packages/web` に移動:
+Move `packages/api` environment variables into `packages/web`:
 - `TURSO_DATABASE_URL`
 - `TURSO_AUTH_TOKEN`
 - `GITHUB_CLIENT_ID`
@@ -76,51 +76,51 @@ export const auth = betterAuth({
 
 #### GitHub OAuth Callback URL
 
-統合後は同一オリジンになるので、Callback URL を更新:
-- 本番: `https://ultrahope.dev/api/auth/callback/github`
-- 開発: `http://localhost:3000/api/auth/callback/github`
+After integration the origin is unified, so update the callback URL:
+- Production: `https://ultrahope.dev/api/auth/callback/github`
+- Development: `http://localhost:3000/api/auth/callback/github`
 
-#### Cold Start
+#### Cold start
 
-Bun ランタイムは Node.js より cold start が遅い傾向がある（Vercel ブログより）。
-ただし CPU-intensive な処理では 28% 高速化されるとのこと。
+The Bun runtime tends to have slower cold start than Node.js (per Vercel blog),
+but CPU-intensive workloads are reported to be 28% faster.
 
 #### pnpm peer dependencies
 
-pnpm を使っている場合、追加の依存関係が必要:
+If using pnpm, extra dependencies may be required:
 ```bash
 pnpm add @sinclair/typebox openapi-types
 ```
-（現在は Bun workspaces なので不要かもしれない）
+(Currently unnecessary if using Bun workspaces.)
 
-### ディレクトリ構成 (After)
+### Directory structure (after)
 
 ```
 packages/
-├── cli/          # CLI (変更なし)
+├── cli/          # CLI (unchanged)
 └── web/          # Next.js + ElysiaJS API
     ├── src/
     │   ├── app/
     │   │   ├── api/
     │   │   │   └── [[...slugs]]/
-    │   │   │       └── route.ts    # ElysiaJS エントリポイント
+    │   │   │       └── route.ts    # ElysiaJS entry point
     │   │   ├── device/
     │   │   │   └── page.tsx
-    │   │   ├── dashboard/          # 新規: ログイン後の画面
+    │   │   ├── dashboard/          # New: post-login screen
     │   │   │   └── page.tsx
     │   │   ├── layout.tsx
     │   │   └── page.tsx
-    │   ├── db/                     # api から移動
+    │   ├── db/                     # moved from api
     │   │   ├── client.ts
     │   │   └── schema.ts
-    │   └── lib/                    # api から移動
+    │   └── lib/                    # moved from api
     │       ├── auth.ts
     │       └── llm.ts
     ├── vercel.json
     └── package.json
 ```
 
-### 参考リンク
+### Reference links
 
 - [ElysiaJS Next.js Integration](https://elysiajs.com/integrations/nextjs)
 - [Vercel Bun Runtime](https://vercel.com/blog/bun-runtime-on-vercel-functions)

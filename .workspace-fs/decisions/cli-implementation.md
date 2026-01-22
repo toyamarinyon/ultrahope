@@ -4,19 +4,19 @@
 
 ## Framework Selection
 
-### Recommended: 自作の薄いラッパー (No framework)
+### Recommended: custom thin wrapper (no framework)
 
 **Why:**
-- コマンドが2つだけ (`translate`, `login`)
-- 複雑なネストやサブコマンドチェーンは不要
-- `process.argv` のパースは数十行で書ける
-- 依存を減らせる、バンドルサイズも小さい
-- cmd-tsは良いが、この規模ではオーバーキル
+- Only two commands (`translate`, `login`)
+- No need for complex nesting or subcommand chains
+- Parsing `process.argv` can be done in a few dozen lines
+- Fewer dependencies and smaller bundle size
+- cmd-ts is good, but overkill at this scale
 
-**実装方針:**
-- `process.argv` を直接パース
-- 型安全は自前のパーサー関数で担保
-- エラーハンドリングも自前でシンプルに
+**Implementation approach:**
+- Parse `process.argv` directly
+- Ensure type safety with custom parser functions
+- Keep error handling simple and local
 
 ## Project Structure
 

@@ -1,43 +1,43 @@
-# 決済システムの選定
+# Billing system selection
 
-## 要件
+## Requirements
 
-- アカウント作成前: 3回無料
-- アカウント作成後: 月10回無料
-- 上位プランで利用回数/入力サイズ上限が緩和
-- 従量課金は不要
+- Before account creation: 3 free uses
+- After account creation: 10 free uses per month
+- Higher plans increase usage/input size limits
+- No usage-based billing required
 
-## 比較
+## Comparison
 
-| 項目 | Stripe | Polar.sh |
+| Item | Stripe | Polar.sh |
 |------|--------|----------|
-| 手数料 | 2.9% + 30¢ | 4% + 40¢ |
-| 税務処理 | 自己責任 | MoR(込み) |
-| 導入難易度 | 中〜高 | 低(6行で統合可) |
-| サブスクリプション | 高機能 | シンプル |
-| 従量課金 | 対応 | 対応 |
-| オープンソース | No | Yes |
+| Fees | 2.9% + 30¢ | 4% + 40¢ |
+| Tax handling | Your responsibility | MoR (included) |
+| Integration difficulty | Medium–High | Low (integrate in 6 lines) |
+| Subscriptions | Feature-rich | Simple |
+| Usage-based billing | Supported | Supported |
+| Open source | No | Yes |
 
-## 推奨: Polar.sh
+## Recommendation: Polar.sh
 
-理由:
-1. **Merchant of Record** — 税務(VAT, 消費税等)をPolar側で処理。グローバル展開時の負担が大幅に減る
-2. **シンプルな料金体系** — Ultrahopeの「プランごとに上限が変わる」モデルに合う
-3. **開発者体験** — Next.js/ElysiaJSとの統合が容易。6行で実装可能
-4. **手数料差は許容範囲** — 1.1%+10¢の差はMoRサービス込みと考えれば安い
+Reasons:
+1. **Merchant of Record** — Polar handles taxes (VAT, sales tax, etc.), reducing the burden for global expansion
+2. **Simple pricing** — fits Ultrahope’s “limits change per plan” model
+3. **Developer experience** — easy to integrate with Next.js/ElysiaJS; doable in 6 lines
+4. **Fee difference is acceptable** — the 1.1% + 10¢ delta is worth it given MoR services
 
-## 実装方針
+## Implementation approach
 
-1. プラン設計:
-   - Free: 月10回、入力サイズ制限あり
-   - Pro ($X/月): 月100回、入力サイズ緩和
-   - Team ($Y/月): 無制限
+1. Plan design:
+   - Free: 10 uses/month, input size limited
+   - Pro ($X/month): 100 uses/month, relaxed input size limits
+   - Team ($Y/month): Unlimited
 
-2. 未認証ユーザーの3回制限はAPI側でIPベースまたはデバイスIDで管理
+2. For unauthenticated users, enforce the 3-use limit in the API via IP or device ID
 
-3. Polar SDKでチェックアウト・顧客ポータルを実装
+3. Implement checkout and customer portal with the Polar SDK
 
-## 参考
+## References
 
 - https://polar.sh/docs
 - https://polar.sh/resources/comparison/stripe

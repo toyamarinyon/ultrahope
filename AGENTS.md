@@ -5,28 +5,28 @@ pipes.
 
 ## Why I built Ultrahope
 
-Coding Agentはすごい、でも開発フローの全てがそこで完結するとは思っていない。
-また、いろいろなCoding Agentを組み合わせたいので、特定のCoding Agentの機能に強く依存するのも好きじゃない。
-私は、unixコマンドが好きだ。今もgit, gh, jujutsu, fzfいろいろなunix friendlyなツールを組み合わせて開発フローを構築している。
-ここにLLMの力を挟みたいと思った。
+Coding Agents are amazing, but I do not believe the entire development flow should be completed within a single agent.
+I also want to combine multiple Coding Agents, and I do not like strongly depending on the features of one specific agent.
+I like Unix commands. Even now I build my development flow by combining Unix‑friendly tools like git, gh, jujutsu, and fzf.
+I wanted to insert the power of LLMs into that flow.
 
 ## Our workspace
 
-`./.workspace-fs` ディレクトリは私たちの作業ファイルシステムです。検討中の仕様や、実装中のタスク、その他利用するライブラリ、フレームワークのドキュメントなどがあります。
+The `./.workspace-fs` directory is our working file system. It contains specs under consideration, tasks in progress, and documentation for libraries and frameworks we use.
 
-特に重要なものは以下の3つです。あとは [./.workspace-fs/AGENTS.md](./.workspace-fs/AGENTS.md) を参照してください。
+The three most important items are below. For everything else, see [./.workspace-fs/AGENTS.md](./.workspace-fs/AGENTS.md).
 
 - [state.md](./.workspace-fs/state.md)
 
-    このプロダクトの現在の状態をまとめたファイルです。重要な意思決定や直近の開発タスクがまとまっています。関連するファイルへのリンクもあるindexファイルです。
+    A file that summarizes the current state of the product. It lists key decisions and recent development tasks, and serves as an index with links to related files.
 
 - [to-be/cli.md](./.workspace-fs/to-be/cli.md)
 
-    cliのあるべき姿を記述したファイルです。
+    A document describing the intended target state for the CLI.
 
 - [to-be/api.md](./.workspace-fs/to-be/api.md)
 
-    apiのあるべき姿を記述したファイルです。
+    A document describing the intended target state for the API.
 
 <!-- opensrc:start -->
 

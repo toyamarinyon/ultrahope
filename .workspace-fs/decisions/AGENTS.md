@@ -1,7 +1,7 @@
 # decisions/ Directory
 
-意思決定の記録 (ADR的なドキュメント)
+Record of decisions (ADR-style documents)
 
-## ファイル追加・リネーム時
+## When adding or renaming files
 
-このディレクトリにファイルを追加・リネームした場合は、[../.workspace-fs/AGENTS.md](../AGENTS.md) のディレクトリ構造も更新すること。
+If you add or rename files in this directory, also update the directory structure in [../.workspace-fs/AGENTS.md](../AGENTS.md).

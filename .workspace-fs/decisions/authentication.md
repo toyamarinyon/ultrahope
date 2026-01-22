@@ -1,29 +1,29 @@
-# 認証の実装方針
+# Authentication implementation policy
 
-## 結論: Better Auth を採用
+## Conclusion: adopt Better Auth
 
-### 理由
+### Reasons
 
-1. **Device Flow ネイティブサポート**
-   - [Device Authorization Plugin](https://www.better-auth.com/docs/plugins/device-authorization) でRFC 8628準拠のDevice Flowを完全サポート
-   - CLIでの`better-auth login`コマンドがデモとして提供されており、まさにUltrahopeのユースケースと一致
+1. **Native Device Flow support**
+   - The [Device Authorization Plugin](https://www.better-auth.com/docs/plugins/device-authorization) fully supports RFC 8628 Device Flow
+   - The CLI demo `better-auth login` aligns directly with Ultrahope’s use case
 
-2. **GitHub Login + Magic Link の両対応**
-   - GitHub OAuth: 組み込みの[GitHub Provider](https://www.better-auth.com/docs/authentication/github.md)
+2. **Supports both GitHub Login + Magic Link**
+   - GitHub OAuth: built-in [GitHub Provider](https://www.better-auth.com/docs/authentication/github.md)
    - Magic Link: [Magic Link Plugin](https://www.better-auth.com/docs/plugins/magic-link.md)
 
-3. **ElysiaJS統合**
-   - [Elysia Integration](https://www.better-auth.com/docs/integrations/elysia.md) が公式サポート
+3. **ElysiaJS integration**
+   - Official support via [Elysia Integration](https://www.better-auth.com/docs/integrations/elysia.md)
 
-4. **将来のWeb版への拡張**
-   - CLI/API/Webで同じ認証基盤を共有可能
-   - Bearer Token Plugin でAPI認証にも対応
+4. **Future Web expansion**
+   - Share the same auth foundation across CLI/API/Web
+   - Bearer Token Plugin also supports API auth
 
-5. **セルフホスト**
-   - Supabase Authと異なり、自前のAPIサーバーに組み込み可能
-   - データベースも自由に選択可能
+5. **Self-hosted**
+   - Unlike Supabase Auth, it can be embedded in our own API server
+   - Database choice is flexible
 
-## アーキテクチャ
+## Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────────────────────────┐
@@ -32,22 +32,22 @@
 │  1. device/code ├────►│  POST /v1/auth/device/code          │
 │                 │◄────┤  → device_code, user_code           │
 │                 │     │                                     │
-│  2. ブラウザで  │     │  /device (verification page)        │
-│     認証        │     │  → GitHub Login or Magic Link       │
+│  2. Browser     │     │  /device (verification page)        │
+│     auth        │     │  → GitHub Login or Magic Link       │
 │                 │     │                                     │
 │  3. polling     ├────►│  POST /v1/auth/device/token         │
 │                 │◄────┤  → access_token (Bearer)            │
 │                 │     │                                     │
-│  4. API呼び出し ├────►│  POST /v1/translate                 │
+│  4. API call    ├────►│  POST /v1/translate                 │
 │  Bearer token   │◄────┤  → translated result                │
 └─────────────────┘     └─────────────────────────────────────┘
 ```
 
-## 実装ステップ
+## Implementation steps
 
-### API側 (packages/api)
+### API side (packages/api)
 
-1. Better Auth セットアップ
+1. Better Auth setup
 ```typescript
 import { betterAuth } from 'better-auth'
 import { deviceAuthorization } from 'better-auth/plugins/device-authorization'
@@ -68,14 +68,14 @@ export const auth = betterAuth({
     }),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
-        // メール送信処理
+        // Send email
       },
     }),
   ],
 })
 ```
 
-2. ElysiaJS統合
+2. ElysiaJS integration
 ```typescript
 import { Elysia } from 'elysia'
 import { auth } from './auth'
@@ -90,18 +90,18 @@ const app = new Elysia()
   })
 ```
 
-### CLI側 (packages/cli)
+### CLI side (packages/cli)
 
 ```typescript
 async function login() {
-  // 1. Device code取得
+  // 1. Get device code
   const res = await fetch(`${API_URL}/auth/device/code`, {
     method: 'POST',
     body: JSON.stringify({ client_id: 'ultrahope-cli' }),
   })
   const { device_code, user_code, verification_uri } = await res.json()
   
-  // 2. ユーザーに表示
+  // 2. Show to the user
   console.log(`Open ${verification_uri} and enter code: ${user_code}`)
   await open(verification_uri)
   
@@ -117,7 +117,7 @@ async function login() {
     })
     const data = await tokenRes.json()
     if (data.access_token) {
-      saveToken(data.access_token) // ~/.ultrahope/credentials に保存
+      saveToken(data.access_token) // Save to ~/.ultrahope/credentials
       break
     }
     await sleep(5000)
@@ -125,21 +125,21 @@ async function login() {
 }
 ```
 
-### Web版 (将来)
+### Web version (future)
 
-同じBetter Authインスタンスを使用し、Cookie-basedセッションで認証。CLIで取得したトークンとWebセッションは同じユーザーに紐づく。
+Use the same Better Auth instance and authenticate via cookie-based sessions. The CLI token and Web session map to the same user.
 
-## Supabase Authとの比較
+## Comparison with Supabase Auth
 
-| 観点 | Better Auth | Supabase Auth |
+| Aspect | Better Auth | Supabase Auth |
 |------|-------------|---------------|
-| Device Flow | ✅ Plugin | ❌ 未サポート |
-| セルフホスト | ✅ 完全 | △ Supabase依存 |
-| ElysiaJS統合 | ✅ 公式 | △ 要カスタム |
-| Magic Link | ✅ Plugin | ✅ 組み込み |
-| GitHub OAuth | ✅ 組み込み | ✅ 組み込み |
+| Device Flow | ✅ Plugin | ❌ Not supported |
+| Self-hosted | ✅ Full | △ Depends on Supabase |
+| ElysiaJS integration | ✅ Official | △ Requires customization |
+| Magic Link | ✅ Plugin | ✅ Built-in |
+| GitHub OAuth | ✅ Built-in | ✅ Built-in |
 
-## 参考
+## References
 
 - [Better Auth Device Authorization](https://www.better-auth.com/docs/plugins/device-authorization)
 - [RFC 8628: OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628)

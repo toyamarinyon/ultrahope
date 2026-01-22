@@ -1,46 +1,46 @@
 # Core Package Architecture
 
-## Decision: packages/core で LLM ロジックを分離
+## Decision: separate LLM logic in packages/core
 
-**packages/core** に純粋な LLM 抽象化レイヤーを切り出し、web と cli から共有する。
+Extract a pure LLM abstraction layer into **packages/core** and share it from web and cli.
 
-## 構成
+## Structure
 
 ```
 packages/
-  core/                        # 純粋なLLMロジック (認証・課金なし)
+  core/                        # Pure LLM logic (no auth/billing)
     src/
       types.ts                 # LLMProvider, LLMResponse, Target
-      prompts.ts               # PROMPTS定義
+      prompts.ts               # PROMPTS definitions
       providers/
-        cerebras.ts            # Cerebras実装
-      index.ts                 # translate() — 純粋なLLM呼び出しのみ
+        cerebras.ts            # Cerebras implementation
+      index.ts                 # translate() — pure LLM calls only
     package.json               # name: @ultrahope/core (private)
-  web/                         # 認証 + 課金 + API
+  web/                         # Auth + billing + API
     src/lib/llm/
       index.ts                 # core.translate() + recordTokenConsumption()
-  cli/                         # ユーザー向けCLI
+  cli/                         # User-facing CLI
     src/
-      commands/translate.ts    # web API経由 or core直接呼び出し
+      commands/translate.ts    # via web API or direct core call
 ```
 
-## 依存関係
+## Dependencies
 
 ```
 web → core  (translate + billing wrapper)
-cli → core  (認証不要のローカルテスト用)
-cli → web   (認証が必要な本番API経由)
+cli → core  (for local testing without auth)
+cli → web   (via production API requiring auth)
 ```
 
-## メリット
+## Benefits
 
-1. **関心の分離**: core=純粋LLM, web=認証+課金+API, cli=ユーザー向け
-2. **テスト容易**: core単体の関数としてテストできる
-3. **依存方向が明確**: web/cli が core を使う一方向
+1. **Separation of concerns**: core = pure LLM, web = auth + billing + API, cli = user-facing
+2. **Easier testing**: core can be tested as standalone functions
+3. **Clear dependency direction**: one-way usage where web/cli depend on core
 
-## 実装
+## Implementation
 
-1. `packages/core/` 作成
-2. `packages/web/src/lib/llm/` から types, prompts, providers を移動
-3. `packages/web/src/lib/llm/index.ts` は core を import + billing wrapper
-4. `packages/web/src/lib/llm/cli.ts` を `packages/core/` に移動
+1. Create `packages/core/`
+2. Move types, prompts, providers from `packages/web/src/lib/llm/`
+3. Make `packages/web/src/lib/llm/index.ts` import core + billing wrapper
+4. Move `packages/web/src/lib/llm/cli.ts` into `packages/core/`

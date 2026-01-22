@@ -1,12 +1,12 @@
-# ローカル開発セットアップタスク
+# Local development setup tasks
 
-## 概要
+## Overview
 
-API (`packages/web`) をローカルで動作させるための3つのタスク。
+Three tasks to run the API (`packages/web`) locally.
 
 ## Working Directory
 
-**すべてのコマンドは `packages/web` ディレクトリで実行する。**
+**Run all commands from the `packages/web` directory.**
 
 ```bash
 cd packages/web
@@ -14,86 +14,86 @@ cd packages/web
 
 ---
 
-## 1. 環境変数のセットアップ
+## 1. Environment variable setup
 
-### 目的
-`.env.example` を元に `.env` を作成し、準備済みの認証情報を設定する。
+### Goal
+Create `.env` from `.env.example` and set prepared credentials.
 
-### 前提条件
-- Turso DBが作成済み
-- GitHub OAuth Appが作成済み
-- Resend APIキーが取得済み
+### Prerequisites
+- Turso DB is created
+- GitHub OAuth App is created
+- Resend API key is obtained
 
-### 設定項目
+### Configuration items
 
-| 変数 | 説明 | 取得元 |
+| Variable | Description | Source |
 |------|------|--------|
-| `TURSO_DATABASE_URL` | `libsql://xxx.turso.io` 形式 | `turso db show ultrahope` |
-| `TURSO_AUTH_TOKEN` | DBトークン | `turso db tokens create ultrahope` |
+| `TURSO_DATABASE_URL` | `libsql://xxx.turso.io` format | `turso db show ultrahope` |
+| `TURSO_AUTH_TOKEN` | DB token | `turso db tokens create ultrahope` |
 | `GITHUB_CLIENT_ID` | OAuth App ID | GitHub Developer Settings |
 | `GITHUB_CLIENT_SECRET` | OAuth App Secret | GitHub Developer Settings |
-| `RESEND_API_KEY` | メール送信用 | Resend Dashboard |
-| `EMAIL_FROM` | 送信元アドレス | 任意 (例: `noreply@ultrahope.dev`) |
-| `DEVICE_VERIFICATION_URI` | 開発時は `http://localhost:3000/device` | - |
-| `MINIMAX_API_KEY` | ⚠️ 後で設定 (translate機能用) | - |
+| `RESEND_API_KEY` | For sending email | Resend Dashboard |
+| `EMAIL_FROM` | Sender address | Optional (e.g. `noreply@ultrahope.dev`) |
+| `DEVICE_VERIFICATION_URI` | For development: `http://localhost:3000/device` | - |
+| `MINIMAX_API_KEY` | ⚠️ Set later (for translate) | - |
 
-### 補足
-- `MINIMAX_API_KEY` は未設定でもサーバー起動は可能だが、`/v1/translate` は失敗する
-- GitHub OAuth Appのcallback URLが `http://localhost:3000/api/callback/github` になっているか確認
+### Notes
+- The server can start without `MINIMAX_API_KEY`, but `/v1/translate` will fail.
+- Make sure the GitHub OAuth App callback URL is `http://localhost:3000/api/callback/github`.
 
 ---
 
-## 2. DBスキーマ生成
+## 2. DB schema generation
 
-### 目的
-Better Authが必要とするテーブル (user, session, account, device_authorization等) をTurso DBに作成する。
+### Goal
+Create tables required by Better Auth (user, session, account, device_authorization, etc.) in Turso DB.
 
-### コマンド
+### Command
 
 ```bash
 pnpm dlx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts
 ```
 
-- `--config` — auth.tsの場所を指定 (デフォルトはプロジェクトルートを探す)
-- `--output` — schema出力先を指定 (drizzle.config.tsの `schema` と一致させる)
+- `--config` — specify the auth.ts location (defaults to searching project root)
+- `--output` — specify schema output path (match `schema` in drizzle.config.ts)
 
-### Better Auth CLIの仕組み
-上記コマンドは:
-1. `auth.ts` の設定 (plugins含む) を解析
-2. 必要なテーブル定義をDrizzle schema形式で生成
-3. `--output` で指定したパスに出力
+### How Better Auth CLI works
+The command above:
+1. Parses the `auth.ts` config (including plugins)
+2. Generates required table definitions in Drizzle schema format
+3. Writes to the path specified by `--output`
 
-### 実行後の流れ
+### Flow after generation
 ```
-@better-auth/cli generate  →  src/db/schema.ts 生成
+@better-auth/cli generate  →  src/db/schema.ts generated
                                     ↓
-pnpm drizzle-kit push      →  Turso DBにテーブル作成
+pnpm drizzle-kit push      →  Create tables in Turso DB
 ```
 
-### 生成されるテーブル (予想)
-- `user` - ユーザー情報
-- `session` - ログインセッション
-- `account` - OAuthアカウント紐付け (GitHub等)
-- `verification` - メール検証/Magic Link用
-- `device_authorization` - Device Flow用コード管理
+### Generated tables (expected)
+- `user` - user info
+- `session` - login sessions
+- `account` - OAuth account linkage (GitHub, etc.)
+- `verification` - email verification / Magic Link
+- `device_authorization` - Device Flow code management
 
-### 再実行が必要なケース
-基本的に初回のみ実行。以下の場合のみ再実行:
-- Better Authのプラグインを追加/削除した時
-- Better Authをバージョンアップした時 (schemaに変更がある場合)
+### When re-run is needed
+Typically only once. Re-run only when:
+- Better Auth plugins are added/removed
+- Better Auth is upgraded (schema changes)
 
-### 注意点
-- schemaファイル生成後、`db/client.ts` でimportが必要になる可能性あり
-- drizzle-kit push前にschemaの内容を確認推奨
+### Notes
+- After generating the schema file, `db/client.ts` may need updated imports.
+- Review the schema before running `drizzle-kit push`.
 
 ---
 
 ## 3. Device Verification Page (`/device`)
 
-### 目的
-Device FlowでCLIが表示するURLのランディングページ。ユーザーがuser_codeを入力し、GitHub/Magic Linkで認証する。
+### Goal
+Landing page for the URL shown by the CLI in Device Flow. The user enters a `user_code` and authenticates via GitHub/Magic Link.
 
-### フロー
+### Flow
 
 ```
 CLI: ultrahope login
@@ -103,22 +103,22 @@ POST /api/device/code
   ↓
 CLI: "Open http://localhost:3000/device and enter: ABCD-1234"
   ↓
-User: ブラウザで /device にアクセス
+User: open /device in the browser
   ↓
-/device ページ:
-  1. user_code入力フォーム
-  2. Submit → POST /api/device/verify (user_codeを検証)
-  3. 認証方法選択 (GitHub Login or Magic Link)
-  4. 認証成功 → device_codeを承認済みに
+/device page:
+  1. user_code input form
+  2. Submit → POST /api/device/verify (validate user_code)
+  3. Select auth method (GitHub Login or Magic Link)
+  4. Auth success → mark device_code as approved
   ↓
 CLI: polling POST /api/device/token
-  → access_token取得、~/.ultrahope/credentials に保存
+  → obtain access_token, save to ~/.ultrahope/credentials
 ```
 
-### ページの実装方針
+### Page implementation approach
 
-#### Option A: API側でHTML返却 (シンプル)
-ElysiaJSで直接HTMLを返す。外部依存なし。
+#### Option A: Return HTML from API (simple)
+Return HTML directly with ElysiaJS. No external dependencies.
 
 ```typescript
 app.get('/device', () => {
@@ -128,28 +128,28 @@ app.get('/device', () => {
 })
 ```
 
-#### Option B: 別パッケージでWeb UI
-`packages/web` を作成し、SvelteKit/Next.js等で実装。将来のダッシュボード等と統合。
+#### Option B: Web UI in a separate package
+Create `packages/web` and build with SvelteKit/Next.js, later integrate with dashboards, etc.
 
-### 現時点の推奨
-**Option A** でMVPを作成。HTMLテンプレートは最小限 (Tailwind CDN可)。将来的にOption Bに移行可能。
+### Current recommendation
+Build the MVP with **Option A**. Keep the HTML template minimal (Tailwind CDN ok). Later migration to Option B is possible.
 
-### 必要なエンドポイント (Better Auth Device Flow)
-Better Authのdevice-authorizationプラグインが提供:
-- `POST /api/device/code` - デバイスコード発行
-- `POST /api/device/verify` - user_code検証
-- `POST /api/device/token` - アクセストークン取得
+### Required endpoints (Better Auth Device Flow)
+Provided by the Better Auth device-authorization plugin:
+- `POST /api/device/code` - issue device code
+- `POST /api/device/verify` - validate user_code
+- `POST /api/device/token` - obtain access token
 
-`/device` ページはこれらを呼び出すフロントエンド。
+The `/device` page is the frontend that calls these.
 
 ---
 
-## 動作確認手順
+## Verification steps
 
-1. `.env` 設定完了
-2. `pnpm dlx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts` → schema生成
-3. `pnpm drizzle-kit push` → DB反映
-4. `/device` ページ実装
-5. `pnpm run dev` でサーバー起動
+1. `.env` configured
+2. `pnpm dlx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts` → schema generated
+3. `pnpm drizzle-kit push` → apply to DB
+4. Implement `/device` page
+5. Start server with `pnpm run dev`
 6. `curl http://localhost:3000/health` → `{"status":"ok"}`
-7. Device Flowテスト (CLI or curl)
+7. Device Flow test (CLI or curl)
