@@ -20,6 +20,7 @@ Required scopes:
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
 - `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
 - `events:write` - ingest token consumption events for usage-based billing (`POST /v1/events/ingest`)
+- `customer_meters:read` - check token balance before API calls (`GET /v1/customer-meters/`)
 
 No OAT scope is required for webhook signature verification itself.
 

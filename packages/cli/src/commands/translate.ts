@@ -1,4 +1,4 @@
-import { createApiClient } from "../lib/api-client";
+import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import { stdin } from "../lib/stdin";
 
@@ -28,8 +28,18 @@ export async function translate(args: string[]) {
 	}
 
 	const api = createApiClient(token);
-	const result = await api.translate({ input, target });
-	console.log(result.output);
+	try {
+		const result = await api.translate({ input, target });
+		console.log(result.output);
+	} catch (error) {
+		if (error instanceof InsufficientBalanceError) {
+			console.error(
+				"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
+			);
+			process.exit(1);
+		}
+		throw error;
+	}
 }
 
 function parseTarget(args: string[]): Target {

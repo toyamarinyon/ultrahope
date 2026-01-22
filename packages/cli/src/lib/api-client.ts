@@ -11,6 +11,13 @@ interface TranslateResponse {
 	output: string;
 }
 
+export class InsufficientBalanceError extends Error {
+	constructor(public balance: number) {
+		super("Token balance exhausted");
+		this.name = "InsufficientBalanceError";
+	}
+}
+
 interface DeviceCodeResponse {
 	device_code: string;
 	user_code: string;
@@ -41,6 +48,10 @@ export function createApiClient(token?: string) {
 				body: JSON.stringify(req),
 			});
 			if (!res.ok) {
+				if (res.status === 402) {
+					const data = await res.json();
+					throw new InsufficientBalanceError(data.balance ?? 0);
+				}
 				const text = await res.text();
 				throw new Error(`API error: ${res.status} ${text}`);
 			}

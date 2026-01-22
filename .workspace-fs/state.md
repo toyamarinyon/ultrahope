@@ -24,6 +24,9 @@
 - [x] Polar.shのBenefit/Meter調整（詳細: [decisions/billing-meter-design.md](decisions/billing-meter-design.md)）
   - Consumed Tokens Meter作成 (sum over `tokens`)
   - Token-based Benefits: Free 400K, Pro 1M tokens/month
+- [x] **Meter残高チェック実装**
+  - [x] translate実行前にPolar APIで残高確認
+  - [x] 残高不足時にエラーレスポンスを返す (HTTP 402)
 - [ ] 本番デプロイ (Vercel + ultrahope.devドメイン)
 
 

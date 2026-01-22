@@ -11,6 +11,40 @@ type TranslateOptions = {
 	externalCustomerId?: string;
 };
 
+export class InsufficientBalanceError extends Error {
+	constructor(
+		public balance: number,
+		public meterId: string,
+	) {
+		super(`Insufficient token balance: ${balance} tokens remaining`);
+		this.name = "InsufficientBalanceError";
+	}
+}
+
+async function checkMeterBalance(
+	externalCustomerId: string,
+): Promise<{ balance: number; meterId: string } | null> {
+	if (!process.env.POLAR_ACCESS_TOKEN) {
+		return null;
+	}
+
+	try {
+		const response = await polarClient.customerMeters.list({
+			externalCustomerId,
+			limit: 1,
+		});
+		const meters = response.result.items;
+		if (meters.length === 0) {
+			return null;
+		}
+		const meter = meters[0];
+		return { balance: meter.balance, meterId: meter.meterId };
+	} catch (error) {
+		console.error("[polar] Failed to check meter balance:", error);
+		return null;
+	}
+}
+
 async function recordTokenConsumption(
 	externalCustomerId: string | undefined,
 	response: LLMResponse,
@@ -58,6 +92,13 @@ export async function translate(
 	target: Target,
 	options: TranslateOptions = {},
 ): Promise<string> {
+	if (options.externalCustomerId) {
+		const meterInfo = await checkMeterBalance(options.externalCustomerId);
+		if (meterInfo && meterInfo.balance <= 0) {
+			throw new InsufficientBalanceError(meterInfo.balance, meterInfo.meterId);
+		}
+	}
+
 	const response = await coreTranslate(input, target);
 
 	after(async () => {

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
-import { translate } from "@/lib/llm";
+import { InsufficientBalanceError, translate } from "@/lib/llm";
 
 const app = new Elysia({ prefix: "/api" })
 	.derive(async ({ request: { headers } }) => {
@@ -26,12 +26,25 @@ const app = new Elysia({ prefix: "/api" })
 			);
 		}
 
-		const output = await translate(
-			input,
-			target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
-			{ externalCustomerId: session.user.id },
-		);
-		return { output };
+		try {
+			const output = await translate(
+				input,
+				target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+				{ externalCustomerId: session.user.id },
+			);
+			return { output };
+		} catch (error) {
+			if (error instanceof InsufficientBalanceError) {
+				return new Response(
+					JSON.stringify({
+						error: "Insufficient token balance",
+						balance: error.balance,
+					}),
+					{ status: 402 },
+				);
+			}
+			throw error;
+		}
 	})
 	.get("/health", () => ({ status: "ok" }));
 
