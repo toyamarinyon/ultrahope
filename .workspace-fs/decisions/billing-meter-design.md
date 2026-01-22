@@ -98,10 +98,10 @@ When processing LLM requests, ingest events using the Polar SDK's `LLMMetadata` 
 
 #### Benefits per Plan
 
-| Plan | Monthly Token Allowance |
-|------|------------------------|
-| Free | 400,000 tokens/month |
-| Pro | 1,000,000 tokens/month |
+| Plan | Price | Monthly Token Allowance |
+|------|-------|------------------------|
+| Free | $0 | 400,000 tokens/month |
+| Pro | $2/month | 1,000,000 tokens/month |
 
 #### Rollover Setting
 

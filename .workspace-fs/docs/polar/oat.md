@@ -3,7 +3,9 @@
 This doc describes the required Polar OAT scopes for `packages/web` and how to
 create the token for production or sandbox.
 
-## Scope requirements (current usage)
+## Scope requirements
+
+### Runtime (Next.js / Vercel)
 
 `packages/web/src/lib/auth.ts` uses the Better Auth Polar plugin with:
 - `createCustomerOnSignUp: true`
@@ -19,12 +21,19 @@ Required scopes:
 - `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
 - `events:write` - ingest token consumption events for usage-based billing (`POST /v1/events/ingest`)
 
-![./configured.png](./configured.png)
-
 No OAT scope is required for webhook signature verification itself.
 
-Optional scopes (only if features are enabled later):
-- `meters:read` - usage plugin reads meters (`GET /v1/meters/`)
+### Sync script (polar-sync.ts)
+
+`packages/web/scripts/polar-sync.ts` manages Meters, Benefits, and Products idempotently.
+
+Required scopes:
+- `meters:read` - list meters (`GET /v1/meters/`)
+- `meters:write` - create/update meters (`POST /v1/meters/`)
+- `benefits:read` - list benefits (`GET /v1/benefits/`)
+- `benefits:write` - create/update benefits (`POST /v1/benefits/`)
+- `products:read` - list products (`GET /v1/products/`)
+- `products:write` - create/update products (`POST /v1/products/`)
 
 ## Environment notes
 
