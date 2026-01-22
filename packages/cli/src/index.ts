@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { login } from "./commands/login";
 import { translate } from "./commands/translate";
 
