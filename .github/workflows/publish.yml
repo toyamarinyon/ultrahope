@@ -62,8 +62,6 @@ jobs:
       - name: Publish to npm
         working-directory: packages/cli
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Capture version
         run: printf 'VERSION=%s\n' "$(node -p 'require("./packages/cli/package.json").version')" >> "$GITHUB_ENV"
