@@ -42,7 +42,18 @@ jobs:
 
       - name: Bump version
         working-directory: packages/cli
-        run: pnpm version ${{ inputs.bump }} --no-git-tag-version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const [major, minor, patch] = pkg.version.split('.').map(Number);
+            const bump = '${{ inputs.bump }}';
+            if (bump === 'major') pkg.version = \`\${major + 1}.0.0\`;
+            else if (bump === 'minor') pkg.version = \`\${major}.\${minor + 1}.0\`;
+            else pkg.version = \`\${major}.\${minor}.\${patch + 1}\`;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, '\t') + '\n');
+            console.log('v' + pkg.version);
+          "
 
       - name: Build
         working-directory: packages/cli
