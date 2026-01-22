@@ -55,8 +55,8 @@ Credentials are stored in `~/.config/ultrahope/credentials.json`.
 
 ```bash
 # Build
-bun run build
+pnpm run build
 
 # Link for local testing
-bun link
+pnpm link --global
 ```

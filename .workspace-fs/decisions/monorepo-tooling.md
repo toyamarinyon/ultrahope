@@ -1,14 +1,14 @@
 # Monorepo Tooling
 
-## Decision: Bun Workspaces
+## Decision: pnpm Workspaces
 
-**Bun workspacesでmonorepoを管理し、CLIはNode向けにビルドしてnpm publish**
+**pnpm workspacesでmonorepoを管理し、CLIはNode向けにビルドしてnpm publish**
 
 ### 理由
 
-- ElysiaJSがBunネイティブ → API開発でBunを使う
-- Bun workspacesはnpm/pnpm互換の `workspaces` フィールドを使用
-- `bun build --target node` でNode.js向けバイナリを生成可能
+- VercelのBun Runtime依存を避け、Node.jsランタイムに統一する
+- pnpmはnpm互換の `workspaces` フィールドを利用できる
+- tsupでNode.js向けに単一ファイル出力できる
 - ツールチェーンを統一することで複雑さを減らす
 
 ### 構成
@@ -16,10 +16,11 @@
 ```
 ultrahope/
   package.json          # workspaces: ["packages/*"]
-  bun.lock
+  pnpm-workspace.yaml
+  pnpm-lock.yaml
   packages/
-    cli/                # bun build --target node → npm publish
-    api/                # Bun native (ElysiaJS)
+    cli/                # tsup build → npm publish
+    web/                # Next.js + ElysiaJS API
     shared/             # 共有型・ユーティリティ (future)
 ```
 
@@ -27,11 +28,11 @@ ultrahope/
 
 ```bash
 cd packages/cli
-bun build ./src/index.ts --outdir ./dist --target node
+pnpm run build
 npm publish
 ```
 
 ### 参考
 
-- https://bun.sh/docs/install/workspaces
-- https://bun.sh/docs/bundler
+- https://pnpm.io/workspaces
+- https://tsup.egoist.dev/

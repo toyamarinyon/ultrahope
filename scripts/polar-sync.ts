@@ -6,16 +6,16 @@
  *
  * Usage:
  *   # Sandbox (default) - shows changes and prompts for confirmation
- *   bun run scripts/polar-sync.ts
+ *   pnpm -w exec tsx scripts/polar-sync.ts
  *
  *   # Production - shows changes and prompts for confirmation
- *   bun run scripts/polar-sync.ts --production
+ *   pnpm -w exec tsx scripts/polar-sync.ts --production
  *
  *   # Dry-run (show what would be done without prompting)
- *   bun run scripts/polar-sync.ts --dry-run
+ *   pnpm -w exec tsx scripts/polar-sync.ts --dry-run
  *
  *   # Skip confirmation prompt
- *   bun run scripts/polar-sync.ts --yes
+ *   pnpm -w exec tsx scripts/polar-sync.ts --yes
  *
  * Environment:
  *   POLAR_SYNC_ACCESS_TOKEN - Organization Access Token with required scopes

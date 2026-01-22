@@ -15,7 +15,6 @@ packages/
       providers/
         cerebras.ts            # Cerebras実装
       index.ts                 # translate() — 純粋なLLM呼び出しのみ
-      cli.ts                   # テスト用CLI (bun packages/core/src/cli.ts)
     package.json               # name: @ultrahope/core (private)
   web/                         # 認証 + 課金 + API
     src/lib/llm/
@@ -36,7 +35,7 @@ cli → web   (認証が必要な本番API経由)
 ## メリット
 
 1. **関心の分離**: core=純粋LLM, web=認証+課金+API, cli=ユーザー向け
-2. **テスト容易**: `bun packages/core/src/cli.ts` で認証なしにLLM動作確認
+2. **テスト容易**: core単体の関数としてテストできる
 3. **依存方向が明確**: web/cli が core を使う一方向
 
 ## 実装
@@ -44,4 +43,4 @@ cli → web   (認証が必要な本番API経由)
 1. `packages/core/` 作成
 2. `packages/web/src/lib/llm/` から types, prompts, providers を移動
 3. `packages/web/src/lib/llm/index.ts` は core を import + billing wrapper
-4. `packages/web/src/lib/llm/cli.ts` を `packages/core/src/cli.ts` に移動
+4. `packages/web/src/lib/llm/cli.ts` を `packages/core/` に移動

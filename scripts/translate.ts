@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 import {
 	createCerebrasProvider,
 	PROMPTS,
@@ -19,9 +18,9 @@ function parseArgs(): { target: Target; verbose: boolean } {
 	const target = positional[0] as Target | undefined;
 
 	if (!target || !VALID_TARGETS.includes(target)) {
-		console.error("Usage: bun scripts/translate.ts <target> [-v]");
+		console.error("Usage: pnpm -w exec tsx scripts/translate.ts <target> [-v]");
 		console.error(
-			"       echo 'diff' | bun scripts/translate.ts vcs-commit-message",
+			"       echo 'diff' | pnpm -w exec tsx scripts/translate.ts vcs-commit-message",
 		);
 		console.error(`Targets: ${VALID_TARGETS.join(", ")}`);
 		process.exit(1);
@@ -32,8 +31,8 @@ function parseArgs(): { target: Target; verbose: boolean } {
 
 async function readStdin(): Promise<string> {
 	const chunks: Buffer[] = [];
-	for await (const chunk of Bun.stdin.stream()) {
-		chunks.push(Buffer.from(chunk));
+	for await (const chunk of process.stdin) {
+		chunks.push(chunk);
 	}
 	return Buffer.concat(chunks).toString("utf-8");
 }

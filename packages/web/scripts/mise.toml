@@ -3,7 +3,7 @@
 
 [tasks."script:clear-test-user"]
 description = "Clear test user from Turso and Polar"
-run = "bun run scripts/clear-test-user.ts {{arg(name='email')}}"
+run = "pnpm -w exec tsx packages/web/scripts/clear-test-user.ts {{arg(name='email')}}"
 dir = "{{config_root}}/.."
 
 [tasks."sandbox:clear-test-user"]

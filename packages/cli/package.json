@@ -23,12 +23,13 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "bun build ./src/index.ts --outdir ./dist --target node",
+		"build": "tsup",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "pnpm run build"
 	},
 	"devDependencies": {
 		"@types/node": "^22.15.29",
+		"tsup": "8.5.0",
 		"typescript": "^5.8.3"
 	}
 }

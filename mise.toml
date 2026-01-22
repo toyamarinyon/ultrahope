@@ -1,6 +1,6 @@
 [tools]
 node = "latest"
-bun = "latest"
+pnpm = "latest"
 
 [tasks.ok]
 description = "Run format, typecheck, and knip checks"
@@ -12,23 +12,23 @@ run = [
 
 [tasks.format]
 description = "Format code with Biome"
-run = "bun run --silent format"
+run = "pnpm -w --silent run format"
 
 [tasks.knip]
 description = "Check for unused exports and dependencies"
-run = "bun run --silent knip"
+run = "pnpm -w --silent run knip"
 
 [tasks."typecheck:cli"]
 description = "Typecheck packages/cli"
-run = "bun run --silent --cwd packages/cli typecheck"
+run = "pnpm -C packages/cli --silent run typecheck"
 
 [tasks."typecheck:web"]
 description = "Typecheck packages/web"
-run = "bun run --silent --cwd packages/web typecheck"
+run = "pnpm -C packages/web --silent run typecheck"
 
 [tasks."dev:web"]
 description = "Start web dev server"
-run = "bun run --cwd packages/web next dev --port ${PORT:-3000}"
+run = "pnpm -C packages/web run dev --port ${PORT:-3000}"
 
 [tasks.web]
 description = "Start web dev server (sandbox env)"
@@ -36,7 +36,7 @@ run = "mise -E sandbox run dev:web"
 
 [tasks."dev:translate"]
 description = "translate "
-run = "bun run scripts/translate.ts"
+run = "pnpm -w exec tsx scripts/translate.ts"
 
 [tasks.translate]
 description = "Run translate "
@@ -44,7 +44,7 @@ run = "mise -E sandbox run dev:translate"
 
 [tasks."script:polar-sync"]
 description = "Sync Polar.sh configuration (meters, benefits, products)"
-run = "bun run --cwd scripts polar-sync.ts {{option(name='flags', var=true)}}"
+run = "pnpm -w exec tsx scripts/polar-sync.ts {{option(name='flags', var=true)}}"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
@@ -52,4 +52,4 @@ run = "mise -E sandbox run script:polar-sync {{option(name='flags', var=true)}}"
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "bun run --cwd scripts polar-sync.ts --production"
+run = "pnpm -w exec tsx scripts/polar-sync.ts --production"

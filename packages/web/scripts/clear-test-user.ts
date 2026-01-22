@@ -2,10 +2,10 @@
  * Clear test user data from both Turso (SQLite) and Polar sandbox.
  *
  * Usage:
- *   bun run scripts/clear-test-user.ts <email>
+ *   pnpm -w exec tsx packages/web/scripts/clear-test-user.ts <email>
  *
  * Example:
- *   bun run scripts/clear-test-user.ts test@example.com
+ *   pnpm -w exec tsx packages/web/scripts/clear-test-user.ts test@example.com
  */
 
 import { Polar } from "@polar-sh/sdk";
@@ -16,7 +16,9 @@ import { account, deviceCode, session, user } from "../src/db/schema";
 const email = process.argv[2];
 
 if (!email) {
-	console.error("Usage: bun run scripts/clear-test-user.ts <email>");
+	console.error(
+		"Usage: pnpm -w exec tsx packages/web/scripts/clear-test-user.ts <email>",
+	);
 	process.exit(1);
 }
 

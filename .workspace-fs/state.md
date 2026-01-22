@@ -56,7 +56,6 @@
 - [x] **モノリス化: API を Web に統合** → [decisions/monolith-migration.md](decisions/monolith-migration.md)
   - `packages/api` のコードを `packages/web/src/{db,lib}` に移動
   - Route Handler (`app/api/[[...slugs]]/route.ts`) で Elysia export
-  - `vercel.json` に `"bunVersion": "1.x"` 追加
   - `packages/api` 削除
 - [x] `packages/web` 初期構築 (Next.js + Landing page + Device verification page)
 - [x] tsc --noEmitを実行できるようにして、error 0にする
@@ -69,7 +68,7 @@
 - [x] プロジェクトの構成について考える → [decisions/project-structure.md](decisions/project-structure.md)
 - [x] `.workspace-fs` の構造を整理
 - [x] インフラ選定 → [decisions/infrastructure.md](decisions/infrastructure.md) (Vercel + Turso + Minimax + Resend)
-- [x] プロジェクト初期化 (Bun workspaces + packages/cli, packages/api)
+- [x] プロジェクト初期化 (pnpm workspaces + packages/cli, packages/api)
 - [x] API実装 (Better Auth + Device Flow + translate endpoint)
 - [x] CLI実装 (translate, login コマンド)
 - [x] 環境変数セットアップ (Turso, GitHub OAuth, Resend)

@@ -29,7 +29,7 @@ its own config environment. To force an environment, wrap the task and call
 ```toml
 [tasks."dev:web"]
 description = "Start web dev server"
-run = "bun run --cwd packages/web dev"
+run = "pnpm -C packages/web run dev"
 
 [tasks.web]
 description = "Start web dev server (sandbox env)"

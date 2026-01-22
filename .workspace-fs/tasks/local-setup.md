@@ -2,14 +2,14 @@
 
 ## 概要
 
-API (`packages/api`) をローカルで動作させるための3つのタスク。
+API (`packages/web`) をローカルで動作させるための3つのタスク。
 
 ## Working Directory
 
-**すべてのコマンドは `packages/api` ディレクトリで実行する。**
+**すべてのコマンドは `packages/web` ディレクトリで実行する。**
 
 ```bash
-cd packages/api
+cd packages/web
 ```
 
 ---
@@ -51,7 +51,7 @@ Better Authが必要とするテーブル (user, session, account, device_author
 ### コマンド
 
 ```bash
-bunx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts
+pnpm dlx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts
 ```
 
 - `--config` — auth.tsの場所を指定 (デフォルトはプロジェクトルートを探す)
@@ -67,7 +67,7 @@ bunx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/sche
 ```
 @better-auth/cli generate  →  src/db/schema.ts 生成
                                     ↓
-drizzle-kit push           →  Turso DBにテーブル作成
+pnpm drizzle-kit push      →  Turso DBにテーブル作成
 ```
 
 ### 生成されるテーブル (予想)
@@ -147,9 +147,9 @@ Better Authのdevice-authorizationプラグインが提供:
 ## 動作確認手順
 
 1. `.env` 設定完了
-2. `bunx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts` → schema生成
-3. `bunx drizzle-kit push` → DB反映
+2. `pnpm dlx @better-auth/cli generate --config ./src/lib/auth.ts --output ./src/db/schema.ts` → schema生成
+3. `pnpm drizzle-kit push` → DB反映
 4. `/device` ページ実装
-5. `bun run dev` でサーバー起動
+5. `pnpm run dev` でサーバー起動
 6. `curl http://localhost:3000/health` → `{"status":"ok"}`
 7. Device Flowテスト (CLI or curl)
