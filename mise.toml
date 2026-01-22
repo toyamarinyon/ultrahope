@@ -53,3 +53,11 @@ run = "mise -E sandbox run script:polar-sync {{option(name='flags', var=true)}}"
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
 run = "pnpm -w exec tsx scripts/polar-sync.ts --production"
+
+[tasks."db:migrate"]
+description = "Run database migrations"
+run = "pnpm --filter web exec drizzle-kit migrate"
+
+[tasks."db:generate-migration"]
+description = "Generate a new migration"
+run = "pnpm --filter web exec drizzle-kit generate"
