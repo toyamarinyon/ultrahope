@@ -1,22 +1,24 @@
 const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
-type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
+export type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
-interface TranslateRequest {
+export interface TranslateRequest {
 	input: string;
 	target: Target;
 	n?: number;
 }
 
-interface TranslateSingleResponse {
+export interface TranslateSingleResponse {
 	output: string;
 }
 
-interface TranslateMultiResponse {
+export interface TranslateMultiResponse {
 	outputs: string[];
 }
 
-type TranslateResponse = TranslateSingleResponse | TranslateMultiResponse;
+export type TranslateResponse =
+	| TranslateSingleResponse
+	| TranslateMultiResponse;
 
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {

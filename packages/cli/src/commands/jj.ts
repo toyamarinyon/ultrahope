@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
+import { createMockApiClient } from "../lib/mock-api-client";
 import { selectCandidate } from "../lib/selector";
 
 interface DescribeOptions {
@@ -8,6 +9,7 @@ interface DescribeOptions {
 	dryRun: boolean;
 	interactive: boolean;
 	n: number;
+	mock: boolean;
 }
 
 function parseDescribeArgs(args: string[]): DescribeOptions {
@@ -15,6 +17,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	let dryRun = false;
 	let interactive = true;
 	let n = 4;
+	let mock = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -24,6 +27,8 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 			dryRun = true;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
+		} else if (arg === "--mock") {
+			mock = true;
 		} else if (arg === "-n") {
 			const value = Number.parseInt(args[++i], 10);
 			if (!Number.isNaN(value) && value >= 1 && value <= 8) {
@@ -32,7 +37,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		}
 	}
 
-	return { revision, dryRun, interactive, n };
+	return { revision, dryRun, interactive, n, mock };
 }
 
 function getJjDiff(revision: string): string {
@@ -57,7 +62,21 @@ function getJjDiff(revision: string): string {
 async function generateDescriptions(
 	diff: string,
 	n: number,
+	mock: boolean,
 ): Promise<string[]> {
+	if (mock) {
+		const api = createMockApiClient();
+		const result = await api.translate({
+			input: diff,
+			target: "vcs-commit-message",
+			n,
+		});
+		if ("outputs" in result) {
+			return result.outputs;
+		}
+		return [result.output];
+	}
+
 	const token = await getToken();
 	if (!token) {
 		console.error("Error: Not authenticated. Run `ultrahope login` first.");
@@ -106,7 +125,7 @@ async function describe(args: string[]) {
 	}
 
 	if (!options.interactive) {
-		const [message] = await generateDescriptions(diff, 1);
+		const [message] = await generateDescriptions(diff, 1, options.mock);
 
 		if (options.dryRun) {
 			console.log(message);
@@ -117,7 +136,7 @@ async function describe(args: string[]) {
 		return;
 	}
 
-	let candidates = await generateDescriptions(diff, options.n);
+	let candidates = await generateDescriptions(diff, options.n, options.mock);
 
 	if (options.dryRun) {
 		for (const candidate of candidates) {
@@ -139,7 +158,7 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await generateDescriptions(diff, options.n);
+			candidates = await generateDescriptions(diff, options.n, options.mock);
 			continue;
 		}
 
@@ -161,11 +180,13 @@ Describe options:
   --dry-run         Print candidates only, don't describe
   --no-interactive  Single candidate, no selection
   -n <count>        Number of candidates (default: 4)
+  --mock            Use mock API for testing (no LLM tokens consumed)
 
 Examples:
   ultrahope jj describe              # interactive mode
   ultrahope jj describe -r @-        # for parent revision
-  ultrahope jj describe --dry-run    # print candidates only`);
+  ultrahope jj describe --dry-run    # print candidates only
+  ultrahope jj describe --mock       # test with mock responses`);
 }
 
 export async function jj(args: string[]) {

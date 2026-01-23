@@ -29,7 +29,8 @@ function canUseInteractive(): boolean {
 		const fs = require("node:fs");
 		fs.accessSync("/dev/tty", fs.constants.R_OK);
 		return true;
-	} catch {
+	} catch (e){
+	console.log(e)
 		return false;
 	}
 }
