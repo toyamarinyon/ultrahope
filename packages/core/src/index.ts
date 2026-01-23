@@ -1,76 +1,41 @@
-import { APICallError } from "ai";
+import { generateText } from "ai";
 import { PROMPTS } from "./prompts";
-import { createCerebrasProvider } from "./providers/cerebras";
-import { createOpenAIProvider } from "./providers/openai";
-import type {
-	LLMMultiResponse,
-	LLMProvider,
-	LLMResponse,
-	Target,
-} from "./types";
+import type { LLMMultiResponse, LLMResponse, Target } from "./types";
 
-export type { LLMMultiResponse, LLMProvider, LLMResponse, Target };
+export type { LLMMultiResponse, LLMResponse, Target };
 export { PROMPTS } from "./prompts";
-export { createCerebrasProvider } from "./providers/cerebras";
-export { createOpenAIProvider } from "./providers/openai";
 
-interface ProviderConfig {
-	name: string;
-	envKey: string;
-	create: (apiKey: string) => LLMProvider;
-}
-
-const PROVIDER_CHAIN: ProviderConfig[] = [
-	{ name: "cerebras", envKey: "CEREBRAS_API_KEY", create: createCerebrasProvider },
-	{ name: "openai", envKey: "OPENAI_API_KEY", create: createOpenAIProvider },
-];
-
-function getProviders(): LLMProvider[] {
-	const providers: LLMProvider[] = [];
-
-	for (const config of PROVIDER_CHAIN) {
-		const apiKey = process.env[config.envKey];
-		if (apiKey) {
-			providers.push(config.create(apiKey));
-		}
-	}
-
-	if (providers.length === 0) {
-		const keys = PROVIDER_CHAIN.map((c) => c.envKey).join(" or ");
-		throw new Error(`No LLM provider configured. Set ${keys}.`);
-	}
-
-	return providers;
-}
-
-function isRateLimitError(error: unknown): boolean {
-	return APICallError.isInstance(error) && error.statusCode === 429;
-}
+const PRIMARY_MODEL = "cerebras/llama-3.3-70b";
+const FALLBACK_MODELS = ["openai/gpt-4o-mini"];
 
 export async function translate(
 	input: string,
 	target: Target,
 ): Promise<LLMResponse> {
-	const providers = getProviders();
+	const result = await generateText({
+		model: PRIMARY_MODEL,
+		system: PROMPTS[target],
+		prompt: input,
+		maxOutputTokens: 1024,
+		providerOptions: {
+			gateway: {
+				models: FALLBACK_MODELS,
+			},
+		},
+	});
 
-	for (let i = 0; i < providers.length; i++) {
-		const provider = providers[i];
-		try {
-			return await provider.complete({
-				system: PROMPTS[target],
-				userMessage: input,
-				maxTokens: 1024,
-			});
-		} catch (error) {
-			const isLast = i === providers.length - 1;
-			if (isRateLimitError(error) && !isLast) {
-				continue;
-			}
-			throw error;
-		}
-	}
+	const metadata = result.providerMetadata?.gateway as
+		| { routing?: { finalProvider?: string } }
+		| undefined;
+	const vendor = metadata?.routing?.finalProvider ?? "unknown";
 
-	throw new Error("No providers available");
+	return {
+		content: result.text,
+		vendor,
+		model: PRIMARY_MODEL,
+		inputTokens: result.usage.inputTokens ?? 0,
+		outputTokens: result.usage.outputTokens ?? 0,
+	};
 }
 
 export async function translateMulti(
@@ -78,30 +43,42 @@ export async function translateMulti(
 	target: Target,
 	n: number,
 ): Promise<LLMMultiResponse> {
-	const providers = getProviders();
-
-	for (let i = 0; i < providers.length; i++) {
-		const provider = providers[i];
-
-		if (!provider.completeMulti) {
-			continue;
-		}
-
-		try {
-			return await provider.completeMulti({
+	const results = await Promise.all(
+		Array.from({ length: n }, () =>
+			generateText({
+				model: PRIMARY_MODEL,
 				system: PROMPTS[target],
-				userMessage: input,
-				maxTokens: 1024,
-				n,
-			});
-		} catch (error) {
-			const isLast = i === providers.length - 1;
-			if (isRateLimitError(error) && !isLast) {
-				continue;
-			}
-			throw error;
-		}
+				prompt: input,
+				maxOutputTokens: 1024,
+				providerOptions: {
+					gateway: {
+						models: FALLBACK_MODELS,
+					},
+				},
+			}),
+		),
+	);
+
+	const contents: string[] = [];
+	let inputTokens = 0;
+	let outputTokens = 0;
+
+	for (const result of results) {
+		contents.push(result.text);
+		inputTokens += result.usage.inputTokens ?? 0;
+		outputTokens += result.usage.outputTokens ?? 0;
 	}
 
-	throw new Error("No providers with multi-completion support available");
+	const metadata = results[0]?.providerMetadata?.gateway as
+		| { routing?: { finalProvider?: string } }
+		| undefined;
+	const vendor = metadata?.routing?.finalProvider ?? "unknown";
+
+	return {
+		contents,
+		vendor,
+		model: PRIMARY_MODEL,
+		inputTokens,
+		outputTokens,
+	};
 }

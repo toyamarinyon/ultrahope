@@ -37,7 +37,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 
 function getJjDiff(revision: string): string {
 	try {
-		return execSync(`jj diff -r ${revision}`, { encoding: "utf-8" });
+		return execSync(`jj diff -r ${revision} --git`, { encoding: "utf-8" });
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		if (

@@ -10,8 +10,6 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@ai-sdk/cerebras": "2.0.20",
-		"@ai-sdk/openai": "2.0.34",
 		"ai": "6.0.48"
 	},
 	"devDependencies": {

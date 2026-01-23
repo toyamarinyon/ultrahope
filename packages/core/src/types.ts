@@ -17,19 +17,3 @@ export interface LLMMultiResponse {
 	outputTokens: number;
 	cachedInputTokens?: number;
 }
-
-export interface LLMProvider {
-	name: string;
-	complete(params: {
-		system: string;
-		userMessage: string;
-		maxTokens?: number;
-		n?: number;
-	}): Promise<LLMResponse>;
-	completeMulti?(params: {
-		system: string;
-		userMessage: string;
-		maxTokens?: number;
-		n: number;
-	}): Promise<LLMMultiResponse>;
-}
