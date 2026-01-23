@@ -63,16 +63,27 @@ Request:
 ```json
 {
   "input": "<stdin content from pipe>",
-  "target": "vcs-commit-message" | "pr-title-body" | "pr-intent"
+  "target": "vcs-commit-message" | "pr-title-body" | "pr-intent",
+  "n": 1
 }
 ```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `input` | string | required | Content to translate |
+| `target` | string | required | Output format |
+| `n` | number | 1 | Number of candidates to generate (1-8) |
 
 Response:
 ```json
 {
-  "output": "<translated result>"
+  "output": "<translated result>",
+  "outputs": ["<candidate 1>", "<candidate 2>", ...]
 }
 ```
+
+- When `n=1`: `output` contains the result, `outputs` is omitted
+- When `n>1`: `outputs` contains all candidates, `output` is omitted
 
 ### Target Types
 

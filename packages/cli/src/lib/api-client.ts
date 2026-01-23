@@ -5,11 +5,18 @@ type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 interface TranslateRequest {
 	input: string;
 	target: Target;
+	n?: number;
 }
 
-interface TranslateResponse {
+interface TranslateSingleResponse {
 	output: string;
 }
+
+interface TranslateMultiResponse {
+	outputs: string[];
+}
+
+type TranslateResponse = TranslateSingleResponse | TranslateMultiResponse;
 
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {

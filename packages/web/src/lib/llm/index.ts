@@ -1,6 +1,8 @@
 import type { LLMMetadata } from "@polar-sh/sdk/models/components/llmmetadata";
 import {
 	translate as coreTranslate,
+	translateMulti as coreTranslateMulti,
+	type LLMMultiResponse,
 	type LLMResponse,
 	type Target,
 } from "@ultrahope/core";
@@ -47,7 +49,7 @@ async function checkMeterBalance(
 
 async function recordTokenConsumption(
 	externalCustomerId: string | undefined,
-	response: LLMResponse,
+	response: LLMResponse | LLMMultiResponse,
 ): Promise<void> {
 	if (!externalCustomerId) {
 		return;
@@ -106,4 +108,26 @@ export async function translate(
 	});
 
 	return response.content;
+}
+
+export async function translateMulti(
+	input: string,
+	target: Target,
+	n: number,
+	options: TranslateOptions = {},
+): Promise<string[]> {
+	if (options.externalCustomerId) {
+		const meterInfo = await checkMeterBalance(options.externalCustomerId);
+		if (meterInfo && meterInfo.balance <= 0) {
+			throw new InsufficientBalanceError(meterInfo.balance, meterInfo.meterId);
+		}
+	}
+
+	const response = await coreTranslateMulti(input, target, n);
+
+	after(async () => {
+		await recordTokenConsumption(options.externalCustomerId, response);
+	});
+
+	return response.contents;
 }

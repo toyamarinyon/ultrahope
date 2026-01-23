@@ -41,18 +41,31 @@ Users can pick their preferred alias:
 
 ### `git ultrahope commit`
 
-Generate commit message from staged changes.
+Generate commit message from staged changes with interactive selection.
 
 ```bash
-git ultrahope commit          # generates message, opens editor
-git ultrahope commit -m       # generates message, commits directly
-git ultrahope commit --dry-run  # print message only, don't commit
+git ultrahope commit              # interactive selector (default)
+git ultrahope commit -m           # commits with selected message
+git ultrahope commit --dry-run    # print candidates only, don't commit
+git ultrahope commit --no-interactive  # single candidate, open editor
 ```
 
-Internally:
+#### Interactive Flow
+
 1. Run `git diff --cached`
-2. Pipe to translate API with `--target vcs-commit-message`
-3. Open editor / commit / print
+2. Call translate API to generate multiple candidates
+3. Display interactive selector (see [cli.md](cli.md#interactive-selector))
+4. User selects, edits, or rerolls
+5. On confirm: Run `git commit -m "<selected message>"`
+
+#### Options
+
+| Flag | Description |
+|------|-------------|
+| `-m` | Commit directly after selection (no editor) |
+| `--dry-run` | Print candidates only |
+| `--no-interactive` | Single candidate, open in editor |
+| `-n <count>` | Number of candidates (default: 4) |
 
 ### `git ultrahope pr` (future)
 

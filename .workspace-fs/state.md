@@ -9,10 +9,20 @@
 
 ## Next
 
-- [ ] **Git subcommand integration** → [to-be/git-subcommand.md](to-be/git-subcommand.md)
+- [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
+  - [x] Add `jj` subcommand to main CLI
+  - [x] Implement `ultrahope jj describe` command
+  - [ ] Test with real jj repository
+- [x] **Interactive selector** (applies to all translate-based commands)
+  - [x] Add `n` parameter to translate API for multiple candidates
+  - [x] Build shared interactive selector UI component
+  - [x] Update `ultrahope translate` with selector
+  - [x] Update `git ultrahope commit` with selector
+  - [x] Implement `ultrahope jj describe` with selector
+- [x] **Git subcommand integration** → [to-be/git-subcommand.md](to-be/git-subcommand.md)
   - [x] Add `git-ultrahope` bin entry to package.json
   - [x] Implement `git ultrahope commit` command
-  - [ ] Test global install flow
+  - [x] Test global install flow
 - [x] **Create packages/core: separate LLM logic** → [decisions/core-package.md](decisions/core-package.md)
   - [x] Initialize `packages/core/` (package.json, tsconfig.json)
   - [x] Move types, prompts, providers

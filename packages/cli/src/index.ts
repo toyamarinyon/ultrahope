@@ -1,3 +1,4 @@
+import { jj } from "./commands/jj";
 import { login } from "./commands/login";
 import { translate } from "./commands/translate";
 
@@ -7,6 +8,9 @@ async function main() {
 	switch (command) {
 		case "translate":
 			await translate(args);
+			break;
+		case "jj":
+			await jj(args);
 			break;
 		case "login":
 			await login(args);
@@ -27,6 +31,7 @@ function printHelp() {
 
 Commands:
   translate  Translate input to various formats
+  jj         Jujutsu integration commands
   login      Authenticate with device flow
 
 Options:

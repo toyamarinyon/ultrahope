@@ -26,13 +26,16 @@ Commands:
   commit      Generate commit message from staged changes
 
 Commit options:
-  -m, --message   Commit directly with generated message
-  --dry-run       Print message only, don't commit
+  -m, --message     Commit directly with generated message
+  --dry-run         Print candidates only, don't commit
+  --no-interactive  Single candidate, open in editor
+  -n <count>        Number of candidates (default: 4)
 
 Examples:
-  git ultrahope commit          # generate message, open editor
-  git ultrahope commit -m       # generate and commit directly
-  git ultrahope commit --dry-run  # preview message only`);
+  git ultrahope commit               # interactive selector (default)
+  git ultrahope commit -m            # select and commit directly
+  git ultrahope commit --dry-run     # preview candidates only
+  git ultrahope commit --no-interactive  # single candidate, open editor`);
 }
 
 main().catch((err) => {

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
-import { InsufficientBalanceError, translate } from "@/lib/llm";
+import { InsufficientBalanceError, translate, translateMulti } from "@/lib/llm";
 
 const app = new Elysia({ prefix: "/api" })
 	.derive(async ({ request: { headers } }) => {
@@ -14,7 +14,15 @@ const app = new Elysia({ prefix: "/api" })
 			});
 		}
 
-		const { input, target } = body as { input: string; target: string };
+		const {
+			input,
+			target,
+			n = 1,
+		} = body as {
+			input: string;
+			target: string;
+			n?: number;
+		};
 
 		const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
 		if (!validTargets.includes(target)) {
@@ -26,13 +34,25 @@ const app = new Elysia({ prefix: "/api" })
 			);
 		}
 
+		const candidateCount = Math.max(1, Math.min(8, Math.floor(n)));
+
 		try {
-			const output = await translate(
+			if (candidateCount === 1) {
+				const output = await translate(
+					input,
+					target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+					{ externalCustomerId: session.user.id },
+				);
+				return { output };
+			}
+
+			const outputs = await translateMulti(
 				input,
 				target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+				candidateCount,
 				{ externalCustomerId: session.user.id },
 			);
-			return { output };
+			return { outputs };
 		} catch (error) {
 			if (error instanceof InsufficientBalanceError) {
 				return new Response(
