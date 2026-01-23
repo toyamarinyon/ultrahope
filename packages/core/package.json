@@ -10,7 +10,9 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@cerebras/cerebras_cloud_sdk": "^1.64.1"
+		"@ai-sdk/cerebras": "2.0.20",
+		"@ai-sdk/openai": "2.0.34",
+		"ai": "6.0.48"
 	},
 	"devDependencies": {
 		"typescript": "5.9.3"

@@ -1,5 +1,7 @@
+import { APICallError } from "ai";
 import { PROMPTS } from "./prompts";
 import { createCerebrasProvider } from "./providers/cerebras";
+import { createOpenAIProvider } from "./providers/openai";
 import type {
 	LLMMultiResponse,
 	LLMProvider,
@@ -10,28 +12,65 @@ import type {
 export type { LLMMultiResponse, LLMProvider, LLMResponse, Target };
 export { PROMPTS } from "./prompts";
 export { createCerebrasProvider } from "./providers/cerebras";
+export { createOpenAIProvider } from "./providers/openai";
 
-function getProvider(): LLMProvider {
-	const apiKey = process.env.CEREBRAS_API_KEY;
-	if (!apiKey) {
-		throw new Error("CEREBRAS_API_KEY not configured");
+interface ProviderConfig {
+	name: string;
+	envKey: string;
+	create: (apiKey: string) => LLMProvider;
+}
+
+const PROVIDER_CHAIN: ProviderConfig[] = [
+	{ name: "cerebras", envKey: "CEREBRAS_API_KEY", create: createCerebrasProvider },
+	{ name: "openai", envKey: "OPENAI_API_KEY", create: createOpenAIProvider },
+];
+
+function getProviders(): LLMProvider[] {
+	const providers: LLMProvider[] = [];
+
+	for (const config of PROVIDER_CHAIN) {
+		const apiKey = process.env[config.envKey];
+		if (apiKey) {
+			providers.push(config.create(apiKey));
+		}
 	}
-	return createCerebrasProvider(apiKey);
+
+	if (providers.length === 0) {
+		const keys = PROVIDER_CHAIN.map((c) => c.envKey).join(" or ");
+		throw new Error(`No LLM provider configured. Set ${keys}.`);
+	}
+
+	return providers;
+}
+
+function isRateLimitError(error: unknown): boolean {
+	return APICallError.isInstance(error) && error.statusCode === 429;
 }
 
 export async function translate(
 	input: string,
 	target: Target,
 ): Promise<LLMResponse> {
-	const provider = getProvider();
+	const providers = getProviders();
 
-	const response = await provider.complete({
-		system: PROMPTS[target],
-		userMessage: input,
-		maxTokens: 1024,
-	});
+	for (let i = 0; i < providers.length; i++) {
+		const provider = providers[i];
+		try {
+			return await provider.complete({
+				system: PROMPTS[target],
+				userMessage: input,
+				maxTokens: 1024,
+			});
+		} catch (error) {
+			const isLast = i === providers.length - 1;
+			if (isRateLimitError(error) && !isLast) {
+				continue;
+			}
+			throw error;
+		}
+	}
 
-	return response;
+	throw new Error("No providers available");
 }
 
 export async function translateMulti(
@@ -39,20 +78,30 @@ export async function translateMulti(
 	target: Target,
 	n: number,
 ): Promise<LLMMultiResponse> {
-	const provider = getProvider();
+	const providers = getProviders();
 
-	if (!provider.completeMulti) {
-		throw new Error(
-			`Provider ${provider.name} does not support multi-completion`,
-		);
+	for (let i = 0; i < providers.length; i++) {
+		const provider = providers[i];
+
+		if (!provider.completeMulti) {
+			continue;
+		}
+
+		try {
+			return await provider.completeMulti({
+				system: PROMPTS[target],
+				userMessage: input,
+				maxTokens: 1024,
+				n,
+			});
+		} catch (error) {
+			const isLast = i === providers.length - 1;
+			if (isRateLimitError(error) && !isLast) {
+				continue;
+			}
+			throw error;
+		}
 	}
 
-	const response = await provider.completeMulti({
-		system: PROMPTS[target],
-		userMessage: input,
-		maxTokens: 1024,
-		n,
-	});
-
-	return response;
+	throw new Error("No providers with multi-completion support available");
 }

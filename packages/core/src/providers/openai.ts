@@ -1,21 +1,21 @@
-import { createCerebras } from "@ai-sdk/cerebras";
+import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import type { LLMMultiResponse, LLMProvider, LLMResponse } from "../types";
 
-const MODEL = "llama-3.3-70b";
+const MODEL = "gpt-4o-mini";
 
-export function createCerebrasProvider(apiKey: string): LLMProvider {
-	const cerebras = createCerebras({ apiKey });
+export function createOpenAIProvider(apiKey: string): LLMProvider {
+	const openai = createOpenAI({ apiKey });
 
 	return {
-		name: "cerebras",
+		name: "openai",
 		async complete({
 			system,
 			userMessage,
 			maxTokens = 1024,
 		}): Promise<LLMResponse> {
 			const result = await generateText({
-				model: cerebras(MODEL),
+				model: openai(MODEL),
 				system,
 				prompt: userMessage,
 				maxOutputTokens: maxTokens,
@@ -23,7 +23,7 @@ export function createCerebrasProvider(apiKey: string): LLMProvider {
 
 			return {
 				content: result.text,
-				vendor: "cerebras",
+				vendor: "openai",
 				model: MODEL,
 				inputTokens: result.usage.inputTokens ?? 0,
 				outputTokens: result.usage.outputTokens ?? 0,
@@ -39,7 +39,7 @@ export function createCerebrasProvider(apiKey: string): LLMProvider {
 			const results = await Promise.all(
 				Array.from({ length: n }, () =>
 					generateText({
-						model: cerebras(MODEL),
+						model: openai(MODEL),
 						system,
 						prompt: userMessage,
 						maxOutputTokens: maxTokens,
@@ -59,7 +59,7 @@ export function createCerebrasProvider(apiKey: string): LLMProvider {
 
 			return {
 				contents,
-				vendor: "cerebras",
+				vendor: "openai",
 				model: MODEL,
 				inputTokens,
 				outputTokens,
