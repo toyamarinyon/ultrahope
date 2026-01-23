@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
 import {
+	accessSync,
+	constants,
 	mkdtempSync,
 	openSync,
 	readFileSync,
@@ -26,11 +28,9 @@ function canUseInteractive(): boolean {
 		return false;
 	}
 	try {
-		const fs = require("node:fs");
-		fs.accessSync("/dev/tty", fs.constants.R_OK);
+		accessSync("/dev/tty", constants.R_OK);
 		return true;
-	} catch (e){
-	console.log(e)
+	} catch {
 		return false;
 	}
 }

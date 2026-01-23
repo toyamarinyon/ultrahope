@@ -7,6 +7,8 @@ export interface LLMResponse {
 	inputTokens: number;
 	outputTokens: number;
 	cachedInputTokens?: number;
+	cost?: number;
+	generationId?: string;
 }
 
 export interface LLMMultiResponse {
@@ -16,4 +18,6 @@ export interface LLMMultiResponse {
 	inputTokens: number;
 	outputTokens: number;
 	cachedInputTokens?: number;
+	cost?: number;
+	generationIds?: string[];
 }

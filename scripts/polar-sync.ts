@@ -5,17 +5,21 @@
  * It ensures resources exist with the correct configuration, creating or updating as needed.
  *
  * Usage:
- *   # Sandbox (default) - shows changes and prompts for confirmation
- *   pnpm -w exec tsx scripts/polar-sync.ts
+ *   # Production (default)
+ *   mise -E production exec -- pnpm tsx scripts/polar-sync.ts
  *
- *   # Production - shows changes and prompts for confirmation
- *   pnpm -w exec tsx scripts/polar-sync.ts --production
+ *   # Sandbox
+ *   mise -E sandbox exec -- pnpm tsx scripts/polar-sync.ts --server sandbox
  *
  *   # Dry-run (show what would be done without prompting)
- *   pnpm -w exec tsx scripts/polar-sync.ts --dry-run
+ *   pnpm tsx scripts/polar-sync.ts --dry-run
  *
  *   # Skip confirmation prompt
- *   pnpm -w exec tsx scripts/polar-sync.ts --yes
+ *   pnpm tsx scripts/polar-sync.ts --yes
+ *
+ * Flags:
+ *   --server <production|sandbox>  Target server (default: production)
+ *   --recreate                     Archive and recreate products with price mismatches
  *
  * Environment:
  *   POLAR_SYNC_ACCESS_TOKEN - Organization Access Token with required scopes
@@ -62,9 +66,10 @@ interface BenefitConfig {
 }
 
 interface ProductPriceConfig {
-	amountType: "free" | "fixed" | "custom";
+	amountType: "free" | "fixed" | "custom" | "metered_unit";
 	priceAmount?: number;
 	priceCurrency?: string;
+	meterName?: string; // for metered_unit prices
 }
 
 interface ProductConfig {
@@ -75,72 +80,128 @@ interface ProductConfig {
 	benefitKeys: string[];
 }
 
+interface OneTimeProductConfig {
+	name: string;
+	description: string;
+	prices: ProductPriceConfig[];
+	benefitKeys: string[];
+}
+
 interface Config {
 	meters: MeterConfig[];
 	benefits: BenefitConfig[];
 	products: ProductConfig[];
+	oneTimeProducts: OneTimeProductConfig[];
 }
+
+// USD-based billing with microdollars (1 USD = 1,000,000 units)
+// This avoids floating-point precision issues while supporting sub-cent costs
+const MICRODOLLARS_PER_USD = 1_000_000;
 
 const CONFIG: Config = {
 	meters: [
 		{
-			name: "Consumed Tokens",
+			name: "Usage Cost",
 			filter: {
 				conjunction: "and",
 				clauses: [
 					{
 						property: "name",
 						operator: "eq",
-						value: "token_consumption",
+						value: "usage",
 					},
 				],
 			},
 			aggregation: {
 				func: "sum",
-				property: "totalTokens",
+				property: "cost", // in microdollars
 			},
 		},
 	],
 
 	benefits: [
 		{
-			key: "free_tokens",
+			key: "free_credits",
 			type: "meter_credit",
-			description: "400,000 tokens per month",
-			meterName: "Consumed Tokens",
-			units: 400_000,
+			description: "$0.40 included credit",
+			meterName: "Usage Cost",
+			units: 0.4 * MICRODOLLARS_PER_USD, // $0.40
 			rollover: false,
 		},
 		{
-			key: "pro_tokens",
+			key: "pro_credits",
 			type: "meter_credit",
-			description: "1,000,000 tokens per month",
-			meterName: "Consumed Tokens",
-			units: 1_000_000,
+			description: "$5 included credit",
+			meterName: "Usage Cost",
+			units: 5 * MICRODOLLARS_PER_USD, // $5.00
 			rollover: false,
+		},
+		{
+			key: "credit_10",
+			type: "meter_credit",
+			description: "$10 credit top-up",
+			meterName: "Usage Cost",
+			units: 10 * MICRODOLLARS_PER_USD, // $10.00
+			rollover: true, // one-time credits should roll over
+		},
+		{
+			key: "credit_20",
+			type: "meter_credit",
+			description: "$20 credit top-up",
+			meterName: "Usage Cost",
+			units: 20 * MICRODOLLARS_PER_USD, // $20.00
+			rollover: true, // one-time credits should roll over
 		},
 	],
 
 	products: [
 		{
 			name: "Free",
-			description: "Free plan with 400K tokens/month",
+			description: "Free plan with $0.40 usage credit",
 			recurringInterval: "month",
 			prices: [{ amountType: "free" }],
-			benefitKeys: ["free_tokens"],
+			benefitKeys: ["free_credits"],
 		},
 		{
 			name: "Pro",
-			description: "Pro plan with 1M tokens/month",
+			description: "Pro plan with $5 included credit",
 			recurringInterval: "month",
 			prices: [
 				{
 					amountType: "fixed",
-					priceAmount: 200,
+					priceAmount: 1000, // $10.00 in cents
 					priceCurrency: "usd",
 				},
 			],
-			benefitKeys: ["pro_tokens"],
+			benefitKeys: ["pro_credits"],
+		},
+	],
+
+	// One-time credit top-up products (Pro users only)
+	oneTimeProducts: [
+		{
+			name: "Credit $10",
+			description: "Add $10 usage credit to your account",
+			prices: [
+				{
+					amountType: "fixed",
+					priceAmount: 1000, // $10.00 in cents
+					priceCurrency: "usd",
+				},
+			],
+			benefitKeys: ["credit_10"],
+		},
+		{
+			name: "Credit $20",
+			description: "Add $20 usage credit to your account",
+			prices: [
+				{
+					amountType: "fixed",
+					priceAmount: 2000, // $20.00 in cents
+					priceCurrency: "usd",
+				},
+			],
+			benefitKeys: ["credit_20"],
 		},
 	],
 };
@@ -152,6 +213,7 @@ const CONFIG: Config = {
 interface SyncContext {
 	polar: Polar;
 	dryRun: boolean;
+	recreate: boolean;
 	meters: Map<string, Meter>;
 	benefits: Map<string, Benefit>;
 	products: Map<string, Product>;
@@ -166,6 +228,68 @@ function log(action: string, resource: string, name: string, details?: string) {
 		? `${action} ${resource}: ${name} (${details})`
 		: `${action} ${resource}: ${name}`;
 	console.log(`  ${prefix}`);
+}
+
+function _formatPrice(price: ProductPriceConfig): string {
+	if (price.amountType === "free") return "free";
+	if (price.amountType === "fixed")
+		return `$${((price.priceAmount ?? 0) / 100).toFixed(2)}`;
+	if (price.amountType === "metered_unit")
+		return `metered:${price.meterName}@$${price.priceAmount}`;
+	return price.amountType;
+}
+
+function comparePrices(
+	existing: Product,
+	config: ProductConfig,
+	meters: Map<string, Meter>,
+): { match: boolean; details: string } {
+	const existingPrices = existing.prices;
+	const configPrices = config.prices;
+
+	if (existingPrices.length !== configPrices.length) {
+		return {
+			match: false,
+			details: `price count: ${existingPrices.length} vs ${configPrices.length}`,
+		};
+	}
+
+	for (let i = 0; i < configPrices.length; i++) {
+		const cfg = configPrices[i];
+		const ext = existingPrices[i];
+
+		if (cfg.amountType === "free") {
+			if (ext.amountType !== "free") {
+				return { match: false, details: `price[${i}]: expected free` };
+			}
+		} else if (cfg.amountType === "fixed") {
+			if (ext.amountType !== "fixed") {
+				return { match: false, details: `price[${i}]: expected fixed` };
+			}
+			if (ext.priceAmount !== cfg.priceAmount) {
+				return {
+					match: false,
+					details: `price[${i}]: $${(ext.priceAmount / 100).toFixed(2)} vs $${((cfg.priceAmount ?? 0) / 100).toFixed(2)}`,
+				};
+			}
+		} else if (cfg.amountType === "metered_unit") {
+			if (ext.amountType !== "metered_unit") {
+				return { match: false, details: `price[${i}]: expected metered_unit` };
+			}
+			const meter = meters.get(cfg.meterName ?? "");
+			if (meter && ext.meterId !== meter.id) {
+				return { match: false, details: `price[${i}]: meter mismatch` };
+			}
+			if (ext.unitAmount !== String(cfg.priceAmount)) {
+				return {
+					match: false,
+					details: `price[${i}]: unit $${ext.unitAmount} vs $${cfg.priceAmount}`,
+				};
+			}
+		}
+	}
+
+	return { match: true, details: "" };
 }
 
 async function fetchAllMeters(polar: Polar): Promise<Map<string, Meter>> {
@@ -376,6 +500,161 @@ async function syncProducts(ctx: SyncContext): Promise<void> {
 			const descriptionMatch =
 				existing.description === productConfig.description;
 
+			const priceCheck = comparePrices(existing, productConfig, ctx.meters);
+
+			if (!priceCheck.match) {
+				if (ctx.recreate) {
+					if (ctx.dryRun) {
+						log(
+							"→",
+							"Product",
+							productConfig.name,
+							`would archive and recreate (${priceCheck.details})`,
+						);
+					} else {
+						await ctx.polar.products.update({
+							id: existing.id,
+							productUpdate: { isArchived: true },
+						});
+						log(
+							"-",
+							"Product",
+							productConfig.name,
+							`archived id=${existing.id}`,
+						);
+						// Fall through to create new product below
+						ctx.products.delete(productConfig.name);
+					}
+				} else {
+					log(
+						"!",
+						"Product",
+						productConfig.name,
+						`price mismatch: ${priceCheck.details} (use --recreate to fix)`,
+					);
+					continue;
+				}
+			} else if (!benefitsMatch || !descriptionMatch) {
+				if (ctx.dryRun) {
+					log("→", "Product", productConfig.name, "would update");
+				} else {
+					await ctx.polar.products.update({
+						id: existing.id,
+						productUpdate: {
+							name: productConfig.name,
+							description: productConfig.description,
+						},
+					});
+					await ctx.polar.products.updateBenefits({
+						id: existing.id,
+						productBenefitsUpdate: {
+							benefits: benefitIds,
+						},
+					});
+					log("~", "Product", productConfig.name, `updated id=${existing.id}`);
+				}
+				continue;
+			} else {
+				log("✓", "Product", productConfig.name, `id=${existing.id}`);
+				continue;
+			}
+		}
+
+		if (!ctx.products.has(productConfig.name)) {
+			if (ctx.dryRun) {
+				log("→", "Product", productConfig.name, "would create");
+			} else {
+				const prices = productConfig.prices.map((p) => {
+					if (p.amountType === "free") {
+						return { amountType: "free" as const };
+					}
+					if (p.amountType === "fixed") {
+						return {
+							amountType: "fixed" as const,
+							priceAmount: p.priceAmount ?? 0,
+							priceCurrency: p.priceCurrency as "usd",
+						};
+					}
+					if (p.amountType === "metered_unit") {
+						const meter = ctx.meters.get(p.meterName ?? "");
+						if (!meter) {
+							throw new Error(
+								`Meter "${p.meterName}" not found for metered price`,
+							);
+						}
+						return {
+							amountType: "metered_unit" as const,
+							unitAmount: p.priceAmount ?? 0,
+							priceCurrency: p.priceCurrency as "usd",
+							meterId: meter.id,
+						};
+					}
+					throw new Error(`Unsupported price type: ${p.amountType}`);
+				});
+
+				const created = await ctx.polar.products.create({
+					name: productConfig.name,
+					description: productConfig.description,
+					recurringInterval: productConfig.recurringInterval,
+					prices,
+				});
+				await ctx.polar.products.updateBenefits({
+					id: created.id,
+					productBenefitsUpdate: {
+						benefits: benefitIds,
+					},
+				});
+				ctx.products.set(created.name, created);
+				log("+", "Product", productConfig.name, `created id=${created.id}`);
+			}
+		}
+	}
+}
+
+async function syncOneTimeProducts(ctx: SyncContext): Promise<void> {
+	console.log("\n[One-Time Products]");
+
+	for (const productConfig of CONFIG.oneTimeProducts) {
+		const existing = ctx.products.get(productConfig.name);
+
+		const benefitIds: string[] = [];
+		for (const benefitKey of productConfig.benefitKeys) {
+			const benefitConf = CONFIG.benefits.find((b) => b.key === benefitKey);
+			if (!benefitConf) {
+				throw new Error(`Benefit key "${benefitKey}" not found in CONFIG`);
+			}
+			const benefit = ctx.benefits.get(benefitConf.description);
+			if (!benefit) {
+				if (ctx.dryRun) {
+					log(
+						"!",
+						"Product",
+						productConfig.name,
+						`benefit "${benefitConf.description}" not found (would be created)`,
+					);
+					continue;
+				}
+				throw new Error(
+					`Benefit "${benefitConf.description}" not found for product "${productConfig.name}"`,
+				);
+			}
+			benefitIds.push(benefit.id);
+		}
+
+		if (existing) {
+			const existingBenefitIds = existing.benefits
+				.map((b: { id: string }) => b.id)
+				.sort();
+			const targetBenefitIds = [...benefitIds].sort();
+			const benefitsMatch =
+				existingBenefitIds.length === targetBenefitIds.length &&
+				existingBenefitIds.every(
+					(id: string, i: number) => id === targetBenefitIds[i],
+				);
+
+			const descriptionMatch =
+				existing.description === productConfig.description;
+
 			if (!benefitsMatch || !descriptionMatch) {
 				if (ctx.dryRun) {
 					log("→", "Product", productConfig.name, "would update");
@@ -395,17 +674,18 @@ async function syncProducts(ctx: SyncContext): Promise<void> {
 					});
 					log("~", "Product", productConfig.name, `updated id=${existing.id}`);
 				}
+				continue;
 			} else {
 				log("✓", "Product", productConfig.name, `id=${existing.id}`);
+				continue;
 			}
-		} else {
+		}
+
+		if (!ctx.products.has(productConfig.name)) {
 			if (ctx.dryRun) {
 				log("→", "Product", productConfig.name, "would create");
 			} else {
 				const prices = productConfig.prices.map((p) => {
-					if (p.amountType === "free") {
-						return { amountType: "free" as const };
-					}
 					if (p.amountType === "fixed") {
 						return {
 							amountType: "fixed" as const,
@@ -413,13 +693,14 @@ async function syncProducts(ctx: SyncContext): Promise<void> {
 							priceCurrency: p.priceCurrency as "usd",
 						};
 					}
-					throw new Error(`Unsupported price type: ${p.amountType}`);
+					throw new Error(
+						`Unsupported price type for one-time product: ${p.amountType}`,
+					);
 				});
 
 				const created = await ctx.polar.products.create({
 					name: productConfig.name,
 					description: productConfig.description,
-					recurringInterval: productConfig.recurringInterval,
 					prices,
 				});
 				await ctx.polar.products.updateBenefits({
@@ -453,12 +734,20 @@ async function prompt(message: string): Promise<boolean> {
 
 async function main() {
 	const args = process.argv.slice(2);
-	const isProduction = args.includes("--production");
 	const dryRun = args.includes("--dry-run");
 	const autoConfirm = args.includes("--yes") || args.includes("-y");
-	const server = isProduction ? "production" : "sandbox";
+	const recreate = args.includes("--recreate");
 
-	console.log(`Polar Sync - ${server}${dryRun ? " (dry-run)" : ""}`);
+	const serverIndex = args.indexOf("--server");
+	const server: "production" | "sandbox" =
+		serverIndex !== -1 && args[serverIndex + 1] === "sandbox"
+			? "sandbox"
+			: "production";
+
+	const flags = [dryRun && "dry-run", recreate && "recreate"]
+		.filter(Boolean)
+		.join(", ");
+	console.log(`Polar Sync - ${server}${flags ? ` (${flags})` : ""}`);
 	console.log("=".repeat(50));
 
 	const accessToken = process.env.POLAR_SYNC_ACCESS_TOKEN;
@@ -467,10 +756,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const polar = new Polar({
-		accessToken,
-		server,
-	});
+	const polar = new Polar({ accessToken, server });
 
 	console.log("\nFetching existing resources...");
 	const [meters, benefits, products] = await Promise.all([
@@ -486,6 +772,7 @@ async function main() {
 	const ctx: SyncContext = {
 		polar,
 		dryRun: true,
+		recreate,
 		meters,
 		benefits,
 		products,
@@ -495,6 +782,7 @@ async function main() {
 	await syncMeters(ctx);
 	await syncBenefits(ctx);
 	await syncProducts(ctx);
+	await syncOneTimeProducts(ctx);
 
 	if (dryRun) {
 		console.log(`\n${"=".repeat(50)}`);
@@ -518,15 +806,36 @@ async function main() {
 	await syncMeters(ctx);
 	await syncBenefits(ctx);
 	await syncProducts(ctx);
+	await syncOneTimeProducts(ctx);
 
 	console.log(`\n${"=".repeat(50)}`);
 	console.log("Sync complete!");
 
-	console.log("\nProduct IDs for environment variables:");
+	console.log("\nEnvironment variables:");
+
+	console.log("\n  # Meters");
+	for (const meterConfig of CONFIG.meters) {
+		const meter = ctx.meters.get(meterConfig.name);
+		if (meter) {
+			const envKey = `POLAR_${meterConfig.name.toUpperCase().replace(/\s+/g, "_")}_METER_ID`;
+			console.log(`  ${envKey}=${meter.id}`);
+		}
+	}
+
+	console.log("\n  # Products");
 	for (const productConfig of CONFIG.products) {
 		const product = ctx.products.get(productConfig.name);
 		if (product) {
 			const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase()}_ID`;
+			console.log(`  ${envKey}=${product.id}`);
+		}
+	}
+
+	console.log("\n  # One-Time Products");
+	for (const productConfig of CONFIG.oneTimeProducts) {
+		const product = ctx.products.get(productConfig.name);
+		if (product) {
+			const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase().replace(/\s+/g, "_").replace(/\$/g, "")}_ID`;
 			console.log(`  ${envKey}=${product.id}`);
 		}
 	}

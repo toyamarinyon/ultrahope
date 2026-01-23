@@ -10,6 +10,7 @@
 │   ├── authentication.md
 │   ├── billing.md
 │   ├── billing-meter-design.md
+│   ├── billing-model-v2.md
 │   ├── billing-free-plan-auto-subscription.md
 │   ├── cli-implementation.md
 │   ├── infrastructure.md

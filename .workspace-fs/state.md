@@ -9,6 +9,26 @@
 
 ## Next
 
+- [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
+  - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
+  - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
+    - [x] Design: Zed-style pricing (subscription + included credit, microdollars unit)
+    - [x] Update `polar-sync.ts` (new meter "Usage Cost", USD-based benefits)
+    - [x] Event ingestion update (microdollars)
+    - [x] Update balance check logic (use new meter via `POLAR_USAGE_COST_METER_ID`)
+    - [x] Remove metered price from Pro (no automatic overage)
+    - [x] Add one-time credit products (Credit $10, Credit $20)
+    - [ ] Apply to sandbox with `--recreate` flag
+    - [ ] Apply to production
+    - [ ] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
+    - [ ] Implement auto-recharge feature:
+      - [ ] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
+      - [ ] Check threshold after usage events
+      - [ ] Create Polar checkout when balance falls below threshold
+    - [ ] Build settings UI for credit purchases + auto-recharge toggle
+  - [ ] Add `models` param to translate API
+  - [ ] Update selector UI to show model name per candidate
+  - [ ] Build settings UI for user model preferences
 - [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
   - [x] Add `jj` subcommand to main CLI
   - [x] Implement `ultrahope jj describe` command

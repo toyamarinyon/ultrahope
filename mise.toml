@@ -26,38 +26,26 @@ run = "pnpm -C packages/cli --silent run typecheck"
 description = "Typecheck packages/web"
 run = "pnpm -C packages/web --silent run typecheck"
 
-[tasks."dev:web"]
-description = "Start web dev server"
-run = "pnpm -C packages/web run dev --port ${PORT:-3000}"
-
 [tasks.web]
 description = "Start web dev server (sandbox env)"
-run = "mise -E sandbox run dev:web"
-
-[tasks."dev:translate"]
-description = "translate "
-run = "pnpm -w exec tsx scripts/translate.ts"
-
-[tasks.translate]
-description = "Run translate "
-run = "mise -E sandbox run dev:translate"
-
-[tasks."script:polar-sync"]
-description = "Sync Polar.sh configuration (meters, benefits, products)"
-run = "pnpm -w exec tsx scripts/polar-sync.ts {{option(name='flags', var=true)}}"
+run = "mise -E sandbox exec -- pnpm -C packages/web run dev --port 3100"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
-run = "mise -E sandbox run script:polar-sync {{option(name='flags', var=true)}}"
+run = "mise -E sandbox exec -- pnpm exec tsx scripts/polar-sync.ts --server sandbox --recreate"
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "pnpm -w exec tsx scripts/polar-sync.ts --production"
+run = "mise -E sandbox exec -- pnpm exec tsx scripts/polar-sync.ts"
 
 [tasks."db:migrate"]
 description = "Run database migrations"
-run = "pnpm --filter web exec drizzle-kit migrate"
+run = "pnpm -C packages/web exec drizzle-kit migrate"
 
 [tasks."db:generate-migration"]
 description = "Generate a new migration"
-run = "pnpm --filter web exec drizzle-kit generate"
+run = "pnpm -C packages/web exec drizzle-kit generate"
+
+[tasks."clear-test-user"]
+description = "Clear test user from Turso and Polar"
+run = "pnpm -C packages/web exec tsx scripts/clear-test-user.ts {{arg(name='email')}}"

@@ -25,9 +25,14 @@ export async function translate(
 	});
 
 	const metadata = result.providerMetadata?.gateway as
-		| { routing?: { finalProvider?: string } }
+		| {
+				routing?: { finalProvider?: string };
+				cost?: string;
+				generationId?: string;
+		  }
 		| undefined;
 	const vendor = metadata?.routing?.finalProvider ?? "unknown";
+	const cost = metadata?.cost ? Number.parseFloat(metadata.cost) : undefined;
 
 	return {
 		content: result.text,
@@ -35,6 +40,8 @@ export async function translate(
 		model: PRIMARY_MODEL,
 		inputTokens: result.usage.inputTokens ?? 0,
 		outputTokens: result.usage.outputTokens ?? 0,
+		cost,
+		generationId: metadata?.generationId,
 	};
 }
 
@@ -60,13 +67,25 @@ export async function translateMulti(
 	);
 
 	const contents: string[] = [];
+	const generationIds: string[] = [];
 	let inputTokens = 0;
 	let outputTokens = 0;
+	let totalCost = 0;
 
 	for (const result of results) {
 		contents.push(result.text);
 		inputTokens += result.usage.inputTokens ?? 0;
 		outputTokens += result.usage.outputTokens ?? 0;
+
+		const meta = result.providerMetadata?.gateway as
+			| { cost?: string; generationId?: string }
+			| undefined;
+		if (meta?.cost) {
+			totalCost += Number.parseFloat(meta.cost);
+		}
+		if (meta?.generationId) {
+			generationIds.push(meta.generationId);
+		}
 	}
 
 	const metadata = results[0]?.providerMetadata?.gateway as
@@ -80,5 +99,7 @@ export async function translateMulti(
 		model: PRIMARY_MODEL,
 		inputTokens,
 		outputTokens,
+		cost: totalCost > 0 ? totalCost : undefined,
+		generationIds: generationIds.length > 0 ? generationIds : undefined,
 	};
 }

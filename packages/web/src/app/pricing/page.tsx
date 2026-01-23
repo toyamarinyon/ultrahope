@@ -8,15 +8,20 @@ const plans = [
 		name: "Free",
 		price: "$0",
 		description: "Get started with Ultrahope",
-		features: ["400,000 tokens/month", "Community support"],
+		features: [
+			"$0.40 included credit/month",
+			"Hard cap (no overage)",
+			"Community support",
+		],
 		slug: "free",
 	},
 	{
 		name: "Pro",
-		price: "$9",
+		price: "$10",
 		description: "For power users",
 		features: [
-			"1,000,000 tokens/month",
+			"$5 included credit/month",
+			"Pay-as-you-go overage at actual cost",
 			"Priority support",
 			"Early access to new features",
 		],
@@ -29,14 +34,26 @@ const productIdToSlug: Record<string, string> = {
 	[process.env.POLAR_PRODUCT_PRO_ID ?? ""]: "pro",
 };
 
-async function getActiveSubscriptions(userId: string): Promise<string[]> {
+type SubscriptionInfo = {
+	slug: string;
+	subscriptionId: string;
+	productId: string;
+};
+
+async function getActiveSubscriptions(
+	userId: string,
+): Promise<SubscriptionInfo[]> {
 	try {
 		const customerState = await polarClient.customers.getStateExternal({
 			externalId: userId,
 		});
 		return customerState.activeSubscriptions
-			.map((sub) => productIdToSlug[sub.productId])
-			.filter((slug): slug is string => slug != null);
+			.map((sub) => ({
+				slug: productIdToSlug[sub.productId],
+				subscriptionId: sub.id,
+				productId: sub.productId,
+			}))
+			.filter((info): info is SubscriptionInfo => info.slug != null);
 	} catch {
 		return [];
 	}
@@ -47,9 +64,12 @@ export default async function PricingPage() {
 		headers: await headers(),
 	});
 
-	const activeSlugs = session
+	const activeSubscriptions = session
 		? await getActiveSubscriptions(session.user.id)
 		: [];
+
+	const activeSlugs = activeSubscriptions.map((s) => s.slug);
+	const freeSubscription = activeSubscriptions.find((s) => s.slug === "free");
 
 	return (
 		<main>
@@ -69,7 +89,10 @@ export default async function PricingPage() {
 								flex: 1,
 							}}
 						>
-							<h2>{plan.name}</h2>
+							<h2>
+								{plan.name}
+								{activeSlugs.join(",")}
+							</h2>
 							<p style={{ fontSize: "2rem", fontWeight: "bold" }}>
 								{plan.price}
 								<span style={{ fontSize: "1rem", fontWeight: "normal" }}>
@@ -96,7 +119,19 @@ export default async function PricingPage() {
 										Current Plan
 									</span>
 								) : (
-									<CheckoutButton slug={plan.slug} planName={plan.name} />
+									<CheckoutButton
+										slug={plan.slug}
+										planName={plan.name}
+										upgradeFrom={
+											plan.slug === "pro" && freeSubscription
+												? {
+														subscriptionId: freeSubscription.subscriptionId,
+														targetProductId:
+															process.env.POLAR_PRODUCT_PRO_ID ?? "",
+													}
+												: undefined
+										}
+									/>
 								)
 							) : (
 								<Link href="/login">Sign in to subscribe</Link>

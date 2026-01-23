@@ -8,11 +8,11 @@ export interface TranslateRequest {
 	n?: number;
 }
 
-export interface TranslateSingleResponse {
+interface TranslateSingleResponse {
 	output: string;
 }
 
-export interface TranslateMultiResponse {
+interface TranslateMultiResponse {
 	outputs: string[];
 }
 

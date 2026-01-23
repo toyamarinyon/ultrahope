@@ -1,4 +1,3 @@
-import type { LLMMetadata } from "@polar-sh/sdk/models/components/llmmetadata";
 import {
 	translate as coreTranslate,
 	translateMulti as coreTranslateMulti,
@@ -6,48 +5,99 @@ import {
 	type LLMResponse,
 	type Target,
 } from "@ultrahope/core";
+import { eq } from "drizzle-orm";
 import { after } from "next/server";
+import { db } from "@/db/client";
+import * as schema from "@/db/schema";
 import { polarClient } from "@/lib/auth";
+
+const MICRODOLLARS_PER_USD = 1_000_000;
 
 type TranslateOptions = {
 	externalCustomerId?: string;
 };
 
+type UserBillingInfo = {
+	balance: number;
+	meterId: string;
+	plan: UserPlan;
+	allowOverage: boolean;
+};
+
+export type UserPlan = "free" | "pro";
+
 export class InsufficientBalanceError extends Error {
 	constructor(
 		public balance: number,
 		public meterId: string,
+		public plan: UserPlan = "free",
+		public allowOverage: boolean = false,
 	) {
-		super(`Insufficient token balance: ${balance} tokens remaining`);
+		super(`Insufficient balance: ${balance} remaining`);
 		this.name = "InsufficientBalanceError";
 	}
 }
 
-async function checkMeterBalance(
+async function getUserBillingInfo(
 	externalCustomerId: string,
-): Promise<{ balance: number; meterId: string } | null> {
+): Promise<UserBillingInfo | null> {
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		return null;
 	}
 
+	const usageCostMeterId = process.env.POLAR_USAGE_COST_METER_ID;
+	if (!usageCostMeterId) {
+		console.warn(
+			"[polar] POLAR_USAGE_COST_METER_ID not set, skipping balance check",
+		);
+		return null;
+	}
+
+	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
+
 	try {
-		const response = await polarClient.customerMeters.list({
-			externalCustomerId,
-			limit: 1,
-		});
-		const meters = response.result.items;
+		const [meterResponse, customerState, userRecords] = await Promise.all([
+			polarClient.customerMeters.list({
+				externalCustomerId,
+				meterId: usageCostMeterId,
+				limit: 1,
+			}),
+			polarClient.customers.getStateExternal({
+				externalId: externalCustomerId,
+			}),
+			db
+				.select({ allowOverage: schema.user.allowOverage })
+				.from(schema.user)
+				.where(eq(schema.user.id, externalCustomerId))
+				.limit(1),
+		]);
+		const userRecord = userRecords[0];
+
+		const meters = meterResponse.result.items;
 		if (meters.length === 0) {
 			return null;
 		}
+
 		const meter = meters[0];
-		return { balance: meter.balance, meterId: meter.meterId };
+		const isPro =
+			proProductId != null &&
+			customerState.activeSubscriptions.some(
+				(sub: { productId: string }) => sub.productId === proProductId,
+			);
+
+		return {
+			balance: meter.balance,
+			meterId: meter.meterId,
+			plan: isPro ? "pro" : "free",
+			allowOverage: userRecord?.allowOverage ?? false,
+		};
 	} catch (error) {
-		console.error("[polar] Failed to check meter balance:", error);
+		console.error("[polar] Failed to get user billing info:", error);
 		return null;
 	}
 }
 
-async function recordTokenConsumption(
+async function recordUsage(
 	externalCustomerId: string | undefined,
 	response: LLMResponse | LLMMultiResponse,
 ): Promise<void> {
@@ -58,34 +108,35 @@ async function recordTokenConsumption(
 		console.warn("[polar] POLAR_ACCESS_TOKEN not set, skipping usage ingest");
 		return;
 	}
-	const totalTokens = response.inputTokens + response.outputTokens;
-	if (!Number.isFinite(totalTokens) || totalTokens <= 0) {
+	if (response.cost === undefined || response.cost <= 0) {
 		return;
 	}
 
-	const metadata: LLMMetadata = {
-		vendor: response.vendor,
-		model: response.model,
-		inputTokens: response.inputTokens,
-		outputTokens: response.outputTokens,
-		totalTokens,
-		...(response.cachedInputTokens !== undefined && {
-			cachedInputTokens: response.cachedInputTokens,
-		}),
-	};
+	const costInMicrodollars = Math.round(response.cost * MICRODOLLARS_PER_USD);
+
+	const generationId =
+		"generationId" in response
+			? response.generationId
+			: "generationIds" in response
+				? response.generationIds?.join(",")
+				: undefined;
 
 	try {
 		await polarClient.events.ingest({
 			events: [
 				{
-					name: "token_consumption",
+					name: "usage",
 					externalCustomerId,
-					metadata: metadata as unknown as Record<string, string | number>,
+					metadata: {
+						cost: costInMicrodollars,
+						model: response.model,
+						...(generationId && { generationId }),
+					},
 				},
 			],
 		});
 	} catch (error) {
-		console.error("[polar] Failed to ingest token usage:", error);
+		console.error("[polar] Failed to ingest usage:", error);
 	}
 }
 
@@ -95,16 +146,21 @@ export async function translate(
 	options: TranslateOptions = {},
 ): Promise<string> {
 	if (options.externalCustomerId) {
-		const meterInfo = await checkMeterBalance(options.externalCustomerId);
-		if (meterInfo && meterInfo.balance <= 0) {
-			throw new InsufficientBalanceError(meterInfo.balance, meterInfo.meterId);
+		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
+		if (billingInfo && billingInfo.balance <= 0 && !billingInfo.allowOverage) {
+			throw new InsufficientBalanceError(
+				billingInfo.balance,
+				billingInfo.meterId,
+				billingInfo.plan,
+				billingInfo.allowOverage,
+			);
 		}
 	}
 
 	const response = await coreTranslate(input, target);
 
 	after(async () => {
-		await recordTokenConsumption(options.externalCustomerId, response);
+		await recordUsage(options.externalCustomerId, response);
 	});
 
 	return response.content;
@@ -117,16 +173,21 @@ export async function translateMulti(
 	options: TranslateOptions = {},
 ): Promise<string[]> {
 	if (options.externalCustomerId) {
-		const meterInfo = await checkMeterBalance(options.externalCustomerId);
-		if (meterInfo && meterInfo.balance <= 0) {
-			throw new InsufficientBalanceError(meterInfo.balance, meterInfo.meterId);
+		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
+		if (billingInfo && billingInfo.balance <= 0 && !billingInfo.allowOverage) {
+			throw new InsufficientBalanceError(
+				billingInfo.balance,
+				billingInfo.meterId,
+				billingInfo.plan,
+				billingInfo.allowOverage,
+			);
 		}
 	}
 
 	const response = await coreTranslateMulti(input, target, n);
 
 	after(async () => {
-		await recordTokenConsumption(options.externalCustomerId, response);
+		await recordUsage(options.externalCustomerId, response);
 	});
 
 	return response.contents;

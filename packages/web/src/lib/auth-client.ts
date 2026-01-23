@@ -6,7 +6,7 @@ const authClient = createAuthClient({
 	baseURL:
 		process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
 			? `https://ultrahope.dev`
-			: "http://localhost:3000",
+			: "http://localhost:3100",
 	plugins: [deviceAuthorizationClient(), polarClient()],
 });
 
