@@ -14,9 +14,9 @@
   - [x] Move types, prompts, providers
   - [x] Switch `packages/web/src/lib/llm/` to use core + billing wrapper
   - [x] Verify behavior (web → core → Cerebras API, device auth, CLI translate)
-- [ ] `packages/cli` publish prep
+- [x] `packages/cli` publish prep
   - [x] Verify translate command (after Minimax API implementation)
-  - [ ] npm publish
+  - [x] npm publish
 - [ ] `packages/web` remaining tasks → [decisions/web-package.md](decisions/web-package.md)
   - [ ] Account management
   - [x] Pricing / billing (Polar.sh integration) — Better Auth Polar plugin integration complete
