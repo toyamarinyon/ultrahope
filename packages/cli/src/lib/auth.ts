@@ -9,7 +9,12 @@ interface Credentials {
 function getCredentialsPath(): string {
 	const configDir =
 		process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
-	return path.join(configDir, "ultrahope", "credentials.json");
+	const env = process.env.ULTRAHOPE_ENV;
+	const filename =
+		env && env !== "production"
+			? `credentials.${env}.json`
+			: "credentials.json";
+	return path.join(configDir, "ultrahope", filename);
 }
 
 export async function getToken(): Promise<string | null> {

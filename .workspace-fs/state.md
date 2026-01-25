@@ -20,7 +20,7 @@
     - [x] Add one-time credit products (Credit $10, Credit $20)
     - [ ] Apply to sandbox with `--recreate` flag
     - [ ] Apply to production
-    - [ ] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
+    - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
     - [ ] Implement auto-recharge feature:
       - [ ] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
       - [ ] Check threshold after usage events

@@ -62,23 +62,22 @@ const app = new Elysia({ prefix: "/api" })
 							message: "Your usage credit has been exhausted.",
 							balance: error.balance,
 							plan: error.plan,
-							overageEnabled: error.allowOverage,
 							actions: {
-								enableOverage: "https://ultrahope.dev/settings/billing#overage",
-								addCredits: "https://ultrahope.dev/settings/billing#credits",
+								buyCredits: "https://ultrahope.dev/settings/billing#credits",
+								enableAutoRecharge:
+									"https://ultrahope.dev/settings/billing#auto-recharge",
 							},
-							hint: "Enable pay-as-you-go billing to continue using Ultrahope. You'll be billed at actual cost with no markup.",
+							hint: "Purchase additional credits or enable auto-recharge to continue.",
 						}
 					: {
 							error: "insufficient_balance",
 							message: "Your free credit has been exhausted.",
 							balance: error.balance,
 							plan: error.plan,
-							overageEnabled: false,
 							actions: {
 								upgrade: "https://ultrahope.dev/pricing",
 							},
-							hint: "Upgrade to Pro for $10/month with $5 included credit and pay-as-you-go billing.",
+							hint: "Upgrade to Pro for $10/month with $5 included credit and one-time credit purchases.",
 						};
 
 				return new Response(JSON.stringify(response), { status: 402 });

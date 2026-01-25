@@ -5,10 +5,7 @@ import {
 	type LLMResponse,
 	type Target,
 } from "@ultrahope/core";
-import { eq } from "drizzle-orm";
 import { after } from "next/server";
-import { db } from "@/db/client";
-import * as schema from "@/db/schema";
 import { polarClient } from "@/lib/auth";
 
 const MICRODOLLARS_PER_USD = 1_000_000;
@@ -21,7 +18,6 @@ type UserBillingInfo = {
 	balance: number;
 	meterId: string;
 	plan: UserPlan;
-	allowOverage: boolean;
 };
 
 export type UserPlan = "free" | "pro";
@@ -31,7 +27,6 @@ export class InsufficientBalanceError extends Error {
 		public balance: number,
 		public meterId: string,
 		public plan: UserPlan = "free",
-		public allowOverage: boolean = false,
 	) {
 		super(`Insufficient balance: ${balance} remaining`);
 		this.name = "InsufficientBalanceError";
@@ -56,7 +51,7 @@ async function getUserBillingInfo(
 	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
 
 	try {
-		const [meterResponse, customerState, userRecords] = await Promise.all([
+		const [meterResponse, customerState] = await Promise.all([
 			polarClient.customerMeters.list({
 				externalCustomerId,
 				meterId: usageCostMeterId,
@@ -65,13 +60,7 @@ async function getUserBillingInfo(
 			polarClient.customers.getStateExternal({
 				externalId: externalCustomerId,
 			}),
-			db
-				.select({ allowOverage: schema.user.allowOverage })
-				.from(schema.user)
-				.where(eq(schema.user.id, externalCustomerId))
-				.limit(1),
 		]);
-		const userRecord = userRecords[0];
 
 		const meters = meterResponse.result.items;
 		if (meters.length === 0) {
@@ -89,7 +78,6 @@ async function getUserBillingInfo(
 			balance: meter.balance,
 			meterId: meter.meterId,
 			plan: isPro ? "pro" : "free",
-			allowOverage: userRecord?.allowOverage ?? false,
 		};
 	} catch (error) {
 		console.error("[polar] Failed to get user billing info:", error);
@@ -147,12 +135,11 @@ export async function translate(
 ): Promise<string> {
 	if (options.externalCustomerId) {
 		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
-		if (billingInfo && billingInfo.balance <= 0 && !billingInfo.allowOverage) {
+		if (billingInfo && billingInfo.balance <= 0) {
 			throw new InsufficientBalanceError(
 				billingInfo.balance,
 				billingInfo.meterId,
 				billingInfo.plan,
-				billingInfo.allowOverage,
 			);
 		}
 	}
@@ -174,12 +161,11 @@ export async function translateMulti(
 ): Promise<string[]> {
 	if (options.externalCustomerId) {
 		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
-		if (billingInfo && billingInfo.balance <= 0 && !billingInfo.allowOverage) {
+		if (billingInfo && billingInfo.balance <= 0) {
 			throw new InsufficientBalanceError(
 				billingInfo.balance,
 				billingInfo.meterId,
 				billingInfo.plan,
-				billingInfo.allowOverage,
 			);
 		}
 	}

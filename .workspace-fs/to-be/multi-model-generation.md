@@ -60,15 +60,15 @@ Select a commit message:
                                                                                   
           Implement JWT-based auth flow           Fix unclosed DB connections     
           Add login/logout endpoints              Add proper cleanup handlers     
-          Include session management             [Anthropic Claude Sonnet 4.5]                                
-          [OpenAI GPT-5.2]
+          Include session management             [Anthropic Claude Sonnet 4.5][$0.05]                                
+          [OpenAI GPT-5.2][$0.01]
 
       [3] refactor: simplify API layer        [4] docs: update README             
                                                                                   
           Extract common utilities                Add installation guide          
           Reduce code duplication                 Include API examples            
-          Improve error handling                  [Cerebras Llama 3.1 8b]
-          [Cerebras GLM 4.7]
+          Improve error handling                  [Cerebras Llama 3.1 8b][$0.002]
+          [Cerebras GLM 4.7][$0.012]
 
 [1-4] Select  [e] Edit  [Enter] Confirm  [r] Reroll  [q] Abort
 ```
@@ -89,7 +89,7 @@ Select a commit message:
 |------|---------|
 | 1 | `[n] <commit title>` (first line, highlighted if selected) |
 | 2-4 | Body preview (truncated) |
-| 5 | `[Provider Model Name]` (dimmed) |
+| 5 | `[Provider Model Name][$X.XX]` (dimmed, shows generation cost) |
 
 ## Candidate Models
 
