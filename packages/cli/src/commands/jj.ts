@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import { createMockApiClient } from "../lib/mock-api-client";
@@ -107,7 +107,7 @@ async function generateDescriptions(
 
 function describeRevision(revision: string, message: string): void {
 	try {
-		execSync(`jj describe -r ${revision} -m ${JSON.stringify(message)}`, {
+		spawnSync("jj", ["describe", "-r", revision, "-m", message], {
 			stdio: "inherit",
 		});
 	} catch {
