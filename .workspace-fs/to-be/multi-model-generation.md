@@ -60,15 +60,15 @@ Select a commit message:
                                                                                   
           Implement JWT-based auth flow           Fix unclosed DB connections     
           Add login/logout endpoints              Add proper cleanup handlers     
-          Include session management             [Anthropic Claude Sonnet 4.5][$0.05]                                
-          [OpenAI GPT-5.2][$0.01]
+          Include session management             [Anthropic Claude Sonnet 4.5 · $0.05]                                
+          [OpenAI GPT-5.2 · $0.01]
 
       [3] refactor: simplify API layer        [4] docs: update README             
                                                                                   
           Extract common utilities                Add installation guide          
           Reduce code duplication                 Include API examples            
-          Improve error handling                  [Cerebras Llama 3.1 8b][$0.002]
-          [Cerebras GLM 4.7][$0.012]
+          Improve error handling                  [Cerebras Llama 3.1 8b · $0.002]
+          [Cerebras GLM 4.7 · $0.012]
 
 [1-4] Select  [e] Edit  [Enter] Confirm  [r] Reroll  [q] Abort
 ```
@@ -95,11 +95,10 @@ Select a commit message:
 
 | Provider | Model | Notes |
 |----------|-------|-------|
-| Cerebras | llama-4-scout-17b-16e-instruct | Current default, fast |
-| OpenAI | gpt-4o-mini | Good balance |
-| Anthropic | claude-3-haiku | Fast, concise |
-| Groq | llama-3.3-70b-versatile | Fast inference |
-| Google | gemini-2.0-flash | Good for structured output |
+| Mistral | mistral/mistral-nemo | Fast, good quality |
+| Cerebras | cerebras/llama-3.1-8b | Current default, extremely fast |
+| OpenAI | openai/gpt-5-nano | Good balance |
+| xAI | xai/grok-code-fast-1 | Fast, code-optimized |
 
 ## Implementation Considerations
 

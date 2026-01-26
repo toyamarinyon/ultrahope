@@ -1,4 +1,8 @@
-import type { TranslateRequest, TranslateResponse } from "./api-client";
+import type {
+	MultiModelResult,
+	TranslateRequest,
+	TranslateResponse,
+} from "./api-client";
 
 const MOCK_COMMIT_MESSAGES = [
 	"feat: implement new feature with improved performance",
@@ -63,6 +67,16 @@ export function createMockApiClient() {
 	return {
 		async translate(req: TranslateRequest): Promise<TranslateResponse> {
 			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			if (req.models && req.models.length > 0) {
+				const outputs = getMockOutputs(req.target, req.models.length);
+				const results: MultiModelResult[] = req.models.map((model, i) => ({
+					model,
+					output: outputs[i] ?? outputs[0],
+					cost: 0.001 * (i + 1),
+				}));
+				return { results };
+			}
 
 			const n = req.n ?? 1;
 			const outputs = getMockOutputs(req.target, n);

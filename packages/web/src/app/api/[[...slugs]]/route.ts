@@ -1,6 +1,11 @@
 import { Elysia } from "elysia";
 import { auth } from "@/lib/auth";
-import { InsufficientBalanceError, translate, translateMulti } from "@/lib/llm";
+import {
+	InsufficientBalanceError,
+	translate,
+	translateMulti,
+	translateMultiModel,
+} from "@/lib/llm";
 
 const app = new Elysia({ prefix: "/api" })
 	.derive(async ({ request: { headers } }) => {
@@ -18,10 +23,12 @@ const app = new Elysia({ prefix: "/api" })
 			input,
 			target,
 			n = 1,
+			models,
 		} = body as {
 			input: string;
 			target: string;
 			n?: number;
+			models?: string[];
 		};
 
 		const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
@@ -34,9 +41,19 @@ const app = new Elysia({ prefix: "/api" })
 			);
 		}
 
-		const candidateCount = Math.max(1, Math.min(8, Math.floor(n)));
-
 		try {
+			if (models && models.length > 0) {
+				const results = await translateMultiModel(
+					input,
+					target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+					models,
+					{ externalCustomerId: session.user.id },
+				);
+				return { results };
+			}
+
+			const candidateCount = Math.max(1, Math.min(8, Math.floor(n)));
+
 			if (candidateCount === 1) {
 				const output = await translate(
 					input,

@@ -1,12 +1,26 @@
 import { generateText } from "ai";
 import { PROMPTS } from "./prompts";
-import type { LLMMultiResponse, LLMResponse, Target } from "./types";
+import type {
+	LLMMultiResponse,
+	LLMResponse,
+	ModelResult,
+	MultiModelResponse,
+	Target,
+} from "./types";
+import { DEFAULT_MODELS } from "./types";
 
-export type { LLMMultiResponse, LLMResponse, Target };
+export type {
+	LLMMultiResponse,
+	LLMResponse,
+	ModelResult,
+	MultiModelResponse,
+	Target,
+};
 export { PROMPTS } from "./prompts";
+export { DEFAULT_MODELS } from "./types";
 
-const PRIMARY_MODEL = "cerebras/llama-3.3-70b";
-const FALLBACK_MODELS = ["openai/gpt-4o-mini"];
+const PRIMARY_MODEL = "cerebras/llama-3.1-8b";
+const FALLBACK_MODELS = ["openai/gpt-5-nano"];
 
 export async function translate(
 	input: string,
@@ -101,5 +115,52 @@ export async function translateMulti(
 		outputTokens,
 		cost: totalCost > 0 ? totalCost : undefined,
 		generationIds: generationIds.length > 0 ? generationIds : undefined,
+	};
+}
+
+export async function translateMultiModel(
+	input: string,
+	target: Target,
+	models: string[] = [...DEFAULT_MODELS],
+): Promise<MultiModelResponse> {
+	const settled = await Promise.allSettled(
+		models.map(async (model) => {
+			const result = await generateText({
+				model,
+				system: PROMPTS[target],
+				prompt: input,
+				maxOutputTokens: 1024,
+			});
+
+			const metadata = result.providerMetadata?.gateway as
+				| { cost?: string; generationId?: string }
+				| undefined;
+
+			return {
+				model,
+				content: result.text,
+				inputTokens: result.usage.inputTokens ?? 0,
+				outputTokens: result.usage.outputTokens ?? 0,
+				cost: metadata?.cost ? Number.parseFloat(metadata.cost) : undefined,
+				generationId: metadata?.generationId,
+			} satisfies ModelResult;
+		}),
+	);
+
+	const results: ModelResult[] = [];
+	let totalCost = 0;
+
+	for (const outcome of settled) {
+		if (outcome.status === "fulfilled") {
+			results.push(outcome.value);
+			if (outcome.value.cost) {
+				totalCost += outcome.value.cost;
+			}
+		}
+	}
+
+	return {
+		results,
+		totalCost: totalCost > 0 ? totalCost : undefined,
 	};
 }

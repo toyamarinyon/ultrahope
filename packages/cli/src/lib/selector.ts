@@ -16,10 +16,17 @@ import * as tty from "node:tty";
 export interface SelectorResult {
 	action: "confirm" | "abort" | "reroll";
 	selected?: string;
+	selectedIndex?: number;
+}
+
+export interface CandidateWithModel {
+	content: string;
+	model?: string;
+	cost?: number;
 }
 
 interface SelectorOptions {
-	candidates: string[];
+	candidates: CandidateWithModel[];
 	prompt?: string;
 }
 
@@ -41,13 +48,22 @@ function truncate(str: string, maxLen: number): string {
 	return `${firstLine.slice(0, maxLen - 1)}…`;
 }
 
+function formatModelName(model: string): string {
+	const parts = model.split("/");
+	return parts.length > 1 ? parts[1] : model;
+}
+
+function formatCost(cost: number): string {
+	return `$${cost}`;
+}
+
 function formatCandidate(
-	candidate: string,
+	candidate: CandidateWithModel,
 	index: number,
 	selected: boolean,
 	width: number,
 ): string[] {
-	const lines = candidate.split("\n").filter((l) => l.trim());
+	const lines = candidate.content.split("\n").filter((l) => l.trim());
 	const prefix = selected ? " > " : "   ";
 	const marker = `[${index + 1}]`;
 
@@ -62,13 +78,21 @@ function formatCandidate(
 		);
 	}
 
+	if (candidate.model) {
+		const modelInfo = candidate.cost
+			? `[${formatModelName(candidate.model)} · ${formatCost(candidate.cost)}]`
+			: `[${formatModelName(candidate.model)}]`;
+		const modelLine = `${prefix}      \x1b[2m${modelInfo}\x1b[0m`;
+		formatted.push(modelLine);
+	}
+
 	return formatted;
 }
 
 let lastRenderLineCount = 0;
 
 function render(
-	candidates: string[],
+	candidates: CandidateWithModel[],
 	selectedIndex: number,
 	prompt: string,
 ): void {
@@ -167,7 +191,11 @@ export async function selectCandidate(
 	const { candidates, prompt = "Select a result:" } = options;
 
 	if (!canUseInteractive() || candidates.length === 0) {
-		return { action: "confirm", selected: candidates[0] };
+		return {
+			action: "confirm",
+			selected: candidates[0]?.content,
+			selectedIndex: 0,
+		};
 	}
 
 	return new Promise((resolve) => {
@@ -219,7 +247,8 @@ export async function selectCandidate(
 				cleanup();
 				resolve({
 					action: "confirm",
-					selected: currentCandidates[selectedIndex],
+					selected: currentCandidates[selectedIndex].content,
+					selectedIndex,
 				});
 				return;
 			}
@@ -233,9 +262,14 @@ export async function selectCandidate(
 			if (key.name === "e") {
 				ttyInput.setRawMode(false);
 				try {
-					const edited = await openEditor(currentCandidates[selectedIndex]);
+					const edited = await openEditor(
+						currentCandidates[selectedIndex].content,
+					);
 					if (edited) {
-						currentCandidates[selectedIndex] = edited;
+						currentCandidates[selectedIndex] = {
+							...currentCandidates[selectedIndex],
+							content: edited,
+						};
 					}
 				} catch {}
 				ttyInput.setRawMode(true);

@@ -1,8 +1,19 @@
 import { execSync, spawnSync } from "node:child_process";
-import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
+import {
+	createApiClient,
+	InsufficientBalanceError,
+	type MultiModelResult,
+} from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import { createMockApiClient } from "../lib/mock-api-client";
-import { selectCandidate } from "../lib/selector";
+import { type CandidateWithModel, selectCandidate } from "../lib/selector";
+
+const DEFAULT_MODELS = [
+	"mistral/mistral-nemo",
+	"cerebras/llama-3.1-8b",
+	"openai/gpt-5-nano",
+	"xai/grok-code-fast-1",
+];
 
 interface DescribeOptions {
 	revision: string;
@@ -10,6 +21,7 @@ interface DescribeOptions {
 	interactive: boolean;
 	n: number;
 	mock: boolean;
+	models: string[];
 }
 
 function parseDescribeArgs(args: string[]): DescribeOptions {
@@ -18,6 +30,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	let interactive = true;
 	let n = 4;
 	let mock = false;
+	let models: string[] = [];
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -34,10 +47,16 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 			if (!Number.isNaN(value) && value >= 1 && value <= 8) {
 				n = value;
 			}
+		} else if (arg === "--models" && args[i + 1]) {
+			models = args[++i].split(",").map((m) => m.trim());
 		}
 	}
 
-	return { revision, dryRun, interactive, n, mock };
+	if (models.length === 0) {
+		models = DEFAULT_MODELS;
+	}
+
+	return { revision, dryRun, interactive, n, mock, models };
 }
 
 function getJjDiff(revision: string): string {
@@ -61,20 +80,27 @@ function getJjDiff(revision: string): string {
 
 async function generateDescriptions(
 	diff: string,
-	n: number,
+	models: string[],
 	mock: boolean,
-): Promise<string[]> {
+): Promise<CandidateWithModel[]> {
 	if (mock) {
 		const api = createMockApiClient();
 		const result = await api.translate({
 			input: diff,
 			target: "vcs-commit-message",
-			n,
+			models,
 		});
-		if ("outputs" in result) {
-			return result.outputs;
+		if ("results" in result) {
+			return result.results.map((r: MultiModelResult) => ({
+				content: r.output,
+				model: r.model,
+				cost: r.cost,
+			}));
 		}
-		return [result.output];
+		if ("outputs" in result) {
+			return result.outputs.map((output: string) => ({ content: output }));
+		}
+		return [{ content: result.output }];
 	}
 
 	const token = await getToken();
@@ -88,12 +114,19 @@ async function generateDescriptions(
 		const result = await api.translate({
 			input: diff,
 			target: "vcs-commit-message",
-			n,
+			models,
 		});
-		if ("outputs" in result) {
-			return result.outputs;
+		if ("results" in result) {
+			return result.results.map((r: MultiModelResult) => ({
+				content: r.output,
+				model: r.model,
+				cost: r.cost,
+			}));
 		}
-		return [result.output];
+		if ("outputs" in result) {
+			return result.outputs.map((output: string) => ({ content: output }));
+		}
+		return [{ content: result.output }];
 	} catch (error) {
 		if (error instanceof InsufficientBalanceError) {
 			console.error(
@@ -125,7 +158,12 @@ async function describe(args: string[]) {
 	}
 
 	if (!options.interactive) {
-		const [message] = await generateDescriptions(diff, 1, options.mock);
+		const candidates = await generateDescriptions(
+			diff,
+			options.models.slice(0, 1),
+			options.mock,
+		);
+		const message = candidates[0]?.content ?? "";
 
 		if (options.dryRun) {
 			console.log(message);
@@ -136,12 +174,16 @@ async function describe(args: string[]) {
 		return;
 	}
 
-	let candidates = await generateDescriptions(diff, options.n, options.mock);
+	let candidates = await generateDescriptions(
+		diff,
+		options.models,
+		options.mock,
+	);
 
 	if (options.dryRun) {
 		for (const candidate of candidates) {
 			console.log("---");
-			console.log(candidate);
+			console.log(candidate.content);
 		}
 		return;
 	}
@@ -158,7 +200,11 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await generateDescriptions(diff, options.n, options.mock);
+			candidates = await generateDescriptions(
+				diff,
+				options.models,
+				options.mock,
+			);
 			continue;
 		}
 

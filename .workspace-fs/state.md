@@ -26,8 +26,8 @@
       - [ ] Check threshold after usage events
       - [ ] Create Polar checkout when balance falls below threshold
     - [ ] Build settings UI for credit purchases + auto-recharge toggle
-  - [ ] Add `models` param to translate API
-  - [ ] Update selector UI to show model name per candidate
+  - [x] Add `models` param to translate API
+  - [x] Update selector UI to show model name per candidate
   - [ ] Build settings UI for user model preferences
 - [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
   - [x] Add `jj` subcommand to main CLI

@@ -6,6 +6,7 @@ export interface TranslateRequest {
 	input: string;
 	target: Target;
 	n?: number;
+	models?: string[];
 }
 
 interface TranslateSingleResponse {
@@ -16,9 +17,20 @@ interface TranslateMultiResponse {
 	outputs: string[];
 }
 
+export interface MultiModelResult {
+	model: string;
+	output: string;
+	cost?: number;
+}
+
+interface TranslateMultiModelResponse {
+	results: MultiModelResult[];
+}
+
 export type TranslateResponse =
 	| TranslateSingleResponse
-	| TranslateMultiResponse;
+	| TranslateMultiResponse
+	| TranslateMultiModelResponse;
 
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {

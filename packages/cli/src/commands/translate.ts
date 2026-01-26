@@ -1,6 +1,10 @@
-import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
+import {
+	createApiClient,
+	InsufficientBalanceError,
+	type MultiModelResult,
+} from "../lib/api-client";
 import { getToken } from "../lib/auth";
-import { selectCandidate } from "../lib/selector";
+import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
@@ -11,10 +15,18 @@ const VALID_TARGETS: Target[] = [
 	"pr-intent",
 ];
 
+const DEFAULT_MODELS = [
+	"mistral/mistral-nemo",
+	"cerebras/llama-3.1-8b",
+	"openai/gpt-5-nano",
+	"xai/grok-code-fast-1",
+];
+
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
 	n: number;
+	models: string[];
 }
 
 export async function translate(args: string[]) {
@@ -36,13 +48,24 @@ export async function translate(args: string[]) {
 
 	const api = createApiClient(token);
 
-	const doTranslate = async (n: number): Promise<string[]> => {
+	const doTranslate = async (): Promise<CandidateWithModel[]> => {
 		try {
-			const result = await api.translate({ input, target: options.target, n });
-			if ("outputs" in result) {
-				return result.outputs;
+			const result = await api.translate({
+				input,
+				target: options.target,
+				models: options.models,
+			});
+			if ("results" in result) {
+				return result.results.map((r: MultiModelResult) => ({
+					content: r.output,
+					model: r.model,
+					cost: r.cost,
+				}));
 			}
-			return [result.output];
+			if ("outputs" in result) {
+				return result.outputs.map((output: string) => ({ content: output }));
+			}
+			return [{ content: result.output }];
 		} catch (error) {
 			if (error instanceof InsufficientBalanceError) {
 				console.error(
@@ -55,12 +78,12 @@ export async function translate(args: string[]) {
 	};
 
 	if (!options.interactive) {
-		const [output] = await doTranslate(1);
-		console.log(output);
+		const candidates = await doTranslate();
+		console.log(candidates[0]?.content ?? "");
 		return;
 	}
 
-	let candidates = await doTranslate(options.n);
+	let candidates = await doTranslate();
 
 	while (true) {
 		const result = await selectCandidate({
@@ -74,7 +97,7 @@ export async function translate(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await doTranslate(options.n);
+			candidates = await doTranslate();
 			continue;
 		}
 
@@ -89,6 +112,7 @@ function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
 	let n = 4;
+	let models: string[] = [];
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -109,6 +133,13 @@ function parseArgs(args: string[]): TranslateOptions {
 				process.exit(1);
 			}
 			n = value;
+		} else if (arg === "--models") {
+			const value = args[++i];
+			if (!value) {
+				console.error("Error: --models requires a comma-separated list");
+				process.exit(1);
+			}
+			models = value.split(",").map((m) => m.trim());
 		}
 	}
 
@@ -120,5 +151,9 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, n };
+	if (models.length === 0) {
+		models = DEFAULT_MODELS;
+	}
+
+	return { target, interactive, n, models };
 }

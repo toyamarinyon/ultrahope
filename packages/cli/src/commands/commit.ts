@@ -2,25 +2,49 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
+import {
+	createApiClient,
+	InsufficientBalanceError,
+	type MultiModelResult,
+} from "../lib/api-client";
 import { getToken } from "../lib/auth";
-import { selectCandidate } from "../lib/selector";
+import { type CandidateWithModel, selectCandidate } from "../lib/selector";
+
+const DEFAULT_MODELS = [
+	"mistral/mistral-nemo",
+	"cerebras/llama-3.1-8b",
+	"openai/gpt-5-nano",
+	"xai/grok-code-fast-1",
+];
 
 interface CommitOptions {
 	message: boolean;
 	dryRun: boolean;
 	interactive: boolean;
 	n: number;
+	models: string[];
 }
 
 function parseArgs(args: string[]): CommitOptions {
 	let n = 4;
-	const nIdx = args.indexOf("-n");
-	if (nIdx !== -1 && args[nIdx + 1]) {
-		const value = Number.parseInt(args[nIdx + 1], 10);
-		if (!Number.isNaN(value) && value >= 1 && value <= 8) {
-			n = value;
+	let models: string[] = [];
+
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i];
+		if (arg === "-n" && args[i + 1]) {
+			const value = Number.parseInt(args[i + 1], 10);
+			if (!Number.isNaN(value) && value >= 1 && value <= 8) {
+				n = value;
+			}
+			i++;
+		} else if (arg === "--models" && args[i + 1]) {
+			models = args[i + 1].split(",").map((m) => m.trim());
+			i++;
 		}
+	}
+
+	if (models.length === 0) {
+		models = DEFAULT_MODELS;
 	}
 
 	return {
@@ -28,6 +52,7 @@ function parseArgs(args: string[]): CommitOptions {
 		dryRun: args.includes("--dry-run"),
 		interactive: !args.includes("--no-interactive"),
 		n,
+		models,
 	};
 }
 
@@ -44,8 +69,8 @@ function getStagedDiff(): string {
 
 async function generateCommitMessages(
 	diff: string,
-	n: number,
-): Promise<string[]> {
+	models: string[],
+): Promise<CandidateWithModel[]> {
 	const token = await getToken();
 	if (!token) {
 		console.error("Error: Not authenticated. Run `ultrahope login` first.");
@@ -57,12 +82,19 @@ async function generateCommitMessages(
 		const result = await api.translate({
 			input: diff,
 			target: "vcs-commit-message",
-			n,
+			models,
 		});
-		if ("outputs" in result) {
-			return result.outputs;
+		if ("results" in result) {
+			return result.results.map((r: MultiModelResult) => ({
+				content: r.output,
+				model: r.model,
+				cost: r.cost,
+			}));
 		}
-		return [result.output];
+		if ("outputs" in result) {
+			return result.outputs.map((output: string) => ({ content: output }));
+		}
+		return [{ content: result.output }];
 	} catch (error) {
 		if (error instanceof InsufficientBalanceError) {
 			console.error(
@@ -124,7 +156,11 @@ export async function commit(args: string[]) {
 	}
 
 	if (!options.interactive) {
-		const [message] = await generateCommitMessages(diff, 1);
+		const candidates = await generateCommitMessages(
+			diff,
+			options.models.slice(0, 1),
+		);
+		const message = candidates[0]?.content ?? "";
 
 		if (options.dryRun) {
 			console.log(message);
@@ -145,12 +181,12 @@ export async function commit(args: string[]) {
 		return;
 	}
 
-	let candidates = await generateCommitMessages(diff, options.n);
+	let candidates = await generateCommitMessages(diff, options.models);
 
 	if (options.dryRun) {
 		for (const candidate of candidates) {
 			console.log("---");
-			console.log(candidate);
+			console.log(candidate.content);
 		}
 		return;
 	}
@@ -167,7 +203,7 @@ export async function commit(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await generateCommitMessages(diff, options.n);
+			candidates = await generateCommitMessages(diff, options.models);
 			continue;
 		}
 

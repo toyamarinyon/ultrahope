@@ -1,6 +1,8 @@
 import {
 	translate as coreTranslate,
 	translateMulti as coreTranslateMulti,
+	translateMultiModel as coreTranslateMultiModel,
+	DEFAULT_MODELS,
 	type LLMMultiResponse,
 	type LLMResponse,
 	type Target,
@@ -177,4 +179,66 @@ export async function translateMulti(
 	});
 
 	return response.contents;
+}
+
+export interface MultiModelResult {
+	model: string;
+	output: string;
+	cost?: number;
+}
+
+export async function translateMultiModel(
+	input: string,
+	target: Target,
+	models: string[] = [...DEFAULT_MODELS],
+	options: TranslateOptions = {},
+): Promise<MultiModelResult[]> {
+	if (options.externalCustomerId) {
+		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
+		if (billingInfo && billingInfo.balance <= 0) {
+			throw new InsufficientBalanceError(
+				billingInfo.balance,
+				billingInfo.meterId,
+				billingInfo.plan,
+			);
+		}
+	}
+
+	const response = await coreTranslateMultiModel(input, target, models);
+
+	after(async () => {
+		if (!options.externalCustomerId || !response.totalCost) return;
+
+		const costInMicrodollars = Math.round(
+			response.totalCost * MICRODOLLARS_PER_USD,
+		);
+		const generationIds = response.results
+			.map((r) => r.generationId)
+			.filter(Boolean)
+			.join(",");
+
+		try {
+			await polarClient.events.ingest({
+				events: [
+					{
+						name: "usage",
+						externalCustomerId: options.externalCustomerId,
+						metadata: {
+							cost: costInMicrodollars,
+							model: "multi-model",
+							...(generationIds && { generationIds }),
+						},
+					},
+				],
+			});
+		} catch (error) {
+			console.error("[polar] Failed to ingest multi-model usage:", error);
+		}
+	});
+
+	return response.results.map((r) => ({
+		model: r.model,
+		output: r.content,
+		cost: r.cost,
+	}));
 }
