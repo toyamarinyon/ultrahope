@@ -30,6 +30,9 @@
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm run build"
 	},
+	"dependencies": {
+		"@ultrahope/core": "workspace:*"
+	},
 	"devDependencies": {
 		"@types/node": "^22.15.29",
 		"tsup": "8.5.0",

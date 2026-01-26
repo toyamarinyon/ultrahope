@@ -60,7 +60,16 @@ export function createMockApiClient() {
 	return {
 		async translate(req: TranslateRequest): Promise<TranslateResponse> {
 			await new Promise((resolve) => setTimeout(resolve, 100));
-			return { output: getMockOutput(req.target) };
+			const output = getMockOutput(req.target);
+			return {
+				output,
+				content: output,
+				vendor: "mock",
+				model: "mock/mock-model",
+				inputTokens: 100,
+				outputTokens: 50,
+				cost: 0.001,
+			};
 		},
 
 		async requestDeviceCode() {

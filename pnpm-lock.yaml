@@ -25,6 +25,10 @@ importers:
         version: 5.9.3
 
   packages/cli:
+    dependencies:
+      '@ultrahope/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^22.15.29

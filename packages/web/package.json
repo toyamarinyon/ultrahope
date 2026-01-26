@@ -2,6 +2,11 @@
 	"name": "@ultrahope/web",
 	"version": "0.0.1",
 	"private": true,
+	"exports": {
+		".": {
+			"types": "./src/index.ts"
+		}
+	},
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",

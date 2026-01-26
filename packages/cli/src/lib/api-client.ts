@@ -1,18 +1,16 @@
+import type { LLMResponse, Target } from "@ultrahope/core";
 import { log } from "./logger";
 
 const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
-export type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
+export type { Target };
 
 export interface TranslateRequest {
 	input: string;
 	target: Target;
 }
 
-export interface TranslateResponse {
-	output: string;
-	cost?: number;
-}
+export type TranslateResponse = LLMResponse & { output: string };
 
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {
