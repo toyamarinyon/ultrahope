@@ -27,17 +27,8 @@ export async function* generateCommitMessages(
 			const result = await api.translate({
 				input: diff,
 				target: "vcs-commit-message",
-				models: [model],
 			});
-			if ("results" in result && result.results[0]) {
-				yield {
-					content: result.results[0].output,
-					model: result.results[0].model,
-					cost: result.results[0].cost,
-				};
-			} else if ("output" in result) {
-				yield { content: result.output, model };
-			}
+			yield { content: result.output, model };
 		}
 		return;
 	}
@@ -61,22 +52,14 @@ export async function* generateCommitMessages(
 				const result = await api.translate({
 					input: diff,
 					target: "vcs-commit-message",
-					models: [model],
 				});
-				if ("results" in result && result.results[0]) {
-					return {
-						result: {
-							content: result.results[0].output,
-							model: result.results[0].model,
-							cost: result.results[0].cost,
-						},
-						index,
-					};
-				}
-				if ("output" in result) {
-					return { result: { content: result.output, model }, index };
-				}
-				return { result: null, index };
+				return {
+					result: {
+						content: result.output,
+						model,
+					},
+					index,
+				};
 			} catch (error) {
 				if (error instanceof InsufficientBalanceError) {
 					throw error;

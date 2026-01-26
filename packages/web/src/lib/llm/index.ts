@@ -1,9 +1,5 @@
 import {
 	translate as coreTranslate,
-	translateMulti as coreTranslateMulti,
-	translateMultiModel as coreTranslateMultiModel,
-	DEFAULT_MODELS,
-	type LLMMultiResponse,
 	type LLMResponse,
 	type Target,
 } from "@ultrahope/core";
@@ -89,7 +85,7 @@ async function getUserBillingInfo(
 
 async function recordUsage(
 	externalCustomerId: string | undefined,
-	response: LLMResponse | LLMMultiResponse,
+	response: LLMResponse,
 ): Promise<void> {
 	if (!externalCustomerId) {
 		return;
@@ -104,13 +100,6 @@ async function recordUsage(
 
 	const costInMicrodollars = Math.round(response.cost * MICRODOLLARS_PER_USD);
 
-	const generationId =
-		"generationId" in response
-			? response.generationId
-			: "generationIds" in response
-				? response.generationIds?.join(",")
-				: undefined;
-
 	try {
 		await polarClient.events.ingest({
 			events: [
@@ -120,7 +109,9 @@ async function recordUsage(
 					metadata: {
 						cost: costInMicrodollars,
 						model: response.model,
-						...(generationId && { generationId }),
+						...(response.generationId && {
+							generationId: response.generationId,
+						}),
 					},
 				},
 			],
@@ -153,92 +144,4 @@ export async function translate(
 	});
 
 	return response.content;
-}
-
-export async function translateMulti(
-	input: string,
-	target: Target,
-	n: number,
-	options: TranslateOptions = {},
-): Promise<string[]> {
-	if (options.externalCustomerId) {
-		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
-		if (billingInfo && billingInfo.balance <= 0) {
-			throw new InsufficientBalanceError(
-				billingInfo.balance,
-				billingInfo.meterId,
-				billingInfo.plan,
-			);
-		}
-	}
-
-	const response = await coreTranslateMulti(input, target, n);
-
-	after(async () => {
-		await recordUsage(options.externalCustomerId, response);
-	});
-
-	return response.contents;
-}
-
-export interface MultiModelResult {
-	model: string;
-	output: string;
-	cost?: number;
-}
-
-export async function translateMultiModel(
-	input: string,
-	target: Target,
-	models: string[] = [...DEFAULT_MODELS],
-	options: TranslateOptions = {},
-): Promise<MultiModelResult[]> {
-	if (options.externalCustomerId) {
-		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
-		if (billingInfo && billingInfo.balance <= 0) {
-			throw new InsufficientBalanceError(
-				billingInfo.balance,
-				billingInfo.meterId,
-				billingInfo.plan,
-			);
-		}
-	}
-
-	const response = await coreTranslateMultiModel(input, target, models);
-
-	after(async () => {
-		if (!options.externalCustomerId || !response.totalCost) return;
-
-		const costInMicrodollars = Math.round(
-			response.totalCost * MICRODOLLARS_PER_USD,
-		);
-		const generationIds = response.results
-			.map((r) => r.generationId)
-			.filter(Boolean)
-			.join(",");
-
-		try {
-			await polarClient.events.ingest({
-				events: [
-					{
-						name: "usage",
-						externalCustomerId: options.externalCustomerId,
-						metadata: {
-							cost: costInMicrodollars,
-							model: "multi-model",
-							...(generationIds && { generationIds }),
-						},
-					},
-				],
-			});
-		} catch (error) {
-			console.error("[polar] Failed to ingest multi-model usage:", error);
-		}
-	});
-
-	return response.results.map((r) => ({
-		model: r.model,
-		output: r.content,
-		cost: r.cost,
-	}));
 }

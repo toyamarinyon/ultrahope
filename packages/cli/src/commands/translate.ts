@@ -1,8 +1,4 @@
-import {
-	createApiClient,
-	InsufficientBalanceError,
-	type MultiModelResult,
-} from "../lib/api-client";
+import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
@@ -23,7 +19,7 @@ interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
 	mock: boolean;
-	models: string[];
+	model?: string;
 }
 
 export async function translate(args: string[]) {
@@ -49,17 +45,19 @@ async function handleVcsCommitMessage(
 	input: string,
 	options: TranslateOptions,
 ): Promise<void> {
+	const models = options.model ? [options.model] : DEFAULT_MODELS;
+
 	const createGenerator = () =>
 		generateCommitMessages({
 			diff: input,
-			models: options.models,
+			models,
 			mock: options.mock,
 		});
 
 	if (!options.interactive) {
 		const gen = generateCommitMessages({
 			diff: input,
-			models: options.models.slice(0, 1),
+			models: models.slice(0, 1),
 			mock: options.mock,
 		});
 		const first = await gen.next();
@@ -70,7 +68,7 @@ async function handleVcsCommitMessage(
 	while (true) {
 		const result = await selectCandidate({
 			candidates: createGenerator(),
-			maxSlots: options.models.length,
+			maxSlots: models.length,
 			prompt: "Select a result:",
 		});
 
@@ -101,39 +99,46 @@ async function handleGenericTarget(
 	}
 
 	const api = createApiClient(token);
+	const models = options.model ? [options.model] : DEFAULT_MODELS;
 
 	const doTranslate = async (): Promise<CandidateWithModel[]> => {
-		try {
-			const result = await api.translate({
-				input,
-				target: options.target,
-				models: options.models,
-			});
-			if ("results" in result) {
-				return result.results.map((r: MultiModelResult) => ({
-					content: r.output,
-					model: r.model,
-					cost: r.cost,
-				}));
+		const candidates: CandidateWithModel[] = [];
+		for (const model of models) {
+			try {
+				const result = await api.translate({
+					input,
+					target: options.target,
+				});
+				candidates.push({ content: result.output, model });
+			} catch (error) {
+				if (error instanceof InsufficientBalanceError) {
+					console.error(
+						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
+					);
+					process.exit(1);
+				}
+				throw error;
 			}
-			if ("outputs" in result) {
-				return result.outputs.map((output: string) => ({ content: output }));
-			}
-			return [{ content: result.output }];
-		} catch (error) {
-			if (error instanceof InsufficientBalanceError) {
-				console.error(
-					"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-				);
-				process.exit(1);
-			}
-			throw error;
 		}
+		return candidates;
 	};
 
 	if (!options.interactive) {
-		const candidates = await doTranslate();
-		console.log(candidates[0]?.content ?? "");
+		const result = await api
+			.translate({
+				input,
+				target: options.target,
+			})
+			.catch((error) => {
+				if (error instanceof InsufficientBalanceError) {
+					console.error(
+						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
+					);
+					process.exit(1);
+				}
+				throw error;
+			});
+		console.log(result.output);
 		return;
 	}
 
@@ -166,7 +171,7 @@ function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
 	let mock = false;
-	let models: string[] = [];
+	let model: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -182,13 +187,13 @@ function parseArgs(args: string[]): TranslateOptions {
 			interactive = false;
 		} else if (arg === "--mock") {
 			mock = true;
-		} else if (arg === "--models") {
+		} else if (arg === "--model") {
 			const value = args[++i];
 			if (!value) {
-				console.error("Error: --models requires a comma-separated list");
+				console.error("Error: --model requires a value");
 				process.exit(1);
 			}
-			models = value.split(",").map((m) => m.trim());
+			model = value;
 		}
 	}
 
@@ -200,9 +205,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	if (models.length === 0) {
-		models = DEFAULT_MODELS;
-	}
-
-	return { target, interactive, mock, models };
+	return { target, interactive, mock, model };
 }

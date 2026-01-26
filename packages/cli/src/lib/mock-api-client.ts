@@ -1,8 +1,4 @@
-import type {
-	MultiModelResult,
-	TranslateRequest,
-	TranslateResponse,
-} from "./api-client";
+import type { TranslateRequest, TranslateResponse } from "./api-client";
 
 const MOCK_COMMIT_MESSAGES = [
 	"feat: implement new feature with improved performance",
@@ -36,10 +32,7 @@ This PR adds a new authentication flow that improves security and user experienc
 - Tested manually with staging environment`,
 ];
 
-function getMockOutputs(
-	target: TranslateRequest["target"],
-	n: number,
-): string[] {
+function getMockOutput(target: TranslateRequest["target"]): string {
 	let pool: string[];
 
 	switch (target) {
@@ -60,31 +53,14 @@ function getMockOutputs(
 	}
 
 	const shuffled = [...pool].sort(() => Math.random() - 0.5);
-	return shuffled.slice(0, Math.min(n, shuffled.length));
+	return shuffled[0];
 }
 
 export function createMockApiClient() {
 	return {
 		async translate(req: TranslateRequest): Promise<TranslateResponse> {
 			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			if (req.models && req.models.length > 0) {
-				const outputs = getMockOutputs(req.target, req.models.length);
-				const results: MultiModelResult[] = req.models.map((model, i) => ({
-					model,
-					output: outputs[i] ?? outputs[0],
-					cost: 0.001 * (i + 1),
-				}));
-				return { results };
-			}
-
-			const n = req.n ?? 1;
-			const outputs = getMockOutputs(req.target, n);
-
-			if (n === 1) {
-				return { output: outputs[0] };
-			}
-			return { outputs };
+			return { output: getMockOutput(req.target) };
 		},
 
 		async requestDeviceCode() {
