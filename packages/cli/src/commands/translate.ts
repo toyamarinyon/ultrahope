@@ -15,12 +15,7 @@ const VALID_TARGETS: Target[] = [
 	"pr-intent",
 ];
 
-const DEFAULT_MODELS = [
-	"mistral/mistral-nemo",
-	"cerebras/llama-3.1-8b",
-	"openai/gpt-5-nano",
-	"xai/grok-code-fast-1",
-];
+const DEFAULT_MODELS = ["mistral/mistral-nemo", "cerebras/llama-3.1-8b"];
 
 interface TranslateOptions {
 	target: Target;

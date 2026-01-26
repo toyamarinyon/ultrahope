@@ -42,5 +42,3 @@ export const DEFAULT_MODELS = [
 	"openai/gpt-5-nano",
 	"xai/grok-code-fast-1",
 ] as const;
-
-export type SupportedModel = (typeof DEFAULT_MODELS)[number];

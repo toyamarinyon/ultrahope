@@ -1,9 +1,5 @@
 import { execSync, spawnSync } from "node:child_process";
-import {
-	createApiClient,
-	InsufficientBalanceError,
-	type MultiModelResult,
-} from "../lib/api-client";
+import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import { createMockApiClient } from "../lib/mock-api-client";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
@@ -78,29 +74,30 @@ function getJjDiff(revision: string): string {
 	}
 }
 
-async function generateDescriptions(
+async function* generateDescriptions(
 	diff: string,
 	models: string[],
 	mock: boolean,
-): Promise<CandidateWithModel[]> {
+): AsyncGenerator<CandidateWithModel> {
 	if (mock) {
 		const api = createMockApiClient();
-		const result = await api.translate({
-			input: diff,
-			target: "vcs-commit-message",
-			models,
-		});
-		if ("results" in result) {
-			return result.results.map((r: MultiModelResult) => ({
-				content: r.output,
-				model: r.model,
-				cost: r.cost,
-			}));
+		for (const model of models) {
+			const result = await api.translate({
+				input: diff,
+				target: "vcs-commit-message",
+				models: [model],
+			});
+			if ("results" in result && result.results[0]) {
+				yield {
+					content: result.results[0].output,
+					model: result.results[0].model,
+					cost: result.results[0].cost,
+				};
+			} else if ("output" in result) {
+				yield { content: result.output, model };
+			}
 		}
-		if ("outputs" in result) {
-			return result.outputs.map((output: string) => ({ content: output }));
-		}
-		return [{ content: result.output }];
+		return;
 	}
 
 	const token = await getToken();
@@ -110,23 +107,52 @@ async function generateDescriptions(
 	}
 
 	const api = createApiClient(token);
+
+	type PendingResult = {
+		promise: Promise<{ result: CandidateWithModel | null; index: number }>;
+		index: number;
+	};
+
+	const pending: PendingResult[] = models.map((model, index) => ({
+		promise: (async () => {
+			try {
+				const result = await api.translate({
+					input: diff,
+					target: "vcs-commit-message",
+					models: [model],
+				});
+				if ("results" in result && result.results[0]) {
+					return {
+						result: {
+							content: result.results[0].output,
+							model: result.results[0].model,
+							cost: result.results[0].cost,
+						},
+						index,
+					};
+				}
+				if ("output" in result) {
+					return { result: { content: result.output, model }, index };
+				}
+				return { result: null, index };
+			} catch (error) {
+				if (error instanceof InsufficientBalanceError) {
+					throw error;
+				}
+				return { result: null, index };
+			}
+		})(),
+		index,
+	}));
+
+	const remaining = new Map(pending.map((p) => [p.index, p.promise]));
+
 	try {
-		const result = await api.translate({
-			input: diff,
-			target: "vcs-commit-message",
-			models,
-		});
-		if ("results" in result) {
-			return result.results.map((r: MultiModelResult) => ({
-				content: r.output,
-				model: r.model,
-				cost: r.cost,
-			}));
+		while (remaining.size > 0) {
+			const { result, index } = await Promise.race(remaining.values());
+			remaining.delete(index);
+			if (result) yield result;
 		}
-		if ("outputs" in result) {
-			return result.outputs.map((output: string) => ({ content: output }));
-		}
-		return [{ content: result.output }];
 	} catch (error) {
 		if (error instanceof InsufficientBalanceError) {
 			console.error(
@@ -158,12 +184,13 @@ async function describe(args: string[]) {
 	}
 
 	if (!options.interactive) {
-		const candidates = await generateDescriptions(
+		const gen = generateDescriptions(
 			diff,
 			options.models.slice(0, 1),
 			options.mock,
 		);
-		const message = candidates[0]?.content ?? "";
+		const first = await gen.next();
+		const message = first.value?.content ?? "";
 
 		if (options.dryRun) {
 			console.log(message);
@@ -174,14 +201,12 @@ async function describe(args: string[]) {
 		return;
 	}
 
-	let candidates = await generateDescriptions(
-		diff,
-		options.models,
-		options.mock,
-	);
-
 	if (options.dryRun) {
-		for (const candidate of candidates) {
+		for await (const candidate of generateDescriptions(
+			diff,
+			options.models,
+			options.mock,
+		)) {
 			console.log("---");
 			console.log(candidate.content);
 		}
@@ -190,7 +215,8 @@ async function describe(args: string[]) {
 
 	while (true) {
 		const result = await selectCandidate({
-			candidates,
+			candidates: generateDescriptions(diff, options.models, options.mock),
+			maxSlots: options.models.length,
 			prompt: "Select a commit message:",
 		});
 
@@ -200,11 +226,6 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await generateDescriptions(
-				diff,
-				options.models,
-				options.mock,
-			);
 			continue;
 		}
 
