@@ -2,32 +2,25 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { selectCandidate } from "../lib/selector";
 import {
-	createApiClient,
-	InsufficientBalanceError,
-	type MultiModelResult,
-} from "../lib/api-client";
-import { getToken } from "../lib/auth";
-import { type CandidateWithModel, selectCandidate } from "../lib/selector";
-
-const DEFAULT_MODELS = [
-	"mistral/mistral-nemo",
-	"cerebras/llama-3.1-8b",
-	"openai/gpt-5-nano",
-	"xai/grok-code-fast-1",
-];
+	DEFAULT_MODELS,
+	generateCommitMessages,
+} from "../lib/vcs-message-generator";
 
 interface CommitOptions {
 	message: boolean;
 	dryRun: boolean;
 	interactive: boolean;
 	n: number;
+	mock: boolean;
 	models: string[];
 }
 
 function parseArgs(args: string[]): CommitOptions {
 	let n = 4;
 	let models: string[] = [];
+	let mock = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -40,6 +33,8 @@ function parseArgs(args: string[]): CommitOptions {
 		} else if (arg === "--models" && args[i + 1]) {
 			models = args[i + 1].split(",").map((m) => m.trim());
 			i++;
+		} else if (arg === "--mock") {
+			mock = true;
 		}
 	}
 
@@ -52,6 +47,7 @@ function parseArgs(args: string[]): CommitOptions {
 		dryRun: args.includes("--dry-run"),
 		interactive: !args.includes("--no-interactive"),
 		n,
+		mock,
 		models,
 	};
 }
@@ -64,45 +60,6 @@ function getStagedDiff(): string {
 			"Error: Failed to get staged changes. Are you in a git repository?",
 		);
 		process.exit(1);
-	}
-}
-
-async function generateCommitMessages(
-	diff: string,
-	models: string[],
-): Promise<CandidateWithModel[]> {
-	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
-	const api = createApiClient(token);
-	try {
-		const result = await api.translate({
-			input: diff,
-			target: "vcs-commit-message",
-			models,
-		});
-		if ("results" in result) {
-			return result.results.map((r: MultiModelResult) => ({
-				content: r.output,
-				model: r.model,
-				cost: r.cost,
-			}));
-		}
-		if ("outputs" in result) {
-			return result.outputs.map((output: string) => ({ content: output }));
-		}
-		return [{ content: result.output }];
-	} catch (error) {
-		if (error instanceof InsufficientBalanceError) {
-			console.error(
-				"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-			);
-			process.exit(1);
-		}
-		throw error;
 	}
 }
 
@@ -155,12 +112,21 @@ export async function commit(args: string[]) {
 		process.exit(1);
 	}
 
-	if (!options.interactive) {
-		const candidates = await generateCommitMessages(
+	const createGenerator = () =>
+		generateCommitMessages({
 			diff,
-			options.models.slice(0, 1),
-		);
-		const message = candidates[0]?.content ?? "";
+			models: options.models,
+			mock: options.mock,
+		});
+
+	if (!options.interactive) {
+		const gen = generateCommitMessages({
+			diff,
+			models: options.models.slice(0, 1),
+			mock: options.mock,
+		});
+		const first = await gen.next();
+		const message = first.value?.content ?? "";
 
 		if (options.dryRun) {
 			console.log(message);
@@ -181,10 +147,8 @@ export async function commit(args: string[]) {
 		return;
 	}
 
-	let candidates = await generateCommitMessages(diff, options.models);
-
 	if (options.dryRun) {
-		for (const candidate of candidates) {
+		for await (const candidate of createGenerator()) {
 			console.log("---");
 			console.log(candidate.content);
 		}
@@ -193,7 +157,8 @@ export async function commit(args: string[]) {
 
 	while (true) {
 		const result = await selectCandidate({
-			candidates,
+			candidates: createGenerator(),
+			maxSlots: options.models.length,
 			prompt: "Select a commit message:",
 		});
 
@@ -203,7 +168,6 @@ export async function commit(args: string[]) {
 		}
 
 		if (result.action === "reroll") {
-			candidates = await generateCommitMessages(diff, options.models);
 			continue;
 		}
 

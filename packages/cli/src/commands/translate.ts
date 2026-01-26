@@ -6,6 +6,10 @@ import {
 import { getToken } from "../lib/auth";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
+import {
+	DEFAULT_MODELS,
+	generateCommitMessages,
+} from "../lib/vcs-message-generator";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
@@ -15,12 +19,11 @@ const VALID_TARGETS: Target[] = [
 	"pr-intent",
 ];
 
-const DEFAULT_MODELS = ["mistral/mistral-nemo", "cerebras/llama-3.1-8b"];
-
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
 	n: number;
+	mock: boolean;
 	models: string[];
 }
 
@@ -35,6 +38,63 @@ export async function translate(args: string[]) {
 		process.exit(1);
 	}
 
+	if (options.target === "vcs-commit-message") {
+		await handleVcsCommitMessage(input, options);
+		return;
+	}
+
+	await handleGenericTarget(input, options);
+}
+
+async function handleVcsCommitMessage(
+	input: string,
+	options: TranslateOptions,
+): Promise<void> {
+	const createGenerator = () =>
+		generateCommitMessages({
+			diff: input,
+			models: options.models,
+			mock: options.mock,
+		});
+
+	if (!options.interactive) {
+		const gen = generateCommitMessages({
+			diff: input,
+			models: options.models.slice(0, 1),
+			mock: options.mock,
+		});
+		const first = await gen.next();
+		console.log(first.value?.content ?? "");
+		return;
+	}
+
+	while (true) {
+		const result = await selectCandidate({
+			candidates: createGenerator(),
+			maxSlots: options.models.length,
+			prompt: "Select a result:",
+		});
+
+		if (result.action === "abort") {
+			console.error("Aborted.");
+			process.exit(1);
+		}
+
+		if (result.action === "reroll") {
+			continue;
+		}
+
+		if (result.action === "confirm" && result.selected) {
+			console.log(result.selected);
+			return;
+		}
+	}
+}
+
+async function handleGenericTarget(
+	input: string,
+	options: TranslateOptions,
+): Promise<void> {
 	const token = await getToken();
 	if (!token) {
 		console.error("Error: Not authenticated. Run `ultrahope login` first.");
@@ -107,6 +167,7 @@ function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
 	let n = 4;
+	let mock = false;
 	let models: string[] = [];
 
 	for (let i = 0; i < args.length; i++) {
@@ -128,6 +189,8 @@ function parseArgs(args: string[]): TranslateOptions {
 				process.exit(1);
 			}
 			n = value;
+		} else if (arg === "--mock") {
+			mock = true;
 		} else if (arg === "--models") {
 			const value = args[++i];
 			if (!value) {
@@ -150,5 +213,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		models = DEFAULT_MODELS;
 	}
 
-	return { target, interactive, n, models };
+	return { target, interactive, n, mock, models };
 }

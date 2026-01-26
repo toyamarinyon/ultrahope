@@ -1,15 +1,9 @@
 import { execSync, spawnSync } from "node:child_process";
-import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
-import { getToken } from "../lib/auth";
-import { createMockApiClient } from "../lib/mock-api-client";
-import { type CandidateWithModel, selectCandidate } from "../lib/selector";
-
-const DEFAULT_MODELS = [
-	"mistral/mistral-nemo",
-	"cerebras/llama-3.1-8b",
-	"openai/gpt-5-nano",
-	"xai/grok-code-fast-1",
-];
+import { selectCandidate } from "../lib/selector";
+import {
+	DEFAULT_MODELS,
+	generateCommitMessages,
+} from "../lib/vcs-message-generator";
 
 interface DescribeOptions {
 	revision: string;
@@ -74,96 +68,6 @@ function getJjDiff(revision: string): string {
 	}
 }
 
-async function* generateDescriptions(
-	diff: string,
-	models: string[],
-	mock: boolean,
-): AsyncGenerator<CandidateWithModel> {
-	if (mock) {
-		const api = createMockApiClient();
-		for (const model of models) {
-			const result = await api.translate({
-				input: diff,
-				target: "vcs-commit-message",
-				models: [model],
-			});
-			if ("results" in result && result.results[0]) {
-				yield {
-					content: result.results[0].output,
-					model: result.results[0].model,
-					cost: result.results[0].cost,
-				};
-			} else if ("output" in result) {
-				yield { content: result.output, model };
-			}
-		}
-		return;
-	}
-
-	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
-	const api = createApiClient(token);
-
-	type PendingResult = {
-		promise: Promise<{ result: CandidateWithModel | null; index: number }>;
-		index: number;
-	};
-
-	const pending: PendingResult[] = models.map((model, index) => ({
-		promise: (async () => {
-			try {
-				const result = await api.translate({
-					input: diff,
-					target: "vcs-commit-message",
-					models: [model],
-				});
-				if ("results" in result && result.results[0]) {
-					return {
-						result: {
-							content: result.results[0].output,
-							model: result.results[0].model,
-							cost: result.results[0].cost,
-						},
-						index,
-					};
-				}
-				if ("output" in result) {
-					return { result: { content: result.output, model }, index };
-				}
-				return { result: null, index };
-			} catch (error) {
-				if (error instanceof InsufficientBalanceError) {
-					throw error;
-				}
-				return { result: null, index };
-			}
-		})(),
-		index,
-	}));
-
-	const remaining = new Map(pending.map((p) => [p.index, p.promise]));
-
-	try {
-		while (remaining.size > 0) {
-			const { result, index } = await Promise.race(remaining.values());
-			remaining.delete(index);
-			if (result) yield result;
-		}
-	} catch (error) {
-		if (error instanceof InsufficientBalanceError) {
-			console.error(
-				"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-			);
-			process.exit(1);
-		}
-		throw error;
-	}
-}
-
 function describeRevision(revision: string, message: string): void {
 	try {
 		spawnSync("jj", ["describe", "-r", revision, "-m", message], {
@@ -183,12 +87,19 @@ async function describe(args: string[]) {
 		process.exit(1);
 	}
 
-	if (!options.interactive) {
-		const gen = generateDescriptions(
+	const createGenerator = () =>
+		generateCommitMessages({
 			diff,
-			options.models.slice(0, 1),
-			options.mock,
-		);
+			models: options.models,
+			mock: options.mock,
+		});
+
+	if (!options.interactive) {
+		const gen = generateCommitMessages({
+			diff,
+			models: options.models.slice(0, 1),
+			mock: options.mock,
+		});
 		const first = await gen.next();
 		const message = first.value?.content ?? "";
 
@@ -202,11 +113,7 @@ async function describe(args: string[]) {
 	}
 
 	if (options.dryRun) {
-		for await (const candidate of generateDescriptions(
-			diff,
-			options.models,
-			options.mock,
-		)) {
+		for await (const candidate of createGenerator()) {
 			console.log("---");
 			console.log(candidate.content);
 		}
@@ -215,7 +122,7 @@ async function describe(args: string[]) {
 
 	while (true) {
 		const result = await selectCandidate({
-			candidates: generateDescriptions(diff, options.models, options.mock),
+			candidates: createGenerator(),
 			maxSlots: options.models.length,
 			prompt: "Select a commit message:",
 		});
