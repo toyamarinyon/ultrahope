@@ -12,8 +12,9 @@ Output requirements:
   - subject: imperative mood, present tense, no trailing period, <= 72 characters
 - Add a body only when it adds value:
   - Insert a blank line between subject and body.
-  - Use 2-4 short bullet lines describing the most important changes and intent.
+  - Use 2-3 short bullet lines describing the most important changes and intent.
   - Avoid listing many files or repeating the diff; focus on user-visible behavior and key refactors.
+  - Prefer short, direct sentences. One bullet = one concrete change.
 - If the change is breaking, append a blank line and a footer:
   BREAKING CHANGE: <what changed and what to do>
 

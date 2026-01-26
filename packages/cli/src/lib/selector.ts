@@ -47,10 +47,28 @@ function canUseInteractive(): boolean {
 	}
 }
 
-function truncate(str: string, maxLen: number): string {
-	const firstLine = str.split("\n")[0];
-	if (firstLine.length <= maxLen) return firstLine;
-	return `${firstLine.slice(0, maxLen - 1)}…`;
+function wrapText(str: string, maxLen: number, indent: string): string[] {
+	if (str.length <= maxLen) return [str];
+	const lines: string[] = [];
+	let remaining = str;
+	let isFirst = true;
+	while (remaining.length > 0) {
+		const len = isFirst ? maxLen : maxLen - indent.length;
+		if (remaining.length <= len) {
+			lines.push(isFirst ? remaining : indent + remaining);
+			break;
+		}
+		const breakAt = remaining.lastIndexOf(" ", len);
+		const splitAt = breakAt > 0 ? breakAt : len;
+		lines.push(
+			isFirst
+				? remaining.slice(0, splitAt)
+				: indent + remaining.slice(0, splitAt),
+		);
+		remaining = remaining.slice(splitAt).trimStart();
+		isFirst = false;
+	}
+	return lines;
 }
 
 function formatModelName(model: string): string {
@@ -70,6 +88,9 @@ function formatSlot(
 ): string[] {
 	const prefix = selected ? " > " : "   ";
 	const marker = `[${index + 1}]`;
+	const contentIndent = " ".repeat(marker.length + 1);
+	const fullIndent = prefix + contentIndent;
+	const contentWidth = width - fullIndent.length;
 
 	if (slot.status === "pending") {
 		const pendingLine = `${prefix}${marker} ⏳ Generating...`;
@@ -84,26 +105,39 @@ function formatSlot(
 	const lines = candidate.content.split("\n").filter((l) => l.trim());
 
 	const formatted: string[] = [];
-	const indent = " ".repeat(marker.length + 1);
-	const headerLine = `${prefix}${marker} ${truncate(lines[0] || "", width - prefix.length - marker.length - 1)}`;
-	formatted.push(selected ? `\x1b[36m${headerLine}\x1b[0m` : headerLine);
+
+	const titleLines = wrapText(
+		lines[0] || "",
+		width - prefix.length - marker.length - 1,
+		contentIndent,
+	);
+	for (let i = 0; i < titleLines.length; i++) {
+		const line =
+			i === 0
+				? `${prefix}${marker} ${titleLines[i]}`
+				: `${fullIndent}${titleLines[i]}`;
+		formatted.push(selected ? `\x1b[36m${line}\x1b[0m` : line);
+	}
 
 	if (lines.length > 1 || candidate.model) {
 		formatted.push("");
 	}
 
-	for (let i = 1; i < Math.min(lines.length, 3); i++) {
-		const bodyLine = `${prefix}${indent}${truncate(lines[i], width - prefix.length - indent.length)}`;
-		formatted.push(
-			selected ? `\x1b[2m${bodyLine}\x1b[0m` : `\x1b[2m${bodyLine}\x1b[0m`,
-		);
+	for (let i = 1; i < lines.length; i++) {
+		const bodyLines = wrapText(lines[i], contentWidth, "  ");
+		for (const bodyLine of bodyLines) {
+			const line = `${fullIndent}${bodyLine}`;
+			formatted.push(
+				selected ? `\x1b[2m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
+			);
+		}
 	}
 
 	if (candidate.model) {
 		const modelInfo = candidate.cost
 			? `[${formatModelName(candidate.model)} · ${formatCost(candidate.cost)}]`
 			: `[${formatModelName(candidate.model)}]`;
-		const modelLine = `${prefix}${indent}\x1b[2m${modelInfo}\x1b[0m`;
+		const modelLine = `${fullIndent}\x1b[2m${modelInfo}\x1b[0m`;
 		formatted.push(modelLine);
 	}
 
@@ -124,40 +158,10 @@ function render(slots: Slot[], selectedIndex: number, prompt: string): void {
 	lines.push(`\x1b[1m${prompt}\x1b[0m`);
 	lines.push("");
 
-	const cols = Math.min(2, slots.length);
-	const colWidth = Math.floor((width - 4) / cols);
-
-	for (let row = 0; row < Math.ceil(slots.length / cols); row++) {
-		const leftIdx = row * cols;
-		const rightIdx = leftIdx + 1;
-
-		const leftLines =
-			leftIdx < slots.length
-				? formatSlot(
-						slots[leftIdx],
-						leftIdx,
-						leftIdx === selectedIndex,
-						colWidth,
-					)
-				: [];
-		const rightLines =
-			rightIdx < slots.length && cols > 1
-				? formatSlot(
-						slots[rightIdx],
-						rightIdx,
-						rightIdx === selectedIndex,
-						colWidth,
-					)
-				: [];
-
-		const maxRowLines = Math.max(leftLines.length, rightLines.length);
-		for (let i = 0; i < maxRowLines; i++) {
-			const left = leftLines[i] || "";
-			const right = rightLines[i] || "";
-			// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape code stripping
-			const leftVisible = left.replace(/\x1b\[[0-9;]*m/g, "");
-			const padding = " ".repeat(Math.max(0, colWidth - leftVisible.length));
-			lines.push(`${left}${padding}${right}`);
+	for (let i = 0; i < slots.length; i++) {
+		const slotLines = formatSlot(slots[i], i, i === selectedIndex, width);
+		for (const line of slotLines) {
+			lines.push(line);
 		}
 		lines.push("");
 	}
@@ -381,42 +385,23 @@ async function selectFromSlots(
 			}
 
 			if (key.name === "up" || key.name === "k") {
-				const newIndex = Math.max(0, selectedIndex - 2);
-				if (slots[newIndex]?.status === "ready") {
-					selectedIndex = newIndex;
-					render(slots, selectedIndex, prompt);
+				for (let i = selectedIndex - 1; i >= 0; i--) {
+					if (slots[i]?.status === "ready") {
+						selectedIndex = i;
+						render(slots, selectedIndex, prompt);
+						break;
+					}
 				}
 				return;
 			}
 
 			if (key.name === "down" || key.name === "j") {
-				const newIndex = Math.min(slots.length - 1, selectedIndex + 2);
-				if (slots[newIndex]?.status === "ready") {
-					selectedIndex = newIndex;
-					render(slots, selectedIndex, prompt);
-				}
-				return;
-			}
-
-			if (key.name === "left" || key.name === "h") {
-				if (
-					selectedIndex % 2 === 1 &&
-					slots[selectedIndex - 1]?.status === "ready"
-				) {
-					selectedIndex--;
-					render(slots, selectedIndex, prompt);
-				}
-				return;
-			}
-
-			if (key.name === "right" || key.name === "l") {
-				if (
-					selectedIndex % 2 === 0 &&
-					selectedIndex + 1 < slots.length &&
-					slots[selectedIndex + 1]?.status === "ready"
-				) {
-					selectedIndex++;
-					render(slots, selectedIndex, prompt);
+				for (let i = selectedIndex + 1; i < slots.length; i++) {
+					if (slots[i]?.status === "ready") {
+						selectedIndex = i;
+						render(slots, selectedIndex, prompt);
+						break;
+					}
 				}
 				return;
 			}
