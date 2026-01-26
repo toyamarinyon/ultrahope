@@ -84,11 +84,16 @@ function formatSlot(
 	const lines = candidate.content.split("\n").filter((l) => l.trim());
 
 	const formatted: string[] = [];
+	const indent = " ".repeat(marker.length + 1);
 	const headerLine = `${prefix}${marker} ${truncate(lines[0] || "", width - prefix.length - marker.length - 1)}`;
 	formatted.push(selected ? `\x1b[36m${headerLine}\x1b[0m` : headerLine);
 
+	if (lines.length > 1 || candidate.model) {
+		formatted.push("");
+	}
+
 	for (let i = 1; i < Math.min(lines.length, 3); i++) {
-		const bodyLine = `${prefix}      ${truncate(lines[i], width - prefix.length - 6)}`;
+		const bodyLine = `${prefix}${indent}${truncate(lines[i], width - prefix.length - indent.length)}`;
 		formatted.push(
 			selected ? `\x1b[2m${bodyLine}\x1b[0m` : `\x1b[2m${bodyLine}\x1b[0m`,
 		);
@@ -98,7 +103,7 @@ function formatSlot(
 		const modelInfo = candidate.cost
 			? `[${formatModelName(candidate.model)} · ${formatCost(candidate.cost)}]`
 			: `[${formatModelName(candidate.model)}]`;
-		const modelLine = `${prefix}      \x1b[2m${modelInfo}\x1b[0m`;
+		const modelLine = `${prefix}${indent}\x1b[2m${modelInfo}\x1b[0m`;
 		formatted.push(modelLine);
 	}
 
