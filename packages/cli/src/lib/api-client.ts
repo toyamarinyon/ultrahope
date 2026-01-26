@@ -3,8 +3,6 @@ import { log } from "./logger";
 
 const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
-export type { Target };
-
 export interface TranslateRequest {
 	input: string;
 	target: Target;
