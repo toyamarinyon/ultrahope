@@ -30,12 +30,12 @@ const app = new Elysia({ prefix: "/api" })
 		}
 
 		try {
-			const output = await translate(
+			const response = await translate(
 				input,
 				target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
 				{ externalCustomerId: session.user.id },
 			);
-			return { output };
+			return { output: response.content, ...response };
 		} catch (error) {
 			if (error instanceof InsufficientBalanceError) {
 				const isPro = error.plan === "pro";

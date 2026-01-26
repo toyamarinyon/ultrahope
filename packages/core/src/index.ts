@@ -5,6 +5,8 @@ import type { LLMResponse, Target } from "./types";
 export type { LLMResponse, Target };
 export { PROMPTS } from "./prompts";
 
+const VERBOSE = process.env.VERBOSE === "1";
+
 const PRIMARY_MODEL = "cerebras/llama-3.1-8b";
 const FALLBACK_MODELS = ["openai/gpt-5-nano"];
 
@@ -24,15 +26,24 @@ export async function translate(
 		},
 	});
 
+	if (VERBOSE) {
+		console.log(
+			"[VERBOSE] AI Gateway providerMetadata:",
+			JSON.stringify(result.providerMetadata, null, 2),
+		);
+	}
+
 	const metadata = result.providerMetadata?.gateway as
 		| {
 				routing?: { finalProvider?: string };
 				cost?: string;
+				marketCost?: string;
 				generationId?: string;
 		  }
 		| undefined;
 	const vendor = metadata?.routing?.finalProvider ?? "unknown";
-	const cost = metadata?.cost ? Number.parseFloat(metadata.cost) : undefined;
+	const costStr = metadata?.marketCost ?? metadata?.cost;
+	const cost = costStr ? Number.parseFloat(costStr) : undefined;
 
 	return {
 		content: result.text,

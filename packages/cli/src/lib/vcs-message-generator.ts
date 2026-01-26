@@ -57,6 +57,7 @@ export async function* generateCommitMessages(
 					result: {
 						content: result.output,
 						model,
+						cost: result.cost,
 					},
 					index,
 				};

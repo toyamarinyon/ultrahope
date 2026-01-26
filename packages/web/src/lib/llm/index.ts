@@ -125,7 +125,7 @@ export async function translate(
 	input: string,
 	target: Target,
 	options: TranslateOptions = {},
-): Promise<string> {
+): Promise<LLMResponse> {
 	if (options.externalCustomerId) {
 		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
 		if (billingInfo && billingInfo.balance <= 0) {
@@ -143,5 +143,5 @@ export async function translate(
 		await recordUsage(options.externalCustomerId, response);
 	});
 
-	return response.content;
+	return response;
 }
