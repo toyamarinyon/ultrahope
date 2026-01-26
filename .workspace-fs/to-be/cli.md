@@ -51,7 +51,6 @@ git diff | ultrahope translate --target vcs-commit-message --no-interactive
 |--------|-------------|
 | `--target`, `-t` | Output format (required) |
 | `--no-interactive` | Print single result, skip selector |
-| `-n <count>` | Number of candidates (default: 4) |
 
 Targets: `vcs-commit-message`, `pr-title-body`, `pr-intent`
 

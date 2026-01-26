@@ -12,25 +12,17 @@ interface CommitOptions {
 	message: boolean;
 	dryRun: boolean;
 	interactive: boolean;
-	n: number;
 	mock: boolean;
 	models: string[];
 }
 
 function parseArgs(args: string[]): CommitOptions {
-	let n = 4;
 	let models: string[] = [];
 	let mock = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
-		if (arg === "-n" && args[i + 1]) {
-			const value = Number.parseInt(args[i + 1], 10);
-			if (!Number.isNaN(value) && value >= 1 && value <= 8) {
-				n = value;
-			}
-			i++;
-		} else if (arg === "--models" && args[i + 1]) {
+		if (arg === "--models" && args[i + 1]) {
 			models = args[i + 1].split(",").map((m) => m.trim());
 			i++;
 		} else if (arg === "--mock") {
@@ -46,7 +38,6 @@ function parseArgs(args: string[]): CommitOptions {
 		message: args.includes("-m") || args.includes("--message"),
 		dryRun: args.includes("--dry-run"),
 		interactive: !args.includes("--no-interactive"),
-		n,
 		mock,
 		models,
 	};

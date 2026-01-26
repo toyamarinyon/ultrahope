@@ -9,7 +9,6 @@ interface DescribeOptions {
 	revision: string;
 	dryRun: boolean;
 	interactive: boolean;
-	n: number;
 	mock: boolean;
 	models: string[];
 }
@@ -18,7 +17,6 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let dryRun = false;
 	let interactive = true;
-	let n = 4;
 	let mock = false;
 	let models: string[] = [];
 
@@ -32,11 +30,6 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 			interactive = false;
 		} else if (arg === "--mock") {
 			mock = true;
-		} else if (arg === "-n") {
-			const value = Number.parseInt(args[++i], 10);
-			if (!Number.isNaN(value) && value >= 1 && value <= 8) {
-				n = value;
-			}
 		} else if (arg === "--models" && args[i + 1]) {
 			models = args[++i].split(",").map((m) => m.trim());
 		}
@@ -46,7 +39,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		models = DEFAULT_MODELS;
 	}
 
-	return { revision, dryRun, interactive, n, mock, models };
+	return { revision, dryRun, interactive, mock, models };
 }
 
 function getJjDiff(revision: string): string {
@@ -153,7 +146,6 @@ Describe options:
   -r <revset>       Revision to describe (default: @)
   --dry-run         Print candidates only, don't describe
   --no-interactive  Single candidate, no selection
-  -n <count>        Number of candidates (default: 4)
   --mock            Use mock API for testing (no LLM tokens consumed)
 
 Examples:

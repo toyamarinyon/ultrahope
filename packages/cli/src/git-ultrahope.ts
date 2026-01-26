@@ -29,7 +29,6 @@ Commit options:
   -m, --message     Commit directly with generated message
   --dry-run         Print candidates only, don't commit
   --no-interactive  Single candidate, open in editor
-  -n <count>        Number of candidates (default: 4)
 
 Examples:
   git ultrahope commit               # interactive selector (default)

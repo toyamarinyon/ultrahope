@@ -22,7 +22,6 @@ const VALID_TARGETS: Target[] = [
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
-	n: number;
 	mock: boolean;
 	models: string[];
 }
@@ -166,7 +165,6 @@ async function handleGenericTarget(
 function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
-	let n = 4;
 	let mock = false;
 	let models: string[] = [];
 
@@ -182,13 +180,6 @@ function parseArgs(args: string[]): TranslateOptions {
 			target = value as Target;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "-n") {
-			const value = Number.parseInt(args[++i], 10);
-			if (Number.isNaN(value) || value < 1 || value > 8) {
-				console.error("Error: -n must be between 1 and 8");
-				process.exit(1);
-			}
-			n = value;
 		} else if (arg === "--mock") {
 			mock = true;
 		} else if (arg === "--models") {
@@ -213,5 +204,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		models = DEFAULT_MODELS;
 	}
 
-	return { target, interactive, n, mock, models };
+	return { target, interactive, mock, models };
 }
