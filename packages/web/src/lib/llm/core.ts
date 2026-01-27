@@ -3,7 +3,6 @@ import { PROMPTS } from "./prompts";
 import type { LLMResponse, Target } from "./types";
 
 export type { LLMResponse, Target };
-export { PROMPTS } from "./prompts";
 
 const VERBOSE = process.env.VERBOSE === "1";
 

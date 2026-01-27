@@ -51,11 +51,9 @@ export function createApiClient(token?: string) {
 				body: req,
 			});
 			if (response.status === 402) {
-				const balance =
-					typeof (error as { balance?: number } | undefined)?.balance ===
-					"number"
-						? (error as { balance?: number }).balance
-						: 0;
+				const errorBalance = (error as { balance?: number } | undefined)
+					?.balance;
+				const balance = typeof errorBalance === "number" ? errorBalance : 0;
 				log("translate error (402)", error);
 				throw new InsufficientBalanceError(balance);
 			}

@@ -36,7 +36,8 @@
 										"type": "string"
 									},
 									"target": {
-										"type": "string"
+										"type": "string",
+										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
 									}
 								}
 							}
@@ -50,7 +51,8 @@
 										"type": "string"
 									},
 									"target": {
-										"type": "string"
+										"type": "string",
+										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
 									}
 								}
 							}
@@ -64,7 +66,140 @@
 										"type": "string"
 									},
 									"target": {
-										"type": "string"
+										"type": "string",
+										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Response for status 200",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"output",
+										"content",
+										"vendor",
+										"model",
+										"inputTokens",
+										"outputTokens"
+									],
+									"properties": {
+										"output": {
+											"type": "string"
+										},
+										"content": {
+											"type": "string"
+										},
+										"vendor": {
+											"type": "string"
+										},
+										"model": {
+											"type": "string"
+										},
+										"inputTokens": {
+											"type": "number"
+										},
+										"outputTokens": {
+											"type": "number"
+										},
+										"cachedInputTokens": {
+											"type": "number"
+										},
+										"cost": {
+											"type": "number"
+										},
+										"generationId": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Response for status 400",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["error"],
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Response for status 401",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["error"],
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"402": {
+						"description": "Response for status 402",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"error",
+										"message",
+										"balance",
+										"plan",
+										"actions",
+										"hint"
+									],
+									"properties": {
+										"error": {
+											"const": "insufficient_balance",
+											"type": "string"
+										},
+										"message": {
+											"type": "string"
+										},
+										"balance": {
+											"type": "number"
+										},
+										"plan": {
+											"type": "string",
+											"enum": ["free", "pro"]
+										},
+										"actions": {
+											"type": "object",
+											"properties": {
+												"buyCredits": {
+													"type": "string"
+												},
+												"enableAutoRecharge": {
+													"type": "string"
+												},
+												"upgrade": {
+													"type": "string"
+												}
+											}
+										},
+										"hint": {
+											"type": "string"
+										}
 									}
 								}
 							}
@@ -78,6 +213,24 @@
 			"get": {
 				"summary": "Health check",
 				"tags": ["health"],
+				"responses": {
+					"200": {
+						"description": "Response for status 200",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["status"],
+									"properties": {
+										"status": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
 				"operationId": "getApiHealth"
 			}
 		}

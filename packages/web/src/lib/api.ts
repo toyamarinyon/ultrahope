@@ -35,21 +35,16 @@ export const app = new Elysia({ prefix: "/api" })
 	})
 	.post(
 		"/v1/translate",
-		async ({ body, session }) => {
+		async ({ body, session, set }) => {
 			if (!session) {
-				return new Response(JSON.stringify({ error: "Unauthorized" }), {
-					status: 401,
-				});
+				set.status = 401;
+				return { error: "Unauthorized" };
 			}
 
 			const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
 			if (!validTargets.includes(body.target)) {
-				return new Response(
-					JSON.stringify({ error: `Invalid target: ${body.target}` }),
-					{
-						status: 400,
-					},
-				);
+				set.status = 400;
+				return { error: `Invalid target: ${body.target}` };
 			}
 
 			try {
@@ -86,7 +81,8 @@ export const app = new Elysia({ prefix: "/api" })
 								hint: "Upgrade to Pro for $10/month with $5 included credit and one-time credit purchases.",
 							};
 
-					return new Response(JSON.stringify(response), { status: 402 });
+					set.status = 402;
+					return response;
 				}
 				throw error;
 			}
@@ -94,8 +90,43 @@ export const app = new Elysia({ prefix: "/api" })
 		{
 			body: t.Object({
 				input: t.String(),
-				target: t.String(),
+				target: t.Union([
+					t.Literal("vcs-commit-message"),
+					t.Literal("pr-title-body"),
+					t.Literal("pr-intent"),
+				]),
 			}),
+			response: {
+				200: t.Object({
+					output: t.String(),
+					content: t.String(),
+					vendor: t.String(),
+					model: t.String(),
+					inputTokens: t.Number(),
+					outputTokens: t.Number(),
+					cachedInputTokens: t.Optional(t.Number()),
+					cost: t.Optional(t.Number()),
+					generationId: t.Optional(t.String()),
+				}),
+				400: t.Object({
+					error: t.String(),
+				}),
+				401: t.Object({
+					error: t.String(),
+				}),
+				402: t.Object({
+					error: t.Literal("insufficient_balance"),
+					message: t.String(),
+					balance: t.Number(),
+					plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+					actions: t.Object({
+						buyCredits: t.Optional(t.String()),
+						enableAutoRecharge: t.Optional(t.String()),
+						upgrade: t.Optional(t.String()),
+					}),
+					hint: t.String(),
+				}),
+			},
 			detail: {
 				summary: "Translate input into a structured output",
 				tags: ["translate"],
@@ -104,6 +135,11 @@ export const app = new Elysia({ prefix: "/api" })
 		},
 	)
 	.get("/health", () => ({ status: "ok" }), {
+		response: {
+			200: t.Object({
+				status: t.String(),
+			}),
+		},
 		detail: {
 			summary: "Health check",
 			tags: ["health"],

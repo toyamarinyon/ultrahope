@@ -61,19 +61,86 @@ export interface operations {
 			content: {
 				"application/json": {
 					input: string;
-					target: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"application/x-www-form-urlencoded": {
 					input: string;
-					target: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"multipart/form-data": {
 					input: string;
-					target: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 			};
 		};
-		responses: never;
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						output: string;
+						content: string;
+						vendor: string;
+						model: string;
+						inputTokens: number;
+						outputTokens: number;
+						cachedInputTokens?: number;
+						cost?: number;
+						generationId?: string;
+					};
+				};
+			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "insufficient_balance";
+						message: string;
+						balance: number;
+						/** @enum {string} */
+						plan: "free" | "pro";
+						actions: {
+							buyCredits?: string;
+							enableAutoRecharge?: string;
+							upgrade?: string;
+						};
+						hint: string;
+					};
+				};
+			};
+		};
 	};
 	getApiHealth: {
 		parameters: {
@@ -83,6 +150,18 @@ export interface operations {
 			cookie?: never;
 		};
 		requestBody?: never;
-		responses: never;
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						status: string;
+					};
+				};
+			};
+		};
 	};
 }

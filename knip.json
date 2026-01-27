@@ -1,10 +1,12 @@
 {
 	"$schema": "https://unpkg.com/knip@5/schema.json",
-	"ignore": ["scripts/**"],
+	"ignore": ["scripts/**", "packages/web/openapi.json"],
 	"ignoreDependencies": ["@libsql/isomorphic-ws", "tsx"],
 	"workspaces": {
 		".": {},
-		"packages/cli": {},
+		"packages/cli": {
+			"ignore": ["src/lib/api-client.generated.ts"]
+		},
 		"packages/web": {
 			"ignore": ["src/db/schema.ts", "scripts/**"]
 		}
