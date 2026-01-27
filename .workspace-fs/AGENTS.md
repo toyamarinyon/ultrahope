@@ -17,6 +17,7 @@
 │   ├── project-structure.md
 │   ├── monorepo-tooling.md
 │   ├── monolith-migration.md
+│   ├── web-design-direction.md
 │   └── web-package.md
 └── docs/            # External docs: reference info for libraries/frameworks
     ├── elysiajs/ 

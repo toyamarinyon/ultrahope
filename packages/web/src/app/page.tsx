@@ -10,49 +10,103 @@ export default async function RootPage() {
 
 	if (!session) {
 		return (
-			<main>
-				<h1>Ultrahope</h1>
-				<p>LLM-powered development workflow assistant</p>
+			<main className="min-h-screen px-[--spacing-page]">
+				{/* Hero */}
+				<section className="flex flex-col justify-center min-h-[80vh] max-w-3xl">
+					<h1 className="text-6xl font-black tracking-tighter mb-6">
+						Ultrahope
+					</h1>
+					<p className="text-xl text-[--color-text-secondary] leading-relaxed mb-12 max-w-xl">
+						LLM-powered development workflow assistant. A simple UNIX tool that
+						works with pipes.
+					</p>
 
-				<section>
-					<h2>Features</h2>
-					<ul>
-						<li>Translate text with AI</li>
-						<li>Simple UNIX-friendly CLI</li>
-						<li>Pipe-based workflow integration</li>
-					</ul>
+					<div className="flex gap-4">
+						<Link
+							href="/login"
+							className="inline-flex items-center justify-center px-6 py-3 bg-[--color-text] text-[--color-bg] font-medium rounded-[--radius-md] no-underline hover:opacity-90"
+						>
+							Get Started
+						</Link>
+						<Link
+							href="/pricing"
+							className="inline-flex items-center justify-center px-6 py-3 border border-[--color-border] text-[--color-text] font-medium rounded-[--radius-md] no-underline hover:bg-[--color-surface]"
+						>
+							Pricing
+						</Link>
+					</div>
 				</section>
 
-				<p>
-					<Link href="/login">Get Started</Link> |{" "}
-					<Link href="/pricing">Pricing</Link>
-				</p>
+				{/* Features */}
+				<section className="py-[--spacing-section] border-t border-[--color-border-subtle]">
+					<h2 className="text-3xl font-bold tracking-tight mb-12">Features</h2>
+					<div className="grid md:grid-cols-3 gap-8">
+						<div>
+							<h3 className="text-lg font-semibold mb-2">Translate with AI</h3>
+							<p className="text-[--color-text-secondary]">
+								Translate text between languages with a single command.
+							</p>
+						</div>
+						<div>
+							<h3 className="text-lg font-semibold mb-2">UNIX-friendly</h3>
+							<p className="text-[--color-text-secondary]">
+								Works with pipes. Combine with grep, sed, awk, and your favorite
+								tools.
+							</p>
+						</div>
+						<div>
+							<h3 className="text-lg font-semibold mb-2">Git & Jujutsu</h3>
+							<p className="text-[--color-text-secondary]">
+								Generate commit messages from your staged changes.
+							</p>
+						</div>
+					</div>
+				</section>
+
+				{/* Install */}
+				<section className="py-[--spacing-section] border-t border-[--color-border-subtle]">
+					<h2 className="text-3xl font-bold tracking-tight mb-8">
+						Get started in seconds
+					</h2>
+					<pre className="text-lg">
+						<code>npm install -g @ultrahope/cli</code>
+					</pre>
+				</section>
 			</main>
 		);
 	}
 
 	return (
-		<main>
-			<h1>Dashboard</h1>
-			<p>Welcome, {session.user.name ?? session.user.email}</p>
+		<main className="min-h-screen px-[--spacing-page] py-12">
+			<h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
+			<p className="text-[--color-text-secondary] mb-12">
+				Welcome, {session.user.name ?? session.user.email}
+			</p>
 
-			<section>
-				<h2>Get Started with CLI</h2>
-				<p>Install Ultrahope CLI:</p>
-				<pre>
+			<section className="mb-12">
+				<h2 className="text-2xl font-bold tracking-tight mb-6">
+					Get Started with CLI
+				</h2>
+				<p className="text-[--color-text-secondary] mb-4">
+					Install Ultrahope CLI:
+				</p>
+				<pre className="mb-6">
 					<code>npm install -g @ultrahope/cli</code>
 				</pre>
-				<p>Then authenticate:</p>
+				<p className="text-[--color-text-secondary] mb-4">Then authenticate:</p>
 				<pre>
 					<code>ultrahope login</code>
 				</pre>
 			</section>
 
-			<section>
-				<h2>Subscription</h2>
-				<p>
-					<Link href="/pricing">View Plans</Link>
-				</p>
+			<section className="mb-12">
+				<h2 className="text-2xl font-bold tracking-tight mb-4">Subscription</h2>
+				<Link
+					href="/pricing"
+					className="inline-flex items-center justify-center px-6 py-3 border border-[--color-border] text-[--color-text] font-medium rounded-[--radius-md] no-underline hover:bg-[--color-surface]"
+				>
+					View Plans
+				</Link>
 			</section>
 
 			<SignOutButton />
