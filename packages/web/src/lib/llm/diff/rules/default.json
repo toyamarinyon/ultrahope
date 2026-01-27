@@ -1,0 +1,118 @@
+{
+	"$schema": "./schema.json",
+	"version": 1,
+	"rules": [
+		{
+			"id": "test",
+			"label": "Tests",
+			"match": {
+				"path": [
+					"**/*.test.ts",
+					"**/*.test.tsx",
+					"**/*.spec.ts",
+					"**/*.spec.tsx",
+					"**/__tests__/**",
+					"**/test/**",
+					"**/tests/**"
+				]
+			},
+			"behavior": { "role": "related" }
+		},
+		{
+			"id": "types",
+			"label": "Type definitions",
+			"match": {
+				"path": ["**/*.d.ts", "**/types/**", "**/types.ts"]
+			},
+			"behavior": { "role": "related" }
+		},
+		{
+			"id": "lockfile",
+			"label": "Lock files",
+			"match": {
+				"path": [
+					"**/pnpm-lock.yaml",
+					"**/package-lock.json",
+					"**/yarn.lock",
+					"**/Cargo.lock",
+					"**/go.sum",
+					"**/poetry.lock",
+					"**/Gemfile.lock"
+				]
+			},
+			"behavior": { "role": "noise", "omit": true }
+		},
+		{
+			"id": "generated",
+			"label": "Generated files",
+			"match": {
+				"path": [
+					"**/*.generated.ts",
+					"**/*.generated.js",
+					"**/*.gen.ts",
+					"**/*.gen.go",
+					"**/generated/**"
+				]
+			},
+			"behavior": { "role": "noise", "omit": true }
+		},
+		{
+			"id": "config",
+			"label": "Configuration",
+			"match": {
+				"path": [
+					"**/*.config.ts",
+					"**/*.config.js",
+					"**/*.config.mjs",
+					"**/tsconfig*.json",
+					"**/biome.json",
+					"**/.eslintrc*",
+					"**/.prettierrc*",
+					"**/jest.config.*",
+					"**/vitest.config.*"
+				]
+			},
+			"behavior": { "role": "related" }
+		},
+		{
+			"id": "docs",
+			"label": "Documentation",
+			"match": {
+				"path": ["**/*.md", "**/docs/**", "**/README*", "**/CHANGELOG*"]
+			},
+			"behavior": { "role": "related" }
+		},
+		{
+			"id": "ci",
+			"label": "CI/CD",
+			"match": {
+				"path": [
+					"**/.github/**",
+					"**/.gitlab-ci.yml",
+					"**/Dockerfile*",
+					"**/.dockerignore",
+					"**/docker-compose*.yml"
+				]
+			},
+			"behavior": { "role": "related" }
+		},
+		{
+			"id": "deps",
+			"label": "Dependencies",
+			"match": {
+				"path": [
+					"**/package.json",
+					"**/Cargo.toml",
+					"**/go.mod",
+					"**/pyproject.toml",
+					"**/requirements*.txt"
+				]
+			},
+			"behavior": { "role": "related" }
+		}
+	],
+	"primaryDetection": {
+		"excludeRoles": ["noise"],
+		"metric": "changedLines"
+	}
+}

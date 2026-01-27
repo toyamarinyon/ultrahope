@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { preprocessDiff } from "./diff";
 import { PROMPTS } from "./prompts";
 import type { LLMResponse, Target } from "./types";
 
@@ -13,10 +14,24 @@ export async function translate(
 	input: string,
 	target: Target,
 ): Promise<LLMResponse> {
+	let prompt = input;
+
+	if (target === "vcs-commit-message") {
+		const preprocessed = preprocessDiff(input);
+		prompt = preprocessed.prompt;
+		if (VERBOSE && preprocessed.isStructured) {
+			console.log("[VERBOSE] Diff preprocessed with classification");
+			console.log(
+				"[VERBOSE] Primary files:",
+				preprocessed.classification?.primary.map((f) => f.path),
+			);
+		}
+	}
+
 	const result = await generateText({
 		model: PRIMARY_MODEL,
 		system: PROMPTS[target],
-		prompt: input,
+		prompt,
 		maxOutputTokens: 1024,
 		providerOptions: {
 			gateway: {

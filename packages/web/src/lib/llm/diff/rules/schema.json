@@ -1,0 +1,81 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Diff Classification Rules",
+	"type": "object",
+	"required": ["version", "rules"],
+	"properties": {
+		"version": {
+			"type": "integer",
+			"minimum": 1
+		},
+		"rules": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["id", "label", "match", "behavior"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the rule"
+					},
+					"label": {
+						"type": "string",
+						"description": "Human-readable label for the category"
+					},
+					"match": {
+						"type": "object",
+						"properties": {
+							"path": {
+								"type": "array",
+								"items": { "type": "string" },
+								"description": "Glob patterns to match file paths"
+							},
+							"content": {
+								"type": "string",
+								"description": "Regex pattern to match diff content"
+							}
+						}
+					},
+					"behavior": {
+						"type": "object",
+						"required": ["role"],
+						"properties": {
+							"role": {
+								"type": "string",
+								"enum": ["primary", "related", "noise"],
+								"description": "Role of matched files in the commit"
+							},
+							"omit": {
+								"type": "boolean",
+								"default": false,
+								"description": "If true, show only summary (line counts) instead of full diff"
+							},
+							"priorityBoost": {
+								"type": "integer",
+								"default": 0,
+								"description": "Adjustment to primary detection score"
+							}
+						}
+					}
+				}
+			}
+		},
+		"primaryDetection": {
+			"type": "object",
+			"properties": {
+				"excludeRoles": {
+					"type": "array",
+					"items": { "type": "string" },
+					"default": ["noise"],
+					"description": "Roles to exclude from primary detection"
+				},
+				"metric": {
+					"type": "string",
+					"enum": ["changedLines", "addedLines", "fileCount"],
+					"default": "changedLines",
+					"description": "Metric used to determine primary changes"
+				}
+			}
+		}
+	}
+}
