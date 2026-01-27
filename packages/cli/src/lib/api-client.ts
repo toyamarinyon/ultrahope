@@ -1,14 +1,14 @@
-import type { LLMResponse, Target } from "@ultrahope/core";
+import createClient from "openapi-fetch";
+import type { paths } from "./api-client.generated";
 import { log } from "./logger";
 
 const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
-export interface TranslateRequest {
-	input: string;
-	target: Target;
-}
+export type TranslateRequest =
+	paths["/api/v1/translate"]["post"]["requestBody"]["content"]["application/json"];
 
-export type TranslateResponse = LLMResponse & { output: string };
+export type TranslateResponse =
+	paths["/api/v1/translate"]["post"]["responses"][200]["content"]["application/json"];
 
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {
@@ -39,25 +39,34 @@ export function createApiClient(token?: string) {
 		headers.Authorization = `Bearer ${token}`;
 	}
 
+	const client = createClient<paths>({
+		baseUrl: API_BASE_URL,
+		headers,
+	});
+
 	return {
 		async translate(req: TranslateRequest): Promise<TranslateResponse> {
 			log("translate request", req);
-			const res = await fetch(`${API_BASE_URL}/api/v1/translate`, {
-				method: "POST",
-				headers,
-				body: JSON.stringify(req),
+			const { data, error, response } = await client.POST("/api/v1/translate", {
+				body: req,
 			});
-			if (!res.ok) {
-				if (res.status === 402) {
-					const data = await res.json();
-					log("translate error (402)", data);
-					throw new InsufficientBalanceError(data.balance ?? 0);
-				}
-				const text = await res.text();
-				log("translate error", { status: res.status, text });
-				throw new Error(`API error: ${res.status} ${text}`);
+			if (response.status === 402) {
+				const balance =
+					typeof (error as { balance?: number } | undefined)?.balance ===
+					"number"
+						? (error as { balance?: number }).balance
+						: 0;
+				log("translate error (402)", error);
+				throw new InsufficientBalanceError(balance);
 			}
-			const data = await res.json();
+			if (!response.ok) {
+				const text = await response.text();
+				log("translate error", { status: response.status, text });
+				throw new Error(`API error: ${response.status} ${text}`);
+			}
+			if (!data) {
+				throw new Error("API error: empty response");
+			}
 			log("translate response", data);
 			return data;
 		},

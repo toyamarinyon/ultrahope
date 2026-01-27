@@ -1,8 +1,34 @@
+import { readFileSync } from "node:fs";
+import { openapi } from "@elysiajs/openapi";
 import { Elysia, t } from "elysia";
 import { auth } from "@/lib/auth";
 import { InsufficientBalanceError, translate } from "@/lib/llm";
 
+const packageJson = JSON.parse(
+	readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+) as { version?: string };
+
 export const app = new Elysia({ prefix: "/api" })
+	.use(
+		openapi({
+			path: "/openapi",
+			specPath: "/openapi/json",
+			documentation: {
+				info: {
+					title: "Ultrahope API",
+					version: packageJson.version ?? "0.0.0",
+				},
+				components: {
+					securitySchemes: {
+						bearerAuth: {
+							type: "http",
+							scheme: "bearer",
+						},
+					},
+				},
+			},
+		}),
+	)
 	.derive(async ({ request: { headers } }) => {
 		const session = await auth.api.getSession({ headers });
 		return { session };
@@ -70,8 +96,18 @@ export const app = new Elysia({ prefix: "/api" })
 				input: t.String(),
 				target: t.String(),
 			}),
+			detail: {
+				summary: "Translate input into a structured output",
+				tags: ["translate"],
+				security: [{ bearerAuth: [] }],
+			},
 		},
 	)
-	.get("/health", () => ({ status: "ok" }));
+	.get("/health", () => ({ status: "ok" }), {
+		detail: {
+			summary: "Health check",
+			tags: ["health"],
+		},
+	});
 
 export type App = typeof app;

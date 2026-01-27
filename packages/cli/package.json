@@ -27,14 +27,16 @@
 	],
 	"scripts": {
 		"build": "tsup",
+		"generate:client": "openapi-typescript ../web/openapi.json -o src/lib/api-client.generated.ts",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm run build"
 	},
 	"dependencies": {
-		"@ultrahope/core": "workspace:*"
+		"openapi-fetch": "^0.15.0"
 	},
 	"devDependencies": {
 		"@types/node": "^22.15.29",
+		"openapi-typescript": "^7.10.1",
 		"tsup": "8.5.0",
 		"typescript": "^5.8.3"
 	}

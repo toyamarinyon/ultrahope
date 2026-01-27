@@ -9,6 +9,7 @@
 
 ## Next
 
+- [x] **Core/Web unification + OpenAPI export** → [tasks/core-web-unify-openapi-plan.md](tasks/core-web-unify-openapi-plan.md)
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
   - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)

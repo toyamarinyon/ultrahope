@@ -60,15 +60,15 @@ Select a commit message:
                                                                                   
           Implement JWT-based auth flow           Fix unclosed DB connections     
           Add login/logout endpoints              Add proper cleanup handlers     
-          Include session management             [Anthropic Claude Sonnet 4.5 · $0.05]                                
-          [OpenAI GPT-5.2 · $0.01]
+          Include session management             [Anthropic Claude Sonnet 4.5 - $0.05]                                
+          [OpenAI GPT-5.2 - $0.01]
 
       [3] refactor: simplify API layer        [4] docs: update README             
                                                                                   
           Extract common utilities                Add installation guide          
           Reduce code duplication                 Include API examples            
-          Improve error handling                  [Cerebras Llama 3.1 8b · $0.002]
-          [Cerebras GLM 4.7 · $0.012]
+          Improve error handling                  [Cerebras Llama 3.1 8b - $0.002]
+          [Cerebras GLM 4.7 - $0.012]
 
 [1-4] Select  [e] Edit  [Enter] Confirm  [r] Reroll  [q] Abort
 ```
@@ -105,7 +105,7 @@ Select a commit message:
 - Run model calls in parallel (Promise.all)
 - Handle partial failures (some models may fail)
 - Billing: track tokens per provider separately
-- Provider abstraction already exists in `packages/core`
+- Provider abstraction already exists in `packages/web/src/lib/llm/core.ts`
 
 ## Decisions
 

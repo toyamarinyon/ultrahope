@@ -4,6 +4,11 @@
 
 Base URL: `https://api.ultrahope.dev`
 
+## OpenAPI
+
+- Spec JSON: `GET /api/openapi/json`
+- UI: `GET /api/openapi`
+
 ## Authentication
 
 All endpoints except Device Flow require `Authorization: Bearer <token>` header.

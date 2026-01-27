@@ -1,5 +1,8 @@
 # Core Package Architecture
 
+> Status: **Superseded** — `packages/core` was retired and merged into `packages/web`.
+> See [decisions/core-web-unify-openapi.md](core-web-unify-openapi.md) for details.
+
 ## Decision: separate LLM logic in packages/core
 
 Extract a pure LLM abstraction layer into **packages/core** and share it from web and cli.

@@ -135,7 +135,7 @@ function formatSlot(
 
 	if (candidate.model) {
 		const modelInfo = candidate.cost
-			? `[${formatModelName(candidate.model)} · ${formatCost(candidate.cost)}]`
+			? `[${formatModelName(candidate.model)} - ${formatCost(candidate.cost)}]`
 			: `[${formatModelName(candidate.model)}]`;
 		const modelLine = `${fullIndent}\x1b[2m${modelInfo}\x1b[0m`;
 		formatted.push(modelLine);

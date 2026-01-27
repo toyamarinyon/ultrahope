@@ -1,0 +1,85 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Ultrahope API",
+		"description": "Development documentation",
+		"version": "0.0.1"
+	},
+	"components": {
+		"securitySchemes": {
+			"bearerAuth": {
+				"type": "http",
+				"scheme": "bearer"
+			}
+		},
+		"schemas": {}
+	},
+	"paths": {
+		"/api/v1/translate": {
+			"post": {
+				"summary": "Translate input into a structured output",
+				"tags": ["translate"],
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["input", "target"],
+								"properties": {
+									"input": {
+										"type": "string"
+									},
+									"target": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"application/x-www-form-urlencoded": {
+							"schema": {
+								"type": "object",
+								"required": ["input", "target"],
+								"properties": {
+									"input": {
+										"type": "string"
+									},
+									"target": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["input", "target"],
+								"properties": {
+									"input": {
+										"type": "string"
+									},
+									"target": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"operationId": "postApiV1Translate"
+			}
+		},
+		"/api/health": {
+			"get": {
+				"summary": "Health check",
+				"tags": ["health"],
+				"operationId": "getApiHealth"
+			}
+		}
+	}
+}

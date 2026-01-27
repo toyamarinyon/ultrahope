@@ -1,10 +1,10 @@
+import { after } from "next/server";
+import { polarClient } from "@/lib/auth";
 import {
 	translate as coreTranslate,
 	type LLMResponse,
 	type Target,
-} from "@ultrahope/core";
-import { after } from "next/server";
-import { polarClient } from "@/lib/auth";
+} from "./core";
 
 const MICRODOLLARS_PER_USD = 1_000_000;
 
