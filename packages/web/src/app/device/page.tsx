@@ -17,6 +17,14 @@ export default function DevicePage() {
 	const [userCode, setUserCode] = useState("");
 	const [status, setStatus] = useState<Status>("idle");
 	const [error, setError] = useState<string | null>(null);
+	const containerClass =
+		"min-h-screen px-8 py-24 flex items-center justify-center";
+	const panelClass =
+		"w-full max-w-md border border-border-subtle bg-surface rounded-lg p-8";
+	const primaryButtonClass =
+		"inline-flex items-center justify-center px-4 py-3 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-wait";
+	const secondaryButtonClass =
+		"inline-flex items-center justify-center px-4 py-3 border border-border text-foreground font-medium rounded-md hover:bg-surface-hover disabled:opacity-60 disabled:cursor-wait";
 
 	const handleVerify = async () => {
 		if (!userCode.trim()) return;
@@ -81,141 +89,142 @@ export default function DevicePage() {
 
 	if (isPending) {
 		return (
-			<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
-				<p>Loading...</p>
+			<main className={containerClass}>
+				<div className={panelClass}>
+					<p className="text-foreground-secondary">Loading...</p>
+				</div>
 			</main>
 		);
 	}
 
 	if (!session) {
 		return (
-			<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
-				<h1 style={{ marginBottom: 16 }}>Device Authorization</h1>
-				<p style={{ marginBottom: 16 }}>Sign in to authorize your CLI.</p>
-				<button
-					type="button"
-					onClick={() =>
-						signIn.social({ provider: "github", callbackURL: "/device" })
-					}
-					style={{
-						padding: "12px 24px",
-						backgroundColor: "#24292e",
-						color: "white",
-						border: "none",
-						borderRadius: 4,
-						cursor: "pointer",
-					}}
-				>
-					Sign in with GitHub
-				</button>
+			<main className={containerClass}>
+				<div className={panelClass}>
+					<p className="text-sm text-foreground-secondary uppercase tracking-wide mb-3">
+						Device authorization
+					</p>
+					<h1 className="text-2xl font-bold tracking-tight mb-3">
+						Sign in to continue
+					</h1>
+					<p className="text-foreground-secondary mb-6">
+						Authorize your CLI by signing in with GitHub.
+					</p>
+					<button
+						type="button"
+						onClick={() =>
+							signIn.social({ provider: "github", callbackURL: "/device" })
+						}
+						className={primaryButtonClass}
+					>
+						Sign in with GitHub
+					</button>
+				</div>
 			</main>
 		);
 	}
 
 	if (status === "approved") {
 		return (
-			<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
-				<h1 style={{ marginBottom: 16 }}>✓ Device Authorized</h1>
-				<p>You can close this window and return to the CLI.</p>
+			<main className={containerClass}>
+				<div className={panelClass}>
+					<p className="text-sm text-foreground-secondary uppercase tracking-wide mb-3">
+						Device authorized
+					</p>
+					<h1 className="text-2xl font-bold tracking-tight mb-3">
+						Authorization complete
+					</h1>
+					<p className="text-foreground-secondary">
+						You can close this window and return to the CLI.
+					</p>
+				</div>
 			</main>
 		);
 	}
 
 	if (status === "denied") {
 		return (
-			<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
-				<h1 style={{ marginBottom: 16 }}>Device Denied</h1>
-				<p>Authorization was denied. You can close this window.</p>
+			<main className={containerClass}>
+				<div className={panelClass}>
+					<p className="text-sm text-foreground-secondary uppercase tracking-wide mb-3">
+						Authorization denied
+					</p>
+					<h1 className="text-2xl font-bold tracking-tight mb-3">
+						Device denied
+					</h1>
+					<p className="text-foreground-secondary">
+						Authorization was denied. You can close this window.
+					</p>
+				</div>
 			</main>
 		);
 	}
 
 	return (
-		<main style={{ maxWidth: 400, margin: "100px auto", padding: 20 }}>
-			<h1 style={{ marginBottom: 16 }}>Device Authorization</h1>
-			<p style={{ marginBottom: 16 }}>
-				Signed in as <strong>{session.user.email}</strong>
-			</p>
+		<main className={containerClass}>
+			<div className={panelClass}>
+				<p className="text-sm text-foreground-secondary uppercase tracking-wide mb-3">
+					Device authorization
+				</p>
+				<h1 className="text-2xl font-bold tracking-tight mb-3">
+					Authorize your CLI
+				</h1>
+				<p className="text-foreground-secondary mb-6">
+					Signed in as{" "}
+					<strong className="text-foreground">{session.user.email}</strong>
+				</p>
 
-			{status === "idle" || status === "verifying" || status === "error" ? (
-				<>
-					<p style={{ marginBottom: 8 }}>Enter the code from your CLI:</p>
-					<input
-						type="text"
-						value={userCode}
-						onChange={(e) => setUserCode(e.target.value.toUpperCase())}
-						placeholder="XXXX-XXXX"
-						style={{
-							width: "100%",
-							padding: 12,
-							fontSize: 18,
-							textAlign: "center",
-							letterSpacing: 2,
-							marginBottom: 12,
-							border: "1px solid #ccc",
-							borderRadius: 4,
-						}}
-						maxLength={9}
-					/>
-					{error && <p style={{ color: "red", marginBottom: 12 }}>{error}</p>}
-					<button
-						type="button"
-						onClick={handleVerify}
-						disabled={status === "verifying" || !userCode.trim()}
-						style={{
-							width: "100%",
-							padding: 12,
-							backgroundColor: "#0070f3",
-							color: "white",
-							border: "none",
-							borderRadius: 4,
-							cursor: status === "verifying" ? "wait" : "pointer",
-						}}
-					>
-						{status === "verifying" ? "Verifying..." : "Verify Code"}
-					</button>
-				</>
-			) : status === "verified" || status === "approving" ? (
-				<>
-					<p style={{ marginBottom: 16 }}>
-						Authorize <strong>ultrahope-cli</strong> to access your account?
-					</p>
-					<div style={{ display: "flex", gap: 12 }}>
+				{status === "idle" || status === "verifying" || status === "error" ? (
+					<>
+						<p className="text-sm text-foreground-secondary mb-2">
+							Enter the code from your CLI:
+						</p>
+						<input
+							type="text"
+							value={userCode}
+							onChange={(e) => setUserCode(e.target.value.toUpperCase())}
+							placeholder="XXXX-XXXX"
+							className="w-full px-4 py-3 text-lg text-center tracking-[0.2em] bg-canvas-dark border border-border rounded-md mb-3 placeholder:text-foreground-muted"
+							maxLength={9}
+						/>
+						{error && <p className="text-sm text-red-400 mb-3">{error}</p>}
 						<button
 							type="button"
-							onClick={handleApprove}
-							disabled={status === "approving"}
-							style={{
-								flex: 1,
-								padding: 12,
-								backgroundColor: "#0070f3",
-								color: "white",
-								border: "none",
-								borderRadius: 4,
-								cursor: status === "approving" ? "wait" : "pointer",
-							}}
+							onClick={handleVerify}
+							disabled={status === "verifying" || !userCode.trim()}
+							className={`${primaryButtonClass} w-full`}
 						>
-							Approve
+							{status === "verifying" ? "Verifying..." : "Verify Code"}
 						</button>
-						<button
-							type="button"
-							onClick={handleDeny}
-							disabled={status === "approving"}
-							style={{
-								flex: 1,
-								padding: 12,
-								backgroundColor: "#666",
-								color: "white",
-								border: "none",
-								borderRadius: 4,
-								cursor: status === "approving" ? "wait" : "pointer",
-							}}
-						>
-							Deny
-						</button>
-					</div>
-				</>
-			) : null}
+					</>
+				) : status === "verified" || status === "approving" ? (
+					<>
+						<p className="text-foreground-secondary mb-4">
+							Authorize{" "}
+							<strong className="text-foreground">ultrahope-cli</strong> to
+							access your account?
+						</p>
+						<div className="flex gap-3">
+							<button
+								type="button"
+								onClick={handleApprove}
+								disabled={status === "approving"}
+								className={`${primaryButtonClass} flex-1`}
+							>
+								Approve
+							</button>
+							<button
+								type="button"
+								onClick={handleDeny}
+								disabled={status === "approving"}
+								className={`${secondaryButtonClass} flex-1`}
+							>
+								Deny
+							</button>
+						</div>
+					</>
+				) : null}
+			</div>
 		</main>
 	);
 }

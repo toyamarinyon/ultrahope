@@ -12,9 +12,15 @@ type Props = {
 	slug: string;
 	planName: string;
 	upgradeFrom?: UpgradeInfo;
+	className?: string;
 };
 
-export function CheckoutButton({ slug, planName, upgradeFrom }: Props) {
+export function CheckoutButton({
+	slug,
+	planName,
+	upgradeFrom,
+	className,
+}: Props) {
 	const [isLoading, setIsLoading] = useState(false);
 
 	const handleClick = async () => {
@@ -57,7 +63,12 @@ export function CheckoutButton({ slug, planName, upgradeFrom }: Props) {
 				: `Subscribe to ${planName}`;
 
 	return (
-		<button type="button" onClick={handleClick} disabled={isLoading}>
+		<button
+			type="button"
+			onClick={handleClick}
+			disabled={isLoading}
+			className={className}
+		>
 			{buttonText}
 		</button>
 	);

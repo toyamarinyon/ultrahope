@@ -72,74 +72,84 @@ export default async function PricingPage() {
 	const freeSubscription = activeSubscriptions.find((s) => s.slug === "free");
 
 	return (
-		<main>
-			<h1>Pricing</h1>
-			<p>Choose the plan that fits your needs</p>
+		<main className="min-h-screen px-8 py-16">
+			<div className="max-w-5xl mx-auto">
+				<header className="max-w-2xl">
+					<p className="text-sm text-foreground-secondary uppercase tracking-wide mb-3">
+						Pricing
+					</p>
+					<h1 className="text-4xl font-bold tracking-tight mb-4">Plans</h1>
+					<p className="text-lg text-foreground-secondary">
+						Choose the plan that fits your needs. Upgrade or downgrade any time.
+					</p>
+				</header>
 
-			<section style={{ display: "flex", gap: "2rem", marginTop: "2rem" }}>
-				{plans.map((plan) => {
-					const isActive = activeSlugs.includes(plan.slug);
-					return (
-						<article
-							key={plan.name}
-							style={{
-								border: isActive ? "2px solid #22c55e" : "1px solid #ccc",
-								padding: "1.5rem",
-								borderRadius: "8px",
-								flex: 1,
-							}}
-						>
-							<h2>
-								{plan.name}
-								{activeSlugs.join(",")}
-							</h2>
-							<p style={{ fontSize: "2rem", fontWeight: "bold" }}>
-								{plan.price}
-								<span style={{ fontSize: "1rem", fontWeight: "normal" }}>
-									/month
-								</span>
-							</p>
-							<p>{plan.description}</p>
-							<ul>
-								{plan.features.map((feature) => (
-									<li key={feature}>{feature}</li>
-								))}
-							</ul>
-							{session ? (
-								isActive ? (
-									<span
-										style={{
-											display: "inline-block",
-											padding: "0.5rem 1rem",
-											background: "#22c55e",
-											color: "white",
-											borderRadius: "4px",
-										}}
-									>
-										Current Plan
+				<section className="mt-12 grid gap-6 md:grid-cols-2">
+					{plans.map((plan) => {
+						const isActive = activeSlugs.includes(plan.slug);
+						return (
+							<article
+								key={plan.name}
+								className={`rounded-lg border ${
+									isActive ? "border-foreground" : "border-border-subtle"
+								} bg-surface p-6 flex flex-col gap-4`}
+							>
+								<div className="flex items-center justify-between">
+									<h2 className="text-2xl font-semibold tracking-tight">
+										{plan.name}
+									</h2>
+									{isActive && (
+										<span className="text-xs text-foreground-secondary border border-border px-2 py-1 rounded-full">
+											Current
+										</span>
+									)}
+								</div>
+								<p className="text-3xl font-semibold">
+									{plan.price}
+									<span className="text-base font-normal text-foreground-secondary">
+										/month
 									</span>
+								</p>
+								<p className="text-foreground-secondary">{plan.description}</p>
+								<ul className="space-y-2 text-sm text-foreground-secondary">
+									{plan.features.map((feature) => (
+										<li key={feature}>• {feature}</li>
+									))}
+								</ul>
+								{session ? (
+									isActive ? (
+										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
+											Current Plan
+										</span>
+									) : (
+										<CheckoutButton
+											slug={plan.slug}
+											planName={plan.name}
+											className="inline-flex items-center justify-center px-4 py-2 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60"
+											upgradeFrom={
+												plan.slug === "pro" && freeSubscription
+													? {
+															subscriptionId: freeSubscription.subscriptionId,
+															targetProductId:
+																process.env.POLAR_PRODUCT_PRO_ID ?? "",
+														}
+													: undefined
+											}
+										/>
+									)
 								) : (
-									<CheckoutButton
-										slug={plan.slug}
-										planName={plan.name}
-										upgradeFrom={
-											plan.slug === "pro" && freeSubscription
-												? {
-														subscriptionId: freeSubscription.subscriptionId,
-														targetProductId:
-															process.env.POLAR_PRODUCT_PRO_ID ?? "",
-													}
-												: undefined
-										}
-									/>
-								)
-							) : (
-								<Link href="/login">Sign in to subscribe</Link>
-							)}
-						</article>
-					);
-				})}
-			</section>
+									<Link
+										href="/login"
+										className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface-hover"
+									>
+										Sign in to subscribe
+									</Link>
+								)}
+							</article>
+						);
+					})}
+				</section>
+			</div>
 		</main>
 	);
 }
