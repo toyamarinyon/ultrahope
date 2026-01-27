@@ -96,7 +96,7 @@ function formatSlot(
 		const pendingLine = `${prefix}${marker} ⏳ Generating...`;
 		return [
 			selected
-				? `\x1b[2;36m${pendingLine}\x1b[0m`
+				? `\x1b[1;36m${pendingLine}\x1b[0m`
 				: `\x1b[2m${pendingLine}\x1b[0m`,
 		];
 	}
@@ -116,11 +116,13 @@ function formatSlot(
 			i === 0
 				? `${prefix}${marker} ${titleLines[i]}`
 				: `${fullIndent}${titleLines[i]}`;
-		formatted.push(selected ? `\x1b[36m${line}\x1b[0m` : line);
+		formatted.push(
+			selected ? `\x1b[1;36m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
+		);
 	}
 
 	if (lines.length > 1 || candidate.model) {
-		formatted.push("");
+		formatted.push(selected ? " > " : "");
 	}
 
 	for (let i = 1; i < lines.length; i++) {
@@ -128,7 +130,7 @@ function formatSlot(
 		for (const bodyLine of bodyLines) {
 			const line = `${fullIndent}${bodyLine}`;
 			formatted.push(
-				selected ? `\x1b[2m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
+				selected ? `\x1b[36m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
 			);
 		}
 	}
@@ -137,7 +139,9 @@ function formatSlot(
 		const modelInfo = candidate.cost
 			? `[${formatModelName(candidate.model)} - ${formatCost(candidate.cost)}]`
 			: `[${formatModelName(candidate.model)}]`;
-		const modelLine = `${fullIndent}\x1b[2m${modelInfo}\x1b[0m`;
+		const modelLine = selected
+			? `${fullIndent}\x1b[36m${modelInfo}\x1b[0m`
+			: `${fullIndent}\x1b[2m${modelInfo}\x1b[0m`;
 		formatted.push(modelLine);
 	}
 
