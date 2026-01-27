@@ -11,14 +11,14 @@
 
 @theme {
 	/* Colors: 暖かみのあるダーク */
-	--color-bg: #1a1814;
-	--color-bg-dark: #0f0d0a;
+	--color-canvas: #1a1814;
+	--color-canvas-dark: #0f0d0a;
 	--color-surface: #252119;
 	--color-surface-hover: #2f2a22;
 
-	--color-text: #e8e4dc;
-	--color-text-secondary: #9a9590;
-	--color-text-muted: #6b6560;
+	--color-foreground: #e8e4dc;
+	--color-foreground-secondary: #9a9590;
+	--color-foreground-muted: #6b6560;
 
 	--color-border: #3a352e;
 	--color-border-subtle: #2a2520;
@@ -73,8 +73,8 @@
 
 /* Base styles */
 html {
-	background-color: var(--color-bg);
-	color: var(--color-text);
+	background-color: var(--color-canvas);
+	color: var(--color-foreground);
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -102,7 +102,7 @@ pre {
 }
 
 pre {
-	background-color: var(--color-bg-dark);
+	background-color: var(--color-canvas-dark);
 	border: 1px solid var(--color-border-subtle);
 	border-radius: var(--radius-md);
 	padding: 1rem;
@@ -117,10 +117,12 @@ code:not(pre code) {
 }
 
 /* Links */
-a {
-	color: var(--color-text);
+a:not(.no-underline) {
 	text-decoration: underline;
 	text-underline-offset: 0.15em;
+}
+
+a {
 	transition: opacity var(--transition-base);
 }
 

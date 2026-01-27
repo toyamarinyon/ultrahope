@@ -10,13 +10,13 @@ export default async function RootPage() {
 
 	if (!session) {
 		return (
-			<main className="min-h-screen px-[--spacing-page]">
+			<main className="min-h-screen px-8">
 				{/* Hero */}
 				<section className="flex flex-col justify-center min-h-[80vh] max-w-3xl">
 					<h1 className="text-6xl font-black tracking-tighter mb-6">
 						Ultrahope
 					</h1>
-					<p className="text-xl text-[--color-text-secondary] leading-relaxed mb-12 max-w-xl">
+					<p className="text-xl text-foreground-secondary leading-relaxed mb-12 max-w-xl">
 						LLM-powered development workflow assistant. A simple UNIX tool that
 						works with pipes.
 					</p>
@@ -24,13 +24,13 @@ export default async function RootPage() {
 					<div className="flex gap-4">
 						<Link
 							href="/login"
-							className="inline-flex items-center justify-center px-6 py-3 bg-[--color-text] text-[--color-bg] font-medium rounded-[--radius-md] no-underline hover:opacity-90"
+							className="inline-flex items-center justify-center px-6 py-3 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90"
 						>
 							Get Started
 						</Link>
 						<Link
 							href="/pricing"
-							className="inline-flex items-center justify-center px-6 py-3 border border-[--color-border] text-[--color-text] font-medium rounded-[--radius-md] no-underline hover:bg-[--color-surface]"
+							className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface"
 						>
 							Pricing
 						</Link>
@@ -38,25 +38,25 @@ export default async function RootPage() {
 				</section>
 
 				{/* Features */}
-				<section className="py-[--spacing-section] border-t border-[--color-border-subtle]">
+				<section className="py-24 border-t border-border-subtle">
 					<h2 className="text-3xl font-bold tracking-tight mb-12">Features</h2>
 					<div className="grid md:grid-cols-3 gap-8">
 						<div>
 							<h3 className="text-lg font-semibold mb-2">Translate with AI</h3>
-							<p className="text-[--color-text-secondary]">
+							<p className="text-foreground-secondary">
 								Translate text between languages with a single command.
 							</p>
 						</div>
 						<div>
 							<h3 className="text-lg font-semibold mb-2">UNIX-friendly</h3>
-							<p className="text-[--color-text-secondary]">
+							<p className="text-foreground-secondary">
 								Works with pipes. Combine with grep, sed, awk, and your favorite
 								tools.
 							</p>
 						</div>
 						<div>
 							<h3 className="text-lg font-semibold mb-2">Git & Jujutsu</h3>
-							<p className="text-[--color-text-secondary]">
+							<p className="text-foreground-secondary">
 								Generate commit messages from your staged changes.
 							</p>
 						</div>
@@ -64,7 +64,7 @@ export default async function RootPage() {
 				</section>
 
 				{/* Install */}
-				<section className="py-[--spacing-section] border-t border-[--color-border-subtle]">
+				<section className="py-24 border-t border-border-subtle">
 					<h2 className="text-3xl font-bold tracking-tight mb-8">
 						Get started in seconds
 					</h2>
@@ -77,9 +77,9 @@ export default async function RootPage() {
 	}
 
 	return (
-		<main className="min-h-screen px-[--spacing-page] py-12">
+		<main className="min-h-screen px-8 py-12">
 			<h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
-			<p className="text-[--color-text-secondary] mb-12">
+			<p className="text-foreground-secondary mb-12">
 				Welcome, {session.user.name ?? session.user.email}
 			</p>
 
@@ -87,13 +87,11 @@ export default async function RootPage() {
 				<h2 className="text-2xl font-bold tracking-tight mb-6">
 					Get Started with CLI
 				</h2>
-				<p className="text-[--color-text-secondary] mb-4">
-					Install Ultrahope CLI:
-				</p>
+				<p className="text-foreground-secondary mb-4">Install Ultrahope CLI:</p>
 				<pre className="mb-6">
 					<code>npm install -g @ultrahope/cli</code>
 				</pre>
-				<p className="text-[--color-text-secondary] mb-4">Then authenticate:</p>
+				<p className="text-foreground-secondary mb-4">Then authenticate:</p>
 				<pre>
 					<code>ultrahope login</code>
 				</pre>
@@ -103,7 +101,7 @@ export default async function RootPage() {
 				<h2 className="text-2xl font-bold tracking-tight mb-4">Subscription</h2>
 				<Link
 					href="/pricing"
-					className="inline-flex items-center justify-center px-6 py-3 border border-[--color-border] text-[--color-text] font-medium rounded-[--radius-md] no-underline hover:bg-[--color-surface]"
+					className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface"
 				>
 					View Plans
 				</Link>
