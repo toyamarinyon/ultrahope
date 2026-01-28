@@ -308,7 +308,7 @@ async function fetchAllBenefits(polar: Polar): Promise<Map<string, Benefit>> {
 
 async function fetchAllProducts(polar: Polar): Promise<Map<string, Product>> {
 	const products = new Map<string, Product>();
-	const response = await polar.products.list({});
+	const response = await polar.products.list({ isArchived: false });
 	for await (const page of response) {
 		for (const product of page.result.items) {
 			products.set(product.name, product);
