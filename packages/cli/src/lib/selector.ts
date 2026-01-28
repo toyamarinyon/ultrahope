@@ -32,8 +32,9 @@ type Slot =
 interface SelectorOptions {
 	candidates: AsyncIterable<CandidateWithModel> | CandidateWithModel[];
 	maxSlots?: number;
-	prompt?: string;
 }
+
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 function canUseInteractive(): boolean {
 	if (!process.stdout.isTTY) {
@@ -47,111 +48,54 @@ function canUseInteractive(): boolean {
 	}
 }
 
-function wrapText(str: string, maxLen: number, indent: string): string[] {
-	if (str.length <= maxLen) return [str];
-	const lines: string[] = [];
-	let remaining = str;
-	let isFirst = true;
-	while (remaining.length > 0) {
-		const len = isFirst ? maxLen : maxLen - indent.length;
-		if (remaining.length <= len) {
-			lines.push(isFirst ? remaining : indent + remaining);
-			break;
-		}
-		const breakAt = remaining.lastIndexOf(" ", len);
-		const splitAt = breakAt > 0 ? breakAt : len;
-		lines.push(
-			isFirst
-				? remaining.slice(0, splitAt)
-				: indent + remaining.slice(0, splitAt),
-		);
-		remaining = remaining.slice(splitAt).trimStart();
-		isFirst = false;
-	}
-	return lines;
-}
-
 function formatModelName(model: string): string {
 	const parts = model.split("/");
 	return parts.length > 1 ? parts[1] : model;
 }
 
 function formatCost(cost: number): string {
-	return `$${cost}`;
+	return `$${cost.toFixed(7).replace(/0+$/, "").replace(/\.$/, "")}`;
 }
 
-function formatSlot(
-	slot: Slot,
-	index: number,
-	selected: boolean,
-	width: number,
-): string[] {
-	const prefix = selected ? " > " : "   ";
-	const marker = `[${index + 1}]`;
-	const contentIndent = " ".repeat(marker.length + 1);
-	const fullIndent = prefix + contentIndent;
-	const contentWidth = width - fullIndent.length;
+function formatSlot(slot: Slot, selected: boolean): string[] {
+	const radio = selected ? "●" : "○";
 
 	if (slot.status === "pending") {
-		const pendingLine = `${prefix}${marker} ⏳ Generating...`;
-		return [
-			selected
-				? `\x1b[1;36m${pendingLine}\x1b[0m`
-				: `\x1b[2m${pendingLine}\x1b[0m`,
-		];
+		return [];
 	}
 
 	const candidate = slot.candidate;
-	const lines = candidate.content.split("\n").filter((l) => l.trim());
+	const title = candidate.content.split("\n")[0]?.trim() || "";
 
-	const formatted: string[] = [];
+	const modelInfo = candidate.model
+		? candidate.cost
+			? `${formatModelName(candidate.model)} ${formatCost(candidate.cost)}`
+			: formatModelName(candidate.model)
+		: "";
 
-	const titleLines = wrapText(
-		lines[0] || "",
-		width - prefix.length - marker.length - 1,
-		contentIndent,
-	);
-	for (let i = 0; i < titleLines.length; i++) {
-		const line =
-			i === 0
-				? `${prefix}${marker} ${titleLines[i]}`
-				: `${fullIndent}${titleLines[i]}`;
-		formatted.push(
-			selected ? `\x1b[1;36m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
-		);
+	if (selected) {
+		const line = `  ${radio}  \x1b[1m${title}\x1b[0m`;
+		const meta = modelInfo ? `     \x1b[2m${modelInfo}\x1b[0m` : "";
+		return meta ? [line, meta] : [line];
 	}
+	const line = `\x1b[2m  ${radio}  ${title}\x1b[0m`;
+	const meta = modelInfo ? `\x1b[2m     ${modelInfo}\x1b[0m` : "";
+	return meta ? [line, meta] : [line];
+}
 
-	if (lines.length > 1 || candidate.model) {
-		formatted.push(selected ? " > " : "");
-	}
-
-	for (let i = 1; i < lines.length; i++) {
-		const bodyLines = wrapText(lines[i], contentWidth, "  ");
-		for (const bodyLine of bodyLines) {
-			const line = `${fullIndent}${bodyLine}`;
-			formatted.push(
-				selected ? `\x1b[36m${line}\x1b[0m` : `\x1b[2m${line}\x1b[0m`,
-			);
-		}
-	}
-
-	if (candidate.model) {
-		const modelInfo = candidate.cost
-			? `[${formatModelName(candidate.model)} - ${formatCost(candidate.cost)}]`
-			: `[${formatModelName(candidate.model)}]`;
-		const modelLine = selected
-			? `${fullIndent}\x1b[36m${modelInfo}\x1b[0m`
-			: `${fullIndent}\x1b[2m${modelInfo}\x1b[0m`;
-		formatted.push(modelLine);
-	}
-
-	return formatted;
+interface RenderState {
+	slots: Slot[];
+	selectedIndex: number;
+	isGenerating: boolean;
+	spinnerFrame: number;
+	totalSlots: number;
 }
 
 let lastRenderLineCount = 0;
 
-function render(slots: Slot[], selectedIndex: number, prompt: string): void {
-	const width = process.stdout.columns || 80;
+function render(state: RenderState): void {
+	const { slots, selectedIndex, isGenerating, spinnerFrame, totalSlots } =
+		state;
 
 	if (lastRenderLineCount > 0) {
 		process.stdout.write(`\x1b[${lastRenderLineCount}A`);
@@ -159,22 +103,42 @@ function render(slots: Slot[], selectedIndex: number, prompt: string): void {
 	}
 
 	const lines: string[] = [];
-	lines.push(`\x1b[1m${prompt}\x1b[0m`);
+	const readyCount = slots.filter((s) => s.status === "ready").length;
+
+	if (isGenerating) {
+		const spinner = SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
+		const progress = `${readyCount}/${totalSlots}`;
+		lines.push(
+			`\x1b[33m${spinner}\x1b[0m Generating commit messages... ${progress}`,
+		);
+	} else {
+		const label =
+			readyCount === 1
+				? "1 commit message generated"
+				: `${readyCount} commit messages generated`;
+		lines.push(`\x1b[32m✔\x1b[0m ${label}`);
+	}
+
+	const hasReady = readyCount > 0;
+	if (hasReady) {
+		const hint =
+			"\x1b[2m↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit\x1b[0m";
+		lines.push(`\x1b[36m?\x1b[0m Select a commit message ${hint}`);
+	} else {
+		lines.push("\x1b[2m  q quit\x1b[0m");
+	}
+
 	lines.push("");
 
 	for (let i = 0; i < slots.length; i++) {
-		const slotLines = formatSlot(slots[i], i, i === selectedIndex, width);
+		const slotLines = formatSlot(slots[i], i === selectedIndex);
 		for (const line of slotLines) {
 			lines.push(line);
 		}
-		lines.push("");
+		if (slotLines.length > 0) {
+			lines.push("");
+		}
 	}
-
-	const hasReady = slots.some((s) => s.status === "ready");
-	const hint = hasReady
-		? "\x1b[2m  [1-4] Select  [e] Edit  [Enter] Confirm  [r] Reroll  [q] Abort\x1b[0m"
-		: "\x1b[2m  Waiting for candidates...  [q] Abort\x1b[0m";
-	lines.push(hint);
 
 	for (const line of lines) {
 		console.log(line);
@@ -215,7 +179,7 @@ function openEditor(content: string): Promise<string> {
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
-	const { candidates, maxSlots = 4, prompt = "Select a result:" } = options;
+	const { candidates, maxSlots = 4 } = options;
 
 	if (Array.isArray(candidates)) {
 		if (!canUseInteractive() || candidates.length === 0) {
@@ -229,7 +193,7 @@ export async function selectCandidate(
 			status: "ready",
 			candidate: c,
 		}));
-		return selectFromSlots(slots, prompt, null);
+		return selectFromSlots(slots, null);
 	}
 
 	if (!canUseInteractive()) {
@@ -248,7 +212,7 @@ export async function selectCandidate(
 		status: "pending",
 	}));
 	const abortController = new AbortController();
-	return selectFromSlots(slots, prompt, { candidates, abortController });
+	return selectFromSlots(slots, { candidates, abortController });
 }
 
 interface AsyncContext {
@@ -258,12 +222,15 @@ interface AsyncContext {
 
 async function selectFromSlots(
 	initialSlots: Slot[],
-	prompt: string,
 	asyncCtx: AsyncContext | null,
 ): Promise<SelectorResult> {
 	return new Promise((resolve) => {
 		let selectedIndex = 0;
 		const slots = [...initialSlots];
+		const totalSlots = initialSlots.length;
+		let isGenerating = asyncCtx !== null;
+		let spinnerFrame = 0;
+		let spinnerInterval: ReturnType<typeof setInterval> | null = null;
 
 		const fd = openSync("/dev/tty", "r");
 		const ttyInput = new tty.ReadStream(fd);
@@ -277,10 +244,25 @@ async function selectFromSlots(
 		readline.emitKeypressEvents(ttyInput, rl);
 		ttyInput.setRawMode(true);
 
-		render(slots, selectedIndex, prompt);
+		const doRender = () => {
+			render({ slots, selectedIndex, isGenerating, spinnerFrame, totalSlots });
+		};
+
+		doRender();
+
+		if (isGenerating) {
+			spinnerInterval = setInterval(() => {
+				spinnerFrame++;
+				doRender();
+			}, 80);
+		}
 
 		const cleanup = () => {
 			asyncCtx?.abortController.abort();
+			if (spinnerInterval) {
+				clearInterval(spinnerInterval);
+				spinnerInterval = null;
+			}
 			ttyInput.setRawMode(false);
 			rl.close();
 			ttyInput.destroy();
@@ -305,21 +287,24 @@ async function selectFromSlots(
 							) {
 								selectedIndex = i;
 							}
-							render(slots, selectedIndex, prompt);
+							doRender();
 							i++;
 						}
 					}
 					const readySlots = slots.filter((s) => s.status === "ready");
-					if (readySlots.length < slots.length) {
-						slots.length = readySlots.length;
-						for (let j = 0; j < readySlots.length; j++) {
-							slots[j] = readySlots[j];
-						}
-						if (selectedIndex >= slots.length) {
-							selectedIndex = Math.max(0, slots.length - 1);
-						}
-						render(slots, selectedIndex, prompt);
+					slots.length = readySlots.length;
+					for (let j = 0; j < readySlots.length; j++) {
+						slots[j] = readySlots[j];
 					}
+					if (selectedIndex >= slots.length) {
+						selectedIndex = Math.max(0, slots.length - 1);
+					}
+					isGenerating = false;
+					if (spinnerInterval) {
+						clearInterval(spinnerInterval);
+						spinnerInterval = null;
+					}
+					doRender();
 				} catch (err) {
 					if (!asyncCtx.abortController.signal.aborted) {
 						console.error("Error fetching candidates:", err);
@@ -384,7 +369,7 @@ async function selectFromSlots(
 					}
 				} catch {}
 				ttyInput.setRawMode(true);
-				render(slots, selectedIndex, prompt);
+				doRender();
 				return;
 			}
 
@@ -392,7 +377,7 @@ async function selectFromSlots(
 				for (let i = selectedIndex - 1; i >= 0; i--) {
 					if (slots[i]?.status === "ready") {
 						selectedIndex = i;
-						render(slots, selectedIndex, prompt);
+						doRender();
 						break;
 					}
 				}
@@ -403,7 +388,7 @@ async function selectFromSlots(
 				for (let i = selectedIndex + 1; i < slots.length; i++) {
 					if (slots[i]?.status === "ready") {
 						selectedIndex = i;
-						render(slots, selectedIndex, prompt);
+						doRender();
 						break;
 					}
 				}
@@ -417,7 +402,7 @@ async function selectFromSlots(
 				slots[num - 1]?.status === "ready"
 			) {
 				selectedIndex = num - 1;
-				render(slots, selectedIndex, prompt);
+				doRender();
 				return;
 			}
 		};

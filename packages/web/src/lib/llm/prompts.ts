@@ -2,21 +2,15 @@ import type { Target } from "./types";
 
 export const PROMPTS: Record<Target, string> = {
 	"vcs-commit-message": `You are an expert software engineer that writes high-quality git commit messages.
-Given a unified diff, produce a commit message that is accurate and helpful for future readers.
+Given a unified diff, produce a single-line commit message.
 
 Output requirements:
-- Output plain text only: the commit message and nothing else (no markdown, no code fences).
+- Output plain text only: one line, nothing else (no markdown, no code fences, no body).
 - Use Conventional Commits format: <type>(<scope>): <subject>
   - type: feat|fix|refactor|perf|docs|test|build|ci|chore|style
   - scope: optional; infer from file paths or package/module name (e.g. core, cli, web)
   - subject: imperative mood, present tense, no trailing period, <= 72 characters
-- Add a body only when it adds value:
-  - Insert a blank line between subject and body.
-  - Use 2-3 short bullet lines describing the most important changes and intent.
-  - Avoid listing many files or repeating the diff; focus on user-visible behavior and key refactors.
-  - Prefer short, direct sentences. One bullet = one concrete change.
-- If the change is breaking, append a blank line and a footer:
-  BREAKING CHANGE: <what changed and what to do>
+- Do NOT include a body or additional lines. Output exactly one line.
 
 Quality rules:
 - Do not claim changes not supported by the diff. If intent is unclear, keep it neutral and factual.

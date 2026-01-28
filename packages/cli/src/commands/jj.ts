@@ -1,4 +1,5 @@
 import { execSync, spawnSync } from "node:child_process";
+import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { selectCandidate } from "../lib/selector";
 import {
 	DEFAULT_MODELS,
@@ -113,11 +114,13 @@ async function describe(args: string[]) {
 		return;
 	}
 
+	const stats = getJjDiffStats(options.revision);
+	console.log(`\x1b[32m✔\x1b[0m Found ${formatDiffStats(stats)}`);
+
 	while (true) {
 		const result = await selectCandidate({
 			candidates: createGenerator(),
 			maxSlots: options.models.length,
-			prompt: "Select a commit message:",
 		});
 
 		if (result.action === "abort") {
@@ -130,6 +133,10 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "confirm" && result.selected) {
+			console.log(`\x1b[32m✔\x1b[0m Message selected`);
+			console.log(
+				`\x1b[32m✔\x1b[0m Running jj describe -r ${options.revision}\n`,
+			);
 			describeRevision(options.revision, result.selected);
 			return;
 		}

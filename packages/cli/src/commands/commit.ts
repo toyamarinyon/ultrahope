@@ -2,6 +2,7 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { selectCandidate } from "../lib/selector";
 import {
 	DEFAULT_MODELS,
@@ -146,11 +147,13 @@ export async function commit(args: string[]) {
 		return;
 	}
 
+	const stats = getGitStagedStats();
+	console.log(`\x1b[32m✔\x1b[0m Found ${formatDiffStats(stats)}`);
+
 	while (true) {
 		const result = await selectCandidate({
 			candidates: createGenerator(),
 			maxSlots: options.models.length,
-			prompt: "Select a commit message:",
 		});
 
 		if (result.action === "abort") {
@@ -163,7 +166,9 @@ export async function commit(args: string[]) {
 		}
 
 		if (result.action === "confirm" && result.selected) {
+			console.log(`\x1b[32m✔\x1b[0m Message selected`);
 			if (options.message) {
+				console.log(`\x1b[32m✔\x1b[0m Running git commit\n`);
 				commitWithMessage(result.selected);
 			} else {
 				const editedMessage = await openEditor(result.selected);
@@ -171,6 +176,7 @@ export async function commit(args: string[]) {
 					console.error("Aborting commit due to empty message.");
 					process.exit(1);
 				}
+				console.log(`\x1b[32m✔\x1b[0m Running git commit\n`);
 				commitWithMessage(editedMessage);
 			}
 			return;

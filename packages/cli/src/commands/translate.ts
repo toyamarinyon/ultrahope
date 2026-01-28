@@ -69,7 +69,6 @@ async function handleVcsCommitMessage(
 		const result = await selectCandidate({
 			candidates: createGenerator(),
 			maxSlots: models.length,
-			prompt: "Select a result:",
 		});
 
 		if (result.action === "abort") {
@@ -147,7 +146,6 @@ async function handleGenericTarget(
 	while (true) {
 		const result = await selectCandidate({
 			candidates,
-			prompt: "Select a result:",
 		});
 
 		if (result.action === "abort") {
