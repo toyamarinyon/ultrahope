@@ -13,8 +13,10 @@ const FALLBACK_MODELS = ["openai/gpt-5-nano"];
 export async function translate(
 	input: string,
 	target: Target,
+	model: string,
 ): Promise<LLMResponse> {
 	let prompt = input;
+	const selectedModel = model;
 
 	if (target === "vcs-commit-message") {
 		const preprocessed = preprocessDiff(input);
@@ -28,16 +30,21 @@ export async function translate(
 		}
 	}
 
+	const providerOptions =
+		selectedModel === PRIMARY_MODEL
+			? {
+					gateway: {
+						models: FALLBACK_MODELS,
+					},
+				}
+			: undefined;
+
 	const result = await generateText({
-		model: PRIMARY_MODEL,
+		model: selectedModel,
 		system: PROMPTS[target],
 		prompt,
 		maxOutputTokens: 1024,
-		providerOptions: {
-			gateway: {
-				models: FALLBACK_MODELS,
-			},
-		},
+		...(providerOptions ? { providerOptions } : {}),
 	});
 
 	if (VERBOSE) {
@@ -62,7 +69,7 @@ export async function translate(
 	return {
 		content: result.text,
 		vendor,
-		model: PRIMARY_MODEL,
+		model: selectedModel,
 		inputTokens: result.usage.inputTokens ?? 0,
 		outputTokens: result.usage.outputTokens ?? 0,
 		cost,

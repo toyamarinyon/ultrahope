@@ -10,6 +10,7 @@ const MICRODOLLARS_PER_USD = 1_000_000;
 
 type TranslateOptions = {
 	externalCustomerId?: string;
+	model: string;
 };
 
 type UserBillingInfo = {
@@ -124,7 +125,7 @@ async function recordUsage(
 export async function translate(
 	input: string,
 	target: Target,
-	options: TranslateOptions = {},
+	options: TranslateOptions,
 ): Promise<LLMResponse> {
 	if (options.externalCustomerId) {
 		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
@@ -137,7 +138,7 @@ export async function translate(
 		}
 	}
 
-	const response = await coreTranslate(input, target);
+	const response = await coreTranslate(input, target, options.model);
 
 	after(async () => {
 		await recordUsage(options.externalCustomerId, response);

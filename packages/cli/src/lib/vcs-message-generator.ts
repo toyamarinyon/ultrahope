@@ -26,6 +26,7 @@ export async function* generateCommitMessages(
 		for (const model of models) {
 			const result = await api.translate({
 				input: diff,
+				model,
 				target: "vcs-commit-message",
 			});
 			yield { content: result.output, model };
@@ -51,6 +52,7 @@ export async function* generateCommitMessages(
 			try {
 				const result = await api.translate({
 					input: diff,
+					model,
 					target: "vcs-commit-message",
 				});
 				return {

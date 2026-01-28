@@ -61,16 +61,19 @@ export interface operations {
 			content: {
 				"application/json": {
 					input: string;
+					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"application/x-www-form-urlencoded": {
 					input: string;
+					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"multipart/form-data": {
 					input: string;
+					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};

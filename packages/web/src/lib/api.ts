@@ -51,7 +51,10 @@ export const app = new Elysia({ prefix: "/api" })
 				const response = await translate(
 					body.input,
 					body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
-					{ externalCustomerId: session.user.id },
+					{
+						externalCustomerId: session.user.id,
+						model: body.model,
+					},
 				);
 				return { output: response.content, ...response };
 			} catch (error) {
@@ -90,6 +93,7 @@ export const app = new Elysia({ prefix: "/api" })
 		{
 			body: t.Object({
 				input: t.String(),
+				model: t.String(),
 				target: t.Union([
 					t.Literal("vcs-commit-message"),
 					t.Literal("pr-title-body"),

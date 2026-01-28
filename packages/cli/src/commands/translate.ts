@@ -99,6 +99,7 @@ async function handleGenericTarget(
 
 	const api = createApiClient(token);
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	const defaultModel = models[0];
 
 	const doTranslate = async (): Promise<CandidateWithModel[]> => {
 		const candidates: CandidateWithModel[] = [];
@@ -106,6 +107,7 @@ async function handleGenericTarget(
 			try {
 				const result = await api.translate({
 					input,
+					model,
 					target: options.target,
 				});
 				candidates.push({ content: result.output, model });
@@ -123,9 +125,14 @@ async function handleGenericTarget(
 	};
 
 	if (!options.interactive) {
+		if (!defaultModel) {
+			console.error("Error: No model available for translation.");
+			process.exit(1);
+		}
 		const result = await api
 			.translate({
 				input,
+				model: defaultModel,
 				target: options.target,
 			})
 			.catch((error) => {
