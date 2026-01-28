@@ -12,6 +12,7 @@
 │   ├── billing-meter-design.md
 │   ├── billing-model-v2.md
 │   ├── billing-free-plan-auto-subscription.md
+│   ├── free-plan-daily-limit.md
 │   ├── cli-implementation.md
 │   ├── infrastructure.md
 │   ├── project-structure.md

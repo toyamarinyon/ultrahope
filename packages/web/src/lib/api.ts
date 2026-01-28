@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { openapi } from "@elysiajs/openapi";
 import { Elysia, t } from "elysia";
 import { auth } from "@/lib/auth";
-import { InsufficientBalanceError, translate } from "@/lib/llm";
+import {
+	DailyLimitExceededError,
+	InsufficientBalanceError,
+	translate,
+} from "@/lib/llm";
 
 const packageJson = JSON.parse(
 	readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
@@ -58,34 +62,35 @@ export const app = new Elysia({ prefix: "/api" })
 				);
 				return { output: response.content, ...response };
 			} catch (error) {
-				if (error instanceof InsufficientBalanceError) {
-					const isPro = error.plan === "pro";
-					const response = isPro
-						? {
-								error: "insufficient_balance" as const,
-								message: "Your usage credit has been exhausted.",
-								balance: error.balance,
-								plan: error.plan,
-								actions: {
-									buyCredits: "https://ultrahope.dev/settings/billing#credits",
-									enableAutoRecharge:
-										"https://ultrahope.dev/settings/billing#auto-recharge",
-								},
-								hint: "Purchase additional credits or enable auto-recharge to continue.",
-							}
-						: {
-								error: "insufficient_balance" as const,
-								message: "Your free credit has been exhausted.",
-								balance: error.balance,
-								plan: error.plan,
-								actions: {
-									upgrade: "https://ultrahope.dev/pricing",
-								},
-								hint: "Upgrade to Pro for $10/month with $5 included credit and one-time credit purchases.",
-							};
-
+				if (error instanceof DailyLimitExceededError) {
 					set.status = 402;
-					return response;
+					return {
+						error: "daily_limit_exceeded" as const,
+						message: "Daily request limit reached.",
+						count: error.count,
+						limit: error.limit,
+						resetsAt: error.resetsAt.toISOString(),
+						plan: "free" as const,
+						actions: {
+							upgrade: "https://ultrahope.dev/pricing",
+						},
+						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
+					};
+				}
+				if (error instanceof InsufficientBalanceError) {
+					set.status = 402;
+					return {
+						error: "insufficient_balance" as const,
+						message: "Your usage credit has been exhausted.",
+						balance: error.balance,
+						plan: error.plan,
+						actions: {
+							buyCredits: "https://ultrahope.dev/settings/billing#credits",
+							enableAutoRecharge:
+								"https://ultrahope.dev/settings/billing#auto-recharge",
+						},
+						hint: "Purchase additional credits or enable auto-recharge to continue.",
+					};
 				}
 				throw error;
 			}
@@ -118,18 +123,32 @@ export const app = new Elysia({ prefix: "/api" })
 				401: t.Object({
 					error: t.String(),
 				}),
-				402: t.Object({
-					error: t.Literal("insufficient_balance"),
-					message: t.String(),
-					balance: t.Number(),
-					plan: t.Union([t.Literal("free"), t.Literal("pro")]),
-					actions: t.Object({
-						buyCredits: t.Optional(t.String()),
-						enableAutoRecharge: t.Optional(t.String()),
-						upgrade: t.Optional(t.String()),
+				402: t.Union([
+					t.Object({
+						error: t.Literal("daily_limit_exceeded"),
+						message: t.String(),
+						count: t.Number(),
+						limit: t.Number(),
+						resetsAt: t.String(),
+						plan: t.Literal("free"),
+						actions: t.Object({
+							upgrade: t.String(),
+						}),
+						hint: t.String(),
 					}),
-					hint: t.String(),
-				}),
+					t.Object({
+						error: t.Literal("insufficient_balance"),
+						message: t.String(),
+						balance: t.Number(),
+						plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+						actions: t.Object({
+							buyCredits: t.Optional(t.String()),
+							enableAutoRecharge: t.Optional(t.String()),
+							upgrade: t.Optional(t.String()),
+						}),
+						hint: t.String(),
+					}),
+				]),
 			},
 			detail: {
 				summary: "Translate input into a structured output",

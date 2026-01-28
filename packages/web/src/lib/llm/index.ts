@@ -1,6 +1,13 @@
 import { after } from "next/server";
 import { polarClient } from "@/lib/auth";
 import {
+	assertDailyLimitNotExceeded,
+	incrementDailyUsage,
+} from "@/lib/daily-limit";
+
+export { DailyLimitExceededError } from "@/lib/daily-limit";
+
+import {
 	translate as coreTranslate,
 	type LLMResponse,
 	type Target,
@@ -127,20 +134,31 @@ export async function translate(
 	target: Target,
 	options: TranslateOptions,
 ): Promise<LLMResponse> {
+	let plan: UserPlan = "free";
+
 	if (options.externalCustomerId) {
 		const billingInfo = await getUserBillingInfo(options.externalCustomerId);
-		if (billingInfo && billingInfo.balance <= 0) {
-			throw new InsufficientBalanceError(
-				billingInfo.balance,
-				billingInfo.meterId,
-				billingInfo.plan,
-			);
+		if (billingInfo) {
+			plan = billingInfo.plan;
+
+			if (plan === "free") {
+				await assertDailyLimitNotExceeded(options.externalCustomerId);
+			} else if (billingInfo.balance <= 0) {
+				throw new InsufficientBalanceError(
+					billingInfo.balance,
+					billingInfo.meterId,
+					billingInfo.plan,
+				);
+			}
 		}
 	}
 
 	const response = await coreTranslate(input, target, options.model);
 
 	after(async () => {
+		if (options.externalCustomerId && plan === "free") {
+			await incrementDailyUsage(options.externalCustomerId);
+		}
 		await recordUsage(options.externalCustomerId, response);
 	});
 

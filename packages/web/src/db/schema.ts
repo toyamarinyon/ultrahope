@@ -1,5 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+	index,
+	integer,
+	primaryKey,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
 	id: text("id").primaryKey(),
@@ -99,6 +105,22 @@ export const deviceCode = sqliteTable("device_code", {
 	clientId: text("client_id"),
 	scope: text("scope"),
 });
+
+export const freePlanDailyUsage = sqliteTable(
+	"free_plan_daily_usage",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		date: text("date").notNull(), // 'YYYY-MM-DD' in UTC
+		count: integer("count").notNull().default(0),
+	},
+	(table) => [
+		primaryKey({ columns: [table.userId, table.date] }),
+		// Keep for fast cleanup/aggregation by date; remove if unused.
+		index("free_plan_daily_usage_date_idx").on(table.date),
+	],
+);
 
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
