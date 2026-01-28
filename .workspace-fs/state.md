@@ -16,7 +16,7 @@
   - [x] Implement daily limit check in API (5 requests/day, UTC reset)
   - [x] Update 402 response for daily limit exceeded
   - [x] Remove `free_credits` benefit from Polar
-  - [ ] Update pricing page UI (show "5 requests/day" + reset time in user TZ)
+  - [x] Update pricing page UI (show "5 requests/day" + reset time in user TZ)
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
   - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)

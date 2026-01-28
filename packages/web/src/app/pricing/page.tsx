@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { auth, polarClient } from "@/lib/auth";
 import { CheckoutButton } from "./checkout-button";
+import { ResetTime } from "./reset-time";
 
 const plans = [
 	{
@@ -9,9 +10,9 @@ const plans = [
 		price: "$0",
 		description: "Get started with Ultrahope",
 		features: [
-			"$0.40 included credit/month",
-			"Hard cap (no overage)",
-			"Community support",
+			{ key: "requests", content: "5 requests/day" },
+			{ key: "reset", content: <ResetTime /> },
+			{ key: "support", content: "Community support" },
 		],
 		slug: "free",
 	},
@@ -20,10 +21,10 @@ const plans = [
 		price: "$10",
 		description: "For power users",
 		features: [
-			"$5 included credit/month",
-			"Pay-as-you-go overage at actual cost",
-			"Priority support",
-			"Early access to new features",
+			{ key: "requests", content: "Unlimited requests" },
+			{ key: "credits", content: "$5 included credit/month" },
+			{ key: "overage", content: "Pay-as-you-go overage at actual cost" },
+			{ key: "support", content: "Priority support" },
 		],
 		slug: "pro",
 	},
@@ -113,7 +114,7 @@ export default async function PricingPage() {
 								<p className="text-foreground-secondary">{plan.description}</p>
 								<ul className="space-y-2 text-sm text-foreground-secondary">
 									{plan.features.map((feature) => (
-										<li key={feature}>• {feature}</li>
+										<li key={feature.key}>• {feature.content}</li>
 									))}
 								</ul>
 								{session ? (
