@@ -75,7 +75,7 @@ function formatSlot(slot: Slot, selected: boolean): string[] {
 
 	if (selected) {
 		const line = `  ${radio}  \x1b[1m${title}\x1b[0m`;
-		const meta = modelInfo ? `     \x1b[2m${modelInfo}\x1b[0m` : "";
+		const meta = modelInfo ? `     \x1b[36m${modelInfo}\x1b[0m` : "";
 		return meta ? [line, meta] : [line];
 	}
 	const line = `\x1b[2m  ${radio}  ${title}\x1b[0m`;
