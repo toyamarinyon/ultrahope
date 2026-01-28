@@ -121,14 +121,6 @@ const CONFIG: Config = {
 
 	benefits: [
 		{
-			key: "free_credits",
-			type: "meter_credit",
-			description: "$0.40 included credit",
-			meterName: "Usage Cost",
-			units: 0.4 * MICRODOLLARS_PER_USD, // $0.40
-			rollover: false,
-		},
-		{
 			key: "pro_credits",
 			type: "meter_credit",
 			description: "$5 included credit",
@@ -157,10 +149,10 @@ const CONFIG: Config = {
 	products: [
 		{
 			name: "Free",
-			description: "Free plan with $0.40 usage credit",
+			description: "Free plan with 5 requests/day",
 			recurringInterval: "month",
 			prices: [{ amountType: "free" }],
-			benefitKeys: ["free_credits"],
+			benefitKeys: [],
 		},
 		{
 			name: "Pro",
