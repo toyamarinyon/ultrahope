@@ -159,7 +159,9 @@ async function describe(args: string[]) {
 			abortController.signal,
 			commandExecutionSignal,
 		);
-		for await (const candidate of createCandidates(mergedSignal)) {
+		for await (const candidate of createCandidates(
+			mergedSignal ?? abortController.signal,
+		)) {
 			console.log("---");
 			console.log(candidate.content);
 		}
