@@ -231,6 +231,7 @@ async function selectFromSlots(
 		let isGenerating = asyncCtx !== null;
 		let spinnerFrame = 0;
 		let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+		let cleanedUp = false;
 
 		const fd = openSync("/dev/tty", "r");
 		const ttyInput = new tty.ReadStream(fd);
@@ -245,6 +246,7 @@ async function selectFromSlots(
 		ttyInput.setRawMode(true);
 
 		const doRender = () => {
+			if (cleanedUp) return;
 			render({ slots, selectedIndex, isGenerating, spinnerFrame, totalSlots });
 		};
 
@@ -258,6 +260,8 @@ async function selectFromSlots(
 		}
 
 		const cleanup = () => {
+			if (cleanedUp) return;
+			cleanedUp = true;
 			asyncCtx?.abortController.abort();
 			if (spinnerInterval) {
 				clearInterval(spinnerInterval);
