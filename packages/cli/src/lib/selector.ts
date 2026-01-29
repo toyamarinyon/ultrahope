@@ -30,7 +30,7 @@ type Slot =
 	| { status: "ready"; candidate: CandidateWithModel };
 
 interface SelectorOptions {
-	candidates: AsyncIterable<CandidateWithModel> | CandidateWithModel[];
+	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
 	maxSlots?: number;
 }
 
@@ -179,31 +179,18 @@ function openEditor(content: string): Promise<string> {
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
-	const { candidates, maxSlots = 4 } = options;
-
-	if (Array.isArray(candidates)) {
-		if (!canUseInteractive() || candidates.length === 0) {
-			return {
-				action: "confirm",
-				selected: candidates[0]?.content,
-				selectedIndex: 0,
-			};
-		}
-		const slots: Slot[] = candidates.map((c) => ({
-			status: "ready",
-			candidate: c,
-		}));
-		return selectFromSlots(slots, null);
-	}
+	const { createCandidates, maxSlots = 4 } = options;
+	const abortController = new AbortController();
+	const candidates = createCandidates(abortController.signal);
 
 	if (!canUseInteractive()) {
-		const first = await (async () => {
-			for await (const c of candidates) return c;
-			return undefined;
-		})();
+		const iterator = candidates[Symbol.asyncIterator]();
+		const firstResult = await iterator.next();
+		abortController.abort();
+		await iterator.return?.();
 		return {
 			action: "confirm",
-			selected: first?.content,
+			selected: firstResult.value?.content,
 			selectedIndex: 0,
 		};
 	}
@@ -211,7 +198,6 @@ export async function selectCandidate(
 	const slots: Slot[] = Array.from({ length: maxSlots }, () => ({
 		status: "pending",
 	}));
-	const abortController = new AbortController();
 	return selectFromSlots(slots, { candidates, abortController });
 }
 
@@ -278,11 +264,24 @@ async function selectFromSlots(
 		};
 
 		if (asyncCtx) {
+			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
 			(async () => {
 				let i = 0;
 				try {
-					for await (const candidate of asyncCtx.candidates) {
-						if (asyncCtx.abortController.signal.aborted) break;
+					while (true) {
+						if (cleanedUp) break;
+						const abortPromise = new Promise<{ done: true; value: undefined }>(
+							(res) => {
+								asyncCtx.abortController.signal.addEventListener(
+									"abort",
+									() => res({ done: true, value: undefined }),
+									{ once: true },
+								);
+							},
+						);
+						const result = await Promise.race([iterator.next(), abortPromise]);
+						if (result.done || cleanedUp) break;
+						const candidate = result.value;
 						if (i < slots.length) {
 							slots[i] = { status: "ready", candidate };
 							if (
@@ -295,6 +294,7 @@ async function selectFromSlots(
 							i++;
 						}
 					}
+					if (cleanedUp) return;
 					const readySlots = slots.filter((s) => s.status === "ready");
 					slots.length = readySlots.length;
 					for (let j = 0; j < readySlots.length; j++) {
@@ -310,9 +310,11 @@ async function selectFromSlots(
 					}
 					doRender();
 				} catch (err) {
-					if (!asyncCtx.abortController.signal.aborted) {
+					if (!cleanedUp) {
 						console.error("Error fetching candidates:", err);
 					}
+				} finally {
+					iterator.return?.();
 				}
 			})();
 		}

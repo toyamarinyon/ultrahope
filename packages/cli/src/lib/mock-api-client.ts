@@ -58,8 +58,27 @@ function getMockOutput(target: TranslateRequest["target"]): string {
 
 export function createMockApiClient() {
 	return {
-		async translate(req: TranslateRequest): Promise<TranslateResponse> {
-			await new Promise((resolve) => setTimeout(resolve, 100));
+		async translate(
+			req: TranslateRequest,
+			options?: { signal?: AbortSignal },
+		): Promise<TranslateResponse> {
+			if (options?.signal?.aborted) {
+				const error = new Error("Aborted");
+				error.name = "AbortError";
+				throw error;
+			}
+			await new Promise<void>((resolve, reject) => {
+				const timer = setTimeout(resolve, 100);
+				const onAbort = () => {
+					clearTimeout(timer);
+					const error = new Error("Aborted");
+					error.name = "AbortError";
+					reject(error);
+				};
+				if (options?.signal) {
+					options.signal.addEventListener("abort", onAbort, { once: true });
+				}
+			});
 			const output = getMockOutput(req.target);
 			return {
 				output,

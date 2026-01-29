@@ -45,10 +45,14 @@ export function createApiClient(token?: string) {
 	});
 
 	return {
-		async translate(req: TranslateRequest): Promise<TranslateResponse> {
+		async translate(
+			req: TranslateRequest,
+			options?: { signal?: AbortSignal },
+		): Promise<TranslateResponse> {
 			log("translate request", req);
 			const { data, error, response } = await client.POST("/api/v1/translate", {
 				body: req,
+				signal: options?.signal,
 			});
 			if (response.status === 402) {
 				const errorBalance = (error as { balance?: number } | undefined)

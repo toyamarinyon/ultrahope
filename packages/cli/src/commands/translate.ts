@@ -47,11 +47,12 @@ async function handleVcsCommitMessage(
 ): Promise<void> {
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
 
-	const createGenerator = () =>
+	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff: input,
 			models,
 			mock: options.mock,
+			signal,
 		});
 
 	if (!options.interactive) {
@@ -67,7 +68,7 @@ async function handleVcsCommitMessage(
 
 	while (true) {
 		const result = await selectCandidate({
-			candidates: createGenerator(),
+			createCandidates,
 			maxSlots: models.length,
 		});
 
@@ -151,8 +152,17 @@ async function handleGenericTarget(
 	let candidates = await doTranslate();
 
 	while (true) {
+		const createCandidates = (signal: AbortSignal) =>
+			(async function* () {
+				for (const candidate of candidates) {
+					if (signal.aborted) return;
+					yield candidate;
+				}
+			})();
+
 		const result = await selectCandidate({
-			candidates,
+			createCandidates,
+			maxSlots: candidates.length,
 		});
 
 		if (result.action === "abort") {

@@ -14,21 +14,36 @@ export interface GeneratorOptions {
 	diff: string;
 	models: string[];
 	mock?: boolean;
+	signal?: AbortSignal;
 }
 
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
 ): AsyncGenerator<CandidateWithModel> {
-	const { diff, models, mock = false } = options;
+	const { diff, models, mock = false, signal } = options;
+
+	const isAbortError = (error: unknown) =>
+		error instanceof Error && error.name === "AbortError";
 
 	if (mock) {
 		const api = createMockApiClient();
 		for (const model of models) {
-			const result = await api.translate({
-				input: diff,
-				model,
-				target: "vcs-commit-message",
-			});
+			if (signal?.aborted) return;
+			let result;
+			try {
+				result = await api.translate(
+					{
+						input: diff,
+						model,
+						target: "vcs-commit-message",
+					},
+					{ signal },
+				);
+			} catch (error) {
+				if (signal?.aborted || isAbortError(error)) return;
+				throw error;
+			}
+			if (signal?.aborted) return;
 			yield { content: result.output, model };
 		}
 		return;
@@ -50,11 +65,17 @@ export async function* generateCommitMessages(
 	const pending: PendingResult[] = models.map((model, index) => ({
 		promise: (async () => {
 			try {
-				const result = await api.translate({
-					input: diff,
-					model,
-					target: "vcs-commit-message",
-				});
+				if (signal?.aborted) {
+					return { result: null, index };
+				}
+				const result = await api.translate(
+					{
+						input: diff,
+						model,
+						target: "vcs-commit-message",
+					},
+					{ signal },
+				);
 				return {
 					result: {
 						content: result.output,
@@ -64,6 +85,9 @@ export async function* generateCommitMessages(
 					index,
 				};
 			} catch (error) {
+				if (signal?.aborted || isAbortError(error)) {
+					return { result: null, index };
+				}
 				if (error instanceof InsufficientBalanceError) {
 					throw error;
 				}
@@ -74,10 +98,25 @@ export async function* generateCommitMessages(
 	}));
 
 	const remaining = new Map(pending.map((p) => [p.index, p.promise]));
+	const abortPromise = signal
+		? new Promise<null>((resolve) => {
+				if (signal.aborted) {
+					resolve(null);
+					return;
+				}
+				signal.addEventListener("abort", () => resolve(null), { once: true });
+			})
+		: null;
 
 	try {
 		while (remaining.size > 0) {
-			const { result, index } = await Promise.race(remaining.values());
+			if (signal?.aborted) break;
+			const next = Promise.race(remaining.values());
+			const winner = abortPromise
+				? await Promise.race([next, abortPromise])
+				: await next;
+			if (!winner || signal?.aborted) break;
+			const { result, index } = winner;
 			remaining.delete(index);
 			if (result) yield result;
 		}

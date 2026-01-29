@@ -81,11 +81,12 @@ async function describe(args: string[]) {
 		process.exit(1);
 	}
 
-	const createGenerator = () =>
+	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models: options.models,
 			mock: options.mock,
+			signal,
 		});
 
 	if (!options.interactive) {
@@ -107,7 +108,8 @@ async function describe(args: string[]) {
 	}
 
 	if (options.dryRun) {
-		for await (const candidate of createGenerator()) {
+		const abortController = new AbortController();
+		for await (const candidate of createCandidates(abortController.signal)) {
 			console.log("---");
 			console.log(candidate.content);
 		}
@@ -119,7 +121,7 @@ async function describe(args: string[]) {
 
 	while (true) {
 		const result = await selectCandidate({
-			candidates: createGenerator(),
+			createCandidates,
 			maxSlots: options.models.length,
 		});
 
