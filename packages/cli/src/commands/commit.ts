@@ -2,6 +2,13 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { mergeAbortSignals } from "../lib/abort";
+import { createApiClient } from "../lib/api-client";
+import { getToken } from "../lib/auth";
+import {
+	handleCommandExecutionError,
+	startCommandExecution,
+} from "../lib/command-execution";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { selectCandidate } from "../lib/selector";
 import {
@@ -104,12 +111,49 @@ export async function commit(args: string[]) {
 		process.exit(1);
 	}
 
+	let commandExecutionId: string | undefined;
+	let commandExecutionSignal: AbortSignal | undefined;
+
+	if (!options.mock) {
+		const token = await getToken();
+		if (!token) {
+			console.error("Error: Not authenticated. Run `ultrahope login` first.");
+			process.exit(1);
+		}
+
+		const api = createApiClient(token);
+		const {
+			commandExecutionPromise,
+			abortController,
+			commandExecutionId: id,
+		} = startCommandExecution({
+			api,
+			command: "commit",
+			args,
+			apiPath: "/v1/translate",
+			requestPayload: {
+				input: diff,
+				target: "vcs-commit-message",
+				models: options.models,
+			},
+		});
+
+		commandExecutionPromise.catch((error) => {
+			abortController.abort();
+			handleCommandExecutionError(error);
+		});
+
+		commandExecutionId = id;
+		commandExecutionSignal = abortController.signal;
+	}
+
 	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models: options.models,
 			mock: options.mock,
-			signal,
+			signal: mergeAbortSignals(signal, commandExecutionSignal),
+			commandExecutionId,
 		});
 
 	if (!options.interactive) {
@@ -117,6 +161,8 @@ export async function commit(args: string[]) {
 			diff,
 			models: options.models.slice(0, 1),
 			mock: options.mock,
+			signal: commandExecutionSignal,
+			commandExecutionId,
 		});
 		const first = await gen.next();
 		const message = first.value?.content ?? "";
@@ -142,7 +188,11 @@ export async function commit(args: string[]) {
 
 	if (options.dryRun) {
 		const abortController = new AbortController();
-		for await (const candidate of createCandidates(abortController.signal)) {
+		const mergedSignal = mergeAbortSignals(
+			abortController.signal,
+			commandExecutionSignal,
+		);
+		for await (const candidate of createCandidates(mergedSignal)) {
 			console.log("---");
 			console.log(candidate.content);
 		}

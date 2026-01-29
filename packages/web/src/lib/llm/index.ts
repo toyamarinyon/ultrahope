@@ -1,9 +1,5 @@
 import { after } from "next/server";
 import { polarClient } from "@/lib/auth";
-import {
-	assertDailyLimitNotExceeded,
-	incrementDailyUsage,
-} from "@/lib/daily-limit";
 
 export { DailyLimitExceededError } from "@/lib/daily-limit";
 
@@ -18,6 +14,7 @@ const MICRODOLLARS_PER_USD = 1_000_000;
 type TranslateOptions = {
 	externalCustomerId?: string;
 	model: string;
+	abortSignal?: AbortSignal;
 };
 
 type UserBillingInfo = {
@@ -39,7 +36,7 @@ export class InsufficientBalanceError extends Error {
 	}
 }
 
-async function getUserBillingInfo(
+export async function getUserBillingInfo(
 	externalCustomerId: string,
 ): Promise<UserBillingInfo | null> {
 	if (!process.env.POLAR_ACCESS_TOKEN) {
@@ -141,9 +138,7 @@ export async function translate(
 		if (billingInfo) {
 			plan = billingInfo.plan;
 
-			if (plan === "free") {
-				await assertDailyLimitNotExceeded(options.externalCustomerId);
-			} else if (billingInfo.balance <= 0) {
+			if (plan === "pro" && billingInfo.balance <= 0) {
 				throw new InsufficientBalanceError(
 					billingInfo.balance,
 					billingInfo.meterId,
@@ -153,12 +148,14 @@ export async function translate(
 		}
 	}
 
-	const response = await coreTranslate(input, target, options.model);
+	const response = await coreTranslate(
+		input,
+		target,
+		options.model,
+		options.abortSignal,
+	);
 
 	after(async () => {
-		if (options.externalCustomerId && plan === "free") {
-			await incrementDailyUsage(options.externalCustomerId);
-		}
 		await recordUsage(options.externalCustomerId, response);
 	});
 

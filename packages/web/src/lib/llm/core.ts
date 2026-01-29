@@ -14,6 +14,7 @@ export async function translate(
 	input: string,
 	target: Target,
 	model: string,
+	abortSignal?: AbortSignal,
 ): Promise<LLMResponse> {
 	let prompt = input;
 	const selectedModel = model;
@@ -44,6 +45,7 @@ export async function translate(
 		system: PROMPTS[target],
 		prompt,
 		maxOutputTokens: 1024,
+		abortSignal,
 		...(providerOptions ? { providerOptions } : {}),
 	});
 

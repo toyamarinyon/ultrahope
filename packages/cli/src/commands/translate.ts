@@ -1,5 +1,10 @@
+import { mergeAbortSignals } from "../lib/abort";
 import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
+import {
+	handleCommandExecutionError,
+	startCommandExecution,
+} from "../lib/command-execution";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
 import {
@@ -34,25 +39,61 @@ export async function translate(args: string[]) {
 	}
 
 	if (options.target === "vcs-commit-message") {
-		await handleVcsCommitMessage(input, options);
+		await handleVcsCommitMessage(input, options, args);
 		return;
 	}
 
-	await handleGenericTarget(input, options);
+	await handleGenericTarget(input, options, args);
 }
 
 async function handleVcsCommitMessage(
 	input: string,
 	options: TranslateOptions,
+	args: string[],
 ): Promise<void> {
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	let commandExecutionId: string | undefined;
+	let commandExecutionSignal: AbortSignal | undefined;
+
+	if (!options.mock) {
+		const token = await getToken();
+		if (!token) {
+			console.error("Error: Not authenticated. Run `ultrahope login` first.");
+			process.exit(1);
+		}
+
+		const api = createApiClient(token);
+		const {
+			commandExecutionPromise,
+			abortController,
+			commandExecutionId: id,
+		} = startCommandExecution({
+			api,
+			command: "translate",
+			args,
+			apiPath: "/v1/translate",
+			requestPayload:
+				models.length === 1
+					? { input, target: "vcs-commit-message", model: models[0] }
+					: { input, target: "vcs-commit-message", models },
+		});
+
+		commandExecutionPromise.catch((error) => {
+			abortController.abort();
+			handleCommandExecutionError(error);
+		});
+
+		commandExecutionId = id;
+		commandExecutionSignal = abortController.signal;
+	}
 
 	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff: input,
 			models,
 			mock: options.mock,
-			signal,
+			signal: mergeAbortSignals(signal, commandExecutionSignal),
+			commandExecutionId,
 		});
 
 	if (!options.interactive) {
@@ -60,6 +101,8 @@ async function handleVcsCommitMessage(
 			diff: input,
 			models: models.slice(0, 1),
 			mock: options.mock,
+			signal: commandExecutionSignal,
+			commandExecutionId,
 		});
 		const first = await gen.next();
 		console.log(first.value?.content ?? "");
@@ -91,6 +134,7 @@ async function handleVcsCommitMessage(
 async function handleGenericTarget(
 	input: string,
 	options: TranslateOptions,
+	args: string[],
 ): Promise<void> {
 	const token = await getToken();
 	if (!token) {
@@ -101,18 +145,46 @@ async function handleGenericTarget(
 	const api = createApiClient(token);
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
 	const defaultModel = models[0];
+	const requestPayload =
+		models.length === 1
+			? { input, target: options.target, model: models[0] }
+			: { input, target: options.target, models };
+
+	const { commandExecutionId, abortController, commandExecutionPromise } =
+		startCommandExecution({
+			api,
+			command: "translate",
+			args,
+			apiPath: "/v1/translate",
+			requestPayload,
+		});
+
+	commandExecutionPromise.catch((error) => {
+		abortController.abort();
+		handleCommandExecutionError(error);
+	});
+
+	const isAbortError = (error: unknown) =>
+		error instanceof Error && error.name === "AbortError";
 
 	const doTranslate = async (): Promise<CandidateWithModel[]> => {
 		const candidates: CandidateWithModel[] = [];
 		for (const model of models) {
 			try {
-				const result = await api.translate({
-					input,
-					model,
-					target: options.target,
-				});
+				const result = await api.translate(
+					{
+						commandExecutionId,
+						input,
+						model,
+						target: options.target,
+					},
+					{ signal: abortController.signal },
+				);
 				candidates.push({ content: result.output, model });
 			} catch (error) {
+				if (isAbortError(error) || abortController.signal.aborted) {
+					return candidates;
+				}
 				if (error instanceof InsufficientBalanceError) {
 					console.error(
 						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
@@ -131,12 +203,19 @@ async function handleGenericTarget(
 			process.exit(1);
 		}
 		const result = await api
-			.translate({
-				input,
-				model: defaultModel,
-				target: options.target,
-			})
+			.translate(
+				{
+					commandExecutionId,
+					input,
+					model: defaultModel,
+					target: options.target,
+				},
+				{ signal: abortController.signal },
+			)
 			.catch((error) => {
+				if (isAbortError(error) || abortController.signal.aborted) {
+					return null;
+				}
 				if (error instanceof InsufficientBalanceError) {
 					console.error(
 						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
@@ -145,7 +224,9 @@ async function handleGenericTarget(
 				}
 				throw error;
 			});
-		console.log(result.output);
+		if (result) {
+			console.log(result.output);
+		}
 		return;
 	}
 

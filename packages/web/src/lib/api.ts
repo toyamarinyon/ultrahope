@@ -1,9 +1,14 @@
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { openapi } from "@elysiajs/openapi";
 import { Elysia, t } from "elysia";
+import { db } from "@/db/client";
+import { commandExecution, generation } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { assertDailyLimitNotExceeded } from "@/lib/daily-limit";
 import {
 	DailyLimitExceededError,
+	getUserBillingInfo,
 	InsufficientBalanceError,
 	translate,
 } from "@/lib/llm";
@@ -11,6 +16,13 @@ import {
 const packageJson = JSON.parse(
 	readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
 ) as { version?: string };
+
+const MICRODOLLARS_PER_USD = 1_000_000;
+const TRANSLATE_TARGETS = [
+	"vcs-commit-message",
+	"pr-title-body",
+	"pr-intent",
+] as const;
 
 export const app = new Elysia({ prefix: "/api" })
 	.use(
@@ -38,28 +50,154 @@ export const app = new Elysia({ prefix: "/api" })
 		return { session };
 	})
 	.post(
-		"/v1/translate",
+		"/v1/command_execution",
 		async ({ body, session, set }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
 
-			const validTargets = ["vcs-commit-message", "pr-title-body", "pr-intent"];
-			if (!validTargets.includes(body.target)) {
+			try {
+				const billingInfo = await getUserBillingInfo(session.user.id);
+				const plan = billingInfo?.plan ?? "free";
+
+				if (plan === "free") {
+					await assertDailyLimitNotExceeded(session.user.id);
+				}
+
+				await db
+					.insert(commandExecution)
+					.values({
+						id: body.commandExecutionId,
+						cliSessionId: body.cliSessionId,
+						userId: session.user.id,
+						command: body.command,
+						args: JSON.stringify(body.args),
+						api: body.api,
+						requestPayload: body.requestPayload,
+						startedAt: new Date(),
+						finishedAt: null,
+					})
+					.onConflictDoNothing();
+
+				return { commandExecutionId: body.commandExecutionId };
+			} catch (error) {
+				if (error instanceof DailyLimitExceededError) {
+					set.status = 402;
+					return {
+						error: "daily_limit_exceeded" as const,
+						message: "Daily request limit reached.",
+						count: error.count,
+						limit: error.limit,
+						resetsAt: error.resetsAt.toISOString(),
+						plan: "free" as const,
+						actions: {
+							upgrade: "https://ultrahope.dev/pricing",
+						},
+						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
+					};
+				}
+				throw error;
+			}
+		},
+		{
+			body: t.Object({
+				commandExecutionId: t.String(),
+				cliSessionId: t.String(),
+				command: t.String(),
+				args: t.Array(t.String()),
+				api: t.String(),
+				requestPayload: t.Object({
+					input: t.String(),
+					target: t.Union([
+						t.Literal("vcs-commit-message"),
+						t.Literal("pr-title-body"),
+						t.Literal("pr-intent"),
+					]),
+					model: t.Optional(t.String()),
+					models: t.Optional(t.Array(t.String())),
+				}),
+			}),
+			response: {
+				200: t.Object({
+					commandExecutionId: t.String(),
+				}),
+				401: t.Object({
+					error: t.String(),
+				}),
+				402: t.Object({
+					error: t.Literal("daily_limit_exceeded"),
+					message: t.String(),
+					count: t.Number(),
+					limit: t.Number(),
+					resetsAt: t.String(),
+					plan: t.Literal("free"),
+					actions: t.Object({
+						upgrade: t.String(),
+					}),
+					hint: t.String(),
+				}),
+			},
+			detail: {
+				summary: "Create a command execution record",
+				tags: ["command_execution"],
+				security: [{ bearerAuth: [] }],
+			},
+		},
+	)
+	.post(
+		"/v1/translate",
+		async ({ body, session, set, request }) => {
+			if (!session) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+
+			if (!TRANSLATE_TARGETS.includes(body.target)) {
 				set.status = 400;
 				return { error: `Invalid target: ${body.target}` };
 			}
 
 			try {
+				const startedAt = Date.now();
 				const response = await translate(
 					body.input,
 					body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
 					{
 						externalCustomerId: session.user.id,
 						model: body.model,
+						abortSignal: request.signal,
 					},
 				);
+
+				const costInMicrodollars =
+					response.cost != null
+						? Math.round(response.cost * MICRODOLLARS_PER_USD)
+						: 0;
+
+				if (response.generationId) {
+					try {
+						await db.insert(generation).values({
+							id: randomUUID(),
+							commandExecutionId: body.commandExecutionId,
+							vercelAiGatewayGenerationId: response.generationId,
+							providerName: response.vendor,
+							model: response.model,
+							cost: costInMicrodollars,
+							latency: Date.now() - startedAt,
+							createdAt: new Date(),
+							gatewayPayload: null,
+							output: response.content,
+						});
+					} catch (error) {
+						console.error("[usage] Failed to persist generation:", error);
+					}
+				} else {
+					console.warn(
+						"[usage] Missing generationId; skipping generation insert.",
+					);
+				}
+
 				return { output: response.content, ...response };
 			} catch (error) {
 				if (error instanceof DailyLimitExceededError) {
@@ -97,6 +235,7 @@ export const app = new Elysia({ prefix: "/api" })
 		},
 		{
 			body: t.Object({
+				commandExecutionId: t.String(),
 				input: t.String(),
 				model: t.String(),
 				target: t.Union([

@@ -10,10 +10,47 @@ export type TranslateRequest =
 export type TranslateResponse =
 	paths["/api/v1/translate"]["post"]["responses"][200]["content"]["application/json"];
 
+export type CommandExecutionRequest =
+	paths["/api/v1/command_execution"]["post"]["requestBody"]["content"]["application/json"];
+
+export type CommandExecutionResponse =
+	paths["/api/v1/command_execution"]["post"]["responses"][200]["content"]["application/json"];
+
 export class InsufficientBalanceError extends Error {
 	constructor(public balance: number) {
 		super("Token balance exhausted");
 		this.name = "InsufficientBalanceError";
+	}
+}
+
+export class DailyLimitExceededError extends Error {
+	constructor(
+		public count: number,
+		public limit: number,
+		public resetsAt: string,
+	) {
+		super("Daily request limit reached");
+		this.name = "DailyLimitExceededError";
+	}
+}
+
+async function getErrorText(
+	response: Response,
+	error: unknown,
+): Promise<string> {
+	if (error) {
+		try {
+			return JSON.stringify(error);
+		} catch {
+			return String(error);
+		}
+	}
+	try {
+		return await response.text();
+	} catch (readError) {
+		return `Failed to read response body: ${
+			readError instanceof Error ? readError.message : String(readError)
+		}`;
 	}
 }
 
@@ -45,6 +82,38 @@ export function createApiClient(token?: string) {
 	});
 
 	return {
+		async commandExecution(
+			req: CommandExecutionRequest,
+		): Promise<CommandExecutionResponse> {
+			log("command_execution request", req);
+			const { data, error, response } = await client.POST(
+				"/api/v1/command_execution",
+				{
+					body: req,
+				},
+			);
+			if (response.status === 402) {
+				const payload = error as
+					| { count?: number; limit?: number; resetsAt?: string }
+					| undefined;
+				const count = typeof payload?.count === "number" ? payload.count : 0;
+				const limit = typeof payload?.limit === "number" ? payload.limit : 0;
+				const resetsAt = payload?.resetsAt ?? "";
+				log("command_execution error (402)", error);
+				throw new DailyLimitExceededError(count, limit, resetsAt);
+			}
+			if (!response.ok) {
+				const text = await getErrorText(response, error);
+				log("command_execution error", { status: response.status, text });
+				throw new Error(`API error: ${response.status} ${text}`);
+			}
+			if (!data) {
+				throw new Error("API error: empty response");
+			}
+			log("command_execution response", data);
+			return data;
+		},
+
 		async translate(
 			req: TranslateRequest,
 			options?: { signal?: AbortSignal },
@@ -62,7 +131,7 @@ export function createApiClient(token?: string) {
 				throw new InsufficientBalanceError(balance);
 			}
 			if (!response.ok) {
-				const text = await response.text();
+				const text = await getErrorText(response, error);
 				log("translate error", { status: response.status, text });
 				throw new Error(`API error: ${response.status} ${text}`);
 			}

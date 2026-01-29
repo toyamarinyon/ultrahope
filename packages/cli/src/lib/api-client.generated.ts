@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+	"/api/v1/command_execution": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Create a command execution record */
+		post: operations["postApiV1Command_execution"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/v1/translate": {
 		parameters: {
 			query?: never;
@@ -50,6 +67,106 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+	postApiV1Command_execution: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+				"application/x-www-form-urlencoded": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+				"multipart/form-data": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						commandExecutionId: string;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "daily_limit_exceeded";
+						message: string;
+						count: number;
+						limit: number;
+						resetsAt: string;
+						/** @constant */
+						plan: "free";
+						actions: {
+							upgrade: string;
+						};
+						hint: string;
+					};
+				};
+			};
+		};
+	};
 	postApiV1Translate: {
 		parameters: {
 			query?: never;
@@ -60,18 +177,21 @@ export interface operations {
 		requestBody: {
 			content: {
 				"application/json": {
+					commandExecutionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"application/x-www-form-urlencoded": {
+					commandExecutionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"multipart/form-data": {
+					commandExecutionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */
@@ -127,20 +247,34 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": {
-						/** @constant */
-						error: "insufficient_balance";
-						message: string;
-						balance: number;
-						/** @enum {string} */
-						plan: "free" | "pro";
-						actions: {
-							buyCredits?: string;
-							enableAutoRecharge?: string;
-							upgrade?: string;
-						};
-						hint: string;
-					};
+					"application/json":
+						| {
+								/** @constant */
+								error: "daily_limit_exceeded";
+								message: string;
+								count: number;
+								limit: number;
+								resetsAt: string;
+								/** @constant */
+								plan: "free";
+								actions: {
+									upgrade: string;
+								};
+								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "insufficient_balance";
+								message: string;
+								balance: number;
+								plan: "free" | "pro";
+								actions: {
+									buyCredits?: string;
+									enableAutoRecharge?: string;
+									upgrade?: string;
+								};
+								hint: string;
+						  };
 				};
 			};
 		};

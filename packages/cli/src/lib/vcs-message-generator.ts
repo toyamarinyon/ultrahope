@@ -1,4 +1,8 @@
-import { createApiClient, InsufficientBalanceError } from "./api-client";
+import {
+	createApiClient,
+	InsufficientBalanceError,
+	type TranslateResponse,
+} from "./api-client";
 import { getToken } from "./auth";
 import { createMockApiClient } from "./mock-api-client";
 import type { CandidateWithModel } from "./selector";
@@ -15,12 +19,19 @@ export interface GeneratorOptions {
 	models: string[];
 	mock?: boolean;
 	signal?: AbortSignal;
+	commandExecutionId?: string;
 }
 
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
 ): AsyncGenerator<CandidateWithModel> {
-	const { diff, models, mock = false, signal } = options;
+	const { diff, models, mock = false, signal, commandExecutionId } = options;
+	const effectiveCommandExecutionId =
+		commandExecutionId ?? (mock ? "mock-command-execution" : undefined);
+
+	if (!effectiveCommandExecutionId) {
+		throw new Error("Missing commandExecutionId for translate request.");
+	}
 
 	const isAbortError = (error: unknown) =>
 		error instanceof Error && error.name === "AbortError";
@@ -29,10 +40,11 @@ export async function* generateCommitMessages(
 		const api = createMockApiClient();
 		for (const model of models) {
 			if (signal?.aborted) return;
-			let result;
+			let result: TranslateResponse;
 			try {
 				result = await api.translate(
 					{
+						commandExecutionId: effectiveCommandExecutionId,
 						input: diff,
 						model,
 						target: "vcs-commit-message",
@@ -70,6 +82,7 @@ export async function* generateCommitMessages(
 				}
 				const result = await api.translate(
 					{
+						commandExecutionId: effectiveCommandExecutionId,
 						input: diff,
 						model,
 						target: "vcs-commit-message",
