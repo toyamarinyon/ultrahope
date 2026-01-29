@@ -17,12 +17,14 @@ export interface SelectorResult {
 	action: "confirm" | "abort" | "reroll";
 	selected?: string;
 	selectedIndex?: number;
+	selectedCandidate?: CandidateWithModel;
 }
 
 export interface CandidateWithModel {
 	content: string;
 	model?: string;
 	cost?: number;
+	generationId?: string;
 }
 
 type Slot =
@@ -192,6 +194,7 @@ export async function selectCandidate(
 			action: "confirm",
 			selected: firstResult.value?.content,
 			selectedIndex: 0,
+			selectedCandidate: firstResult.value,
 		};
 	}
 
@@ -350,6 +353,7 @@ async function selectFromSlots(
 					action: "confirm",
 					selected: candidate.content,
 					selectedIndex,
+					selectedCandidate: candidate,
 				});
 				return;
 			}

@@ -38,6 +38,23 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/v1/generation_score": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Record feedback for a generation */
+		post: operations["postApiV1Generation_score"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/health": {
 		parameters: {
 			query?: never;
@@ -275,6 +292,68 @@ export interface operations {
 								};
 								hint: string;
 						  };
+				};
+			};
+		};
+	};
+	postApiV1Generation_score: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					generationId: string;
+					value: number;
+					comment?: string;
+				};
+				"application/x-www-form-urlencoded": {
+					generationId: string;
+					value: number;
+					comment?: string;
+				};
+				"multipart/form-data": {
+					generationId: string;
+					value: number;
+					comment?: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 404 */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
 				};
 			};
 		};

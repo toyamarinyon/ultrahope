@@ -58,6 +58,10 @@ function getMockOutput(target: TranslateRequest["target"]): string {
 
 export function createMockApiClient() {
 	return {
+		async recordGenerationScore() {
+			return;
+		},
+
 		async translate(
 			req: TranslateRequest,
 			options?: { signal?: AbortSignal },

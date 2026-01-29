@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { openapi } from "@elysiajs/openapi";
+import { and, eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { db } from "@/db/client";
-import { commandExecution, generation } from "@/db/schema";
+import { commandExecution, generation, generationScore } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { assertDailyLimitNotExceeded } from "@/lib/daily-limit";
 import {
@@ -292,6 +293,69 @@ export const app = new Elysia({ prefix: "/api" })
 			detail: {
 				summary: "Translate input into a structured output",
 				tags: ["translate"],
+				security: [{ bearerAuth: [] }],
+			},
+		},
+	)
+	.post(
+		"/v1/generation_score",
+		async ({ body, session, set }) => {
+			if (!session) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+
+			const rows = await db
+				.select({ generationId: generation.id })
+				.from(generation)
+				.innerJoin(
+					commandExecution,
+					eq(generation.commandExecutionId, commandExecution.id),
+				)
+				.where(
+					and(
+						eq(generation.vercelAiGatewayGenerationId, body.generationId),
+						eq(commandExecution.userId, session.user.id),
+					),
+				)
+				.limit(1);
+
+			const generationId = rows[0]?.generationId;
+			if (!generationId) {
+				set.status = 404;
+				return { error: "Generation not found" };
+			}
+
+			await db.insert(generationScore).values({
+				id: randomUUID(),
+				generationId,
+				value: body.value,
+				comment: body.comment ?? null,
+				createdAt: new Date(),
+			});
+
+			return { ok: true };
+		},
+		{
+			body: t.Object({
+				generationId: t.String(),
+				value: t.Number(),
+				comment: t.Optional(t.String()),
+			}),
+			response: {
+				200: t.Object({
+					ok: t.Boolean(),
+				}),
+				401: t.Object({
+					error: t.String(),
+				}),
+				404: t.Object({
+					error: t.String(),
+				}),
+			},
+			detail: {
+				summary: "Record feedback for a generation",
+				tags: ["generation_score"],
 				security: [{ bearerAuth: [] }],
 			},
 		},

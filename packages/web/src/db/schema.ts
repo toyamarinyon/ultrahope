@@ -172,6 +172,22 @@ export const generation = sqliteTable(
 	],
 );
 
+export const generationScore = sqliteTable(
+	"generation_score",
+	{
+		id: text("id").primaryKey(),
+		generationId: text("generation_id")
+			.notNull()
+			.references(() => generation.id, { onDelete: "cascade" }),
+		value: integer("value").notNull(),
+		comment: text("comment"),
+		createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+	},
+	(table) => [
+		index("generation_score_generation_id_idx").on(table.generationId),
+	],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
 	accounts: many(account),

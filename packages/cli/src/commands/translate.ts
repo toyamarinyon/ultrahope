@@ -54,6 +54,7 @@ async function handleVcsCommitMessage(
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
 	let commandExecutionId: string | undefined;
 	let commandExecutionSignal: AbortSignal | undefined;
+	let apiClient: ReturnType<typeof createApiClient> | null = null;
 
 	if (!options.mock) {
 		const token = await getToken();
@@ -63,6 +64,7 @@ async function handleVcsCommitMessage(
 		}
 
 		const api = createApiClient(token);
+		apiClient = api;
 		const {
 			commandExecutionPromise,
 			abortController,
@@ -87,6 +89,20 @@ async function handleVcsCommitMessage(
 		commandExecutionSignal = abortController.signal;
 	}
 
+	const recordSelection = async (generationId?: string) => {
+		if (!generationId || !apiClient) return;
+		try {
+			await apiClient.recordGenerationScore({
+				generationId,
+				value: 1,
+				comment: null,
+			});
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`Warning: Failed to record selection. ${message}`);
+		}
+	};
+
 	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff: input,
@@ -105,6 +121,7 @@ async function handleVcsCommitMessage(
 			commandExecutionId,
 		});
 		const first = await gen.next();
+		await recordSelection(first.value?.generationId);
 		console.log(first.value?.content ?? "");
 		return;
 	}
@@ -125,6 +142,7 @@ async function handleVcsCommitMessage(
 		}
 
 		if (result.action === "confirm" && result.selected) {
+			await recordSelection(result.selectedCandidate?.generationId);
 			console.log(result.selected);
 			return;
 		}
@@ -180,7 +198,11 @@ async function handleGenericTarget(
 					},
 					{ signal: abortController.signal },
 				);
-				candidates.push({ content: result.output, model });
+				candidates.push({
+					content: result.output,
+					model,
+					generationId: result.generationId,
+				});
 			} catch (error) {
 				if (isAbortError(error) || abortController.signal.aborted) {
 					return candidates;
@@ -225,6 +247,19 @@ async function handleGenericTarget(
 				throw error;
 			});
 		if (result) {
+			if (result.generationId) {
+				try {
+					await api.recordGenerationScore({
+						generationId: result.generationId,
+						value: 1,
+						comment: null,
+					});
+				} catch (error) {
+					const message =
+						error instanceof Error ? error.message : String(error);
+					console.error(`Warning: Failed to record selection. ${message}`);
+				}
+			}
 			console.log(result.output);
 		}
 		return;
@@ -257,6 +292,19 @@ async function handleGenericTarget(
 		}
 
 		if (result.action === "confirm" && result.selected) {
+			if (result.selectedCandidate?.generationId) {
+				try {
+					await api.recordGenerationScore({
+						generationId: result.selectedCandidate.generationId,
+						value: 1,
+						comment: null,
+					});
+				} catch (error) {
+					const message =
+						error instanceof Error ? error.message : String(error);
+					console.error(`Warning: Failed to record selection. ${message}`);
+				}
+			}
 			console.log(result.selected);
 			return;
 		}

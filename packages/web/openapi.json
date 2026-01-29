@@ -568,6 +568,124 @@
 				"operationId": "postApiV1Translate"
 			}
 		},
+		"/api/v1/generation_score": {
+			"post": {
+				"summary": "Record feedback for a generation",
+				"tags": ["generation_score"],
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["generationId", "value"],
+								"properties": {
+									"generationId": {
+										"type": "string"
+									},
+									"value": {
+										"type": "number"
+									},
+									"comment": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"application/x-www-form-urlencoded": {
+							"schema": {
+								"type": "object",
+								"required": ["generationId", "value"],
+								"properties": {
+									"generationId": {
+										"type": "string"
+									},
+									"value": {
+										"type": "number"
+									},
+									"comment": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["generationId", "value"],
+								"properties": {
+									"generationId": {
+										"type": "string"
+									},
+									"value": {
+										"type": "number"
+									},
+									"comment": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Response for status 200",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["ok"],
+									"properties": {
+										"ok": {
+											"type": "boolean"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Response for status 401",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["error"],
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Response for status 404",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["error"],
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"operationId": "postApiV1Generation_score"
+			}
+		},
 		"/api/health": {
 			"get": {
 				"summary": "Health check",

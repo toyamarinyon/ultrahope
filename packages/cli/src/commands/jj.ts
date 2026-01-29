@@ -90,6 +90,7 @@ async function describe(args: string[]) {
 
 	let commandExecutionId: string | undefined;
 	let commandExecutionSignal: AbortSignal | undefined;
+	let apiClient: ReturnType<typeof createApiClient> | null = null;
 
 	if (!options.mock) {
 		const token = await getToken();
@@ -99,6 +100,7 @@ async function describe(args: string[]) {
 		}
 
 		const api = createApiClient(token);
+		apiClient = api;
 		const {
 			commandExecutionPromise,
 			abortController,
@@ -124,6 +126,20 @@ async function describe(args: string[]) {
 		commandExecutionSignal = abortController.signal;
 	}
 
+	const recordSelection = async (generationId?: string) => {
+		if (!generationId || !apiClient) return;
+		try {
+			await apiClient.recordGenerationScore({
+				generationId,
+				value: 1,
+				comment: null,
+			});
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`Warning: Failed to record selection. ${message}`);
+		}
+	};
+
 	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
@@ -142,6 +158,7 @@ async function describe(args: string[]) {
 			commandExecutionId,
 		});
 		const first = await gen.next();
+		await recordSelection(first.value?.generationId);
 		const message = first.value?.content ?? "";
 
 		if (options.dryRun) {
@@ -187,6 +204,7 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "confirm" && result.selected) {
+			await recordSelection(result.selectedCandidate?.generationId);
 			console.log(`\x1b[32m✔\x1b[0m Message selected`);
 			console.log(
 				`\x1b[32m✔\x1b[0m Running jj describe -r ${options.revision}\n`,

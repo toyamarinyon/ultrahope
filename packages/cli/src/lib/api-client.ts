@@ -34,6 +34,12 @@ export class DailyLimitExceededError extends Error {
 	}
 }
 
+export type GenerationScoreRequest = {
+	generationId: string;
+	value: number;
+	comment?: string | null;
+};
+
 async function getErrorText(
 	response: Response,
 	error: unknown,
@@ -82,6 +88,20 @@ export function createApiClient(token?: string) {
 	});
 
 	return {
+		async recordGenerationScore(req: GenerationScoreRequest): Promise<void> {
+			log("generation_score request", req);
+			const res = await fetch(`${API_BASE_URL}/api/v1/generation_score`, {
+				method: "POST",
+				headers,
+				body: JSON.stringify(req),
+			});
+			if (!res.ok) {
+				const text = await getErrorText(res, null);
+				log("generation_score error", { status: res.status, text });
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+		},
+
 		async commandExecution(
 			req: CommandExecutionRequest,
 		): Promise<CommandExecutionResponse> {

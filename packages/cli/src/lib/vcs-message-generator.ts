@@ -56,7 +56,11 @@ export async function* generateCommitMessages(
 				throw error;
 			}
 			if (signal?.aborted) return;
-			yield { content: result.output, model };
+			yield {
+				content: result.output,
+				model,
+				generationId: result.generationId,
+			};
 		}
 		return;
 	}
@@ -94,6 +98,7 @@ export async function* generateCommitMessages(
 						content: result.output,
 						model,
 						cost: result.cost,
+						generationId: result.generationId,
 					},
 					index,
 				};
