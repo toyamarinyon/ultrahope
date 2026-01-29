@@ -17,6 +17,9 @@
   - [x] Update 402 response for daily limit exceeded
   - [x] Remove `free_credits` benefit from Polar
   - [x] Update pricing page UI (show "5 requests/day" + reset time in user TZ)
+  - [ ] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
+    - Count per CLI command (session), not per API request
+    - New tables: `cli_sessions`, `api_requests` for better observability
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
   - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
