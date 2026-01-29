@@ -60,11 +60,15 @@ export function handleCommandExecutionError(
 			process.stdout.write(`\x1b[${additionalLines}A`);
 			process.stdout.write("\x1b[0J");
 		}
-		console.error("Error: Unauthorized. Your session may have expired.");
+		console.error(
+			"\x1b[31m✖\x1b[0m Unauthorized. Your session may have expired.",
+		);
 		console.error("");
-		console.error("Please run the following command to re-authenticate:");
+		console.error(
+			"\x1b[2mPlease run the following command to re-authenticate:\x1b[0m",
+		);
 		console.error("");
-		console.error("  ultrahope login");
+		console.error("  \x1b[36multrahope login\x1b[0m");
 		console.error("");
 		process.exit(1);
 	}
