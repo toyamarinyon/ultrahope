@@ -810,7 +810,7 @@ async function main() {
 		const meter = ctx.meters.get(meterConfig.name);
 		if (meter) {
 			const envKey = `POLAR_${meterConfig.name.toUpperCase().replace(/\s+/g, "_")}_METER_ID`;
-			console.log(`  ${envKey}=${meter.id}`);
+			console.log(`  ${envKey}="${meter.id}"`);
 		}
 	}
 
@@ -819,7 +819,7 @@ async function main() {
 		const product = ctx.products.get(productConfig.name);
 		if (product) {
 			const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase()}_ID`;
-			console.log(`  ${envKey}=${product.id}`);
+			console.log(`  ${envKey}="${product.id}"`);
 		}
 	}
 
@@ -828,9 +828,11 @@ async function main() {
 		const product = ctx.products.get(productConfig.name);
 		if (product) {
 			const envKey = `POLAR_PRODUCT_${productConfig.name.toUpperCase().replace(/\s+/g, "_").replace(/\$/g, "")}_ID`;
-			console.log(`  ${envKey}=${product.id}`);
+			console.log(`  ${envKey}="${product.id}"`);
 		}
 	}
+
+	process.exit(0);
 }
 
 main().catch((error) => {
