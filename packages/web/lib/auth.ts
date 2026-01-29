@@ -6,8 +6,8 @@ import { bearer } from "better-auth/plugins/bearer";
 import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
-import { db } from "@/db/client";
-import * as schema from "@/db/schema";
+import { db } from "@/db";
+import * as schema from "@/db/schemas";
 
 export const polarClient = new Polar({
 	accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -116,4 +116,9 @@ export const auth = betterAuth({
 			],
 		}),
 	],
+	advanced: {
+		database: {
+			generateId: "serial",
+		},
+	},
 });

@@ -1,10 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { openapi } from "@elysiajs/openapi";
 import { and, eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
-import { db } from "@/db/client";
-import { commandExecution, generation, generationScore } from "@/db/schema";
+import { commandExecution, db, generation, generationScore } from "@/db";
 import { auth } from "@/lib/auth";
 import { assertDailyLimitNotExceeded } from "@/lib/daily-limit";
 import {
@@ -15,7 +13,7 @@ import {
 } from "@/lib/llm";
 
 const packageJson = JSON.parse(
-	readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+	readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 ) as { version?: string };
 
 const MICRODOLLARS_PER_USD = 1_000_000;
@@ -46,9 +44,22 @@ export const app = new Elysia({ prefix: "/api" })
 			},
 		}),
 	)
-	.derive(async ({ request: { headers } }) => {
+	.resolve(async ({ request: { headers } }) => {
 		const session = await auth.api.getSession({ headers });
-		return { session };
+		if (session === null) {
+			return {
+				session: undefined,
+			};
+		}
+		return {
+			session: {
+				session,
+				user: {
+					...session.user,
+					id: Number.parseInt(session.user.id, 10),
+				},
+			},
+		};
 	})
 	.post(
 		"/v1/command_execution",
@@ -69,7 +80,6 @@ export const app = new Elysia({ prefix: "/api" })
 				await db
 					.insert(commandExecution)
 					.values({
-						id: body.commandExecutionId,
 						cliSessionId: body.cliSessionId,
 						userId: session.user.id,
 						command: body.command,
@@ -179,7 +189,6 @@ export const app = new Elysia({ prefix: "/api" })
 				if (response.generationId) {
 					try {
 						await db.insert(generation).values({
-							id: randomUUID(),
 							commandExecutionId: body.commandExecutionId,
 							vercelAiGatewayGenerationId: response.generationId,
 							providerName: response.vendor,
@@ -236,7 +245,7 @@ export const app = new Elysia({ prefix: "/api" })
 		},
 		{
 			body: t.Object({
-				commandExecutionId: t.String(),
+				commandExecutionId: t.Number(),
 				input: t.String(),
 				model: t.String(),
 				target: t.Union([
@@ -327,7 +336,6 @@ export const app = new Elysia({ prefix: "/api" })
 			}
 
 			await db.insert(generationScore).values({
-				id: randomUUID(),
 				generationId,
 				value: body.value,
 				comment: body.comment ?? null,
@@ -371,5 +379,3 @@ export const app = new Elysia({ prefix: "/api" })
 			tags: ["health"],
 		},
 	});
-
-export type App = typeof app;

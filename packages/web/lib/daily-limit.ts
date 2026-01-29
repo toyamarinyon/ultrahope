@@ -1,6 +1,6 @@
 import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { commandExecution } from "@/db";
 import { db } from "@/db/client";
-import { commandExecution } from "@/db/schema";
 
 const FREE_DAILY_LIMIT = 5;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -16,7 +16,7 @@ export class DailyLimitExceededError extends Error {
 	}
 }
 
-async function getUsageCount(userId: string, sinceMs: number): Promise<number> {
+async function getUsageCount(userId: number, sinceMs: number): Promise<number> {
 	const result = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(commandExecution)
@@ -30,7 +30,7 @@ async function getUsageCount(userId: string, sinceMs: number): Promise<number> {
 	return result[0]?.count ?? 0;
 }
 
-async function getResetTime(userId: string, sinceMs: number): Promise<Date> {
+async function getResetTime(userId: number, sinceMs: number): Promise<Date> {
 	const oldest = await db
 		.select({ startedAt: commandExecution.startedAt })
 		.from(commandExecution)
@@ -51,7 +51,7 @@ async function getResetTime(userId: string, sinceMs: number): Promise<Date> {
 }
 
 export async function assertDailyLimitNotExceeded(
-	userId: string,
+	userId: number,
 ): Promise<void> {
 	const sinceMs = Date.now() - WINDOW_MS;
 	const count = await getUsageCount(userId, sinceMs);

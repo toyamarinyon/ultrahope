@@ -12,7 +12,7 @@ import {
 const MICRODOLLARS_PER_USD = 1_000_000;
 
 type TranslateOptions = {
-	externalCustomerId?: string;
+	externalCustomerId: number;
 	model: string;
 	abortSignal?: AbortSignal;
 };
@@ -37,7 +37,7 @@ export class InsufficientBalanceError extends Error {
 }
 
 export async function getUserBillingInfo(
-	externalCustomerId: string,
+	externalCustomerId: number,
 ): Promise<UserBillingInfo | null> {
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		return null;
@@ -52,16 +52,17 @@ export async function getUserBillingInfo(
 	}
 
 	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
+	const externalCustomerIdString = externalCustomerId.toString();
 
 	try {
 		const [meterResponse, customerState] = await Promise.all([
 			polarClient.customerMeters.list({
-				externalCustomerId,
+				externalCustomerId: externalCustomerIdString,
 				meterId: usageCostMeterId,
 				limit: 1,
 			}),
 			polarClient.customers.getStateExternal({
-				externalId: externalCustomerId,
+				externalId: externalCustomerIdString,
 			}),
 		]);
 
@@ -89,12 +90,9 @@ export async function getUserBillingInfo(
 }
 
 async function recordUsage(
-	externalCustomerId: string | undefined,
+	externalCustomerId: number,
 	response: LLMResponse,
 ): Promise<void> {
-	if (!externalCustomerId) {
-		return;
-	}
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		console.warn("[polar] POLAR_ACCESS_TOKEN not set, skipping usage ingest");
 		return;
@@ -110,7 +108,7 @@ async function recordUsage(
 			events: [
 				{
 					name: "usage",
-					externalCustomerId,
+					externalCustomerId: externalCustomerId.toString(),
 					metadata: {
 						cost: costInMicrodollars,
 						model: response.model,
