@@ -142,7 +142,7 @@ export async function commit(args: string[]) {
 
 		commandExecutionPromise.catch((error) => {
 			abortController.abort();
-			handleCommandExecutionError(error);
+			handleCommandExecutionError(error, { additionalLinesToClear: 1 });
 		});
 
 		commandExecutionId = id;

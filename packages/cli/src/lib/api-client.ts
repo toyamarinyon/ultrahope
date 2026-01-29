@@ -34,6 +34,13 @@ export class DailyLimitExceededError extends Error {
 	}
 }
 
+export class UnauthorizedError extends Error {
+	constructor() {
+		super("Unauthorized");
+		this.name = "UnauthorizedError";
+	}
+}
+
 export type GenerationScoreRequest = {
 	generationId: string;
 	value: number;
@@ -112,6 +119,10 @@ export function createApiClient(token?: string) {
 					body: req,
 				},
 			);
+			if (response.status === 401) {
+				log("command_execution error (401)", error);
+				throw new UnauthorizedError();
+			}
 			if (response.status === 402) {
 				const payload = error as
 					| { count?: number; limit?: number; resetsAt?: string }
@@ -143,6 +154,10 @@ export function createApiClient(token?: string) {
 				body: req,
 				signal: options?.signal,
 			});
+			if (response.status === 401) {
+				log("translate error (401)", error);
+				throw new UnauthorizedError();
+			}
 			if (response.status === 402) {
 				const errorBalance = (error as { balance?: number } | undefined)
 					?.balance;

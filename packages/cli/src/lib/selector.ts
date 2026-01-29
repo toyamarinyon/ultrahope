@@ -95,6 +95,14 @@ interface RenderState {
 
 let lastRenderLineCount = 0;
 
+export function clearRenderedOutput(): void {
+	if (lastRenderLineCount > 0) {
+		process.stdout.write(`\x1b[${lastRenderLineCount}A`);
+		process.stdout.write("\x1b[0J");
+		lastRenderLineCount = 0;
+	}
+}
+
 function render(state: RenderState): void {
 	const { slots, selectedIndex, isGenerating, spinnerFrame, totalSlots } =
 		state;

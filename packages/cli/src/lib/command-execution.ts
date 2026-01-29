@@ -4,7 +4,9 @@ import {
 	type CommandExecutionRequest,
 	type CommandExecutionResponse,
 	DailyLimitExceededError,
+	UnauthorizedError,
 } from "./api-client";
+import { clearRenderedOutput } from "./selector";
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
@@ -47,7 +49,26 @@ export function startCommandExecution(
 	};
 }
 
-export function handleCommandExecutionError(error: unknown): never {
+export function handleCommandExecutionError(
+	error: unknown,
+	options?: { additionalLinesToClear?: number },
+): never {
+	if (error instanceof UnauthorizedError) {
+		clearRenderedOutput();
+		const additionalLines = options?.additionalLinesToClear ?? 0;
+		if (additionalLines > 0) {
+			process.stdout.write(`\x1b[${additionalLines}A`);
+			process.stdout.write("\x1b[0J");
+		}
+		console.error("Error: Unauthorized. Your session may have expired.");
+		console.error("");
+		console.error("Please run the following command to re-authenticate:");
+		console.error("");
+		console.error("  ultrahope login");
+		console.error("");
+		process.exit(1);
+	}
+
 	if (error instanceof DailyLimitExceededError) {
 		const reset = error.resetsAt ? ` (resets at ${error.resetsAt})` : "";
 		console.error(
