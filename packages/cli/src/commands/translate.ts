@@ -52,8 +52,9 @@ async function handleVcsCommitMessage(
 	args: string[],
 ): Promise<void> {
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
-	let commandExecutionId: string | undefined;
+	let cliSessionId: string | undefined;
 	let commandExecutionSignal: AbortSignal | undefined;
+	let commandExecutionPromise: Promise<unknown> | undefined;
 	let apiClient: ReturnType<typeof createApiClient> | null = null;
 
 	if (!options.mock) {
@@ -66,9 +67,9 @@ async function handleVcsCommitMessage(
 		const api = createApiClient(token);
 		apiClient = api;
 		const {
-			commandExecutionPromise,
+			commandExecutionPromise: promise,
 			abortController,
-			commandExecutionId: id,
+			cliSessionId: id,
 		} = startCommandExecution({
 			api,
 			command: "translate",
@@ -80,12 +81,15 @@ async function handleVcsCommitMessage(
 					: { input, target: "vcs-commit-message", models },
 		});
 
-		commandExecutionPromise.catch((error) => {
+		commandExecutionPromise = promise;
+		commandExecutionPromise.catch(async (error) => {
 			abortController.abort();
-			handleCommandExecutionError(error);
+			await handleCommandExecutionError(error, {
+				progress: { ready: 0, total: models.length },
+			});
 		});
 
-		commandExecutionId = id;
+		cliSessionId = id;
 		commandExecutionSignal = abortController.signal;
 	}
 
@@ -109,7 +113,8 @@ async function handleVcsCommitMessage(
 			models,
 			mock: options.mock,
 			signal: mergeAbortSignals(signal, commandExecutionSignal),
-			commandExecutionId,
+			cliSessionId,
+			commandExecutionPromise,
 		});
 
 	if (!options.interactive) {
@@ -118,7 +123,8 @@ async function handleVcsCommitMessage(
 			models: models.slice(0, 1),
 			mock: options.mock,
 			signal: commandExecutionSignal,
-			commandExecutionId,
+			cliSessionId,
+			commandExecutionPromise,
 		});
 		const first = await gen.next();
 		await recordSelection(first.value?.generationId);
@@ -168,36 +174,71 @@ async function handleGenericTarget(
 			? { input, target: options.target, model: models[0] }
 			: { input, target: options.target, models };
 
-	const { commandExecutionId, abortController, commandExecutionPromise } =
-		startCommandExecution({
-			api,
-			command: "translate",
-			args,
-			apiPath: "/v1/translate",
-			requestPayload,
-		});
-
-	commandExecutionPromise.catch((error) => {
-		abortController.abort();
-		handleCommandExecutionError(error);
+	const {
+		commandExecutionId: cliSessionId,
+		abortController,
+		commandExecutionPromise,
+	} = startCommandExecution({
+		api,
+		command: "translate",
+		args,
+		apiPath: "/v1/translate",
+		requestPayload,
 	});
+
+	const ensureCommandExecution = commandExecutionPromise.catch(
+		async (error) => {
+			abortController.abort();
+			await handleCommandExecutionError(error);
+		},
+	);
 
 	const isAbortError = (error: unknown) =>
 		error instanceof Error && error.name === "AbortError";
+	const isInvalidCliSessionIdError = (error: unknown) =>
+		error instanceof Error && error.message.includes("Invalid cliSessionId");
+	const delay = (ms: number) =>
+		new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-	const doTranslate = async (): Promise<CandidateWithModel[]> => {
-		const candidates: CandidateWithModel[] = [];
-		for (const model of models) {
+	const translateWithRetry = async (model: string) => {
+		const maxAttempts = 3;
+		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				const result = await api.translate(
+				return await api.translate(
 					{
-						commandExecutionId,
+						cliSessionId,
 						input,
 						model,
 						target: options.target,
 					},
 					{ signal: abortController.signal },
 				);
+			} catch (error) {
+				if (isAbortError(error) || abortController.signal.aborted) throw error;
+				if (isInvalidCliSessionIdError(error) && attempt < maxAttempts - 1) {
+					await delay(80 * (attempt + 1));
+					continue;
+				}
+				if (isInvalidCliSessionIdError(error)) {
+					try {
+						await ensureCommandExecution;
+					} catch {
+						const abortError = new Error("Aborted");
+						abortError.name = "AbortError";
+						throw abortError;
+					}
+				}
+				throw error;
+			}
+		}
+		throw new Error("Failed to translate after retries.");
+	};
+
+	const doTranslate = async (): Promise<CandidateWithModel[]> => {
+		const candidates: CandidateWithModel[] = [];
+		for (const model of models) {
+			try {
+				const result = await translateWithRetry(model);
 				candidates.push({
 					content: result.output,
 					model,
@@ -224,28 +265,18 @@ async function handleGenericTarget(
 			console.error("Error: No model available for translation.");
 			process.exit(1);
 		}
-		const result = await api
-			.translate(
-				{
-					commandExecutionId,
-					input,
-					model: defaultModel,
-					target: options.target,
-				},
-				{ signal: abortController.signal },
-			)
-			.catch((error) => {
-				if (isAbortError(error) || abortController.signal.aborted) {
-					return null;
-				}
-				if (error instanceof InsufficientBalanceError) {
-					console.error(
-						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-					);
-					process.exit(1);
-				}
-				throw error;
-			});
+		const result = await translateWithRetry(defaultModel).catch((error) => {
+			if (isAbortError(error) || abortController.signal.aborted) {
+				return null;
+			}
+			if (error instanceof InsufficientBalanceError) {
+				console.error(
+					"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
+				);
+				process.exit(1);
+			}
+			throw error;
+		});
 		if (result) {
 			if (result.generationId) {
 				try {

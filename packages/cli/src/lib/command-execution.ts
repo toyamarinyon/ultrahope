@@ -6,6 +6,7 @@ import {
 	DailyLimitExceededError,
 	UnauthorizedError,
 } from "./api-client";
+import { showDailyLimitPrompt } from "./daily-limit-prompt";
 import { clearRenderedOutput } from "./selector";
 
 type ApiClient = ReturnType<typeof createApiClient>;
@@ -49,10 +50,13 @@ export function startCommandExecution(
 	};
 }
 
-export function handleCommandExecutionError(
+export async function handleCommandExecutionError(
 	error: unknown,
-	options?: { additionalLinesToClear?: number },
-): never {
+	options?: {
+		additionalLinesToClear?: number;
+		progress?: { ready: number; total: number };
+	},
+): Promise<never> {
 	if (error instanceof UnauthorizedError) {
 		clearRenderedOutput();
 		const additionalLines = options?.additionalLinesToClear ?? 0;
@@ -74,10 +78,13 @@ export function handleCommandExecutionError(
 	}
 
 	if (error instanceof DailyLimitExceededError) {
-		const reset = error.resetsAt ? ` (resets at ${error.resetsAt})` : "";
-		console.error(
-			`Error: Daily request limit reached (${error.count}/${error.limit})${reset}.`,
-		);
+		clearRenderedOutput();
+		await showDailyLimitPrompt({
+			count: error.count,
+			limit: error.limit,
+			resetsAt: error.resetsAt,
+			progress: options?.progress,
+		});
 		process.exit(1);
 	}
 

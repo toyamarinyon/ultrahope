@@ -22,6 +22,18 @@ const TRANSLATE_TARGETS = [
 	"pr-title-body",
 	"pr-intent",
 ] as const;
+const VERBOSE = process.env.VERBOSE === "1";
+
+function formatVerboseError(error: unknown): Record<string, unknown> | unknown {
+	if (error instanceof Error) {
+		return {
+			name: error.name,
+			message: error.message,
+			stack: error.stack,
+		};
+	}
+	return error;
+}
 
 export const app = new Elysia({ prefix: "/api" })
 	.use(
@@ -60,6 +72,21 @@ export const app = new Elysia({ prefix: "/api" })
 				},
 			},
 		};
+	})
+	.onError(({ code, error, request, set, body, params, query }) => {
+		if (!VERBOSE) return;
+		if (set.status !== 422 && code !== "VALIDATION") return;
+		const url = new URL(request.url);
+		console.log("[VERBOSE] 422 validation error", {
+			method: request.method,
+			path: url.pathname,
+			status: set.status,
+			code,
+			error: formatVerboseError(error),
+			body,
+			params,
+			query,
+		});
 	})
 	.post(
 		"/v1/command_execution",
@@ -166,11 +193,44 @@ export const app = new Elysia({ prefix: "/api" })
 
 			if (!TRANSLATE_TARGETS.includes(body.target)) {
 				set.status = 400;
+				if (VERBOSE) {
+					const url = new URL(request.url);
+					console.log("[VERBOSE] 400 invalid target", {
+						method: request.method,
+						path: url.pathname,
+						target: body.target,
+					});
+				}
 				return { error: `Invalid target: ${body.target}` };
 			}
 
 			try {
 				const startedAt = Date.now();
+				const commandExecutionRow = await db
+					.select({ id: commandExecution.id })
+					.from(commandExecution)
+					.where(
+						and(
+							eq(commandExecution.cliSessionId, body.cliSessionId),
+							eq(commandExecution.userId, session.user.id),
+						),
+					)
+					.limit(1);
+
+				const commandExecutionId = commandExecutionRow[0]?.id;
+				if (!commandExecutionId) {
+					set.status = 400;
+					if (VERBOSE) {
+						const url = new URL(request.url);
+						console.log("[VERBOSE] 400 invalid cliSessionId", {
+							method: request.method,
+							path: url.pathname,
+							cliSessionId: body.cliSessionId,
+						});
+					}
+					return { error: "Invalid cliSessionId" };
+				}
+
 				const response = await translate(
 					body.input,
 					body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
@@ -189,7 +249,7 @@ export const app = new Elysia({ prefix: "/api" })
 				if (response.generationId) {
 					try {
 						await db.insert(generation).values({
-							commandExecutionId: body.commandExecutionId,
+							commandExecutionId,
 							vercelAiGatewayGenerationId: response.generationId,
 							providerName: response.vendor,
 							model: response.model,
@@ -245,7 +305,7 @@ export const app = new Elysia({ prefix: "/api" })
 		},
 		{
 			body: t.Object({
-				commandExecutionId: t.Number(),
+				cliSessionId: t.String(),
 				input: t.String(),
 				model: t.String(),
 				target: t.Union([

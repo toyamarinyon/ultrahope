@@ -194,21 +194,21 @@ export interface operations {
 		requestBody: {
 			content: {
 				"application/json": {
-					commandExecutionId: string;
+					cliSessionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"application/x-www-form-urlencoded": {
-					commandExecutionId: string;
+					cliSessionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */
 					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"multipart/form-data": {
-					commandExecutionId: string;
+					cliSessionId: string;
 					input: string;
 					model: string;
 					/** @enum {string} */

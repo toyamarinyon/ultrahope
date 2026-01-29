@@ -88,8 +88,9 @@ async function describe(args: string[]) {
 		process.exit(1);
 	}
 
-	let commandExecutionId: string | undefined;
+	let cliSessionId: string | undefined;
 	let commandExecutionSignal: AbortSignal | undefined;
+	let commandExecutionPromise: Promise<unknown> | undefined;
 	let apiClient: ReturnType<typeof createApiClient> | null = null;
 
 	if (!options.mock) {
@@ -102,9 +103,9 @@ async function describe(args: string[]) {
 		const api = createApiClient(token);
 		apiClient = api;
 		const {
-			commandExecutionPromise,
+			commandExecutionPromise: promise,
 			abortController,
-			commandExecutionId: id,
+			cliSessionId: id,
 		} = startCommandExecution({
 			api,
 			command: "jj",
@@ -117,12 +118,15 @@ async function describe(args: string[]) {
 			},
 		});
 
-		commandExecutionPromise.catch((error) => {
+		commandExecutionPromise = promise;
+		commandExecutionPromise.catch(async (error) => {
 			abortController.abort();
-			handleCommandExecutionError(error, { additionalLinesToClear: 1 });
+			await handleCommandExecutionError(error, {
+				progress: { ready: 0, total: options.models.length },
+			});
 		});
 
-		commandExecutionId = id;
+		cliSessionId = id;
 		commandExecutionSignal = abortController.signal;
 	}
 
@@ -146,7 +150,8 @@ async function describe(args: string[]) {
 			models: options.models,
 			mock: options.mock,
 			signal: mergeAbortSignals(signal, commandExecutionSignal),
-			commandExecutionId,
+			cliSessionId,
+			commandExecutionPromise,
 		});
 
 	if (!options.interactive) {
@@ -155,7 +160,8 @@ async function describe(args: string[]) {
 			models: options.models.slice(0, 1),
 			mock: options.mock,
 			signal: commandExecutionSignal,
-			commandExecutionId,
+			cliSessionId,
+			commandExecutionPromise,
 		});
 		const first = await gen.next();
 		await recordSelection(first.value?.generationId);

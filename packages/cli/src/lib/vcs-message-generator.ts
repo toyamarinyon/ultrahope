@@ -19,22 +19,36 @@ export interface GeneratorOptions {
 	models: string[];
 	mock?: boolean;
 	signal?: AbortSignal;
-	commandExecutionId?: string;
+	cliSessionId?: string;
+	commandExecutionPromise?: Promise<unknown>;
 }
+
+const isAbortError = (error: unknown) =>
+	error instanceof Error && error.name === "AbortError";
+
+const isInvalidCliSessionIdError = (error: unknown) =>
+	error instanceof Error && error.message.includes("Invalid cliSessionId");
+
+const delay = (ms: number) =>
+	new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
 ): AsyncGenerator<CandidateWithModel> {
-	const { diff, models, mock = false, signal, commandExecutionId } = options;
-	const effectiveCommandExecutionId =
-		commandExecutionId ?? (mock ? "mock-command-execution" : undefined);
+	const {
+		diff,
+		models,
+		mock = false,
+		signal,
+		cliSessionId,
+		commandExecutionPromise,
+	} = options;
+	const effectiveCliSessionId =
+		cliSessionId ?? (mock ? "mock-command-execution" : undefined);
 
-	if (!effectiveCommandExecutionId) {
-		throw new Error("Missing commandExecutionId for translate request.");
+	if (!effectiveCliSessionId) {
+		throw new Error("Missing cliSessionId for translate request.");
 	}
-
-	const isAbortError = (error: unknown) =>
-		error instanceof Error && error.name === "AbortError";
 
 	if (mock) {
 		const api = createMockApiClient();
@@ -44,7 +58,7 @@ export async function* generateCommitMessages(
 			try {
 				result = await api.translate(
 					{
-						commandExecutionId: effectiveCommandExecutionId,
+						cliSessionId: effectiveCliSessionId,
 						input: diff,
 						model,
 						target: "vcs-commit-message",
@@ -73,6 +87,40 @@ export async function* generateCommitMessages(
 
 	const api = createApiClient(token);
 
+	const translateWithRetry = async (payload: {
+		cliSessionId: string;
+		input: string;
+		model: string;
+		target: "vcs-commit-message";
+	}): Promise<TranslateResponse> => {
+		const maxAttempts = 3;
+		for (let attempt = 0; attempt < maxAttempts; attempt++) {
+			try {
+				return await api.translate(payload, { signal });
+			} catch (error) {
+				if (signal?.aborted || isAbortError(error)) throw error;
+				if (isInvalidCliSessionIdError(error)) {
+					if (commandExecutionPromise) {
+						try {
+							await commandExecutionPromise;
+							continue;
+						} catch {
+							const abortError = new Error("Aborted");
+							abortError.name = "AbortError";
+							throw abortError;
+						}
+					}
+					if (attempt < maxAttempts - 1) {
+						await delay(80 * (attempt + 1));
+						continue;
+					}
+				}
+				throw error;
+			}
+		}
+		throw new Error("Failed to translate after retries.");
+	};
+
 	type PendingResult = {
 		promise: Promise<{ result: CandidateWithModel | null; index: number }>;
 		index: number;
@@ -84,15 +132,12 @@ export async function* generateCommitMessages(
 				if (signal?.aborted) {
 					return { result: null, index };
 				}
-				const result = await api.translate(
-					{
-						commandExecutionId: effectiveCommandExecutionId,
-						input: diff,
-						model,
-						target: "vcs-commit-message",
-					},
-					{ signal },
-				);
+				const result = await translateWithRetry({
+					cliSessionId: effectiveCliSessionId,
+					input: diff,
+					model,
+					target: "vcs-commit-message",
+				});
 				return {
 					result: {
 						content: result.output,
@@ -107,6 +152,9 @@ export async function* generateCommitMessages(
 					return { result: null, index };
 				}
 				if (error instanceof InsufficientBalanceError) {
+					throw error;
+				}
+				if (isInvalidCliSessionIdError(error)) {
 					throw error;
 				}
 				return { result: null, index };

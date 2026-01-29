@@ -94,8 +94,13 @@ interface RenderState {
 }
 
 let lastRenderLineCount = 0;
+let activeCleanup: (() => void) | null = null;
 
 export function clearRenderedOutput(): void {
+	if (activeCleanup) {
+		activeCleanup();
+		activeCleanup = null;
+	}
 	if (lastRenderLineCount > 0) {
 		process.stdout.write(`\x1b[${lastRenderLineCount}A`);
 		process.stdout.write("\x1b[0J");
@@ -154,6 +159,22 @@ function render(state: RenderState): void {
 		console.log(line);
 	}
 	lastRenderLineCount = lines.length;
+}
+
+function renderError(error: unknown, slots: Slot[], totalSlots: number): void {
+	const readyCount = slots.filter((s) => s.status === "ready").length;
+	const message =
+		error instanceof Error ? error.message : String(error ?? "Unknown error");
+
+	const lines = [
+		`\x1b[31m✖\x1b[0m Generating commit messages... ${readyCount}/${totalSlots}`,
+		"",
+		`\x1b[31mError: ${message}\x1b[0m`,
+	];
+
+	for (const line of lines) {
+		console.log(line);
+	}
 }
 
 function openEditor(content: string): Promise<string> {
@@ -259,6 +280,7 @@ async function selectFromSlots(
 		const cleanup = () => {
 			if (cleanedUp) return;
 			cleanedUp = true;
+			activeCleanup = null;
 			asyncCtx?.abortController.abort();
 			if (spinnerInterval) {
 				clearInterval(spinnerInterval);
@@ -273,6 +295,8 @@ async function selectFromSlots(
 			}
 			lastRenderLineCount = 0;
 		};
+
+		activeCleanup = cleanup;
 
 		if (asyncCtx) {
 			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
@@ -321,8 +345,16 @@ async function selectFromSlots(
 					}
 					doRender();
 				} catch (err) {
+					if (
+						asyncCtx?.abortController.signal.aborted ||
+						(err instanceof Error && err.name === "AbortError")
+					) {
+						return;
+					}
 					if (!cleanedUp) {
-						console.error("Error fetching candidates:", err);
+						cleanup();
+						renderError(err, slots, totalSlots);
+						resolve({ action: "abort" });
 					}
 				} finally {
 					iterator.return?.();
