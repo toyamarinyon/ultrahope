@@ -206,49 +206,46 @@ export const app = new Elysia({ prefix: "/api" })
 
 			try {
 				const startedAt = Date.now();
-				const commandExecutionRow = await db
-					.select({ id: commandExecution.id })
-					.from(commandExecution)
-					.where(
-						and(
-							eq(commandExecution.cliSessionId, body.cliSessionId),
-							eq(commandExecution.userId, session.user.id),
-						),
-					)
-					.limit(1);
+
+				request.signal.addEventListener("abort", () => {
+					console.log("[translate] Request aborted", {
+						cliSessionId: body.cliSessionId,
+						elapsed: Date.now() - startedAt,
+					});
+				});
+
+				const [response, commandExecutionRow] = await Promise.all([
+					translate(
+						body.input,
+						body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
+						{
+							externalCustomerId: session.user.id,
+							model: body.model,
+							abortSignal: request.signal,
+						},
+					),
+					db
+						.select({ id: commandExecution.id })
+						.from(commandExecution)
+						.where(
+							and(
+								eq(commandExecution.cliSessionId, body.cliSessionId),
+								eq(commandExecution.userId, session.user.id),
+							),
+						)
+						.limit(1),
+				]);
 
 				const commandExecutionId = commandExecutionRow[0]?.id;
-				if (!commandExecutionId) {
-					set.status = 400;
-					if (VERBOSE) {
-						const url = new URL(request.url);
-						console.log("[VERBOSE] 400 invalid cliSessionId", {
-							method: request.method,
-							path: url.pathname,
-							cliSessionId: body.cliSessionId,
-						});
-					}
-					return { error: "Invalid cliSessionId" };
-				}
 
-				const response = await translate(
-					body.input,
-					body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
-					{
-						externalCustomerId: session.user.id,
-						model: body.model,
-						abortSignal: request.signal,
-					},
-				);
+				if (response.generationId && commandExecutionId) {
+					const costInMicrodollars =
+						response.cost != null
+							? Math.round(response.cost * MICRODOLLARS_PER_USD)
+							: 0;
 
-				const costInMicrodollars =
-					response.cost != null
-						? Math.round(response.cost * MICRODOLLARS_PER_USD)
-						: 0;
-
-				if (response.generationId) {
-					try {
-						await db.insert(generation).values({
+					db.insert(generation)
+						.values({
 							commandExecutionId,
 							vercelAiGatewayGenerationId: response.generationId,
 							providerName: response.vendor,
@@ -258,13 +255,18 @@ export const app = new Elysia({ prefix: "/api" })
 							createdAt: new Date(),
 							gatewayPayload: null,
 							output: response.content,
+						})
+						.catch((error) => {
+							console.error("[usage] Failed to persist generation:", error);
 						});
-					} catch (error) {
-						console.error("[usage] Failed to persist generation:", error);
-					}
-				} else {
+				} else if (!response.generationId) {
 					console.warn(
 						"[usage] Missing generationId; skipping generation insert.",
+					);
+				} else if (!commandExecutionId) {
+					console.warn(
+						"[usage] Missing commandExecutionId for cliSessionId:",
+						body.cliSessionId,
 					);
 				}
 
