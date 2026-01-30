@@ -11,6 +11,7 @@ import {
 } from "../lib/command-execution";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { selectCandidate } from "../lib/selector";
+import { ui } from "../lib/ui";
 import {
 	DEFAULT_MODELS,
 	generateCommitMessages,
@@ -225,7 +226,7 @@ export async function commit(args: string[]) {
 	}
 
 	const stats = getGitStagedStats();
-	console.log(`\x1b[32m✔\x1b[0m Found ${formatDiffStats(stats)}`);
+	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
 	while (true) {
 		const result = await selectCandidate({
@@ -244,9 +245,9 @@ export async function commit(args: string[]) {
 
 		if (result.action === "confirm" && result.selected) {
 			await recordSelection(result.selectedCandidate?.generationId);
-			console.log(`\x1b[32m✔\x1b[0m Message selected`);
+			console.log(ui.success("Message selected"));
 			if (options.message) {
-				console.log(`\x1b[32m✔\x1b[0m Running git commit\n`);
+				console.log(`${ui.success("Running git commit")}\n`);
 				commitWithMessage(result.selected);
 			} else {
 				const editedMessage = await openEditor(result.selected);
@@ -254,7 +255,7 @@ export async function commit(args: string[]) {
 					console.error("Aborting commit due to empty message.");
 					process.exit(1);
 				}
-				console.log(`\x1b[32m✔\x1b[0m Running git commit\n`);
+				console.log(`${ui.success("Running git commit")}\n`);
 				commitWithMessage(editedMessage);
 			}
 			return;

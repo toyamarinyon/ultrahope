@@ -8,6 +8,7 @@ import {
 } from "../lib/command-execution";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { selectCandidate } from "../lib/selector";
+import { ui } from "../lib/ui";
 import {
 	DEFAULT_MODELS,
 	generateCommitMessages,
@@ -192,7 +193,7 @@ async function describe(args: string[]) {
 	}
 
 	const stats = getJjDiffStats(options.revision);
-	console.log(`\x1b[32m✔\x1b[0m Found ${formatDiffStats(stats)}`);
+	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
 	while (true) {
 		const result = await selectCandidate({
@@ -211,9 +212,9 @@ async function describe(args: string[]) {
 
 		if (result.action === "confirm" && result.selected) {
 			await recordSelection(result.selectedCandidate?.generationId);
-			console.log(`\x1b[32m✔\x1b[0m Message selected`);
+			console.log(ui.success("Message selected"));
 			console.log(
-				`\x1b[32m✔\x1b[0m Running jj describe -r ${options.revision}\n`,
+				`${ui.success(`Running jj describe -r ${options.revision}`)}\n`,
 			);
 			describeRevision(options.revision, result.selected);
 			return;

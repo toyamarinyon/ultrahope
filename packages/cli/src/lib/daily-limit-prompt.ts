@@ -3,6 +3,8 @@ import * as readline from "node:readline";
 import * as tty from "node:tty";
 import open from "open";
 import { formatResetTime } from "./format-time";
+import { theme } from "./theme";
+import { ui } from "./ui";
 
 const PRICING_URL = "https://ultrahope.dev/pricing";
 
@@ -32,29 +34,41 @@ export async function showDailyLimitPrompt(
 
 	if (info.progress) {
 		console.log(
-			`\x1b[31m✖\x1b[0m Generating commit messages... ${info.progress.ready}/${info.progress.total}`,
+			ui.blocked(
+				`Generating commit messages... ${info.progress.ready}/${info.progress.total}`,
+			),
 		);
 	}
-	console.log(`Commit message generation was skipped`);
+	console.log("");
 	console.log(
-		`  \x1b[2m•\x1b[0m Daily request limit reached (${info.count} / ${info.limit})`,
+		`${theme.primary}Commit message generation was skipped${theme.reset}`,
 	);
-	console.log(`  \x1b[2m•\x1b[0m Resets ${relative} (${local})`);
+	console.log("");
+	console.log(
+		ui.bullet(`Daily request limit reached (${info.count} / ${info.limit})`),
+	);
+	console.log(ui.bullet(`Resets ${relative} (${local})`));
 	console.log("");
 
 	if (!canUseInteractive()) {
-		console.log("Run the same command again after the reset:");
-		console.log("  ultrahope jj describe");
+		console.log(
+			`${theme.primary}Run the same command again after the reset:${theme.reset}`,
+		);
+		console.log(`  ${ui.link("ultrahope jj describe")}`);
 		console.log("");
-		console.log("Or upgrade your plan:");
-		console.log(`  ${PRICING_URL}`);
+		console.log(`${theme.primary}Or upgrade your plan:${theme.reset}`);
+		console.log(`  ${ui.link(PRICING_URL)}`);
 		return;
 	}
 
-	console.log("What would you like to do?");
+	console.log(`${theme.primary}What would you like to do?${theme.reset}`);
 	console.log("");
-	console.log("  1) Retry after the daily limit resets");
-	console.log("  2) Upgrade your plan to continue immediately");
+	console.log(
+		`${theme.secondary}  1) Retry after the daily limit resets${theme.reset}`,
+	);
+	console.log(
+		`${theme.secondary}  2) Upgrade your plan to continue immediately${theme.reset}`,
+	);
 	console.log("");
 
 	const choice = await promptChoice();
@@ -82,7 +96,9 @@ function promptChoice(): Promise<"1" | "2" | "q"> {
 			terminal: true,
 		});
 
-		process.stdout.write("Select an option [1-2], or press q to quit: ");
+		process.stdout.write(
+			`${theme.prompt}Select an option [1-2], or press q to quit:${theme.reset} `,
+		);
 
 		readline.emitKeypressEvents(ttyInput, rl);
 		ttyInput.setRawMode(true);
@@ -126,13 +142,14 @@ function promptChoice(): Promise<"1" | "2" | "q"> {
 
 function handleRetryLater() {
 	console.log("");
-	console.log("\x1b[32m✔\x1b[0m Will retry after the daily limit resets");
-	console.log("  \x1b[2m•\x1b[0m No requests were sent");
+	console.log(ui.success("Will retry after the daily limit resets"));
+	console.log(ui.bullet("No requests were sent"));
 	console.log("");
-	console.log("Run the same command again after the reset:");
-	console.log("  ultrahope jj describe");
+	console.log(
+		`${theme.primary}Run the same command again after the reset:${theme.reset}`,
+	);
+	console.log(`  ${ui.link("ultrahope jj describe")}`);
 	console.log("");
-	process.stdout.write("Press Enter to exit ");
 
 	return new Promise<void>((resolve) => {
 		const fd = openSync("/dev/tty", "r");
@@ -172,8 +189,8 @@ function handleRetryLater() {
 
 async function handleUpgrade(): Promise<void> {
 	console.log("");
-	console.log("Opening pricing page:");
-	console.log(`  ${PRICING_URL}`);
+	console.log(`${theme.primary}Opening pricing page:${theme.reset}`);
+	console.log(`  ${ui.link(PRICING_URL)}`);
 
 	try {
 		await open(PRICING_URL);

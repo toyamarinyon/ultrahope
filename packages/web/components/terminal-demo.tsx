@@ -169,13 +169,21 @@ export function TerminalDemo() {
 		if (contentRef.current) {
 			contentRef.current.scrollTop = contentRef.current.scrollHeight;
 		}
-	}, [phase, visibleMessages, selectedIndex]);
+	});
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: Container with complex children, not a simple button
 		<div
 			ref={containerRef}
 			className="rounded-2xl border border-border-subtle bg-canvas-dark overflow-hidden font-mono text-sm"
+			role="button"
+			tabIndex={0}
 			onClick={handleContinue}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					handleContinue();
+				}
+			}}
 		>
 			{/* Terminal header */}
 			<div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle bg-surface">
@@ -243,11 +251,14 @@ export function TerminalDemo() {
 
 						<div className="mt-4 space-y-3">
 							{visibleMessages.map((msg, i) => (
+								// biome-ignore lint/a11y/useSemanticElements: Interactive list item with complex children
 								<div
 									key={msg.model}
 									className={`cursor-pointer transition-opacity ${
 										i === selectedIndex ? "opacity-100" : "opacity-50"
 									}`}
+									role="button"
+									tabIndex={0}
 									onMouseEnter={() =>
 										phase === "selector" && setSelectedIndex(i)
 									}
@@ -256,6 +267,15 @@ export function TerminalDemo() {
 										if (phase === "selector") {
 											setSelectedIndex(i);
 											setPhase("committed");
+										}
+									}}
+									onKeyDown={(e) => {
+										if (e.key === "Enter" || e.key === " ") {
+											e.stopPropagation();
+											if (phase === "selector") {
+												setSelectedIndex(i);
+												setPhase("committed");
+											}
 										}
 									}}
 								>

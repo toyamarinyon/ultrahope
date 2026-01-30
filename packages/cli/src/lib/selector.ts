@@ -12,6 +12,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
+import { theme } from "./theme";
+import { ui } from "./ui";
 
 export interface SelectorResult {
 	action: "confirm" | "abort" | "reroll";
@@ -60,8 +62,6 @@ function formatCost(cost: number): string {
 }
 
 function formatSlot(slot: Slot, selected: boolean): string[] {
-	const radio = selected ? "●" : "○";
-
 	if (slot.status === "pending") {
 		return [];
 	}
@@ -76,12 +76,17 @@ function formatSlot(slot: Slot, selected: boolean): string[] {
 		: "";
 
 	if (selected) {
-		const line = `  ${radio}  \x1b[1m${title}\x1b[0m`;
-		const meta = modelInfo ? `     \x1b[36m${modelInfo}\x1b[0m` : "";
+		const radio = "●";
+		const line = `  ${radio}  ${theme.bold}${title}${theme.reset}`;
+		const meta = modelInfo
+			? `     ${theme.progress}${modelInfo}${theme.reset}`
+			: "";
 		return meta ? [line, meta] : [line];
 	}
-	const line = `\x1b[2m  ${radio}  ${title}\x1b[0m`;
-	const meta = modelInfo ? `\x1b[2m     ${modelInfo}\x1b[0m` : "";
+
+	const radio = "○";
+	const line = `${theme.dim}  ${radio}  ${title}${theme.reset}`;
+	const meta = modelInfo ? `${theme.dim}     ${modelInfo}${theme.reset}` : "";
 	return meta ? [line, meta] : [line];
 }
 
@@ -124,23 +129,22 @@ function render(state: RenderState): void {
 		const spinner = SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
 		const progress = `${readyCount}/${totalSlots}`;
 		lines.push(
-			`\x1b[33m${spinner}\x1b[0m Generating commit messages... ${progress}`,
+			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${theme.reset}`,
 		);
 	} else {
 		const label =
 			readyCount === 1
 				? "1 commit message generated"
 				: `${readyCount} commit messages generated`;
-		lines.push(`\x1b[32m✔\x1b[0m ${label}`);
+		lines.push(ui.success(label));
 	}
 
 	const hasReady = readyCount > 0;
 	if (hasReady) {
-		const hint =
-			"\x1b[2m↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit\x1b[0m";
-		lines.push(`\x1b[36m?\x1b[0m Select a commit message ${hint}`);
+		const hint = ui.hint("↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit");
+		lines.push(ui.prompt(`Select a commit message ${hint}`));
 	} else {
-		lines.push("\x1b[2m  q quit\x1b[0m");
+		lines.push(ui.hint("  q quit"));
 	}
 
 	lines.push("");
@@ -167,9 +171,9 @@ function renderError(error: unknown, slots: Slot[], totalSlots: number): void {
 		error instanceof Error ? error.message : String(error ?? "Unknown error");
 
 	const lines = [
-		`\x1b[31m✖\x1b[0m Generating commit messages... ${readyCount}/${totalSlots}`,
+		ui.blocked(`Generating commit messages... ${readyCount}/${totalSlots}`),
 		"",
-		`\x1b[31mError: ${message}\x1b[0m`,
+		`${theme.fatal}Error: ${message}${theme.reset}`,
 	];
 
 	for (const line of lines) {
