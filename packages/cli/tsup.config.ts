@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-	entry: ["src/index.ts", "src/git-ultrahope.ts"],
+	entry: ["./index.ts", "./git-ultrahope.ts"],
 	format: ["esm"],
 	platform: "node",
 	target: "es2022",
