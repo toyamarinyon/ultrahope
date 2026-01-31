@@ -22,6 +22,13 @@ interface DescribeOptions {
 	models: string[];
 }
 
+interface CommandExecutionContext {
+	apiClient: ReturnType<typeof createApiClient> | null;
+	commandExecutionSignal?: AbortSignal;
+	commandExecutionPromise?: Promise<unknown>;
+	cliSessionId?: string;
+}
+
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let dryRun = false;
@@ -80,34 +87,31 @@ function describeRevision(revision: string, message: string): void {
 	}
 }
 
-async function describe(args: string[]) {
-	const options = parseDescribeArgs(args);
-	const diff = getJjDiff(options.revision);
-
+function assertDiffAvailable(revision: string, diff: string): void {
 	if (!diff.trim()) {
-		console.error(`Error: No changes in revision ${options.revision}.`);
+		console.error(`Error: No changes in revision ${revision}.`);
+		process.exit(1);
+	}
+}
+
+async function initCommandExecutionContext(
+	args: string[],
+	options: DescribeOptions,
+	diff: string,
+): Promise<CommandExecutionContext> {
+	if (options.mock) {
+		return { apiClient: null };
+	}
+
+	const token = await getToken();
+	if (!token) {
+		console.error("Error: Not authenticated. Run `ultrahope login` first.");
 		process.exit(1);
 	}
 
-	let cliSessionId: string | undefined;
-	let commandExecutionSignal: AbortSignal | undefined;
-	let commandExecutionPromise: Promise<unknown> | undefined;
-	let apiClient: ReturnType<typeof createApiClient> | null = null;
-
-	if (!options.mock) {
-		const token = await getToken();
-		if (!token) {
-			console.error("Error: Not authenticated. Run `ultrahope login` first.");
-			process.exit(1);
-		}
-
-		const api = createApiClient(token);
-		apiClient = api;
-		const {
-			commandExecutionPromise: promise,
-			abortController,
-			cliSessionId: id,
-		} = startCommandExecution({
+	const api = createApiClient(token);
+	const { commandExecutionPromise, abortController, cliSessionId } =
+		startCommandExecution({
 			api,
 			command: "jj",
 			args: ["describe", ...args],
@@ -119,79 +123,105 @@ async function describe(args: string[]) {
 			},
 		});
 
-		commandExecutionPromise = promise;
-		commandExecutionPromise.catch(async (error) => {
-			abortController.abort();
-			await handleCommandExecutionError(error, {
-				progress: { ready: 0, total: options.models.length },
-			});
+	commandExecutionPromise.catch(async (error) => {
+		abortController.abort();
+		await handleCommandExecutionError(error, {
+			progress: { ready: 0, total: options.models.length },
 		});
+	});
 
-		cliSessionId = id;
-		commandExecutionSignal = abortController.signal;
-	}
-
-	const recordSelection = async (generationId?: string) => {
-		if (!generationId || !apiClient) return;
-		try {
-			await apiClient.recordGenerationScore({
-				generationId,
-				value: 1,
-				comment: null,
-			});
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			console.error(`Warning: Failed to record selection. ${message}`);
-		}
+	return {
+		apiClient: api,
+		commandExecutionSignal: abortController.signal,
+		commandExecutionPromise,
+		cliSessionId,
 	};
+}
 
-	const createCandidates = (signal: AbortSignal) =>
+async function recordSelection(
+	apiClient: CommandExecutionContext["apiClient"],
+	generationId?: string,
+): Promise<void> {
+	if (!generationId || !apiClient) return;
+	try {
+		await apiClient.recordGenerationScore({
+			generationId,
+			value: 1,
+			comment: null,
+		});
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		console.error(`Warning: Failed to record selection. ${message}`);
+	}
+}
+
+function createCandidateFactory(
+	diff: string,
+	options: DescribeOptions,
+	context: CommandExecutionContext,
+) {
+	return (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models: options.models,
 			mock: options.mock,
-			signal: mergeAbortSignals(signal, commandExecutionSignal),
-			cliSessionId,
-			commandExecutionPromise,
+			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
+			cliSessionId: context.cliSessionId,
+			commandExecutionPromise: context.commandExecutionPromise,
 		});
+}
 
-	if (!options.interactive) {
-		const gen = generateCommitMessages({
-			diff,
-			models: options.models.slice(0, 1),
-			mock: options.mock,
-			signal: commandExecutionSignal,
-			cliSessionId,
-			commandExecutionPromise,
-		});
-		const first = await gen.next();
-		await recordSelection(first.value?.generationId);
-		const message = first.value?.content ?? "";
-
-		if (options.dryRun) {
-			console.log(message);
-			return;
-		}
-
-		describeRevision(options.revision, message);
-		return;
-	}
+async function runNonInteractiveDescribe(
+	options: DescribeOptions,
+	diff: string,
+	context: CommandExecutionContext,
+): Promise<void> {
+	const gen = generateCommitMessages({
+		diff,
+		models: options.models.slice(0, 1),
+		mock: options.mock,
+		signal: context.commandExecutionSignal,
+		cliSessionId: context.cliSessionId,
+		commandExecutionPromise: context.commandExecutionPromise,
+	});
+	const first = await gen.next();
+	await recordSelection(context.apiClient, first.value?.generationId);
+	const message = first.value?.content ?? "";
 
 	if (options.dryRun) {
-		const abortController = new AbortController();
-		const mergedSignal = mergeAbortSignals(
-			abortController.signal,
-			commandExecutionSignal,
-		);
-		for await (const candidate of createCandidates(
-			mergedSignal ?? abortController.signal,
-		)) {
-			console.log("---");
-			console.log(candidate.content);
-		}
+		console.log(message);
 		return;
 	}
 
+	describeRevision(options.revision, message);
+}
+
+async function runDryRunDescribe(
+	createCandidates: (
+		signal: AbortSignal,
+	) => ReturnType<typeof generateCommitMessages>,
+	context: CommandExecutionContext,
+): Promise<void> {
+	const abortController = new AbortController();
+	const mergedSignal = mergeAbortSignals(
+		abortController.signal,
+		context.commandExecutionSignal,
+	);
+	for await (const candidate of createCandidates(
+		mergedSignal ?? abortController.signal,
+	)) {
+		console.log("---");
+		console.log(candidate.content);
+	}
+}
+
+async function runInteractiveDescribe(
+	options: DescribeOptions,
+	createCandidates: (
+		signal: AbortSignal,
+	) => ReturnType<typeof generateCommitMessages>,
+	context: CommandExecutionContext,
+): Promise<void> {
 	const stats = getJjDiffStats(options.revision);
 	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
@@ -211,7 +241,10 @@ async function describe(args: string[]) {
 		}
 
 		if (result.action === "confirm" && result.selected) {
-			await recordSelection(result.selectedCandidate?.generationId);
+			await recordSelection(
+				context.apiClient,
+				result.selectedCandidate?.generationId,
+			);
 			console.log(ui.success("Message selected"));
 			console.log(
 				`${ui.success(`Running jj describe -r ${options.revision}`)}\n`,
@@ -220,6 +253,27 @@ async function describe(args: string[]) {
 			return;
 		}
 	}
+}
+
+async function describe(args: string[]) {
+	const options = parseDescribeArgs(args);
+	const diff = getJjDiff(options.revision);
+	assertDiffAvailable(options.revision, diff);
+
+	const context = await initCommandExecutionContext(args, options, diff);
+	const createCandidates = createCandidateFactory(diff, options, context);
+
+	if (!options.interactive) {
+		await runNonInteractiveDescribe(options, diff, context);
+		return;
+	}
+
+	if (options.dryRun) {
+		await runDryRunDescribe(createCandidates, context);
+		return;
+	}
+
+	await runInteractiveDescribe(options, createCandidates, context);
 }
 
 function printHelp() {
