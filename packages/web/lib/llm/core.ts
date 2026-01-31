@@ -29,7 +29,7 @@ export async function translate(
 	}
 
 	const result = await generateText({
-		model: model === "testing" ? mockLanguageModel() : model,
+		model: model === "mocking" ? mockLanguageModel() : model,
 		system: PROMPTS[target],
 		prompt,
 		maxOutputTokens: 1024,

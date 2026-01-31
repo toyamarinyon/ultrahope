@@ -101,8 +101,10 @@ export const app = new Elysia({ prefix: "/api" })
 				const billingInfo = await getUserBillingInfo(session.user.id);
 				const plan = billingInfo?.plan ?? "free";
 
-				if (plan === "free") {
+				if (plan === "free" && !MOCKING) {
 					await assertDailyLimitNotExceeded(session.user.id);
+				} else if (MOCKING) {
+					console.log("[MOCKING] Daily limit check bypassed");
 				}
 
 				await db
@@ -215,6 +217,9 @@ export const app = new Elysia({ prefix: "/api" })
 					});
 				});
 
+				if (MOCKING) {
+					console.log("[MOCKING] Using mocking model");
+				}
 				const [response, commandExecutionRow] = await Promise.all([
 					translate(
 						body.input,
