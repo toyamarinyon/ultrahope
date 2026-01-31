@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
+import { clearAll, flush, render, reset, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
 import { ui } from "./ui";
 
@@ -37,8 +38,6 @@ interface SelectorOptions {
 	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
 	maxSlots?: number;
 }
-
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 function canUseInteractive(): boolean {
 	if (!process.stdout.isTTY) {
@@ -98,7 +97,6 @@ interface RenderState {
 	totalSlots: number;
 }
 
-let lastRenderLineCount = 0;
 let activeCleanup: (() => void) | null = null;
 
 export function clearRenderedOutput(): void {
@@ -106,21 +104,12 @@ export function clearRenderedOutput(): void {
 		activeCleanup();
 		activeCleanup = null;
 	}
-	if (lastRenderLineCount > 0) {
-		process.stdout.write(`\x1b[${lastRenderLineCount}A`);
-		process.stdout.write("\x1b[0J");
-		lastRenderLineCount = 0;
-	}
+	clearAll();
 }
 
-function render(state: RenderState): void {
+function renderSelector(state: RenderState): void {
 	const { slots, selectedIndex, isGenerating, spinnerFrame, totalSlots } =
 		state;
-
-	if (lastRenderLineCount > 0) {
-		process.stdout.write(`\x1b[${lastRenderLineCount}A`);
-		process.stdout.write("\x1b[0J");
-	}
 
 	const lines: string[] = [];
 	const readyCount = slots.filter((s) => s.status === "ready").length;
@@ -159,10 +148,7 @@ function render(state: RenderState): void {
 		}
 	}
 
-	for (const line of lines) {
-		console.log(line);
-	}
-	lastRenderLineCount = lines.length;
+	render(`${lines.join("\n")}\n`);
 }
 
 function renderError(error: unknown, slots: Slot[], totalSlots: number): void {
@@ -269,7 +255,13 @@ async function selectFromSlots(
 
 		const doRender = () => {
 			if (cleanedUp) return;
-			render({ slots, selectedIndex, isGenerating, spinnerFrame, totalSlots });
+			renderSelector({
+				slots,
+				selectedIndex,
+				isGenerating,
+				spinnerFrame,
+				totalSlots,
+			});
 		};
 
 		doRender();
@@ -293,11 +285,7 @@ async function selectFromSlots(
 			ttyInput.setRawMode(false);
 			rl.close();
 			ttyInput.destroy();
-			if (lastRenderLineCount > 0) {
-				process.stdout.write(`\x1b[${lastRenderLineCount}A`);
-				process.stdout.write("\x1b[0J");
-			}
-			lastRenderLineCount = 0;
+			clearAll();
 		};
 
 		activeCleanup = cleanup;
@@ -412,6 +400,7 @@ async function selectFromSlots(
 			if (key.name === "e") {
 				const candidate = getSelectedCandidate();
 				if (!candidate) return;
+				flush();
 				ttyInput.setRawMode(false);
 				try {
 					const edited = await openEditor(candidate.content);
@@ -423,6 +412,7 @@ async function selectFromSlots(
 					}
 				} catch {}
 				ttyInput.setRawMode(true);
+				reset();
 				doRender();
 				return;
 			}
