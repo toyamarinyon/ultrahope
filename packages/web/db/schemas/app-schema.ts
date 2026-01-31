@@ -5,6 +5,7 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { LanguageModel } from "@/lib/llm/types";
 import { user } from "./auth-schema";
 
 export const commandExecution = sqliteTable(
@@ -44,7 +45,7 @@ export const generation = sqliteTable(
 			"vercel_ai_gateway_generation_id",
 		).notNull(),
 		providerName: text("provider_name").notNull(),
-		model: text("model").notNull(),
+		model: text("model").$type<LanguageModel>().notNull(),
 		cost: integer("cost").notNull(),
 		latency: integer("latency").notNull(),
 		createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),

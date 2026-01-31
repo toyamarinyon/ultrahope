@@ -8,12 +8,13 @@ import {
 	type LLMResponse,
 	type Target,
 } from "./core";
+import type { LanguageModel } from "./types";
 
 const MICRODOLLARS_PER_USD = 1_000_000;
 
 type TranslateOptions = {
 	externalCustomerId: number;
-	model: string;
+	model: LanguageModel;
 	abortSignal?: AbortSignal;
 };
 
@@ -111,7 +112,7 @@ async function recordUsage(
 					externalCustomerId: externalCustomerId.toString(),
 					metadata: {
 						cost: costInMicrodollars,
-						model: response.model,
+						model: String(response.model),
 						...(response.generationId && {
 							generationId: response.generationId,
 						}),

@@ -23,6 +23,7 @@ const TRANSLATE_TARGETS = [
 	"pr-intent",
 ] as const;
 const VERBOSE = process.env.VERBOSE === "1";
+const MOCKING = process.env.MOCKING === "1";
 
 function formatVerboseError(error: unknown): Record<string, unknown> | unknown {
 	if (error instanceof Error) {
@@ -220,7 +221,7 @@ export const app = new Elysia({ prefix: "/api" })
 						body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
 						{
 							externalCustomerId: session.user.id,
-							model: body.model,
+							model: MOCKING ? "mocking" : body.model,
 							abortSignal: request.signal,
 						},
 					),

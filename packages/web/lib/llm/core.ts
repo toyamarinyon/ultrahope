@@ -1,23 +1,20 @@
 import { generateText } from "ai";
 import { preprocessDiff } from "./diff";
+import { mockLanguageModel } from "./mock";
 import { PROMPTS } from "./prompts";
-import type { LLMResponse, Target } from "./types";
+import type { LanguageModel, LLMResponse, Target } from "./types";
 
 export type { LLMResponse, Target };
 
 const VERBOSE = process.env.VERBOSE === "1";
 
-const PRIMARY_MODEL = "cerebras/llama-3.1-8b";
-const FALLBACK_MODELS = ["openai/gpt-5-nano"];
-
 export async function translate(
 	input: string,
 	target: Target,
-	model: string,
+	model: LanguageModel,
 	abortSignal?: AbortSignal,
 ): Promise<LLMResponse> {
 	let prompt = input;
-	const selectedModel = model;
 
 	if (target === "vcs-commit-message") {
 		const preprocessed = preprocessDiff(input);
@@ -31,22 +28,12 @@ export async function translate(
 		}
 	}
 
-	const providerOptions =
-		selectedModel === PRIMARY_MODEL
-			? {
-					gateway: {
-						models: FALLBACK_MODELS,
-					},
-				}
-			: undefined;
-
 	const result = await generateText({
-		model: selectedModel,
+		model: model === "testing" ? mockLanguageModel() : model,
 		system: PROMPTS[target],
 		prompt,
 		maxOutputTokens: 1024,
 		abortSignal,
-		...(providerOptions ? { providerOptions } : {}),
 	});
 
 	if (VERBOSE) {
@@ -71,7 +58,7 @@ export async function translate(
 	return {
 		content: result.text,
 		vendor,
-		model: selectedModel,
+		model,
 		inputTokens: result.usage.inputTokens ?? 0,
 		outputTokens: result.usage.outputTokens ?? 0,
 		cost,
