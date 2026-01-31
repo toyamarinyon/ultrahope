@@ -19,7 +19,6 @@ import {
 
 interface CommitOptions {
 	message: boolean;
-	dryRun: boolean;
 	interactive: boolean;
 	mock: boolean;
 	models: string[];
@@ -45,7 +44,6 @@ function parseArgs(args: string[]): CommitOptions {
 
 	return {
 		message: args.includes("-m") || args.includes("--message"),
-		dryRun: args.includes("--dry-run"),
 		interactive: !args.includes("--no-interactive"),
 		mock,
 		models,
@@ -191,11 +189,6 @@ export async function commit(args: string[]) {
 		await recordSelection(first.value?.generationId);
 		const message = first.value?.content ?? "";
 
-		if (options.dryRun) {
-			console.log(message);
-			return;
-		}
-
 		if (options.message) {
 			commitWithMessage(message);
 			return;
@@ -207,21 +200,6 @@ export async function commit(args: string[]) {
 			process.exit(1);
 		}
 		commitWithMessage(editedMessage);
-		return;
-	}
-
-	if (options.dryRun) {
-		const abortController = new AbortController();
-		const mergedSignal = mergeAbortSignals(
-			abortController.signal,
-			commandExecutionSignal,
-		);
-		for await (const candidate of createCandidates(
-			mergedSignal ?? abortController.signal,
-		)) {
-			console.log("---");
-			console.log(candidate.content);
-		}
 		return;
 	}
 

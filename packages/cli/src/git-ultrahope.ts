@@ -23,18 +23,16 @@ function printHelp() {
 	console.log(`Usage: git ultrahope <command>
 
 Commands:
-  commit      Generate commit message from staged changes
+   commit      Generate commit message from staged changes
 
 Commit options:
-  -m, --message     Commit directly with generated message
-  --dry-run         Print candidates only, don't commit
-  --no-interactive  Single candidate, open in editor
+   -m, --message     Commit directly with generated message
+   --no-interactive  Single candidate, open in editor
 
 Examples:
-  git ultrahope commit               # interactive selector (default)
-  git ultrahope commit -m            # select and commit directly
-  git ultrahope commit --dry-run     # preview candidates only
-  git ultrahope commit --no-interactive  # single candidate, open editor`);
+   git ultrahope commit               # interactive selector (default)
+   git ultrahope commit -m            # select and commit directly
+   git ultrahope commit --no-interactive  # single candidate, open editor`);
 }
 
 main().catch((err) => {

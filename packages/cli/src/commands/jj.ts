@@ -16,7 +16,6 @@ import {
 
 interface DescribeOptions {
 	revision: string;
-	dryRun: boolean;
 	interactive: boolean;
 	mock: boolean;
 	models: string[];
@@ -31,7 +30,6 @@ interface CommandExecutionContext {
 
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
-	let dryRun = false;
 	let interactive = true;
 	let mock = false;
 	let models: string[] = [];
@@ -40,8 +38,6 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		const arg = args[i];
 		if (arg === "-r") {
 			revision = args[++i] || "@";
-		} else if (arg === "--dry-run") {
-			dryRun = true;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
 		} else if (arg === "--mock") {
@@ -55,7 +51,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		models = DEFAULT_MODELS;
 	}
 
-	return { revision, dryRun, interactive, mock, models };
+	return { revision, interactive, mock, models };
 }
 
 function getJjDiff(revision: string): string {
@@ -188,31 +184,7 @@ async function runNonInteractiveDescribe(
 	await recordSelection(context.apiClient, first.value?.generationId);
 	const message = first.value?.content ?? "";
 
-	if (options.dryRun) {
-		console.log(message);
-		return;
-	}
-
 	describeRevision(options.revision, message);
-}
-
-async function runDryRunDescribe(
-	createCandidates: (
-		signal: AbortSignal,
-	) => ReturnType<typeof generateCommitMessages>,
-	context: CommandExecutionContext,
-): Promise<void> {
-	const abortController = new AbortController();
-	const mergedSignal = mergeAbortSignals(
-		abortController.signal,
-		context.commandExecutionSignal,
-	);
-	for await (const candidate of createCandidates(
-		mergedSignal ?? abortController.signal,
-	)) {
-		console.log("---");
-		console.log(candidate.content);
-	}
 }
 
 async function runInteractiveDescribe(
@@ -269,11 +241,6 @@ async function describe(args: string[]) {
 		return;
 	}
 
-	if (options.dryRun) {
-		await runDryRunDescribe(createCandidates, context);
-		return;
-	}
-
 	await runInteractiveDescribe(options, createCandidates, context);
 }
 
@@ -281,19 +248,17 @@ function printHelp() {
 	console.log(`Usage: ultrahope jj <command>
 
 Commands:
-  describe    Generate commit description from changes
+   describe    Generate commit description from changes
 
 Describe options:
-  -r <revset>       Revision to describe (default: @)
-  --dry-run         Print candidates only, don't describe
-  --no-interactive  Single candidate, no selection
-  --mock            Use mock API for testing (no LLM tokens consumed)
+   -r <revset>       Revision to describe (default: @)
+   --no-interactive  Single candidate, no selection
+   --mock            Use mock API for testing (no LLM tokens consumed)
 
 Examples:
-  ultrahope jj describe              # interactive mode
-  ultrahope jj describe -r @-        # for parent revision
-  ultrahope jj describe --dry-run    # print candidates only
-  ultrahope jj describe --mock       # test with mock responses`);
+   ultrahope jj describe              # interactive mode
+   ultrahope jj describe -r @-        # for parent revision
+   ultrahope jj describe --mock       # test with mock responses`);
 }
 
 export async function jj(args: string[]) {
