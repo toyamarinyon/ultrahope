@@ -17,7 +17,6 @@ import {
 interface DescribeOptions {
 	revision: string;
 	interactive: boolean;
-	mock: boolean;
 	models: string[];
 }
 
@@ -31,7 +30,6 @@ interface CommandExecutionContext {
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let interactive = true;
-	let mock = false;
 	let models: string[] = [];
 
 	for (let i = 0; i < args.length; i++) {
@@ -40,8 +38,6 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 			revision = args[++i] || "@";
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "--mock") {
-			mock = true;
 		} else if (arg === "--models" && args[i + 1]) {
 			models = args[++i].split(",").map((m) => m.trim());
 		}
@@ -51,7 +47,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		models = DEFAULT_MODELS;
 	}
 
-	return { revision, interactive, mock, models };
+	return { revision, interactive, models };
 }
 
 function getJjDiff(revision: string): string {
@@ -95,10 +91,6 @@ async function initCommandExecutionContext(
 	options: DescribeOptions,
 	diff: string,
 ): Promise<CommandExecutionContext> {
-	if (options.mock) {
-		return { apiClient: null };
-	}
-
 	const token = await getToken();
 	if (!token) {
 		console.error("Error: Not authenticated. Run `ultrahope login` first.");
@@ -160,7 +152,6 @@ function createCandidateFactory(
 		generateCommitMessages({
 			diff,
 			models: options.models,
-			mock: options.mock,
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -175,7 +166,6 @@ async function runNonInteractiveDescribe(
 	const gen = generateCommitMessages({
 		diff,
 		models: options.models.slice(0, 1),
-		mock: options.mock,
 		signal: context.commandExecutionSignal,
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
@@ -253,12 +243,10 @@ Commands:
 Describe options:
    -r <revset>       Revision to describe (default: @)
    --no-interactive  Single candidate, no selection
-   --mock            Use mock API for testing (no LLM tokens consumed)
 
 Examples:
    ultrahope jj describe              # interactive mode
-   ultrahope jj describe -r @-        # for parent revision
-   ultrahope jj describe --mock       # test with mock responses`);
+   ultrahope jj describe -r @-        # for parent revision`);
 }
 
 export async function jj(args: string[]) {

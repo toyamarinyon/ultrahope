@@ -23,7 +23,6 @@ const VALID_TARGETS: Target[] = [
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
-	mock: boolean;
 	model?: string;
 }
 
@@ -52,46 +51,41 @@ async function handleVcsCommitMessage(
 	args: string[],
 ): Promise<void> {
 	const models = options.model ? [options.model] : DEFAULT_MODELS;
-	let cliSessionId: string | undefined;
-	let commandExecutionSignal: AbortSignal | undefined;
-	let commandExecutionPromise: Promise<unknown> | undefined;
-	let apiClient: ReturnType<typeof createApiClient> | null = null;
 
-	if (!options.mock) {
-		const token = await getToken();
-		if (!token) {
-			console.error("Error: Not authenticated. Run `ultrahope login` first.");
-			process.exit(1);
-		}
-
-		const api = createApiClient(token);
-		apiClient = api;
-		const {
-			commandExecutionPromise: promise,
-			abortController,
-			cliSessionId: id,
-		} = startCommandExecution({
-			api,
-			command: "translate",
-			args,
-			apiPath: "/v1/translate",
-			requestPayload:
-				models.length === 1
-					? { input, target: "vcs-commit-message", model: models[0] }
-					: { input, target: "vcs-commit-message", models },
-		});
-
-		commandExecutionPromise = promise;
-		commandExecutionPromise.catch(async (error) => {
-			abortController.abort();
-			await handleCommandExecutionError(error, {
-				progress: { ready: 0, total: models.length },
-			});
-		});
-
-		cliSessionId = id;
-		commandExecutionSignal = abortController.signal;
+	const token = await getToken();
+	if (!token) {
+		console.error("Error: Not authenticated. Run `ultrahope login` first.");
+		process.exit(1);
 	}
+
+	const api = createApiClient(token);
+	const {
+		commandExecutionPromise: promise,
+		abortController,
+		cliSessionId: id,
+	} = startCommandExecution({
+		api,
+		command: "translate",
+		args,
+		apiPath: "/v1/translate",
+		requestPayload:
+			models.length === 1
+				? { input, target: "vcs-commit-message", model: models[0] }
+				: { input, target: "vcs-commit-message", models },
+	});
+
+	const cliSessionId: string | undefined = id;
+	const commandExecutionSignal: AbortSignal | undefined =
+		abortController.signal;
+	const commandExecutionPromise: Promise<unknown> | undefined = promise;
+	const apiClient: ReturnType<typeof createApiClient> | null = api;
+
+	commandExecutionPromise.catch(async (error) => {
+		abortController.abort();
+		await handleCommandExecutionError(error, {
+			progress: { ready: 0, total: models.length },
+		});
+	});
 
 	const recordSelection = async (generationId?: string) => {
 		if (!generationId || !apiClient) return;
@@ -111,7 +105,6 @@ async function handleVcsCommitMessage(
 		generateCommitMessages({
 			diff: input,
 			models,
-			mock: options.mock,
 			signal: mergeAbortSignals(signal, commandExecutionSignal),
 			cliSessionId,
 			commandExecutionPromise,
@@ -121,7 +114,6 @@ async function handleVcsCommitMessage(
 		const gen = generateCommitMessages({
 			diff: input,
 			models: models.slice(0, 1),
-			mock: options.mock,
 			signal: commandExecutionSignal,
 			cliSessionId,
 			commandExecutionPromise,
@@ -346,7 +338,6 @@ async function handleGenericTarget(
 function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
-	let mock = false;
 	let model: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
@@ -361,8 +352,6 @@ function parseArgs(args: string[]): TranslateOptions {
 			target = value as Target;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "--mock") {
-			mock = true;
 		} else if (arg === "--model") {
 			const value = args[++i];
 			if (!value) {
@@ -381,5 +370,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, mock, model };
+	return { target, interactive, model };
 }

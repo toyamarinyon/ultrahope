@@ -4,7 +4,6 @@ import {
 	type TranslateResponse,
 } from "./api-client";
 import { getToken } from "./auth";
-import { createMockApiClient } from "./mock-api-client";
 import type { CandidateWithModel } from "./selector";
 
 export const DEFAULT_MODELS = [
@@ -17,7 +16,6 @@ export const DEFAULT_MODELS = [
 export interface GeneratorOptions {
 	diff: string;
 	models: string[];
-	mock?: boolean;
 	signal?: AbortSignal;
 	cliSessionId?: string;
 	commandExecutionPromise?: Promise<unknown>;
@@ -35,48 +33,11 @@ const delay = (ms: number) =>
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
 ): AsyncGenerator<CandidateWithModel> {
-	const {
-		diff,
-		models,
-		mock = false,
-		signal,
-		cliSessionId,
-		commandExecutionPromise,
-	} = options;
-	const effectiveCliSessionId =
-		cliSessionId ?? (mock ? "mock-command-execution" : undefined);
+	const { diff, models, signal, cliSessionId, commandExecutionPromise } =
+		options;
 
-	if (!effectiveCliSessionId) {
+	if (!cliSessionId) {
 		throw new Error("Missing cliSessionId for translate request.");
-	}
-
-	if (mock) {
-		const api = createMockApiClient();
-		for (const model of models) {
-			if (signal?.aborted) return;
-			let result: TranslateResponse;
-			try {
-				result = await api.translate(
-					{
-						cliSessionId: effectiveCliSessionId,
-						input: diff,
-						model,
-						target: "vcs-commit-message",
-					},
-					{ signal },
-				);
-			} catch (error) {
-				if (signal?.aborted || isAbortError(error)) return;
-				throw error;
-			}
-			if (signal?.aborted) return;
-			yield {
-				content: result.output,
-				model,
-				generationId: result.generationId,
-			};
-		}
-		return;
 	}
 
 	const token = await getToken();
@@ -133,7 +94,7 @@ export async function* generateCommitMessages(
 					return { result: null, index };
 				}
 				const result = await translateWithRetry({
-					cliSessionId: effectiveCliSessionId,
+					cliSessionId,
 					input: diff,
 					model,
 					target: "vcs-commit-message",
