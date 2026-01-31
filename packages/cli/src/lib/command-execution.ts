@@ -7,7 +7,6 @@ import {
 	UnauthorizedError,
 } from "./api-client";
 import { showDailyLimitPrompt } from "./daily-limit-prompt";
-import { clearRenderedOutput } from "./selector";
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
@@ -58,7 +57,6 @@ export async function handleCommandExecutionError(
 	},
 ): Promise<never> {
 	if (error instanceof UnauthorizedError) {
-		clearRenderedOutput();
 		const additionalLines = options?.additionalLinesToClear ?? 0;
 		if (additionalLines > 0) {
 			process.stdout.write(`\x1b[${additionalLines}A`);
@@ -78,7 +76,6 @@ export async function handleCommandExecutionError(
 	}
 
 	if (error instanceof DailyLimitExceededError) {
-		clearRenderedOutput();
 		await showDailyLimitPrompt({
 			count: error.count,
 			limit: error.limit,

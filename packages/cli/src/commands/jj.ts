@@ -229,6 +229,7 @@ async function runInteractiveDescribe(
 		const result = await selectCandidate({
 			createCandidates,
 			maxSlots: options.models.length,
+			abortSignal: context.commandExecutionSignal,
 		});
 
 		if (result.action === "abort") {

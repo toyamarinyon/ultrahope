@@ -232,6 +232,7 @@ export async function commit(args: string[]) {
 		const result = await selectCandidate({
 			createCandidates,
 			maxSlots: options.models.length,
+			abortSignal: commandExecutionSignal,
 		});
 
 		if (result.action === "abort") {

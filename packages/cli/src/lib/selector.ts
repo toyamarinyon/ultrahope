@@ -37,6 +37,7 @@ type Slot =
 interface SelectorOptions {
 	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
 	maxSlots?: number;
+	abortSignal?: AbortSignal;
 }
 
 function canUseInteractive(): boolean {
@@ -137,16 +138,6 @@ interface RenderState {
 	totalSlots: number;
 }
 
-let activeCleanup: (() => void) | null = null;
-
-export function clearRenderedOutput(): void {
-	if (activeCleanup) {
-		activeCleanup();
-		activeCleanup = null;
-	}
-	clearAll();
-}
-
 function renderSelector(state: RenderState, nowMs: number): void {
 	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
@@ -240,8 +231,19 @@ function openEditor(content: string): Promise<string> {
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
-	const { createCandidates, maxSlots = 4 } = options;
+	const { createCandidates, maxSlots = 4, abortSignal } = options;
 	const abortController = new AbortController();
+	if (abortSignal?.aborted) {
+		abortController.abort();
+		return { action: "abort" };
+	}
+
+	if (abortSignal) {
+		abortSignal.addEventListener("abort", () => abortController.abort(), {
+			once: true,
+		});
+	}
+
 	const candidates = createCandidates(abortController.signal);
 
 	if (!canUseInteractive()) {
@@ -273,6 +275,13 @@ async function selectFromSlots(
 	asyncCtx: AsyncContext | null,
 ): Promise<SelectorResult> {
 	return new Promise((resolve) => {
+		let resolved = false;
+		const resolveOnce = (result: SelectorResult) => {
+			if (resolved) return;
+			resolved = true;
+			resolve(result);
+		};
+
 		const slots = [...initialSlots];
 		const state: RenderState = {
 			slots,
@@ -280,7 +289,7 @@ async function selectFromSlots(
 			isGenerating: asyncCtx !== null,
 			totalSlots: initialSlots.length,
 		};
-		let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+		let renderInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
 
 		const fd = openSync("/dev/tty", "r");
@@ -306,35 +315,32 @@ async function selectFromSlots(
 			doRender();
 		};
 
-		const startSpinner = () => {
+		const startRenderLoop = () => {
 			if (!state.isGenerating) return;
-			spinnerInterval = setInterval(() => {
+			renderInterval = setInterval(() => {
 				doRender();
 			}, 80);
 		};
 
-		const stopSpinner = () => {
-			if (!spinnerInterval) return;
-			clearInterval(spinnerInterval);
-			spinnerInterval = null;
+		const stopRenderLoop = () => {
+			if (!renderInterval) return;
+			clearInterval(renderInterval);
+			renderInterval = null;
 		};
 
 		doRender();
-		startSpinner();
+		startRenderLoop();
 
 		const cleanup = () => {
 			if (cleanedUp) return;
 			cleanedUp = true;
-			activeCleanup = null;
 			asyncCtx?.abortController.abort();
-			stopSpinner();
+			stopRenderLoop();
 			ttyInput.setRawMode(false);
 			rl.close();
 			ttyInput.destroy();
 			clearAll();
 		};
-
-		activeCleanup = cleanup;
 
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,
@@ -353,7 +359,7 @@ async function selectFromSlots(
 
 		const finalizeGeneration = () => {
 			collapseToReady(slots);
-			stopSpinner();
+			stopRenderLoop();
 			updateState((draft) => {
 				if (draft.selectedIndex >= slots.length) {
 					draft.selectedIndex = Math.max(0, slots.length - 1);
@@ -396,7 +402,7 @@ async function selectFromSlots(
 					if (!cleanedUp) {
 						cleanup();
 						renderError(err, slots, state.totalSlots);
-						resolve({ action: "abort" });
+						resolveOnce({ action: "abort" });
 					}
 				} finally {
 					iterator.return?.();
@@ -408,7 +414,7 @@ async function selectFromSlots(
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
 			cleanup();
-			resolve({
+			resolveOnce({
 				action: "confirm",
 				selected: candidate.content,
 				selectedIndex: state.selectedIndex,
@@ -419,12 +425,12 @@ async function selectFromSlots(
 		const rerollSelection = () => {
 			if (!hasReadySlot(slots)) return;
 			cleanup();
-			resolve({ action: "reroll" });
+			resolveOnce({ action: "reroll" });
 		};
 
 		const abortSelection = () => {
 			cleanup();
-			resolve({ action: "abort" });
+			resolveOnce({ action: "abort" });
 		};
 
 		const editSelection = async () => {
@@ -512,6 +518,16 @@ async function selectFromSlots(
 				return;
 			}
 		};
+
+		if (asyncCtx) {
+			asyncCtx.abortController.signal.addEventListener(
+				"abort",
+				abortSelection,
+				{
+					once: true,
+				},
+			);
+		}
 
 		ttyInput.on("keypress", handleKeypress);
 	});

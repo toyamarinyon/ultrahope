@@ -136,6 +136,7 @@ async function handleVcsCommitMessage(
 		const result = await selectCandidate({
 			createCandidates,
 			maxSlots: models.length,
+			abortSignal: commandExecutionSignal,
 		});
 
 		if (result.action === "abort") {
