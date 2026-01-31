@@ -60,6 +60,47 @@ function formatCost(cost: number): string {
 	return `$${cost.toFixed(7).replace(/0+$/, "").replace(/\.$/, "")}`;
 }
 
+function getReadyCount(slots: Slot[]): number {
+	return slots.filter((s) => s.status === "ready").length;
+}
+
+function hasReadySlot(slots: Slot[]): boolean {
+	return slots.some((s) => s.status === "ready");
+}
+
+function getSelectedCandidate(
+	slots: Slot[],
+	selectedIndex: number,
+): CandidateWithModel | undefined {
+	const slot = slots[selectedIndex];
+	return slot?.status === "ready" ? slot.candidate : undefined;
+}
+
+function selectNearestReady(
+	slots: Slot[],
+	startIndex: number,
+	direction: -1 | 1,
+): number {
+	for (
+		let i = startIndex + direction;
+		i >= 0 && i < slots.length;
+		i += direction
+	) {
+		if (slots[i]?.status === "ready") {
+			return i;
+		}
+	}
+	return startIndex;
+}
+
+function collapseToReady(slots: Slot[]): void {
+	const readySlots = slots.filter((s) => s.status === "ready");
+	slots.length = 0;
+	for (const slot of readySlots) {
+		slots.push(slot);
+	}
+}
+
 function formatSlot(slot: Slot, selected: boolean): string[] {
 	if (slot.status === "pending") {
 		return [];
@@ -93,7 +134,6 @@ interface RenderState {
 	slots: Slot[];
 	selectedIndex: number;
 	isGenerating: boolean;
-	spinnerFrame: number;
 	totalSlots: number;
 }
 
@@ -107,15 +147,15 @@ export function clearRenderedOutput(): void {
 	clearAll();
 }
 
-function renderSelector(state: RenderState): void {
-	const { slots, selectedIndex, isGenerating, spinnerFrame, totalSlots } =
-		state;
+function renderSelector(state: RenderState, nowMs: number): void {
+	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
 	const lines: string[] = [];
-	const readyCount = slots.filter((s) => s.status === "ready").length;
+	const readyCount = getReadyCount(slots);
 
 	if (isGenerating) {
-		const spinner = SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
+		const frameIndex = Math.floor(nowMs / 80) % SPINNER_FRAMES.length;
+		const spinner = SPINNER_FRAMES[frameIndex];
 		const progress = `${readyCount}/${totalSlots}`;
 		lines.push(
 			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${theme.reset}`,
@@ -233,11 +273,13 @@ async function selectFromSlots(
 	asyncCtx: AsyncContext | null,
 ): Promise<SelectorResult> {
 	return new Promise((resolve) => {
-		let selectedIndex = 0;
 		const slots = [...initialSlots];
-		const totalSlots = initialSlots.length;
-		let isGenerating = asyncCtx !== null;
-		let spinnerFrame = 0;
+		const state: RenderState = {
+			slots,
+			selectedIndex: 0,
+			isGenerating: asyncCtx !== null,
+			totalSlots: initialSlots.length,
+		};
 		let spinnerInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
 
@@ -254,34 +296,38 @@ async function selectFromSlots(
 		ttyInput.setRawMode(true);
 
 		const doRender = () => {
-			if (cleanedUp) return;
-			renderSelector({
-				slots,
-				selectedIndex,
-				isGenerating,
-				spinnerFrame,
-				totalSlots,
-			});
+			if (!cleanedUp) {
+				renderSelector(state, Date.now());
+			}
+		};
+
+		const updateState = (update: (draft: RenderState) => void) => {
+			update(state);
+			doRender();
+		};
+
+		const startSpinner = () => {
+			if (!state.isGenerating) return;
+			spinnerInterval = setInterval(() => {
+				doRender();
+			}, 80);
+		};
+
+		const stopSpinner = () => {
+			if (!spinnerInterval) return;
+			clearInterval(spinnerInterval);
+			spinnerInterval = null;
 		};
 
 		doRender();
-
-		if (isGenerating) {
-			spinnerInterval = setInterval(() => {
-				spinnerFrame++;
-				doRender();
-			}, 80);
-		}
+		startSpinner();
 
 		const cleanup = () => {
 			if (cleanedUp) return;
 			cleanedUp = true;
 			activeCleanup = null;
 			asyncCtx?.abortController.abort();
-			if (spinnerInterval) {
-				clearInterval(spinnerInterval);
-				spinnerInterval = null;
-			}
+			stopSpinner();
 			ttyInput.setRawMode(false);
 			rl.close();
 			ttyInput.destroy();
@@ -290,52 +336,56 @@ async function selectFromSlots(
 
 		activeCleanup = cleanup;
 
+		const nextCandidate = async (
+			iterator: AsyncIterator<CandidateWithModel>,
+		): Promise<IteratorResult<CandidateWithModel>> => {
+			const abortPromise = new Promise<IteratorResult<CandidateWithModel>>(
+				(resolve) => {
+					asyncCtx?.abortController.signal.addEventListener(
+						"abort",
+						() => resolve({ done: true, value: undefined }),
+						{ once: true },
+					);
+				},
+			);
+			return Promise.race([iterator.next(), abortPromise]);
+		};
+
+		const finalizeGeneration = () => {
+			collapseToReady(slots);
+			stopSpinner();
+			updateState((draft) => {
+				if (draft.selectedIndex >= slots.length) {
+					draft.selectedIndex = Math.max(0, slots.length - 1);
+				}
+				draft.isGenerating = false;
+			});
+		};
+
 		if (asyncCtx) {
 			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
 			(async () => {
 				let i = 0;
 				try {
-					while (true) {
-						if (cleanedUp) break;
-						const abortPromise = new Promise<{ done: true; value: undefined }>(
-							(res) => {
-								asyncCtx.abortController.signal.addEventListener(
-									"abort",
-									() => res({ done: true, value: undefined }),
-									{ once: true },
-								);
-							},
-						);
-						const result = await Promise.race([iterator.next(), abortPromise]);
+					while (!cleanedUp) {
+						const result = await nextCandidate(iterator);
 						if (result.done || cleanedUp) break;
 						const candidate = result.value;
 						if (i < slots.length) {
-							slots[i] = { status: "ready", candidate };
-							if (
-								selectedIndex >= slots.length ||
-								slots[selectedIndex].status === "pending"
-							) {
-								selectedIndex = i;
-							}
-							doRender();
+							updateState((draft) => {
+								slots[i] = { status: "ready", candidate };
+								if (
+									draft.selectedIndex >= slots.length ||
+									slots[draft.selectedIndex].status === "pending"
+								) {
+									draft.selectedIndex = i;
+								}
+							});
 							i++;
 						}
 					}
 					if (cleanedUp) return;
-					const readySlots = slots.filter((s) => s.status === "ready");
-					slots.length = readySlots.length;
-					for (let j = 0; j < readySlots.length; j++) {
-						slots[j] = readySlots[j];
-					}
-					if (selectedIndex >= slots.length) {
-						selectedIndex = Math.max(0, slots.length - 1);
-					}
-					isGenerating = false;
-					if (spinnerInterval) {
-						clearInterval(spinnerInterval);
-						spinnerInterval = null;
-					}
-					doRender();
+					finalizeGeneration();
 				} catch (err) {
 					if (
 						asyncCtx?.abortController.signal.aborted ||
@@ -345,7 +395,7 @@ async function selectFromSlots(
 					}
 					if (!cleanedUp) {
 						cleanup();
-						renderError(err, slots, totalSlots);
+						renderError(err, slots, state.totalSlots);
 						resolve({ action: "abort" });
 					}
 				} finally {
@@ -354,12 +404,49 @@ async function selectFromSlots(
 			})();
 		}
 
-		const getSelectedCandidate = (): CandidateWithModel | undefined => {
-			const slot = slots[selectedIndex];
-			return slot?.status === "ready" ? slot.candidate : undefined;
+		const confirmSelection = () => {
+			const candidate = getSelectedCandidate(slots, state.selectedIndex);
+			if (!candidate) return;
+			cleanup();
+			resolve({
+				action: "confirm",
+				selected: candidate.content,
+				selectedIndex: state.selectedIndex,
+				selectedCandidate: candidate,
+			});
 		};
 
-		const hasReadySlot = (): boolean => slots.some((s) => s.status === "ready");
+		const rerollSelection = () => {
+			if (!hasReadySlot(slots)) return;
+			cleanup();
+			resolve({ action: "reroll" });
+		};
+
+		const abortSelection = () => {
+			cleanup();
+			resolve({ action: "abort" });
+		};
+
+		const editSelection = async () => {
+			const candidate = getSelectedCandidate(slots, state.selectedIndex);
+			if (!candidate) return;
+			flush();
+			ttyInput.setRawMode(false);
+			let edited: string | null = null;
+			try {
+				const result = await openEditor(candidate.content);
+				edited = result ? result : null;
+			} catch {}
+			ttyInput.setRawMode(true);
+			reset();
+			updateState(() => {
+				if (!edited) return;
+				slots[state.selectedIndex] = {
+					status: "ready",
+					candidate: { ...candidate, content: edited },
+				};
+			});
+		};
 
 		const handleKeypress = async (
 			_str: string | undefined,
@@ -372,70 +459,44 @@ async function selectFromSlots(
 				(key.name === "c" && key.ctrl) ||
 				key.name === "escape"
 			) {
-				cleanup();
-				resolve({ action: "abort" });
+				abortSelection();
 				return;
 			}
 
 			if (key.name === "return") {
-				const candidate = getSelectedCandidate();
-				if (!candidate) return;
-				cleanup();
-				resolve({
-					action: "confirm",
-					selected: candidate.content,
-					selectedIndex,
-					selectedCandidate: candidate,
-				});
+				confirmSelection();
 				return;
 			}
 
 			if (key.name === "r") {
-				if (!hasReadySlot()) return;
-				cleanup();
-				resolve({ action: "reroll" });
+				rerollSelection();
 				return;
 			}
 
 			if (key.name === "e") {
-				const candidate = getSelectedCandidate();
-				if (!candidate) return;
-				flush();
-				ttyInput.setRawMode(false);
-				try {
-					const edited = await openEditor(candidate.content);
-					if (edited) {
-						slots[selectedIndex] = {
-							status: "ready",
-							candidate: { ...candidate, content: edited },
-						};
-					}
-				} catch {}
-				ttyInput.setRawMode(true);
-				reset();
-				doRender();
+				await editSelection();
 				return;
 			}
 
 			if (key.name === "up" || key.name === "k") {
-				for (let i = selectedIndex - 1; i >= 0; i--) {
-					if (slots[i]?.status === "ready") {
-						selectedIndex = i;
-						doRender();
-						break;
-					}
-				}
+				updateState((draft) => {
+					draft.selectedIndex = selectNearestReady(
+						slots,
+						draft.selectedIndex,
+						-1,
+					);
+				});
 				return;
 			}
 
 			if (key.name === "down" || key.name === "j") {
-				for (let i = selectedIndex + 1; i < slots.length; i++) {
-					if (slots[i]?.status === "ready") {
-						selectedIndex = i;
-						doRender();
-						break;
-					}
-				}
+				updateState((draft) => {
+					draft.selectedIndex = selectNearestReady(
+						slots,
+						draft.selectedIndex,
+						1,
+					);
+				});
 				return;
 			}
 
@@ -445,8 +506,9 @@ async function selectFromSlots(
 				num <= slots.length &&
 				slots[num - 1]?.status === "ready"
 			) {
-				selectedIndex = num - 1;
-				doRender();
+				updateState((draft) => {
+					draft.selectedIndex = num - 1;
+				});
 				return;
 			}
 		};
