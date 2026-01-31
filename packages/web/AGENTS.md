@@ -1,5 +1,13 @@
 # AGENTS.md (packages/web)
 
+## OpenAPI specification
+
+Do not modify `openapi.json` directly. To update it, run:
+
+```bash
+pnpm -C packages/web generate:openapi
+```
+
 ## Polar SDK change workflow
 
 When making changes that include or affect the Polar SDK usage in `packages/web`:
