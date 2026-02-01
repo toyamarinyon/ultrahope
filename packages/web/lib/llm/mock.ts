@@ -2,7 +2,11 @@ import { MockLanguageModelV3 } from "ai/test";
 
 export function mockLanguageModel() {
 	return new MockLanguageModelV3({
-		doGenerate: async () => ({
+		doGenerate: async () => {
+			await new Promise((resolve) =>
+				setTimeout(resolve, 1000 + Math.random() * 500),
+			);
+			return {
 			content: [{ type: "text", text: `Hello, world!` }],
 			finishReason: { unified: "stop", raw: undefined },
 			usage: {
@@ -19,6 +23,7 @@ export function mockLanguageModel() {
 				},
 			},
 			warnings: [],
-		}),
+			};
+		},
 	});
 }
