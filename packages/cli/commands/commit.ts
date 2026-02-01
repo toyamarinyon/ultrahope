@@ -198,6 +198,7 @@ export async function commit(args: string[]) {
 			createCandidates,
 			maxSlots: options.models.length,
 			abortSignal: commandExecutionSignal,
+			models: options.models,
 		});
 
 		if (result.action === "abort") {

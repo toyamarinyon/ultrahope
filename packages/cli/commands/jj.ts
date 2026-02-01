@@ -192,6 +192,7 @@ async function runInteractiveDescribe(
 			createCandidates,
 			maxSlots: options.models.length,
 			abortSignal: context.commandExecutionSignal,
+			models: options.models,
 		});
 
 		if (result.action === "abort") {

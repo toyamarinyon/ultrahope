@@ -7,22 +7,22 @@ export function mockLanguageModel() {
 				setTimeout(resolve, 1000 + Math.random() * 500),
 			);
 			return {
-			content: [{ type: "text", text: `Hello, world!` }],
-			finishReason: { unified: "stop", raw: undefined },
-			usage: {
-				inputTokens: {
-					total: 10,
-					noCache: 10,
-					cacheRead: undefined,
-					cacheWrite: undefined,
+				content: [{ type: "text", text: `Hello, world!` }],
+				finishReason: { unified: "stop", raw: undefined },
+				usage: {
+					inputTokens: {
+						total: 10,
+						noCache: 10,
+						cacheRead: undefined,
+						cacheWrite: undefined,
+					},
+					outputTokens: {
+						total: 20,
+						text: 20,
+						reasoning: undefined,
+					},
 				},
-				outputTokens: {
-					total: 20,
-					text: 20,
-					reasoning: undefined,
-				},
-			},
-			warnings: [],
+				warnings: [],
 			};
 		},
 	});

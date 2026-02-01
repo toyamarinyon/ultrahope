@@ -31,13 +31,14 @@ export interface CandidateWithModel {
 }
 
 type Slot =
-	| { status: "pending" }
+	| { status: "pending"; model?: string }
 	| { status: "ready"; candidate: CandidateWithModel };
 
 interface SelectorOptions {
 	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
 	maxSlots?: number;
 	abortSignal?: AbortSignal;
+	models?: string[];
 }
 
 function canUseInteractive(): boolean {
@@ -104,7 +105,12 @@ function collapseToReady(slots: Slot[]): void {
 
 function formatSlot(slot: Slot, selected: boolean): string[] {
 	if (slot.status === "pending") {
-		return [];
+		const radio = "○";
+		const line = `${theme.dim}  ${radio}  Generating...${theme.reset}`;
+		const meta = slot.model
+			? `${theme.dim}     ${formatModelName(slot.model)}${theme.reset}`
+			: "";
+		return meta ? [line, meta] : [line];
 	}
 
 	const candidate = slot.candidate;
@@ -231,7 +237,7 @@ function openEditor(content: string): Promise<string> {
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
-	const { createCandidates, maxSlots = 4, abortSignal } = options;
+	const { createCandidates, maxSlots = 4, abortSignal, models } = options;
 	const abortController = new AbortController();
 	if (abortSignal?.aborted) {
 		abortController.abort();
@@ -259,8 +265,9 @@ export async function selectCandidate(
 		};
 	}
 
-	const slots: Slot[] = Array.from({ length: maxSlots }, () => ({
+	const slots: Slot[] = Array.from({ length: maxSlots }, (_, i) => ({
 		status: "pending",
+		model: models?.[i],
 	}));
 	return selectFromSlots(slots, { candidates, abortController, abortSignal });
 }
