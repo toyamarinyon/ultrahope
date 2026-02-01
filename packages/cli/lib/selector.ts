@@ -262,12 +262,13 @@ export async function selectCandidate(
 	const slots: Slot[] = Array.from({ length: maxSlots }, () => ({
 		status: "pending",
 	}));
-	return selectFromSlots(slots, { candidates, abortController });
+	return selectFromSlots(slots, { candidates, abortController, abortSignal });
 }
 
 interface AsyncContext {
 	candidates: AsyncIterable<CandidateWithModel>;
 	abortController: AbortController;
+	abortSignal?: AbortSignal;
 }
 
 async function selectFromSlots(
@@ -331,10 +332,13 @@ async function selectFromSlots(
 		doRender();
 		startRenderLoop();
 
+		const cancelGeneration = () => {
+			asyncCtx?.abortController.abort();
+		};
+
 		const cleanup = () => {
 			if (cleanedUp) return;
 			cleanedUp = true;
-			asyncCtx?.abortController.abort();
 			stopRenderLoop();
 			ttyInput.setRawMode(false);
 			rl.close();
@@ -400,6 +404,7 @@ async function selectFromSlots(
 						return;
 					}
 					if (!cleanedUp) {
+						cancelGeneration();
 						cleanup();
 						renderError(err, slots, state.totalSlots);
 						resolveOnce({ action: "abort" });
@@ -413,22 +418,25 @@ async function selectFromSlots(
 		const confirmSelection = () => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
-			cleanup();
+			cancelGeneration();
 			resolveOnce({
 				action: "confirm",
 				selected: candidate.content,
 				selectedIndex: state.selectedIndex,
 				selectedCandidate: candidate,
 			});
+			cleanup();
 		};
 
 		const rerollSelection = () => {
 			if (!hasReadySlot(slots)) return;
-			cleanup();
+			cancelGeneration();
 			resolveOnce({ action: "reroll" });
+			cleanup();
 		};
 
 		const abortSelection = () => {
+			cancelGeneration();
 			cleanup();
 			resolveOnce({ action: "abort" });
 		};
@@ -519,14 +527,14 @@ async function selectFromSlots(
 			}
 		};
 
-		if (asyncCtx) {
-			asyncCtx.abortController.signal.addEventListener(
-				"abort",
-				abortSelection,
-				{
+		if (asyncCtx?.abortSignal) {
+			if (asyncCtx.abortSignal.aborted) {
+				abortSelection();
+			} else {
+				asyncCtx.abortSignal.addEventListener("abort", abortSelection, {
 					once: true,
-				},
-			);
+				});
+			}
 		}
 
 		ttyInput.on("keypress", handleKeypress);
