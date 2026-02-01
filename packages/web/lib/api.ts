@@ -357,7 +357,7 @@ export const app = new Elysia({ prefix: "/api" })
 					outputTokens: t.Number(),
 					cachedInputTokens: t.Optional(t.Number()),
 					cost: t.Optional(t.Number()),
-					generationId: t.Optional(t.String()),
+					generationId: t.String(),
 					quota: t.Optional(
 						t.Object({
 							remaining: t.Number(),

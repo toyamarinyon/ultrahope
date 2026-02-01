@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { MockLanguageModelV3 } from "ai/test";
 
 export function mockLanguageModel() {
@@ -20,6 +21,13 @@ export function mockLanguageModel() {
 						total: 20,
 						text: 20,
 						reasoning: undefined,
+					},
+				},
+				providerMetadata: {
+					gateway: {
+						generationId: `mock-${randomUUID()}`,
+						routing: { finalProvider: "mock" },
+						cost: "0",
 					},
 				},
 				warnings: [],

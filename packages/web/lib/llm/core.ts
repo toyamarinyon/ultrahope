@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { preprocessDiff } from "./diff";
+import { extractGatewayMetadata } from "./gateway-metadata";
 import { mockLanguageModel } from "./mock";
 import { PROMPTS } from "./prompts";
 import type { LanguageModel, LLMResponse, Target } from "./types";
@@ -43,17 +44,9 @@ export async function translate(
 		);
 	}
 
-	const metadata = result.providerMetadata?.gateway as
-		| {
-				routing?: { finalProvider?: string };
-				cost?: string;
-				marketCost?: string;
-				generationId?: string;
-		  }
-		| undefined;
-	const vendor = metadata?.routing?.finalProvider ?? "unknown";
-	const costStr = metadata?.marketCost ?? metadata?.cost;
-	const cost = costStr ? Number.parseFloat(costStr) : undefined;
+	const { generationId, cost, vendor } = extractGatewayMetadata(
+		result.providerMetadata,
+	);
 
 	return {
 		content: result.text,
@@ -62,6 +55,6 @@ export async function translate(
 		inputTokens: result.usage.inputTokens ?? 0,
 		outputTokens: result.usage.outputTokens ?? 0,
 		cost,
-		generationId: metadata?.generationId,
+		generationId,
 	};
 }

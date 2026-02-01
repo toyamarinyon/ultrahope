@@ -113,9 +113,7 @@ async function recordUsage(
 					metadata: {
 						cost: costInMicrodollars,
 						model: String(response.model),
-						...(response.generationId && {
-							generationId: response.generationId,
-						}),
+						generationId: response.generationId,
 					},
 				},
 			],

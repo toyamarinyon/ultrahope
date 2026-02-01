@@ -96,6 +96,9 @@ async function handleVcsCommitMessage(
 			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
+			if (message.includes("Generation not found")) {
+				return;
+			}
 			console.error(`Warning: Failed to record selection. ${message}`);
 		}
 	};
@@ -280,7 +283,9 @@ async function handleGenericTarget(
 				} catch (error) {
 					const message =
 						error instanceof Error ? error.message : String(error);
-					console.error(`Warning: Failed to record selection. ${message}`);
+					if (!message.includes("Generation not found")) {
+						console.error(`Warning: Failed to record selection. ${message}`);
+					}
 				}
 			}
 			console.log(result.output);
@@ -325,7 +330,9 @@ async function handleGenericTarget(
 				} catch (error) {
 					const message =
 						error instanceof Error ? error.message : String(error);
-					console.error(`Warning: Failed to record selection. ${message}`);
+					if (!message.includes("Generation not found")) {
+						console.error(`Warning: Failed to record selection. ${message}`);
+					}
 				}
 			}
 			console.log(result.selected);

@@ -161,6 +161,9 @@ export async function commit(args: string[]) {
 			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
+			if (message.includes("Generation not found")) {
+				return;
+			}
 			console.error(`Warning: Failed to record selection. ${message}`);
 		}
 	};

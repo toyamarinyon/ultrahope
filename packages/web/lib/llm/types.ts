@@ -11,5 +11,5 @@ export interface LLMResponse {
 	outputTokens: number;
 	cachedInputTokens?: number;
 	cost?: number;
-	generationId?: string;
+	generationId: string;
 }

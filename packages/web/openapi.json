@@ -1,721 +1,799 @@
 {
-	"openapi": "3.0.3",
-	"info": {
-		"title": "Ultrahope API",
-		"description": "Development documentation",
-		"version": "0.0.1"
-	},
-	"components": {
-		"securitySchemes": {
-			"bearerAuth": {
-				"type": "http",
-				"scheme": "bearer"
-			}
-		},
-		"schemas": {}
-	},
-	"paths": {
-		"/api/v1/command_execution": {
-			"post": {
-				"summary": "Create a command execution record",
-				"tags": ["command_execution"],
-				"security": [
-					{
-						"bearerAuth": []
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"required": [
-									"commandExecutionId",
-									"cliSessionId",
-									"command",
-									"args",
-									"api",
-									"requestPayload"
-								],
-								"properties": {
-									"commandExecutionId": {
-										"type": "string"
-									},
-									"cliSessionId": {
-										"type": "string"
-									},
-									"command": {
-										"type": "string"
-									},
-									"args": {
-										"type": "array",
-										"items": {
-											"type": "string"
-										}
-									},
-									"api": {
-										"type": "string"
-									},
-									"requestPayload": {
-										"type": "object",
-										"required": ["input", "target"],
-										"properties": {
-											"input": {
-												"type": "string"
-											},
-											"target": {
-												"type": "string",
-												"enum": [
-													"vcs-commit-message",
-													"pr-title-body",
-													"pr-intent"
-												]
-											},
-											"model": {
-												"type": "string"
-											},
-											"models": {
-												"type": "array",
-												"items": {
-													"type": "string"
-												}
-											}
-										}
-									}
-								}
-							}
-						},
-						"application/x-www-form-urlencoded": {
-							"schema": {
-								"type": "object",
-								"required": [
-									"commandExecutionId",
-									"cliSessionId",
-									"command",
-									"args",
-									"api",
-									"requestPayload"
-								],
-								"properties": {
-									"commandExecutionId": {
-										"type": "string"
-									},
-									"cliSessionId": {
-										"type": "string"
-									},
-									"command": {
-										"type": "string"
-									},
-									"args": {
-										"type": "array",
-										"items": {
-											"type": "string"
-										}
-									},
-									"api": {
-										"type": "string"
-									},
-									"requestPayload": {
-										"type": "object",
-										"required": ["input", "target"],
-										"properties": {
-											"input": {
-												"type": "string"
-											},
-											"target": {
-												"type": "string",
-												"enum": [
-													"vcs-commit-message",
-													"pr-title-body",
-													"pr-intent"
-												]
-											},
-											"model": {
-												"type": "string"
-											},
-											"models": {
-												"type": "array",
-												"items": {
-													"type": "string"
-												}
-											}
-										}
-									}
-								}
-							}
-						},
-						"multipart/form-data": {
-							"schema": {
-								"type": "object",
-								"required": [
-									"commandExecutionId",
-									"cliSessionId",
-									"command",
-									"args",
-									"api",
-									"requestPayload"
-								],
-								"properties": {
-									"commandExecutionId": {
-										"type": "string"
-									},
-									"cliSessionId": {
-										"type": "string"
-									},
-									"command": {
-										"type": "string"
-									},
-									"args": {
-										"type": "array",
-										"items": {
-											"type": "string"
-										}
-									},
-									"api": {
-										"type": "string"
-									},
-									"requestPayload": {
-										"type": "object",
-										"required": ["input", "target"],
-										"properties": {
-											"input": {
-												"type": "string"
-											},
-											"target": {
-												"type": "string",
-												"enum": [
-													"vcs-commit-message",
-													"pr-title-body",
-													"pr-intent"
-												]
-											},
-											"model": {
-												"type": "string"
-											},
-											"models": {
-												"type": "array",
-												"items": {
-													"type": "string"
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"description": "Response for status 200",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["commandExecutionId"],
-									"properties": {
-										"commandExecutionId": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					},
-					"401": {
-						"description": "Response for status 401",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["error"],
-									"properties": {
-										"error": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					},
-					"402": {
-						"description": "Response for status 402",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": [
-										"error",
-										"message",
-										"count",
-										"limit",
-										"resetsAt",
-										"plan",
-										"actions",
-										"hint"
-									],
-									"properties": {
-										"error": {
-											"const": "daily_limit_exceeded",
-											"type": "string"
-										},
-										"message": {
-											"type": "string"
-										},
-										"count": {
-											"type": "number"
-										},
-										"limit": {
-											"type": "number"
-										},
-										"resetsAt": {
-											"type": "string"
-										},
-										"plan": {
-											"const": "free",
-											"type": "string"
-										},
-										"actions": {
-											"type": "object",
-											"required": ["upgrade"],
-											"properties": {
-												"upgrade": {
-													"type": "string"
-												}
-											}
-										},
-										"hint": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"operationId": "postApiV1Command_execution"
-			}
-		},
-		"/api/v1/translate": {
-			"post": {
-				"summary": "Translate input into a structured output",
-				"tags": ["translate"],
-				"security": [
-					{
-						"bearerAuth": []
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"required": ["cliSessionId", "input", "model", "target"],
-								"properties": {
-									"cliSessionId": {
-										"type": "string"
-									},
-									"input": {
-										"type": "string"
-									},
-									"model": {
-										"type": "string"
-									},
-									"target": {
-										"type": "string",
-										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
-									}
-								}
-							}
-						},
-						"application/x-www-form-urlencoded": {
-							"schema": {
-								"type": "object",
-								"required": ["cliSessionId", "input", "model", "target"],
-								"properties": {
-									"cliSessionId": {
-										"type": "string"
-									},
-									"input": {
-										"type": "string"
-									},
-									"model": {
-										"type": "string"
-									},
-									"target": {
-										"type": "string",
-										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
-									}
-								}
-							}
-						},
-						"multipart/form-data": {
-							"schema": {
-								"type": "object",
-								"required": ["cliSessionId", "input", "model", "target"],
-								"properties": {
-									"cliSessionId": {
-										"type": "string"
-									},
-									"input": {
-										"type": "string"
-									},
-									"model": {
-										"type": "string"
-									},
-									"target": {
-										"type": "string",
-										"enum": ["vcs-commit-message", "pr-title-body", "pr-intent"]
-									}
-								}
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"description": "Response for status 200",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": [
-										"output",
-										"content",
-										"vendor",
-										"model",
-										"inputTokens",
-										"outputTokens"
-									],
-									"properties": {
-										"output": {
-											"type": "string"
-										},
-										"content": {
-											"type": "string"
-										},
-										"vendor": {
-											"type": "string"
-										},
-										"model": {
-											"type": "string"
-										},
-										"inputTokens": {
-											"type": "number"
-										},
-										"outputTokens": {
-											"type": "number"
-										},
-										"cachedInputTokens": {
-											"type": "number"
-										},
-										"cost": {
-											"type": "number"
-										},
-										"generationId": {
-											"type": "string"
-										},
-										"quota": {
-											"type": "object",
-											"required": ["remaining", "limit", "resetsAt"],
-											"properties": {
-												"remaining": {
-													"type": "number"
-												},
-												"limit": {
-													"type": "number"
-												},
-												"resetsAt": {
-													"type": "string"
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					},
-					"400": {
-						"description": "Response for status 400",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["error"],
-									"properties": {
-										"error": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					},
-					"401": {
-						"description": "Response for status 401",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["error"],
-									"properties": {
-										"error": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					},
-					"402": {
-						"description": "Response for status 402",
-						"content": {
-							"application/json": {
-								"schema": {
-									"anyOf": [
-										{
-											"type": "object",
-											"required": [
-												"error",
-												"message",
-												"count",
-												"limit",
-												"resetsAt",
-												"plan",
-												"actions",
-												"hint"
-											],
-											"properties": {
-												"error": {
-													"const": "daily_limit_exceeded",
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"count": {
-													"type": "number"
-												},
-												"limit": {
-													"type": "number"
-												},
-												"resetsAt": {
-													"type": "string"
-												},
-												"plan": {
-													"const": "free",
-													"type": "string"
-												},
-												"actions": {
-													"type": "object",
-													"required": ["upgrade"],
-													"properties": {
-														"upgrade": {
-															"type": "string"
-														}
-													}
-												},
-												"hint": {
-													"type": "string"
-												}
-											}
-										},
-										{
-											"type": "object",
-											"required": [
-												"error",
-												"message",
-												"balance",
-												"plan",
-												"actions",
-												"hint"
-											],
-											"properties": {
-												"error": {
-													"const": "insufficient_balance",
-													"type": "string"
-												},
-												"message": {
-													"type": "string"
-												},
-												"balance": {
-													"type": "number"
-												},
-												"plan": {
-													"anyOf": [
-														{
-															"const": "free",
-															"type": "string"
-														},
-														{
-															"const": "pro",
-															"type": "string"
-														}
-													]
-												},
-												"actions": {
-													"type": "object",
-													"properties": {
-														"buyCredits": {
-															"type": "string"
-														},
-														"enableAutoRecharge": {
-															"type": "string"
-														},
-														"upgrade": {
-															"type": "string"
-														}
-													}
-												},
-												"hint": {
-													"type": "string"
-												}
-											}
-										}
-									]
-								}
-							}
-						}
-					}
-				},
-				"operationId": "postApiV1Translate"
-			}
-		},
-		"/api/v1/generation_score": {
-			"post": {
-				"summary": "Record feedback for a generation",
-				"tags": ["generation_score"],
-				"security": [
-					{
-						"bearerAuth": []
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"type": "object",
-								"required": ["generationId", "value"],
-								"properties": {
-									"generationId": {
-										"type": "string"
-									},
-									"value": {
-										"type": "number"
-									}
-								}
-							}
-						},
-						"application/x-www-form-urlencoded": {
-							"schema": {
-								"type": "object",
-								"required": ["generationId", "value"],
-								"properties": {
-									"generationId": {
-										"type": "string"
-									},
-									"value": {
-										"type": "number"
-									}
-								}
-							}
-						},
-						"multipart/form-data": {
-							"schema": {
-								"type": "object",
-								"required": ["generationId", "value"],
-								"properties": {
-									"generationId": {
-										"type": "string"
-									},
-									"value": {
-										"type": "number"
-									}
-								}
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"description": "Response for status 200",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["ok"],
-									"properties": {
-										"ok": {
-											"type": "boolean"
-										}
-									}
-								}
-							}
-						}
-					},
-					"401": {
-						"description": "Response for status 401",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["error"],
-									"properties": {
-										"error": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					},
-					"404": {
-						"description": "Response for status 404",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["error"],
-									"properties": {
-										"error": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"operationId": "postApiV1Generation_score"
-			}
-		},
-		"/api/health": {
-			"get": {
-				"summary": "Health check",
-				"tags": ["health"],
-				"responses": {
-					"200": {
-						"description": "Response for status 200",
-						"content": {
-							"application/json": {
-								"schema": {
-									"type": "object",
-									"required": ["status"],
-									"properties": {
-										"status": {
-											"type": "string"
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				"operationId": "getApiHealth"
-			}
-		}
-	}
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Ultrahope API",
+    "description": "Development documentation",
+    "version": "0.0.1"
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/api/v1/command_execution": {
+      "post": {
+        "summary": "Create a command execution record",
+        "tags": [
+          "command_execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "commandExecutionId",
+                  "cliSessionId",
+                  "command",
+                  "args",
+                  "api",
+                  "requestPayload"
+                ],
+                "properties": {
+                  "commandExecutionId": {
+                    "type": "string"
+                  },
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "api": {
+                    "type": "string"
+                  },
+                  "requestPayload": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "target"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": "string",
+                        "enum": [
+                          "vcs-commit-message",
+                          "pr-title-body",
+                          "pr-intent"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "models": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "commandExecutionId",
+                  "cliSessionId",
+                  "command",
+                  "args",
+                  "api",
+                  "requestPayload"
+                ],
+                "properties": {
+                  "commandExecutionId": {
+                    "type": "string"
+                  },
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "api": {
+                    "type": "string"
+                  },
+                  "requestPayload": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "target"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": "string",
+                        "enum": [
+                          "vcs-commit-message",
+                          "pr-title-body",
+                          "pr-intent"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "models": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "commandExecutionId",
+                  "cliSessionId",
+                  "command",
+                  "args",
+                  "api",
+                  "requestPayload"
+                ],
+                "properties": {
+                  "commandExecutionId": {
+                    "type": "string"
+                  },
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "api": {
+                    "type": "string"
+                  },
+                  "requestPayload": {
+                    "type": "object",
+                    "required": [
+                      "input",
+                      "target"
+                    ],
+                    "properties": {
+                      "input": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": "string",
+                        "enum": [
+                          "vcs-commit-message",
+                          "pr-title-body",
+                          "pr-intent"
+                        ]
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "models": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "commandExecutionId"
+                  ],
+                  "properties": {
+                    "commandExecutionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Response for status 402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "message",
+                    "count",
+                    "limit",
+                    "resetsAt",
+                    "plan",
+                    "actions",
+                    "hint"
+                  ],
+                  "properties": {
+                    "error": {
+                      "const": "daily_limit_exceeded",
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    },
+                    "resetsAt": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "const": "free",
+                      "type": "string"
+                    },
+                    "actions": {
+                      "type": "object",
+                      "required": [
+                        "upgrade"
+                      ],
+                      "properties": {
+                        "upgrade": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postApiV1Command_execution"
+      }
+    },
+    "/api/v1/translate": {
+      "post": {
+        "summary": "Translate input into a structured output",
+        "tags": [
+          "translate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "input",
+                  "model",
+                  "target"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "input": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "vcs-commit-message",
+                      "pr-title-body",
+                      "pr-intent"
+                    ]
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "input",
+                  "model",
+                  "target"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "input": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "vcs-commit-message",
+                      "pr-title-body",
+                      "pr-intent"
+                    ]
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "input",
+                  "model",
+                  "target"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "input": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "vcs-commit-message",
+                      "pr-title-body",
+                      "pr-intent"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "output",
+                    "content",
+                    "vendor",
+                    "model",
+                    "inputTokens",
+                    "outputTokens",
+                    "generationId"
+                  ],
+                  "properties": {
+                    "output": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "vendor": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "inputTokens": {
+                      "type": "number"
+                    },
+                    "outputTokens": {
+                      "type": "number"
+                    },
+                    "cachedInputTokens": {
+                      "type": "number"
+                    },
+                    "cost": {
+                      "type": "number"
+                    },
+                    "generationId": {
+                      "type": "string"
+                    },
+                    "quota": {
+                      "type": "object",
+                      "required": [
+                        "remaining",
+                        "limit",
+                        "resetsAt"
+                      ],
+                      "properties": {
+                        "remaining": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "resetsAt": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Response for status 402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "resetsAt",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "daily_limit_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "resetsAt": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "free",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "upgrade"
+                          ],
+                          "properties": {
+                            "upgrade": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "balance",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "insufficient_balance",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "balance": {
+                          "type": "number"
+                        },
+                        "plan": {
+                          "anyOf": [
+                            {
+                              "const": "free",
+                              "type": "string"
+                            },
+                            {
+                              "const": "pro",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "type": "object",
+                          "properties": {
+                            "buyCredits": {
+                              "type": "string"
+                            },
+                            "enableAutoRecharge": {
+                              "type": "string"
+                            },
+                            "upgrade": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postApiV1Translate"
+      }
+    },
+    "/api/v1/generation_score": {
+      "post": {
+        "summary": "Record feedback for a generation",
+        "tags": [
+          "generation_score"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "generationId",
+                  "value"
+                ],
+                "properties": {
+                  "generationId": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "generationId",
+                  "value"
+                ],
+                "properties": {
+                  "generationId": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "generationId",
+                  "value"
+                ],
+                "properties": {
+                  "generationId": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response for status 404",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postApiV1Generation_score"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getApiHealth"
+      }
+    }
+  }
 }
