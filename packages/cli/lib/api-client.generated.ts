@@ -308,17 +308,14 @@ export interface operations {
 				"application/json": {
 					generationId: string;
 					value: number;
-					comment?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					generationId: string;
 					value: number;
-					comment?: string;
 				};
 				"multipart/form-data": {
 					generationId: string;
 					value: number;
-					comment?: string;
 				};
 			};
 		};

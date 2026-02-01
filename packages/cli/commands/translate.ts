@@ -93,7 +93,6 @@ async function handleVcsCommitMessage(
 			await apiClient.recordGenerationScore({
 				generationId,
 				value: 1,
-				comment: null,
 			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
@@ -277,7 +276,6 @@ async function handleGenericTarget(
 					await api.recordGenerationScore({
 						generationId: result.generationId,
 						value: 1,
-						comment: null,
 					});
 				} catch (error) {
 					const message =
@@ -323,7 +321,6 @@ async function handleGenericTarget(
 					await api.recordGenerationScore({
 						generationId: result.selectedCandidate.generationId,
 						value: 1,
-						comment: null,
 					});
 				} catch (error) {
 					const message =

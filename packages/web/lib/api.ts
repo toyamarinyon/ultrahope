@@ -24,6 +24,9 @@ const TRANSLATE_TARGETS = [
 ] as const;
 const VERBOSE = process.env.VERBOSE === "1";
 const MOCKING = process.env.MOCKING === "1";
+const SKIP_DAILY_LIMIT_CHECK =
+	process.env.NODE_ENV !== "production" &&
+	process.env.SKIP_DAILY_LIMIT_CHECK === "1";
 
 function formatVerboseError(error: unknown): Record<string, unknown> | unknown {
 	if (error instanceof Error) {
@@ -101,10 +104,12 @@ export const app = new Elysia({ prefix: "/api" })
 				const billingInfo = await getUserBillingInfo(session.user.id);
 				const plan = billingInfo?.plan ?? "free";
 
-				if (plan === "free" && !MOCKING) {
+				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
 					await assertDailyLimitNotExceeded(session.user.id);
 				} else if (MOCKING) {
 					console.log("[MOCKING] Daily limit check bypassed");
+				} else if (SKIP_DAILY_LIMIT_CHECK) {
+					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
 				}
 
 				await db
@@ -406,7 +411,6 @@ export const app = new Elysia({ prefix: "/api" })
 			await db.insert(generationScore).values({
 				generationId,
 				value: body.value,
-				comment: body.comment ?? null,
 				createdAt: new Date(),
 			});
 
@@ -416,7 +420,6 @@ export const app = new Elysia({ prefix: "/api" })
 			body: t.Object({
 				generationId: t.String(),
 				value: t.Number(),
-				comment: t.Optional(t.String()),
 			}),
 			response: {
 				200: t.Object({

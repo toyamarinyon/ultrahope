@@ -135,7 +135,6 @@ async function recordSelection(
 		await apiClient.recordGenerationScore({
 			generationId,
 			value: 1,
-			comment: null,
 		});
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);

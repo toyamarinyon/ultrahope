@@ -1,0 +1,1 @@
+ALTER TABLE `generation_score` DROP COLUMN `comment`;

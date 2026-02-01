@@ -44,7 +44,6 @@ export class UnauthorizedError extends Error {
 export type GenerationScoreRequest = {
 	generationId: string;
 	value: number;
-	comment?: string | null;
 };
 
 async function getErrorText(

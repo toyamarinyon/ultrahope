@@ -590,9 +590,6 @@
 									},
 									"value": {
 										"type": "number"
-									},
-									"comment": {
-										"type": "string"
 									}
 								}
 							}
@@ -607,9 +604,6 @@
 									},
 									"value": {
 										"type": "number"
-									},
-									"comment": {
-										"type": "string"
 									}
 								}
 							}
@@ -624,9 +618,6 @@
 									},
 									"value": {
 										"type": "number"
-									},
-									"comment": {
-										"type": "string"
 									}
 								}
 							}

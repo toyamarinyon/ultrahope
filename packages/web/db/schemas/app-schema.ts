@@ -71,7 +71,6 @@ export const generationScore = sqliteTable(
 			.notNull()
 			.references(() => generation.id, { onDelete: "cascade" }),
 		value: integer("value").notNull(),
-		comment: text("comment"),
 		createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 	},
 	(table) => [

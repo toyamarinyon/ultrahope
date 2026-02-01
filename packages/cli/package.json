@@ -27,7 +27,7 @@
 	],
 	"scripts": {
 		"build": "tsup",
-		"generate:client": "openapi-typescript ../web/openapi.json -o src/lib/api-client.generated.ts",
+		"generate:client": "openapi-typescript ../web/openapi.json -o lib/api-client.generated.ts",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm run build"
 	},
