@@ -21,6 +21,14 @@ export interface SelectorResult {
 	selected?: string;
 	selectedIndex?: number;
 	selectedCandidate?: CandidateWithModel;
+	totalCost?: number;
+	quota?: QuotaInfo;
+}
+
+export interface QuotaInfo {
+	remaining: number;
+	limit: number;
+	resetsAt: string;
 }
 
 export interface CandidateWithModel {
@@ -28,6 +36,7 @@ export interface CandidateWithModel {
 	model?: string;
 	cost?: number;
 	generationId?: string;
+	quota?: QuotaInfo;
 }
 
 type Slot =
@@ -64,6 +73,24 @@ function formatCost(cost: number): string {
 
 function getReadyCount(slots: Slot[]): number {
 	return slots.filter((s) => s.status === "ready").length;
+}
+
+function getTotalCost(slots: Slot[]): number {
+	return slots.reduce((sum, slot) => {
+		if (slot.status === "ready" && slot.candidate.cost != null) {
+			return sum + slot.candidate.cost;
+		}
+		return sum;
+	}, 0);
+}
+
+function getLatestQuota(slots: Slot[]): QuotaInfo | undefined {
+	for (const slot of slots) {
+		if (slot.status === "ready" && slot.candidate.quota) {
+			return slot.candidate.quota;
+		}
+	}
+	return undefined;
 }
 
 function hasReadySlot(slots: Slot[]): boolean {
@@ -144,24 +171,31 @@ interface RenderState {
 	totalSlots: number;
 }
 
+function formatTotalCostLabel(cost: number): string {
+	return `$${cost.toFixed(6)}`;
+}
+
 function renderSelector(state: RenderState, nowMs: number): void {
 	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
 	const lines: string[] = [];
 	const readyCount = getReadyCount(slots);
+	const totalCost = getTotalCost(slots);
+	const costSuffix =
+		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
 
 	if (isGenerating) {
 		const frameIndex = Math.floor(nowMs / 80) % SPINNER_FRAMES.length;
 		const spinner = SPINNER_FRAMES[frameIndex];
 		const progress = `${readyCount}/${totalSlots}`;
 		lines.push(
-			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${theme.reset}`,
+			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${costSuffix}${theme.reset}`,
 		);
 	} else {
 		const label =
 			readyCount === 1
-				? "1 commit message generated"
-				: `${readyCount} commit messages generated`;
+				? `1 commit message generated${costSuffix}`
+				: `${readyCount} commit messages generated${costSuffix}`;
 		lines.push(ui.success(label));
 	}
 
@@ -257,11 +291,15 @@ export async function selectCandidate(
 		const firstResult = await iterator.next();
 		abortController.abort();
 		await iterator.return?.();
+		const cost = firstResult.value?.cost;
+		const quota = firstResult.value?.quota;
 		return {
 			action: "confirm",
 			selected: firstResult.value?.content,
 			selectedIndex: 0,
 			selectedCandidate: firstResult.value,
+			totalCost: cost != null ? cost : undefined,
+			quota,
 		};
 	}
 
@@ -426,11 +464,15 @@ async function selectFromSlots(
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
 			cancelGeneration();
+			const totalCost = getTotalCost(slots);
+			const quota = getLatestQuota(slots);
 			resolveOnce({
 				action: "confirm",
 				selected: candidate.content,
 				selectedIndex: state.selectedIndex,
 				selectedCandidate: candidate,
+				totalCost: totalCost > 0 ? totalCost : undefined,
+				quota,
 			});
 			cleanup();
 		};

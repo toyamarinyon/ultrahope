@@ -416,6 +416,21 @@
 										},
 										"generationId": {
 											"type": "string"
+										},
+										"quota": {
+											"type": "object",
+											"required": ["remaining", "limit", "resetsAt"],
+											"properties": {
+												"remaining": {
+													"type": "number"
+												},
+												"limit": {
+													"type": "number"
+												},
+												"resetsAt": {
+													"type": "string"
+												}
+											}
 										}
 									}
 								}

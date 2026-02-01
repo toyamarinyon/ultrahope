@@ -1,5 +1,9 @@
 import { theme } from "./theme";
 
+export function formatTotalCost(cost: number): string {
+	return `$${cost.toFixed(6)}`;
+}
+
 export const ui = {
 	success: (msg: string) =>
 		`${theme.success}✔${theme.reset} ${theme.primary}${msg}${theme.reset}`,

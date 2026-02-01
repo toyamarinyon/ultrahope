@@ -7,8 +7,9 @@ import {
 	startCommandExecution,
 } from "../lib/command-execution";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
-import { selectCandidate } from "../lib/selector";
-import { ui } from "../lib/ui";
+import { formatResetTime } from "../lib/format-time";
+import { type QuotaInfo, selectCandidate } from "../lib/selector";
+import { formatTotalCost, ui } from "../lib/ui";
 import {
 	DEFAULT_MODELS,
 	generateCommitMessages,
@@ -18,6 +19,16 @@ interface DescribeOptions {
 	revision: string;
 	interactive: boolean;
 	models: string[];
+}
+
+function showQuotaInfo(quota: QuotaInfo): void {
+	const { relative, local } = formatResetTime(quota.resetsAt);
+	console.log("");
+	console.log(
+		ui.hint(
+			`Daily quota: ${quota.remaining} of ${quota.limit} remaining. Resets ${relative} (${local}).`,
+		),
+	);
 }
 
 interface CommandExecutionContext {
@@ -208,11 +219,19 @@ async function runInteractiveDescribe(
 				context.apiClient,
 				result.selectedCandidate?.generationId,
 			);
-			console.log(ui.success("Message selected"));
+			const costLabel =
+				result.totalCost != null
+					? ` (total: ${formatTotalCost(result.totalCost)})`
+					: "";
+			console.log(ui.success(`Message selected${costLabel}`));
 			console.log(
 				`${ui.success(`Running jj describe -r ${options.revision}`)}\n`,
 			);
 			describeRevision(options.revision, result.selected);
+
+			if (result.quota) {
+				showQuotaInfo(result.quota);
+			}
 			return;
 		}
 	}

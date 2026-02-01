@@ -233,6 +233,11 @@ export interface operations {
 						cachedInputTokens?: number;
 						cost?: number;
 						generationId?: string;
+						quota?: {
+							remaining: number;
+							limit: number;
+							resetsAt: string;
+						};
 					};
 				};
 			};

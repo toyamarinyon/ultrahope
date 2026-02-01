@@ -63,3 +63,24 @@ export async function assertDailyLimitNotExceeded(
 		);
 	}
 }
+
+export interface DailyUsageInfo {
+	count: number;
+	limit: number;
+	remaining: number;
+	resetsAt: Date;
+}
+
+export async function getDailyUsageInfo(
+	userId: number,
+): Promise<DailyUsageInfo> {
+	const sinceMs = Date.now() - WINDOW_MS;
+	const count = await getUsageCount(userId, sinceMs);
+	const resetsAt = await getResetTime(userId, sinceMs);
+	return {
+		count,
+		limit: FREE_DAILY_LIMIT,
+		remaining: Math.max(0, FREE_DAILY_LIMIT - count),
+		resetsAt,
+	};
+}

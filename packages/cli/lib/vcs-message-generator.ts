@@ -105,6 +105,7 @@ export async function* generateCommitMessages(
 						model,
 						cost: result.cost,
 						generationId: result.generationId,
+						quota: result.quota,
 					},
 					index,
 				};

@@ -4,7 +4,10 @@ import { and, eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { commandExecution, db, generation, generationScore } from "@/db";
 import { auth } from "@/lib/auth";
-import { assertDailyLimitNotExceeded } from "@/lib/daily-limit";
+import {
+	assertDailyLimitNotExceeded,
+	getDailyUsageInfo,
+} from "@/lib/daily-limit";
 import {
 	DailyLimitExceededError,
 	getUserBillingInfo,
@@ -225,6 +228,10 @@ export const app = new Elysia({ prefix: "/api" })
 				if (MOCKING) {
 					console.log("[MOCKING] Using mocking model");
 				}
+
+				const billingInfo = await getUserBillingInfo(session.user.id);
+				const plan = billingInfo?.plan ?? "free";
+
 				const [response, commandExecutionRow] = await Promise.all([
 					translate(
 						body.input,
@@ -279,6 +286,19 @@ export const app = new Elysia({ prefix: "/api" })
 						"[usage] Missing commandExecutionId for cliSessionId:",
 						body.cliSessionId,
 					);
+				}
+
+				if (plan === "free") {
+					const usageInfo = await getDailyUsageInfo(session.user.id);
+					return {
+						output: response.content,
+						...response,
+						quota: {
+							remaining: usageInfo.remaining,
+							limit: usageInfo.limit,
+							resetsAt: usageInfo.resetsAt.toISOString(),
+						},
+					};
 				}
 
 				return { output: response.content, ...response };
@@ -338,6 +358,13 @@ export const app = new Elysia({ prefix: "/api" })
 					cachedInputTokens: t.Optional(t.Number()),
 					cost: t.Optional(t.Number()),
 					generationId: t.Optional(t.String()),
+					quota: t.Optional(
+						t.Object({
+							remaining: t.Number(),
+							limit: t.Number(),
+							resetsAt: t.String(),
+						}),
+					),
 				}),
 				400: t.Object({
 					error: t.String(),
