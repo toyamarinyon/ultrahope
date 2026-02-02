@@ -79,15 +79,45 @@ type InsufficientBalanceBody = {
 	hint: string;
 };
 
+function combineAbortSignals(
+	primary: AbortSignal,
+	secondary: AbortSignal,
+): AbortSignal {
+	if (primary.aborted) {
+		return primary;
+	}
+	if (secondary.aborted) {
+		return secondary;
+	}
+	const controller = new AbortController();
+	const onAbort = (signal: AbortSignal) => {
+		if (!controller.signal.aborted) {
+			controller.abort(signal.reason);
+		}
+	};
+	primary.addEventListener("abort", () => onAbort(primary), { once: true });
+	secondary.addEventListener("abort", () => onAbort(secondary), { once: true });
+	return controller.signal;
+}
+
 async function executeGeneration(
 	ctx: GenerateContext,
-	generateFn: () => Promise<LLMResponse>,
+	generateFn: (abortSignal: AbortSignal) => Promise<LLMResponse>,
 ): Promise<GenerateResult> {
 	const startedAt = Date.now();
-	const billingInfo = await getUserBillingInfo(ctx.userId);
+	const billingInfoPromise = getUserBillingInfo(ctx.userId);
+	const generationAbortController = new AbortController();
+	const generationSignal = combineAbortSignals(
+		ctx.abortSignal,
+		generationAbortController.signal,
+	);
+	const generationPromise = generateFn(generationSignal);
+	const billingInfo = await billingInfoPromise;
 	const plan = billingInfo?.plan ?? "free";
 
 	if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+		generationAbortController.abort("insufficient_balance");
+		void generationPromise.catch(() => undefined);
 		return {
 			success: false,
 			status: 402,
@@ -107,7 +137,7 @@ async function executeGeneration(
 	}
 
 	const [response, commandExecutionRow] = await Promise.all([
-		generateFn(),
+		generationPromise,
 		db
 			.select({ id: commandExecution.id })
 			.from(commandExecution)
@@ -393,10 +423,10 @@ export const app = new Elysia({ prefix: "/api" })
 				abortSignal: request.signal,
 			};
 
-			const result = await executeGeneration(ctx, () =>
+			const result = await executeGeneration(ctx, (abortSignal) =>
 				generateCommitMessage(body.input, {
 					model: ctx.model,
-					abortSignal: ctx.abortSignal,
+					abortSignal,
 				}),
 			);
 
@@ -441,12 +471,12 @@ export const app = new Elysia({ prefix: "/api" })
 				abortSignal: request.signal,
 			};
 
-			const result = await executeGeneration(ctx, () =>
+			const result = await executeGeneration(ctx, (abortSignal) =>
 				generatePrTitleBody(body.input, {
 					model: ctx.model as Parameters<
 						typeof generatePrTitleBody
 					>[1]["model"],
-					abortSignal: ctx.abortSignal,
+					abortSignal,
 				}),
 			);
 
@@ -491,10 +521,10 @@ export const app = new Elysia({ prefix: "/api" })
 				abortSignal: request.signal,
 			};
 
-			const result = await executeGeneration(ctx, () =>
+			const result = await executeGeneration(ctx, (abortSignal) =>
 				generatePrIntent(body.input, {
 					model: ctx.model as Parameters<typeof generatePrIntent>[1]["model"],
-					abortSignal: ctx.abortSignal,
+					abortSignal,
 				}),
 			);
 
