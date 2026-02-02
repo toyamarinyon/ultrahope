@@ -87,7 +87,7 @@ interface TokenResponse {
 	error?: string;
 }
 
-type CommitMessageStreamEvent =
+export type CommitMessageStreamEvent =
 	| { type: "commit-message"; commitMessage: string }
 	| {
 			type: "usage";
@@ -100,7 +100,7 @@ type CommitMessageStreamEvent =
 	| { type: "provider-metadata"; providerMetadata: unknown }
 	| { type: "error"; message: string };
 
-function extractGatewayMetadata(providerMetadata: unknown): {
+export function extractGatewayMetadata(providerMetadata: unknown): {
 	generationId?: string;
 	cost?: number;
 } {
@@ -118,10 +118,11 @@ function extractGatewayMetadata(providerMetadata: unknown): {
 	return { generationId, cost };
 }
 
-function parseSseEvents(
-	buffer: string,
-	onEvent: (event: CommitMessageStreamEvent) => void,
-): string {
+function parseSseEvents(buffer: string): {
+	events: CommitMessageStreamEvent[];
+	remainder: string;
+} {
+	const events: CommitMessageStreamEvent[] = [];
 	let remainder = buffer;
 	while (true) {
 		const separatorIndex = remainder.indexOf("\n\n");
@@ -134,10 +135,10 @@ function parseSseEvents(
 			const payload = line.slice(5).trim();
 			if (!payload) continue;
 			const parsed = JSON.parse(payload) as CommitMessageStreamEvent;
-			onEvent(parsed);
+			events.push(parsed);
 		}
 	}
-	return remainder;
+	return { events, remainder };
 }
 
 function handle402Error(error: unknown): never {
@@ -170,6 +171,72 @@ export function createApiClient(token?: string) {
 	});
 
 	return {
+		async *streamCommitMessage(
+			req: GenerateRequest,
+			options?: { signal?: AbortSignal },
+		): AsyncGenerator<CommitMessageStreamEvent> {
+			log("streamCommitMessage request", req);
+			const res = await fetch(
+				`${API_BASE_URL}/api/v1/commit-message/stream`,
+				{
+					method: "POST",
+					headers: {
+						...headers,
+						Accept: "text/event-stream",
+					},
+					body: JSON.stringify(req),
+					signal: options?.signal,
+				},
+			);
+			if (res.status === 401) {
+				log("streamCommitMessage error (401)");
+				throw new UnauthorizedError();
+			}
+			if (res.status === 402) {
+				let errorPayload: unknown = undefined;
+				try {
+					errorPayload = await res.json();
+				} catch {
+					errorPayload = await getErrorText(res, null);
+				}
+				handle402Error(errorPayload);
+			}
+			if (!res.ok) {
+				const text = await getErrorText(res, null);
+				log("streamCommitMessage error", {
+					status: res.status,
+					text,
+				});
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+			if (!res.body) {
+				throw new Error("API error: empty response body");
+			}
+
+			const decoder = new TextDecoder();
+			let buffer = "";
+			const reader = res.body.getReader();
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buffer += decoder.decode(value, { stream: true });
+					const parsed = parseSseEvents(buffer);
+					buffer = parsed.remainder;
+					for (const event of parsed.events) {
+						yield event;
+					}
+				}
+				buffer += decoder.decode();
+				const parsed = parseSseEvents(buffer);
+				for (const event of parsed.events) {
+					yield event;
+				}
+			} finally {
+				reader.releaseLock();
+			}
+		},
+
 		async recordGenerationScore(req: GenerationScoreRequest): Promise<void> {
 			log("generation_score request", req);
 			const res = await fetch(`${API_BASE_URL}/api/v1/generation_score`, {
@@ -255,76 +322,16 @@ export function createApiClient(token?: string) {
 			req: GenerateRequest,
 			options?: { signal?: AbortSignal },
 		): Promise<GenerateStreamResponse> {
-			log("generateCommitMessageStream request", req);
-			const res = await fetch(
-				`${API_BASE_URL}/api/v1/commit-message/stream`,
-				{
-					method: "POST",
-					headers: {
-						...headers,
-						Accept: "text/event-stream",
-					},
-					body: JSON.stringify(req),
-					signal: options?.signal,
-				},
-			);
-			if (res.status === 401) {
-				log("generateCommitMessageStream error (401)");
-				throw new UnauthorizedError();
-			}
-			if (res.status === 402) {
-				let errorPayload: unknown = undefined;
-				try {
-					errorPayload = await res.json();
-				} catch {
-					errorPayload = await getErrorText(res, null);
-				}
-				handle402Error(errorPayload);
-			}
-			if (!res.ok) {
-				const text = await getErrorText(res, null);
-				log("generateCommitMessageStream error", {
-					status: res.status,
-					text,
-				});
-				throw new Error(`API error: ${res.status} ${text}`);
-			}
-			if (!res.body) {
-				throw new Error("API error: empty response body");
-			}
-
-			const decoder = new TextDecoder();
-			let buffer = "";
 			let lastCommitMessage = "";
 			let providerMetadata: unknown;
-			const reader = res.body.getReader();
-			try {
-				while (true) {
-					const { value, done } = await reader.read();
-					if (done) break;
-					buffer += decoder.decode(value, { stream: true });
-					buffer = parseSseEvents(buffer, (event) => {
-						if (event.type === "commit-message") {
-							lastCommitMessage = event.commitMessage;
-						} else if (event.type === "provider-metadata") {
-							providerMetadata = event.providerMetadata;
-						} else if (event.type === "error") {
-							throw new Error(event.message);
-						}
-					});
+			for await (const event of this.streamCommitMessage(req, options)) {
+				if (event.type === "commit-message") {
+					lastCommitMessage = event.commitMessage;
+				} else if (event.type === "provider-metadata") {
+					providerMetadata = event.providerMetadata;
+				} else if (event.type === "error") {
+					throw new Error(event.message);
 				}
-				buffer += decoder.decode();
-				parseSseEvents(buffer, (event) => {
-					if (event.type === "commit-message") {
-						lastCommitMessage = event.commitMessage;
-					} else if (event.type === "provider-metadata") {
-						providerMetadata = event.providerMetadata;
-					} else if (event.type === "error") {
-						throw new Error(event.message);
-					}
-				});
-			} finally {
-				reader.releaseLock();
 			}
 
 			if (!lastCommitMessage) {

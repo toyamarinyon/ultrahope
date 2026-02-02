@@ -37,6 +37,8 @@ export interface CandidateWithModel {
 	cost?: number;
 	generationId?: string;
 	quota?: QuotaInfo;
+	isPartial?: boolean;
+	slotIndex?: number;
 }
 
 type Slot =
@@ -420,23 +422,32 @@ async function selectFromSlots(
 		if (asyncCtx) {
 			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
 			(async () => {
-				let i = 0;
+				let nextSlotIndex = 0;
 				try {
 					while (!cleanedUp) {
 						const result = await nextCandidate(iterator);
 						if (result.done || cleanedUp) break;
 						const candidate = result.value;
-						if (i < slots.length) {
+						const targetIndex =
+							candidate.slotIndex !== undefined
+								? candidate.slotIndex
+								: nextSlotIndex;
+
+						if (targetIndex < slots.length) {
+							const isNewSlot = slots[targetIndex].status === "pending";
 							updateState((draft) => {
-								slots[i] = { status: "ready", candidate };
+								slots[targetIndex] = { status: "ready", candidate };
 								if (
-									draft.selectedIndex >= slots.length ||
-									slots[draft.selectedIndex].status === "pending"
+									isNewSlot &&
+									(draft.selectedIndex >= slots.length ||
+										slots[draft.selectedIndex].status === "pending")
 								) {
-									draft.selectedIndex = i;
+									draft.selectedIndex = targetIndex;
 								}
 							});
-							i++;
+							if (candidate.slotIndex === undefined && !candidate.isPartial) {
+								nextSlotIndex++;
+							}
 						}
 					}
 					if (cleanedUp) return;
