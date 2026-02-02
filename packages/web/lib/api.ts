@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { openapi } from "@elysiajs/openapi";
+import type { LanguageModelUsage, ProviderMetadata } from "ai";
 import { and, eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { commandExecution, db, generation, generationScore } from "@/db";
@@ -11,11 +12,13 @@ import {
 import {
 	DailyLimitExceededError,
 	generateCommitMessage,
+	generateCommitMessageStream,
 	generatePrIntent,
 	generatePrTitleBody,
 	getUserBillingInfo,
 	type LLMResponse,
 } from "@/lib/llm";
+import { buildResponse } from "@/lib/llm/llm-utils";
 import type { LanguageModel } from "./llm/types";
 
 const packageJson = JSON.parse(
@@ -78,6 +81,21 @@ type InsufficientBalanceBody = {
 	actions: { buyCredits: string; enableAutoRecharge: string };
 	hint: string;
 };
+
+type CommitMessageStreamEvent =
+	| { type: "commit-message"; commitMessage: string }
+	| { type: "usage"; usage: LanguageModelUsage }
+	| {
+			type: "provider-metadata";
+			providerMetadata: ProviderMetadata | undefined;
+	  }
+	| { type: "error"; message: string };
+
+const encoder = new TextEncoder();
+
+function formatEvent(event: CommitMessageStreamEvent): Uint8Array {
+	return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
+}
 
 function combineAbortSignals(
 	primary: AbortSignal,
@@ -447,6 +465,208 @@ export const app = new Elysia({ prefix: "/api" })
 			},
 			detail: {
 				summary: "Generate a commit message from a diff",
+				tags: ["generate"],
+				security: [{ bearerAuth: [] }],
+			},
+		},
+	)
+	.post(
+		"/v1/commit-message/stream",
+		async ({ body, session, set, request }) => {
+			if (!session) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+
+			if (MOCKING) {
+				console.log("[MOCKING] Using mocking model");
+			}
+
+			try {
+				const billingInfo = await getUserBillingInfo(session.user.id);
+				const plan = billingInfo?.plan ?? "free";
+
+				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
+					await assertDailyLimitNotExceeded(session.user.id);
+				} else if (MOCKING) {
+					console.log("[MOCKING] Daily limit check bypassed");
+				} else if (SKIP_DAILY_LIMIT_CHECK) {
+					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
+				}
+			} catch (error) {
+				if (error instanceof DailyLimitExceededError) {
+					set.status = 402;
+					return {
+						error: "daily_limit_exceeded" as const,
+						message: "Daily request limit reached.",
+						count: error.count,
+						limit: error.limit,
+						resetsAt: error.resetsAt.toISOString(),
+						plan: "free" as const,
+						actions: {
+							upgrade: "https://ultrahope.dev/pricing",
+						},
+						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
+					};
+				}
+				throw error;
+			}
+
+			const ctx: GenerateContext = {
+				userId: session.user.id,
+				cliSessionId: body.cliSessionId,
+				model: MOCKING ? "mocking" : body.model,
+				abortSignal: request.signal,
+			};
+
+			const startedAt = Date.now();
+			const billingInfoPromise = getUserBillingInfo(ctx.userId);
+			const generationAbortController = new AbortController();
+			const generationSignal = combineAbortSignals(
+				ctx.abortSignal,
+				generationAbortController.signal,
+			);
+			const stream = generateCommitMessageStream(body.input, {
+				model: ctx.model,
+				abortSignal: generationSignal,
+			});
+			const billingInfo = await billingInfoPromise;
+			const plan = billingInfo?.plan ?? "free";
+
+			if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+				generationAbortController.abort("insufficient_balance");
+				set.status = 402;
+				return {
+					error: "insufficient_balance" as const,
+					message: "Your usage credit has been exhausted.",
+					balance: billingInfo.balance,
+					plan: billingInfo.plan,
+					actions: {
+						buyCredits: "https://ultrahope.dev/settings/billing#credits",
+						enableAutoRecharge:
+							"https://ultrahope.dev/settings/billing#auto-recharge",
+					},
+					hint: "Purchase additional credits or enable auto-recharge to continue.",
+				};
+			}
+
+			const customStream = new ReadableStream<Uint8Array>({
+				async start(controller) {
+					try {
+						let lastCommitMessage = "";
+
+						for await (const partial of stream.partialOutputStream) {
+							const commitMessage = partial?.commitMessage;
+							console.log(commitMessage);
+							if (typeof commitMessage === "string") {
+								lastCommitMessage = commitMessage;
+								controller.enqueue(
+									formatEvent({ type: "commit-message", commitMessage }),
+								);
+							}
+						}
+
+						const output = await stream.output;
+						const finalCommitMessage = output?.commitMessage;
+						if (
+							typeof finalCommitMessage === "string" &&
+							finalCommitMessage !== lastCommitMessage
+						) {
+							controller.enqueue(
+								formatEvent({
+									type: "commit-message",
+									commitMessage: finalCommitMessage,
+								}),
+							);
+						}
+
+						const [usage, providerMetadata, commandExecutionRow] =
+							await Promise.all([
+								stream.totalUsage,
+								stream.providerMetadata,
+								db
+									.select({ id: commandExecution.id })
+									.from(commandExecution)
+									.where(
+										and(
+											eq(commandExecution.cliSessionId, ctx.cliSessionId),
+											eq(commandExecution.userId, ctx.userId),
+										),
+									)
+									.limit(1),
+							]);
+
+						const response = buildResponse(
+							{
+								text: finalCommitMessage ?? lastCommitMessage,
+								usage: {
+									inputTokens: usage.inputTokens,
+									outputTokens: usage.outputTokens,
+								},
+								providerMetadata,
+							},
+							ctx.model,
+						);
+
+						const commandExecutionId = commandExecutionRow[0]?.id;
+						if (response.generationId && commandExecutionId) {
+							const costInMicrodollars =
+								response.cost != null
+									? Math.round(response.cost * MICRODOLLARS_PER_USD)
+									: 0;
+
+							db.insert(generation)
+								.values({
+									commandExecutionId,
+									vercelAiGatewayGenerationId: response.generationId,
+									providerName: response.vendor,
+									model: response.model,
+									cost: costInMicrodollars,
+									latency: Date.now() - startedAt,
+									createdAt: new Date(),
+									gatewayPayload: null,
+									output: response.content,
+								})
+								.catch((error) => {
+									console.error("[usage] Failed to persist generation:", error);
+								});
+						} else if (!response.generationId) {
+							console.warn(
+								"[usage] Missing generationId; skipping generation insert.",
+							);
+						} else if (!commandExecutionId) {
+							console.warn(
+								"[usage] Missing commandExecutionId for cliSessionId:",
+								ctx.cliSessionId,
+							);
+						}
+
+						controller.enqueue(formatEvent({ type: "usage", usage }));
+						controller.enqueue(
+							formatEvent({ type: "provider-metadata", providerMetadata }),
+						);
+						controller.close();
+					} catch (error) {
+						const message =
+							error instanceof Error ? error.message : String(error);
+						controller.enqueue(formatEvent({ type: "error", message }));
+						controller.close();
+					}
+				},
+			});
+
+			return new Response(customStream, {
+				headers: {
+					"Content-Type": "text/event-stream",
+					"Cache-Control": "no-cache",
+					Connection: "keep-alive",
+				},
+			});
+		},
+		{
+			body: GenerateBodySchema,
+			detail: {
+				summary: "Stream a commit message from a diff",
 				tags: ["generate"],
 				security: [{ bearerAuth: [] }],
 			},

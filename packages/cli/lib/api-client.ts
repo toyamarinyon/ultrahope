@@ -10,6 +10,13 @@ export type GenerateRequest =
 export type GenerateResponse =
 	paths["/api/v1/commit-message"]["post"]["responses"][200]["content"]["application/json"];
 
+export type GenerateStreamResponse = {
+	output: string;
+	cost?: number;
+	generationId?: string;
+	quota?: { remaining: number; limit: number; resetsAt: string };
+};
+
 export type CommandExecutionRequest =
 	paths["/api/v1/command_execution"]["post"]["requestBody"]["content"]["application/json"];
 
@@ -78,6 +85,59 @@ interface TokenResponse {
 	access_token?: string;
 	token_type?: string;
 	error?: string;
+}
+
+type CommitMessageStreamEvent =
+	| { type: "commit-message"; commitMessage: string }
+	| {
+			type: "usage";
+			usage: {
+				inputTokens: number;
+				outputTokens: number;
+				totalTokens?: number;
+			};
+	  }
+	| { type: "provider-metadata"; providerMetadata: unknown }
+	| { type: "error"; message: string };
+
+function extractGatewayMetadata(providerMetadata: unknown): {
+	generationId?: string;
+	cost?: number;
+} {
+	const gateway = (providerMetadata as { gateway?: Record<string, unknown> })
+		?.gateway;
+	if (!gateway) return {};
+	const generationId =
+		typeof gateway.generationId === "string" ? gateway.generationId : undefined;
+	const costValue =
+		(typeof gateway.marketCost === "string" && gateway.marketCost) ||
+		(typeof gateway.cost === "string" && gateway.cost)
+			? String(gateway.marketCost ?? gateway.cost)
+			: undefined;
+	const cost = costValue ? Number.parseFloat(costValue) : undefined;
+	return { generationId, cost };
+}
+
+function parseSseEvents(
+	buffer: string,
+	onEvent: (event: CommitMessageStreamEvent) => void,
+): string {
+	let remainder = buffer;
+	while (true) {
+		const separatorIndex = remainder.indexOf("\n\n");
+		if (separatorIndex === -1) break;
+		const rawEvent = remainder.slice(0, separatorIndex);
+		remainder = remainder.slice(separatorIndex + 2);
+		const lines = rawEvent.split("\n");
+		for (const line of lines) {
+			if (!line.startsWith("data:")) continue;
+			const payload = line.slice(5).trim();
+			if (!payload) continue;
+			const parsed = JSON.parse(payload) as CommitMessageStreamEvent;
+			onEvent(parsed);
+		}
+	}
+	return remainder;
 }
 
 function handle402Error(error: unknown): never {
@@ -189,6 +249,97 @@ export function createApiClient(token?: string) {
 			}
 			log("generateCommitMessage response", data);
 			return data;
+		},
+
+		async generateCommitMessageStream(
+			req: GenerateRequest,
+			options?: { signal?: AbortSignal },
+		): Promise<GenerateStreamResponse> {
+			log("generateCommitMessageStream request", req);
+			const res = await fetch(
+				`${API_BASE_URL}/api/v1/commit-message/stream`,
+				{
+					method: "POST",
+					headers: {
+						...headers,
+						Accept: "text/event-stream",
+					},
+					body: JSON.stringify(req),
+					signal: options?.signal,
+				},
+			);
+			if (res.status === 401) {
+				log("generateCommitMessageStream error (401)");
+				throw new UnauthorizedError();
+			}
+			if (res.status === 402) {
+				let errorPayload: unknown = undefined;
+				try {
+					errorPayload = await res.json();
+				} catch {
+					errorPayload = await getErrorText(res, null);
+				}
+				handle402Error(errorPayload);
+			}
+			if (!res.ok) {
+				const text = await getErrorText(res, null);
+				log("generateCommitMessageStream error", {
+					status: res.status,
+					text,
+				});
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+			if (!res.body) {
+				throw new Error("API error: empty response body");
+			}
+
+			const decoder = new TextDecoder();
+			let buffer = "";
+			let lastCommitMessage = "";
+			let providerMetadata: unknown;
+			const reader = res.body.getReader();
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buffer += decoder.decode(value, { stream: true });
+					buffer = parseSseEvents(buffer, (event) => {
+						if (event.type === "commit-message") {
+							lastCommitMessage = event.commitMessage;
+						} else if (event.type === "provider-metadata") {
+							providerMetadata = event.providerMetadata;
+						} else if (event.type === "error") {
+							throw new Error(event.message);
+						}
+					});
+				}
+				buffer += decoder.decode();
+				parseSseEvents(buffer, (event) => {
+					if (event.type === "commit-message") {
+						lastCommitMessage = event.commitMessage;
+					} else if (event.type === "provider-metadata") {
+						providerMetadata = event.providerMetadata;
+					} else if (event.type === "error") {
+						throw new Error(event.message);
+					}
+				});
+			} finally {
+				reader.releaseLock();
+			}
+
+			if (!lastCommitMessage) {
+				throw new Error("API error: empty stream response");
+			}
+
+			const { generationId, cost } =
+				extractGatewayMetadata(providerMetadata);
+			const result = {
+				output: lastCommitMessage,
+				cost,
+				generationId,
+			};
+			log("generateCommitMessageStream response", result);
+			return result;
 		},
 
 		async generatePrTitleBody(

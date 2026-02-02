@@ -1,15 +1,16 @@
 import {
 	createApiClient,
 	type GenerateResponse,
+	type GenerateStreamResponse,
 	InsufficientBalanceError,
 } from "./api-client";
 import { getToken } from "./auth";
 import type { CandidateWithModel } from "./selector";
 
 export const DEFAULT_MODELS = [
-	"mistral/mistral-nemo",
-	"cerebras/llama-3.1-8b",
-	"openai/gpt-5-nano",
+	"mistral/ministral-3b",
+	// "cerebras/qwen-3-235b",
+	// "openai/gpt-5.1",
 	"xai/grok-code-fast-1",
 ];
 
@@ -19,6 +20,7 @@ export interface GeneratorOptions {
 	signal?: AbortSignal;
 	cliSessionId?: string;
 	commandExecutionPromise?: Promise<unknown>;
+	useStream?: boolean;
 }
 
 const isAbortError = (error: unknown) =>
@@ -33,8 +35,14 @@ const delay = (ms: number) =>
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
 ): AsyncGenerator<CandidateWithModel> {
-	const { diff, models, signal, cliSessionId, commandExecutionPromise } =
-		options;
+	const {
+		diff,
+		models,
+		signal,
+		cliSessionId,
+		commandExecutionPromise,
+		useStream = false,
+	} = options;
 
 	if (!cliSessionId) {
 		throw new Error("Missing cliSessionId for generate request.");
@@ -52,11 +60,13 @@ export async function* generateCommitMessages(
 		cliSessionId: string;
 		input: string;
 		model: string;
-	}): Promise<GenerateResponse> => {
+	}): Promise<GenerateResponse | GenerateStreamResponse> => {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				return await api.generateCommitMessage(payload, { signal });
+				return useStream
+					? await api.generateCommitMessageStream(payload, { signal })
+					: await api.generateCommitMessage(payload, { signal });
 			} catch (error) {
 				if (signal?.aborted || isAbortError(error)) throw error;
 				if (isInvalidCliSessionIdError(error)) {

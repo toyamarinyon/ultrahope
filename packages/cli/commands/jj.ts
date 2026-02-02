@@ -114,7 +114,7 @@ async function initCommandExecutionContext(
 			api,
 			command: "jj",
 			args: ["describe", ...args],
-			apiPath: "/v1/commit-message",
+			apiPath: "/v1/commit-message/stream",
 			requestPayload: {
 				input: diff,
 				target: "vcs-commit-message",
@@ -168,6 +168,7 @@ function createCandidateFactory(
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
+			useStream: true,
 		});
 }
 
@@ -182,6 +183,7 @@ async function runNonInteractiveDescribe(
 		signal: context.commandExecutionSignal,
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
+		useStream: true,
 	});
 	const first = await gen.next();
 	await recordSelection(context.apiClient, first.value?.generationId);

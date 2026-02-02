@@ -2,7 +2,10 @@ import { polarClient } from "@/lib/auth";
 
 export { DailyLimitExceededError } from "@/lib/daily-limit";
 
-export { generateCommitMessage } from "./commit-message";
+export {
+	generateCommitMessage,
+	generateCommitMessageStream,
+} from "./commit-message";
 export { generatePrIntent } from "./pr-intent";
 export { generatePrTitleBody } from "./pr-title-body";
 export type { LLMResponse } from "./types";

@@ -1,4 +1,6 @@
-import { generateText } from "ai";
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import { Output, streamText } from "ai";
+import { z } from "zod";
 import { preprocessDiff } from "./diff";
 import { buildResponse, resolveModel, verboseLog } from "./llm-utils";
 import type { LanguageModel, LLMResponse } from "./types";
@@ -19,15 +21,25 @@ Quality rules:
 - If the diff is mostly formatting, use type "style" and describe what was formatted.
 `;
 
+const CommitMessageSchema = z.object({
+	commitMessage: z
+		.string()
+		.describe(
+			"A single-line commit message following conventional commits format (e.g., 'feat:', 'fix:', 'refactor:') that captures all changes in one concise sentence",
+		),
+});
+
 export type GenerateCommitMessageOptions = {
 	model: LanguageModel;
 	abortSignal?: AbortSignal;
 };
 
-export async function generateCommitMessage(
+export type GenerateCommitMessageStreamOptions = GenerateCommitMessageOptions;
+
+export function generateCommitMessageStream(
 	diff: string,
-	options: GenerateCommitMessageOptions,
-): Promise<LLMResponse> {
+	options: GenerateCommitMessageStreamOptions,
+) {
 	const preprocessed = preprocessDiff(diff);
 
 	if (preprocessed.isStructured) {
@@ -38,13 +50,48 @@ export async function generateCommitMessage(
 		);
 	}
 
-	const result = await generateText({
+	return streamText({
 		model: resolveModel(options.model),
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
-		maxOutputTokens: 1024,
 		abortSignal: options.abortSignal,
+		output: Output.object({
+			schema: CommitMessageSchema,
+		}),
+		providerOptions: {
+			openai: {
+				reasoningEffort: "none",
+			} satisfies OpenAIResponsesProviderOptions,
+		},
 	});
+}
 
-	return buildResponse(result, options.model);
+export async function generateCommitMessage(
+	diff: string,
+	options: GenerateCommitMessageOptions,
+): Promise<LLMResponse> {
+	const stream = generateCommitMessageStream(diff, options);
+	const output = await stream.output;
+	const commitMessage = output?.commitMessage;
+
+	if (typeof commitMessage !== "string") {
+		throw new Error("Failed to generate commit message.");
+	}
+
+	const [usage, providerMetadata] = await Promise.all([
+		stream.totalUsage,
+		stream.providerMetadata,
+	]);
+
+	return buildResponse(
+		{
+			text: commitMessage,
+			usage: {
+				inputTokens: usage.inputTokens,
+				outputTokens: usage.outputTokens,
+			},
+			providerMetadata,
+		},
+		options.model,
+	);
 }
