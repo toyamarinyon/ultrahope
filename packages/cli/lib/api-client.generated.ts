@@ -4,380 +4,382 @@
  */
 
 export interface paths {
-    "/api/v1/command_execution": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a command execution record */
-        post: operations["postApiV1Command_execution"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/translate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Translate input into a structured output */
-        post: operations["postApiV1Translate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/generation_score": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Record feedback for a generation */
-        post: operations["postApiV1Generation_score"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Health check */
-        get: operations["getApiHealth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+	"/api/v1/command_execution": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Create a command execution record */
+		post: operations["postApiV1Command_execution"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/v1/translate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Translate input into a structured output */
+		post: operations["postApiV1Translate"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/v1/generation_score": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Record feedback for a generation */
+		post: operations["postApiV1Generation_score"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/health": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Health check */
+		get: operations["getApiHealth"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+	schemas: never;
+	responses: never;
+	parameters: never;
+	requestBodies: never;
+	headers: never;
+	pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    postApiV1Command_execution: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    commandExecutionId: string;
-                    cliSessionId: string;
-                    command: string;
-                    args: string[];
-                    api: string;
-                    requestPayload: {
-                        input: string;
-                        /** @enum {string} */
-                        target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                        model?: string;
-                        models?: string[];
-                    };
-                };
-                "application/x-www-form-urlencoded": {
-                    commandExecutionId: string;
-                    cliSessionId: string;
-                    command: string;
-                    args: string[];
-                    api: string;
-                    requestPayload: {
-                        input: string;
-                        /** @enum {string} */
-                        target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                        model?: string;
-                        models?: string[];
-                    };
-                };
-                "multipart/form-data": {
-                    commandExecutionId: string;
-                    cliSessionId: string;
-                    command: string;
-                    args: string[];
-                    api: string;
-                    requestPayload: {
-                        input: string;
-                        /** @enum {string} */
-                        target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                        model?: string;
-                        models?: string[];
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Response for status 200 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        commandExecutionId: string;
-                    };
-                };
-            };
-            /** @description Response for status 401 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Response for status 402 */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        error: "daily_limit_exceeded";
-                        message: string;
-                        count: number;
-                        limit: number;
-                        resetsAt: string;
-                        /** @constant */
-                        plan: "free";
-                        actions: {
-                            upgrade: string;
-                        };
-                        hint: string;
-                    };
-                };
-            };
-        };
-    };
-    postApiV1Translate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    cliSessionId: string;
-                    input: string;
-                    model: string;
-                    /** @enum {string} */
-                    target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                };
-                "application/x-www-form-urlencoded": {
-                    cliSessionId: string;
-                    input: string;
-                    model: string;
-                    /** @enum {string} */
-                    target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                };
-                "multipart/form-data": {
-                    cliSessionId: string;
-                    input: string;
-                    model: string;
-                    /** @enum {string} */
-                    target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
-                };
-            };
-        };
-        responses: {
-            /** @description Response for status 200 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        output: string;
-                        content: string;
-                        vendor: string;
-                        model: string;
-                        inputTokens: number;
-                        outputTokens: number;
-                        cachedInputTokens?: number;
-                        cost?: number;
-                        generationId: string;
-                        quota?: {
-                            remaining: number;
-                            limit: number;
-                            resetsAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Response for status 400 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Response for status 401 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Response for status 402 */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        error: "daily_limit_exceeded";
-                        message: string;
-                        count: number;
-                        limit: number;
-                        resetsAt: string;
-                        /** @constant */
-                        plan: "free";
-                        actions: {
-                            upgrade: string;
-                        };
-                        hint: string;
-                    } | {
-                        /** @constant */
-                        error: "insufficient_balance";
-                        message: string;
-                        balance: number;
-                        plan: "free" | "pro";
-                        actions: {
-                            buyCredits?: string;
-                            enableAutoRecharge?: string;
-                            upgrade?: string;
-                        };
-                        hint: string;
-                    };
-                };
-            };
-        };
-    };
-    postApiV1Generation_score: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    generationId: string;
-                    value: number;
-                };
-                "application/x-www-form-urlencoded": {
-                    generationId: string;
-                    value: number;
-                };
-                "multipart/form-data": {
-                    generationId: string;
-                    value: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Response for status 200 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ok: boolean;
-                    };
-                };
-            };
-            /** @description Response for status 401 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Response for status 404 */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    getApiHealth: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Response for status 200 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        status: string;
-                    };
-                };
-            };
-        };
-    };
+	postApiV1Command_execution: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+				"application/x-www-form-urlencoded": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+				"multipart/form-data": {
+					commandExecutionId: string;
+					cliSessionId: string;
+					command: string;
+					args: string[];
+					api: string;
+					requestPayload: {
+						input: string;
+						/** @enum {string} */
+						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+						model?: string;
+						models?: string[];
+					};
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						commandExecutionId: string;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "daily_limit_exceeded";
+						message: string;
+						count: number;
+						limit: number;
+						resetsAt: string;
+						/** @constant */
+						plan: "free";
+						actions: {
+							upgrade: string;
+						};
+						hint: string;
+					};
+				};
+			};
+		};
+	};
+	postApiV1Translate: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+				};
+				"application/x-www-form-urlencoded": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+				};
+				"multipart/form-data": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+					/** @enum {string} */
+					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						output: string;
+						content: string;
+						vendor: string;
+						model: string;
+						inputTokens: number;
+						outputTokens: number;
+						cachedInputTokens?: number;
+						cost?: number;
+						generationId: string;
+						quota?: {
+							remaining: number;
+							limit: number;
+							resetsAt: string;
+						};
+					};
+				};
+			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json":
+						| {
+								/** @constant */
+								error: "daily_limit_exceeded";
+								message: string;
+								count: number;
+								limit: number;
+								resetsAt: string;
+								/** @constant */
+								plan: "free";
+								actions: {
+									upgrade: string;
+								};
+								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "insufficient_balance";
+								message: string;
+								balance: number;
+								plan: "free" | "pro";
+								actions: {
+									buyCredits?: string;
+									enableAutoRecharge?: string;
+									upgrade?: string;
+								};
+								hint: string;
+						  };
+				};
+			};
+		};
+	};
+	postApiV1Generation_score: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					generationId: string;
+					value: number;
+				};
+				"application/x-www-form-urlencoded": {
+					generationId: string;
+					value: number;
+				};
+				"multipart/form-data": {
+					generationId: string;
+					value: number;
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						ok: boolean;
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 404 */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+		};
+	};
+	getApiHealth: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						status: string;
+					};
+				};
+			};
+		};
+	};
 }

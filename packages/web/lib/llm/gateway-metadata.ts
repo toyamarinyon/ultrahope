@@ -56,14 +56,6 @@ const GatewayProviderMetadataSchema = z
 	})
 	.loose();
 
-export type GatewayRoutingAttempt = z.infer<typeof GatewayRoutingAttemptSchema>;
-export type GatewayModelAttempt = z.infer<typeof GatewayModelAttemptSchema>;
-export type GatewayRouting = z.infer<typeof GatewayRoutingSchema>;
-export type GatewayMetadata = z.infer<typeof GatewayMetadataSchema>;
-export type GatewayProviderMetadata = z.infer<
-	typeof GatewayProviderMetadataSchema
->;
-
 function generateFallbackId(): string {
 	return `fallback-${randomUUID()}`;
 }
@@ -96,5 +88,9 @@ export function extractGatewayMetadata(providerMetadata: unknown): {
 		console.warn(`[gateway-metadata] ${path}: ${issue.message}`);
 	}
 
-	return { generationId: generateFallbackId(), cost: undefined, vendor: "unknown" };
+	return {
+		generationId: generateFallbackId(),
+		cost: undefined,
+		vendor: "unknown",
+	};
 }

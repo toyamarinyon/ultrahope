@@ -10,21 +10,19 @@ import {
 } from "@/lib/daily-limit";
 import {
 	DailyLimitExceededError,
+	generateCommitMessage,
+	generatePrIntent,
+	generatePrTitleBody,
 	getUserBillingInfo,
-	InsufficientBalanceError,
-	translate,
+	type LLMResponse,
 } from "@/lib/llm";
+import type { LanguageModel } from "./llm/types";
 
 const packageJson = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 ) as { version?: string };
 
 const MICRODOLLARS_PER_USD = 1_000_000;
-const TRANSLATE_TARGETS = [
-	"vcs-commit-message",
-	"pr-title-body",
-	"pr-intent",
-] as const;
 const VERBOSE = process.env.VERBOSE === "1";
 const MOCKING = process.env.MOCKING === "1";
 const SKIP_DAILY_LIMIT_CHECK =
@@ -41,6 +39,188 @@ function formatVerboseError(error: unknown): Record<string, unknown> | unknown {
 	}
 	return error;
 }
+
+type GenerateContext = {
+	userId: number;
+	cliSessionId: string;
+	model: LanguageModel;
+	abortSignal: AbortSignal;
+};
+
+type GenerateResult =
+	| {
+			success: true;
+			response: LLMResponse & { output: string };
+			quota?: { remaining: number; limit: number; resetsAt: string };
+	  }
+	| {
+			success: false;
+			status: 402;
+			body: DailyLimitExceededBody | InsufficientBalanceBody;
+	  };
+
+type DailyLimitExceededBody = {
+	error: "daily_limit_exceeded";
+	message: string;
+	count: number;
+	limit: number;
+	resetsAt: string;
+	plan: "free";
+	actions: { upgrade: string };
+	hint: string;
+};
+
+type InsufficientBalanceBody = {
+	error: "insufficient_balance";
+	message: string;
+	balance: number;
+	plan: "free" | "pro";
+	actions: { buyCredits: string; enableAutoRecharge: string };
+	hint: string;
+};
+
+async function executeGeneration(
+	ctx: GenerateContext,
+	generateFn: () => Promise<LLMResponse>,
+): Promise<GenerateResult> {
+	const startedAt = Date.now();
+	const billingInfo = await getUserBillingInfo(ctx.userId);
+	const plan = billingInfo?.plan ?? "free";
+
+	if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+		return {
+			success: false,
+			status: 402,
+			body: {
+				error: "insufficient_balance",
+				message: "Your usage credit has been exhausted.",
+				balance: billingInfo.balance,
+				plan: billingInfo.plan,
+				actions: {
+					buyCredits: "https://ultrahope.dev/settings/billing#credits",
+					enableAutoRecharge:
+						"https://ultrahope.dev/settings/billing#auto-recharge",
+				},
+				hint: "Purchase additional credits or enable auto-recharge to continue.",
+			},
+		};
+	}
+
+	const [response, commandExecutionRow] = await Promise.all([
+		generateFn(),
+		db
+			.select({ id: commandExecution.id })
+			.from(commandExecution)
+			.where(
+				and(
+					eq(commandExecution.cliSessionId, ctx.cliSessionId),
+					eq(commandExecution.userId, ctx.userId),
+				),
+			)
+			.limit(1),
+	]);
+
+	const commandExecutionId = commandExecutionRow[0]?.id;
+
+	if (response.generationId && commandExecutionId) {
+		const costInMicrodollars =
+			response.cost != null
+				? Math.round(response.cost * MICRODOLLARS_PER_USD)
+				: 0;
+
+		db.insert(generation)
+			.values({
+				commandExecutionId,
+				vercelAiGatewayGenerationId: response.generationId,
+				providerName: response.vendor,
+				model: response.model,
+				cost: costInMicrodollars,
+				latency: Date.now() - startedAt,
+				createdAt: new Date(),
+				gatewayPayload: null,
+				output: response.content,
+			})
+			.catch((error) => {
+				console.error("[usage] Failed to persist generation:", error);
+			});
+	} else if (!response.generationId) {
+		console.warn("[usage] Missing generationId; skipping generation insert.");
+	} else if (!commandExecutionId) {
+		console.warn(
+			"[usage] Missing commandExecutionId for cliSessionId:",
+			ctx.cliSessionId,
+		);
+	}
+
+	const result: GenerateResult = {
+		success: true,
+		response: { output: response.content, ...response },
+	};
+
+	if (plan === "free") {
+		const usageInfo = await getDailyUsageInfo(ctx.userId);
+		result.quota = {
+			remaining: usageInfo.remaining,
+			limit: usageInfo.limit,
+			resetsAt: usageInfo.resetsAt.toISOString(),
+		};
+	}
+
+	return result;
+}
+
+const GenerateBodySchema = t.Object({
+	cliSessionId: t.String(),
+	input: t.String(),
+	model: t.String(),
+});
+
+const GenerateSuccessResponse = t.Object({
+	output: t.String(),
+	content: t.String(),
+	vendor: t.String(),
+	model: t.String(),
+	inputTokens: t.Number(),
+	outputTokens: t.Number(),
+	cachedInputTokens: t.Optional(t.Number()),
+	cost: t.Optional(t.Number()),
+	generationId: t.String(),
+	quota: t.Optional(
+		t.Object({
+			remaining: t.Number(),
+			limit: t.Number(),
+			resetsAt: t.String(),
+		}),
+	),
+});
+
+const GenerateErrorResponses = {
+	401: t.Object({ error: t.String() }),
+	402: t.Union([
+		t.Object({
+			error: t.Literal("daily_limit_exceeded"),
+			message: t.String(),
+			count: t.Number(),
+			limit: t.Number(),
+			resetsAt: t.String(),
+			plan: t.Literal("free"),
+			actions: t.Object({ upgrade: t.String() }),
+			hint: t.String(),
+		}),
+		t.Object({
+			error: t.Literal("insufficient_balance"),
+			message: t.String(),
+			balance: t.Number(),
+			plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+			actions: t.Object({
+				buyCredits: t.Optional(t.String()),
+				enableAutoRecharge: t.Optional(t.String()),
+				upgrade: t.Optional(t.String()),
+			}),
+			hint: t.String(),
+		}),
+	]),
+};
 
 export const app = new Elysia({ prefix: "/api" })
 	.use(
@@ -195,213 +375,147 @@ export const app = new Elysia({ prefix: "/api" })
 		},
 	)
 	.post(
-		"/v1/translate",
+		"/v1/commit-message",
 		async ({ body, session, set, request }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
 
-			if (!TRANSLATE_TARGETS.includes(body.target)) {
-				set.status = 400;
-				if (VERBOSE) {
-					const url = new URL(request.url);
-					console.log("[VERBOSE] 400 invalid target", {
-						method: request.method,
-						path: url.pathname,
-						target: body.target,
-					});
-				}
-				return { error: `Invalid target: ${body.target}` };
+			if (MOCKING) {
+				console.log("[MOCKING] Using mocking model");
 			}
 
-			try {
-				const startedAt = Date.now();
+			const ctx: GenerateContext = {
+				userId: session.user.id,
+				cliSessionId: body.cliSessionId,
+				model: MOCKING ? "mocking" : body.model,
+				abortSignal: request.signal,
+			};
 
-				request.signal.addEventListener("abort", () => {
-					console.log("[translate] Request aborted", {
-						cliSessionId: body.cliSessionId,
-						elapsed: Date.now() - startedAt,
-					});
-				});
+			const result = await executeGeneration(ctx, () =>
+				generateCommitMessage(body.input, {
+					model: ctx.model,
+					abortSignal: ctx.abortSignal,
+				}),
+			);
 
-				if (MOCKING) {
-					console.log("[MOCKING] Using mocking model");
-				}
-
-				const billingInfo = await getUserBillingInfo(session.user.id);
-				const plan = billingInfo?.plan ?? "free";
-
-				const [response, commandExecutionRow] = await Promise.all([
-					translate(
-						body.input,
-						body.target as "vcs-commit-message" | "pr-title-body" | "pr-intent",
-						{
-							externalCustomerId: session.user.id,
-							model: MOCKING ? "mocking" : body.model,
-							abortSignal: request.signal,
-						},
-					),
-					db
-						.select({ id: commandExecution.id })
-						.from(commandExecution)
-						.where(
-							and(
-								eq(commandExecution.cliSessionId, body.cliSessionId),
-								eq(commandExecution.userId, session.user.id),
-							),
-						)
-						.limit(1),
-				]);
-
-				const commandExecutionId = commandExecutionRow[0]?.id;
-
-				if (response.generationId && commandExecutionId) {
-					const costInMicrodollars =
-						response.cost != null
-							? Math.round(response.cost * MICRODOLLARS_PER_USD)
-							: 0;
-
-					db.insert(generation)
-						.values({
-							commandExecutionId,
-							vercelAiGatewayGenerationId: response.generationId,
-							providerName: response.vendor,
-							model: response.model,
-							cost: costInMicrodollars,
-							latency: Date.now() - startedAt,
-							createdAt: new Date(),
-							gatewayPayload: null,
-							output: response.content,
-						})
-						.catch((error) => {
-							console.error("[usage] Failed to persist generation:", error);
-						});
-				} else if (!response.generationId) {
-					console.warn(
-						"[usage] Missing generationId; skipping generation insert.",
-					);
-				} else if (!commandExecutionId) {
-					console.warn(
-						"[usage] Missing commandExecutionId for cliSessionId:",
-						body.cliSessionId,
-					);
-				}
-
-				if (plan === "free") {
-					const usageInfo = await getDailyUsageInfo(session.user.id);
-					return {
-						output: response.content,
-						...response,
-						quota: {
-							remaining: usageInfo.remaining,
-							limit: usageInfo.limit,
-							resetsAt: usageInfo.resetsAt.toISOString(),
-						},
-					};
-				}
-
-				return { output: response.content, ...response };
-			} catch (error) {
-				if (error instanceof DailyLimitExceededError) {
-					set.status = 402;
-					return {
-						error: "daily_limit_exceeded" as const,
-						message: "Daily request limit reached.",
-						count: error.count,
-						limit: error.limit,
-						resetsAt: error.resetsAt.toISOString(),
-						plan: "free" as const,
-						actions: {
-							upgrade: "https://ultrahope.dev/pricing",
-						},
-						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
-					};
-				}
-				if (error instanceof InsufficientBalanceError) {
-					set.status = 402;
-					return {
-						error: "insufficient_balance" as const,
-						message: "Your usage credit has been exhausted.",
-						balance: error.balance,
-						plan: error.plan,
-						actions: {
-							buyCredits: "https://ultrahope.dev/settings/billing#credits",
-							enableAutoRecharge:
-								"https://ultrahope.dev/settings/billing#auto-recharge",
-						},
-						hint: "Purchase additional credits or enable auto-recharge to continue.",
-					};
-				}
-				throw error;
+			if (!result.success) {
+				set.status = result.status;
+				return result.body;
 			}
+
+			return result.quota
+				? { ...result.response, quota: result.quota }
+				: result.response;
 		},
 		{
-			body: t.Object({
-				cliSessionId: t.String(),
-				input: t.String(),
-				model: t.String(),
-				target: t.Union([
-					t.Literal("vcs-commit-message"),
-					t.Literal("pr-title-body"),
-					t.Literal("pr-intent"),
-				]),
-			}),
+			body: GenerateBodySchema,
 			response: {
-				200: t.Object({
-					output: t.String(),
-					content: t.String(),
-					vendor: t.String(),
-					model: t.String(),
-					inputTokens: t.Number(),
-					outputTokens: t.Number(),
-					cachedInputTokens: t.Optional(t.Number()),
-					cost: t.Optional(t.Number()),
-					generationId: t.String(),
-					quota: t.Optional(
-						t.Object({
-							remaining: t.Number(),
-							limit: t.Number(),
-							resetsAt: t.String(),
-						}),
-					),
-				}),
-				400: t.Object({
-					error: t.String(),
-				}),
-				401: t.Object({
-					error: t.String(),
-				}),
-				402: t.Union([
-					t.Object({
-						error: t.Literal("daily_limit_exceeded"),
-						message: t.String(),
-						count: t.Number(),
-						limit: t.Number(),
-						resetsAt: t.String(),
-						plan: t.Literal("free"),
-						actions: t.Object({
-							upgrade: t.String(),
-						}),
-						hint: t.String(),
-					}),
-					t.Object({
-						error: t.Literal("insufficient_balance"),
-						message: t.String(),
-						balance: t.Number(),
-						plan: t.Union([t.Literal("free"), t.Literal("pro")]),
-						actions: t.Object({
-							buyCredits: t.Optional(t.String()),
-							enableAutoRecharge: t.Optional(t.String()),
-							upgrade: t.Optional(t.String()),
-						}),
-						hint: t.String(),
-					}),
-				]),
+				200: GenerateSuccessResponse,
+				...GenerateErrorResponses,
 			},
 			detail: {
-				summary: "Translate input into a structured output",
-				tags: ["translate"],
+				summary: "Generate a commit message from a diff",
+				tags: ["generate"],
+				security: [{ bearerAuth: [] }],
+			},
+		},
+	)
+	.post(
+		"/v1/pr-title-body",
+		async ({ body, session, set, request }) => {
+			if (!session) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+
+			if (MOCKING) {
+				console.log("[MOCKING] Using mocking model");
+			}
+
+			const ctx: GenerateContext = {
+				userId: session.user.id,
+				cliSessionId: body.cliSessionId,
+				model: MOCKING ? "mocking" : body.model,
+				abortSignal: request.signal,
+			};
+
+			const result = await executeGeneration(ctx, () =>
+				generatePrTitleBody(body.input, {
+					model: ctx.model as Parameters<
+						typeof generatePrTitleBody
+					>[1]["model"],
+					abortSignal: ctx.abortSignal,
+				}),
+			);
+
+			if (!result.success) {
+				set.status = result.status;
+				return result.body;
+			}
+
+			return result.quota
+				? { ...result.response, quota: result.quota }
+				: result.response;
+		},
+		{
+			body: GenerateBodySchema,
+			response: {
+				200: GenerateSuccessResponse,
+				...GenerateErrorResponses,
+			},
+			detail: {
+				summary: "Generate a PR title and body from git log",
+				tags: ["generate"],
+				security: [{ bearerAuth: [] }],
+			},
+		},
+	)
+	.post(
+		"/v1/pr-intent",
+		async ({ body, session, set, request }) => {
+			if (!session) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+
+			if (MOCKING) {
+				console.log("[MOCKING] Using mocking model");
+			}
+
+			const ctx: GenerateContext = {
+				userId: session.user.id,
+				cliSessionId: body.cliSessionId,
+				model: MOCKING ? "mocking" : body.model,
+				abortSignal: request.signal,
+			};
+
+			const result = await executeGeneration(ctx, () =>
+				generatePrIntent(body.input, {
+					model: ctx.model as Parameters<typeof generatePrIntent>[1]["model"],
+					abortSignal: ctx.abortSignal,
+				}),
+			);
+
+			if (!result.success) {
+				set.status = result.status;
+				return result.body;
+			}
+
+			return result.quota
+				? { ...result.response, quota: result.quota }
+				: result.response;
+		},
+		{
+			body: GenerateBodySchema,
+			response: {
+				200: GenerateSuccessResponse,
+				...GenerateErrorResponses,
+			},
+			detail: {
+				summary: "Generate a PR intent summary from a diff",
+				tags: ["generate"],
 				security: [{ bearerAuth: [] }],
 			},
 		},

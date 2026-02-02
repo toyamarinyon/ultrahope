@@ -1,5 +1,4 @@
 import type { GatewayModelId } from "ai";
-export type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
 export type LanguageModel = GatewayModelId | "mocking";
 
