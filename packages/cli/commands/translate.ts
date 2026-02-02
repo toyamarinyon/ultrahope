@@ -1,5 +1,9 @@
 import { mergeAbortSignals } from "../lib/abort";
-import { createApiClient, InsufficientBalanceError } from "../lib/api-client";
+import {
+	createApiClient,
+	type GenerateResponse,
+	InsufficientBalanceError,
+} from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
@@ -19,6 +23,12 @@ const VALID_TARGETS: Target[] = [
 	"pr-title-body",
 	"pr-intent",
 ];
+
+const TARGET_TO_API_PATH: Record<Target, string> = {
+	"vcs-commit-message": "/v1/commit-message",
+	"pr-title-body": "/v1/pr-title-body",
+	"pr-intent": "/v1/pr-intent",
+};
 
 interface TranslateOptions {
 	target: Target;
@@ -67,7 +77,7 @@ async function handleVcsCommitMessage(
 		api,
 		command: "translate",
 		args,
-		apiPath: "/v1/translate",
+		apiPath: TARGET_TO_API_PATH[options.target],
 		requestPayload:
 			models.length === 1
 				? { input, target: "vcs-commit-message", model: models[0] }
@@ -178,7 +188,7 @@ async function handleGenericTarget(
 		api,
 		command: "translate",
 		args,
-		apiPath: "/v1/translate",
+		apiPath: TARGET_TO_API_PATH[options.target],
 		requestPayload,
 	});
 
@@ -196,19 +206,27 @@ async function handleGenericTarget(
 	const delay = (ms: number) =>
 		new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-	const translateWithRetry = async (model: string) => {
+	const generateFn = (req: {
+		cliSessionId: string;
+		input: string;
+		model: string;
+	}) => {
+		if (options.target === "pr-title-body") {
+			return api.generatePrTitleBody(req, { signal: abortController.signal });
+		}
+		if (options.target === "pr-intent") {
+			return api.generatePrIntent(req, { signal: abortController.signal });
+		}
+		return api.generateCommitMessage(req, { signal: abortController.signal });
+	};
+
+	const generateWithRetry = async (
+		model: string,
+	): Promise<GenerateResponse> => {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				return await api.translate(
-					{
-						cliSessionId,
-						input,
-						model,
-						target: options.target,
-					},
-					{ signal: abortController.signal },
-				);
+				return await generateFn({ cliSessionId, input, model });
 			} catch (error) {
 				if (isAbortError(error) || abortController.signal.aborted) throw error;
 				if (isInvalidCliSessionIdError(error) && attempt < maxAttempts - 1) {
@@ -227,14 +245,14 @@ async function handleGenericTarget(
 				throw error;
 			}
 		}
-		throw new Error("Failed to translate after retries.");
+		throw new Error("Failed to generate after retries.");
 	};
 
-	const doTranslate = async (): Promise<CandidateWithModel[]> => {
+	const doGenerate = async (): Promise<CandidateWithModel[]> => {
 		const candidates: CandidateWithModel[] = [];
 		for (const model of models) {
 			try {
-				const result = await translateWithRetry(model);
+				const result = await generateWithRetry(model);
 				candidates.push({
 					content: result.output,
 					model,
@@ -258,10 +276,10 @@ async function handleGenericTarget(
 
 	if (!options.interactive) {
 		if (!defaultModel) {
-			console.error("Error: No model available for translation.");
+			console.error("Error: No model available for generation.");
 			process.exit(1);
 		}
-		const result = await translateWithRetry(defaultModel).catch((error) => {
+		const result = await generateWithRetry(defaultModel).catch((error) => {
 			if (isAbortError(error) || abortController.signal.aborted) {
 				return null;
 			}
@@ -293,7 +311,7 @@ async function handleGenericTarget(
 		return;
 	}
 
-	let candidates = await doTranslate();
+	let candidates = await doGenerate();
 
 	while (true) {
 		const createCandidates = (signal: AbortSignal) =>
@@ -316,7 +334,7 @@ async function handleGenericTarget(
 		}
 
 		if (result.action === "reroll") {
-			candidates = await doTranslate();
+			candidates = await doGenerate();
 			continue;
 		}
 

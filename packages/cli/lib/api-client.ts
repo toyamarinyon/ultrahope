@@ -4,11 +4,11 @@ import { log } from "./logger";
 
 const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 
-export type TranslateRequest =
-	paths["/api/v1/translate"]["post"]["requestBody"]["content"]["application/json"];
+export type GenerateRequest =
+	paths["/api/v1/commit-message"]["post"]["requestBody"]["content"]["application/json"];
 
-export type TranslateResponse =
-	paths["/api/v1/translate"]["post"]["responses"][200]["content"]["application/json"];
+export type GenerateResponse =
+	paths["/api/v1/commit-message"]["post"]["responses"][200]["content"]["application/json"];
 
 export type CommandExecutionRequest =
 	paths["/api/v1/command_execution"]["post"]["requestBody"]["content"]["application/json"];
@@ -80,6 +80,22 @@ interface TokenResponse {
 	error?: string;
 }
 
+function handle402Error(error: unknown): never {
+	const errorBalance = (error as { balance?: number } | undefined)?.balance;
+	if (typeof errorBalance === "number") {
+		log("generate error (402 insufficient_balance)", error);
+		throw new InsufficientBalanceError(errorBalance);
+	}
+	const payload = error as
+		| { count?: number; limit?: number; resetsAt?: string }
+		| undefined;
+	const count = typeof payload?.count === "number" ? payload.count : 0;
+	const limit = typeof payload?.limit === "number" ? payload.limit : 0;
+	const resetsAt = payload?.resetsAt ?? "";
+	log("generate error (402 daily_limit)", error);
+	throw new DailyLimitExceededError(count, limit, resetsAt);
+}
+
 export function createApiClient(token?: string) {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
@@ -144,35 +160,93 @@ export function createApiClient(token?: string) {
 			return data;
 		},
 
-		async translate(
-			req: TranslateRequest,
+		async generateCommitMessage(
+			req: GenerateRequest,
 			options?: { signal?: AbortSignal },
-		): Promise<TranslateResponse> {
-			log("translate request", req);
-			const { data, error, response } = await client.POST("/api/v1/translate", {
-				body: req,
-				signal: options?.signal,
-			});
+		): Promise<GenerateResponse> {
+			log("generateCommitMessage request", req);
+			const { data, error, response } = await client.POST(
+				"/api/v1/commit-message",
+				{
+					body: req,
+					signal: options?.signal,
+				},
+			);
 			if (response.status === 401) {
-				log("translate error (401)", error);
+				log("generateCommitMessage error (401)", error);
 				throw new UnauthorizedError();
 			}
 			if (response.status === 402) {
-				const errorBalance = (error as { balance?: number } | undefined)
-					?.balance;
-				const balance = typeof errorBalance === "number" ? errorBalance : 0;
-				log("translate error (402)", error);
-				throw new InsufficientBalanceError(balance);
+				handle402Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
-				log("translate error", { status: response.status, text });
+				log("generateCommitMessage error", { status: response.status, text });
 				throw new Error(`API error: ${response.status} ${text}`);
 			}
 			if (!data) {
 				throw new Error("API error: empty response");
 			}
-			log("translate response", data);
+			log("generateCommitMessage response", data);
+			return data;
+		},
+
+		async generatePrTitleBody(
+			req: GenerateRequest,
+			options?: { signal?: AbortSignal },
+		): Promise<GenerateResponse> {
+			log("generatePrTitleBody request", req);
+			const { data, error, response } = await client.POST(
+				"/api/v1/pr-title-body",
+				{
+					body: req,
+					signal: options?.signal,
+				},
+			);
+			if (response.status === 401) {
+				log("generatePrTitleBody error (401)", error);
+				throw new UnauthorizedError();
+			}
+			if (response.status === 402) {
+				handle402Error(error);
+			}
+			if (!response.ok) {
+				const text = await getErrorText(response, error);
+				log("generatePrTitleBody error", { status: response.status, text });
+				throw new Error(`API error: ${response.status} ${text}`);
+			}
+			if (!data) {
+				throw new Error("API error: empty response");
+			}
+			log("generatePrTitleBody response", data);
+			return data;
+		},
+
+		async generatePrIntent(
+			req: GenerateRequest,
+			options?: { signal?: AbortSignal },
+		): Promise<GenerateResponse> {
+			log("generatePrIntent request", req);
+			const { data, error, response } = await client.POST("/api/v1/pr-intent", {
+				body: req,
+				signal: options?.signal,
+			});
+			if (response.status === 401) {
+				log("generatePrIntent error (401)", error);
+				throw new UnauthorizedError();
+			}
+			if (response.status === 402) {
+				handle402Error(error);
+			}
+			if (!response.ok) {
+				const text = await getErrorText(response, error);
+				log("generatePrIntent error", { status: response.status, text });
+				throw new Error(`API error: ${response.status} ${text}`);
+			}
+			if (!data) {
+				throw new Error("API error: empty response");
+			}
+			log("generatePrIntent response", data);
 			return data;
 		},
 

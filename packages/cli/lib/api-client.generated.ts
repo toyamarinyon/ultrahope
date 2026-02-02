@@ -21,7 +21,7 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
-	"/api/v1/translate": {
+	"/api/v1/commit-message": {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -30,8 +30,42 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
-		/** Translate input into a structured output */
-		post: operations["postApiV1Translate"];
+		/** Generate a commit message from a diff */
+		post: operations["postApiV1Commit-message"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/v1/pr-title-body": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Generate a PR title and body from git log */
+		post: operations["postApiV1Pr-title-body"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/v1/pr-intent": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Generate a PR intent summary from a diff */
+		post: operations["postApiV1Pr-intent"];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -184,7 +218,7 @@ export interface operations {
 			};
 		};
 	};
-	postApiV1Translate: {
+	"postApiV1Commit-message": {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -197,22 +231,16 @@ export interface operations {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					/** @enum {string} */
-					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					/** @enum {string} */
-					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					/** @enum {string} */
-					target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 				};
 			};
 		};
@@ -241,14 +269,203 @@ export interface operations {
 					};
 				};
 			};
-			/** @description Response for status 400 */
-			400: {
+			/** @description Response for status 401 */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
 				content: {
 					"application/json": {
 						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json":
+						| {
+								/** @constant */
+								error: "daily_limit_exceeded";
+								message: string;
+								count: number;
+								limit: number;
+								resetsAt: string;
+								/** @constant */
+								plan: "free";
+								actions: {
+									upgrade: string;
+								};
+								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "insufficient_balance";
+								message: string;
+								balance: number;
+								plan: "free" | "pro";
+								actions: {
+									buyCredits?: string;
+									enableAutoRecharge?: string;
+									upgrade?: string;
+								};
+								hint: string;
+						  };
+				};
+			};
+		};
+	};
+	"postApiV1Pr-title-body": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+				"application/x-www-form-urlencoded": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+				"multipart/form-data": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						output: string;
+						content: string;
+						vendor: string;
+						model: string;
+						inputTokens: number;
+						outputTokens: number;
+						cachedInputTokens?: number;
+						cost?: number;
+						generationId: string;
+						quota?: {
+							remaining: number;
+							limit: number;
+							resetsAt: string;
+						};
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
+				};
+			};
+			/** @description Response for status 402 */
+			402: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json":
+						| {
+								/** @constant */
+								error: "daily_limit_exceeded";
+								message: string;
+								count: number;
+								limit: number;
+								resetsAt: string;
+								/** @constant */
+								plan: "free";
+								actions: {
+									upgrade: string;
+								};
+								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "insufficient_balance";
+								message: string;
+								balance: number;
+								plan: "free" | "pro";
+								actions: {
+									buyCredits?: string;
+									enableAutoRecharge?: string;
+									upgrade?: string;
+								};
+								hint: string;
+						  };
+				};
+			};
+		};
+	};
+	"postApiV1Pr-intent": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+				"application/x-www-form-urlencoded": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+				"multipart/form-data": {
+					cliSessionId: string;
+					input: string;
+					model: string;
+				};
+			};
+		};
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						output: string;
+						content: string;
+						vendor: string;
+						model: string;
+						inputTokens: number;
+						outputTokens: number;
+						cachedInputTokens?: number;
+						cost?: number;
+						generationId: string;
+						quota?: {
+							remaining: number;
+							limit: number;
+							resetsAt: string;
+						};
 					};
 				};
 			};

@@ -131,7 +131,7 @@ export async function commit(args: string[]) {
 		api,
 		command: "commit",
 		args,
-		apiPath: "/v1/translate",
+		apiPath: "/v1/commit-message",
 		requestPayload: {
 			input: diff,
 			target: "vcs-commit-message",

@@ -114,7 +114,7 @@ async function initCommandExecutionContext(
 			api,
 			command: "jj",
 			args: ["describe", ...args],
-			apiPath: "/v1/translate",
+			apiPath: "/v1/commit-message",
 			requestPayload: {
 				input: diff,
 				target: "vcs-commit-message",

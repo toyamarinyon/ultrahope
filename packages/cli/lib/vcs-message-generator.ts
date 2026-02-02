@@ -1,7 +1,7 @@
 import {
 	createApiClient,
+	type GenerateResponse,
 	InsufficientBalanceError,
-	type TranslateResponse,
 } from "./api-client";
 import { getToken } from "./auth";
 import type { CandidateWithModel } from "./selector";
@@ -37,7 +37,7 @@ export async function* generateCommitMessages(
 		options;
 
 	if (!cliSessionId) {
-		throw new Error("Missing cliSessionId for translate request.");
+		throw new Error("Missing cliSessionId for generate request.");
 	}
 
 	const token = await getToken();
@@ -48,16 +48,15 @@ export async function* generateCommitMessages(
 
 	const api = createApiClient(token);
 
-	const translateWithRetry = async (payload: {
+	const generateWithRetry = async (payload: {
 		cliSessionId: string;
 		input: string;
 		model: string;
-		target: "vcs-commit-message";
-	}): Promise<TranslateResponse> => {
+	}): Promise<GenerateResponse> => {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				return await api.translate(payload, { signal });
+				return await api.generateCommitMessage(payload, { signal });
 			} catch (error) {
 				if (signal?.aborted || isAbortError(error)) throw error;
 				if (isInvalidCliSessionIdError(error)) {
@@ -79,7 +78,7 @@ export async function* generateCommitMessages(
 				throw error;
 			}
 		}
-		throw new Error("Failed to translate after retries.");
+		throw new Error("Failed to generate after retries.");
 	};
 
 	type PendingResult = {
@@ -93,11 +92,10 @@ export async function* generateCommitMessages(
 				if (signal?.aborted) {
 					return { result: null, index };
 				}
-				const result = await translateWithRetry({
+				const result = await generateWithRetry({
 					cliSessionId,
 					input: diff,
 					model,
-					target: "vcs-commit-message",
 				});
 				return {
 					result: {
