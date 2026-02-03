@@ -556,6 +556,7 @@ export const app = new Elysia({ prefix: "/api" })
 						let lastCommitMessage = "";
 
 						for await (const partial of stream.partialOutputStream) {
+							console.log(partial);
 							const commitMessage = partial?.commitMessage;
 							console.log(commitMessage);
 							if (typeof commitMessage === "string") {

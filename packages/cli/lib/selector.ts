@@ -33,6 +33,7 @@ export interface QuotaInfo {
 
 export interface CandidateWithModel {
 	content: string;
+	slotId: string;
 	model?: string;
 	cost?: number;
 	generationId?: string;
@@ -42,7 +43,7 @@ export interface CandidateWithModel {
 }
 
 type Slot =
-	| { status: "pending"; model?: string }
+	| { status: "pending"; slotId: string; model?: string }
 	| { status: "ready"; candidate: CandidateWithModel };
 
 interface SelectorOptions {
@@ -307,6 +308,7 @@ export async function selectCandidate(
 
 	const slots: Slot[] = Array.from({ length: maxSlots }, (_, i) => ({
 		status: "pending",
+		slotId: models?.[i] ?? `slot-${i}`,
 		model: models?.[i],
 	}));
 	return selectFromSlots(slots, { candidates, abortController, abortSignal });
@@ -422,18 +424,18 @@ async function selectFromSlots(
 		if (asyncCtx) {
 			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
 			(async () => {
-				let nextSlotIndex = 0;
 				try {
 					while (!cleanedUp) {
 						const result = await nextCandidate(iterator);
 						if (result.done || cleanedUp) break;
 						const candidate = result.value;
-						const targetIndex =
-							candidate.slotIndex !== undefined
-								? candidate.slotIndex
-								: nextSlotIndex;
+						const targetIndex = slots.findIndex((slot) =>
+							slot.status === "pending"
+								? slot.slotId === candidate.slotId
+								: slot.candidate.slotId === candidate.slotId,
+						);
 
-						if (targetIndex < slots.length) {
+						if (targetIndex >= 0 && targetIndex < slots.length) {
 							const isNewSlot = slots[targetIndex].status === "pending";
 							updateState((draft) => {
 								slots[targetIndex] = { status: "ready", candidate };
@@ -445,9 +447,6 @@ async function selectFromSlots(
 									draft.selectedIndex = targetIndex;
 								}
 							});
-							if (candidate.slotIndex === undefined && !candidate.isPartial) {
-								nextSlotIndex++;
-							}
 						}
 					}
 					if (cleanedUp) return;

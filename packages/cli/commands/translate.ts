@@ -255,6 +255,7 @@ async function handleGenericTarget(
 				const result = await generateWithRetry(model);
 				candidates.push({
 					content: result.output,
+					slotId: model,
 					model,
 					generationId: result.generationId,
 				});

@@ -9,9 +9,10 @@ import { log } from "./logger";
 import type { CandidateWithModel } from "./selector";
 
 export const DEFAULT_MODELS = [
-	"mistral/ministral-3b",
+	// "mistral/ministral-3b",
 	// "cerebras/qwen-3-235b",
 	// "openai/gpt-5.1",
+	"mistral/ministral-3b",
 	"xai/grok-code-fast-1",
 ];
 
@@ -125,6 +126,7 @@ export async function* generateCommitMessages(
 					if (useStream) {
 						yield {
 							content: lastCommitMessage,
+							slotId: model,
 							model,
 							isPartial: true,
 							slotIndex,
@@ -140,10 +142,12 @@ export async function* generateCommitMessages(
 				const { generationId, cost } = extractGatewayMetadata(providerMetadata);
 				yield {
 					content: lastCommitMessage,
+					slotId: model,
 					model,
 					cost,
 					generationId,
-					...(useStream ? { isPartial: false, slotIndex } : {}),
+					...(useStream ? { isPartial: false } : {}),
+					slotIndex,
 				};
 			}
 		} catch (error) {
