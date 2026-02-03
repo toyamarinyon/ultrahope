@@ -553,28 +553,30 @@ export const app = new Elysia({ prefix: "/api" })
 			const customStream = new ReadableStream<Uint8Array>({
 				async start(controller) {
 					try {
+						let rawCommitMessage = "";
 						let lastCommitMessage = "";
 
-						for await (const partial of stream.partialOutputStream) {
-							const commitMessage = partial?.commitMessage;
+						for await (const chunk of stream.textStream) {
+							rawCommitMessage += chunk;
+							const commitMessage = rawCommitMessage
+								.replace(/\s+/g, " ")
+								.trim();
 							if (VERBOSE) {
-								console.log(partial);
+								console.log(chunk);
 								console.log(commitMessage);
 							}
-							if (typeof commitMessage === "string") {
-								lastCommitMessage = commitMessage;
-								controller.enqueue(
-									formatEvent({ type: "commit-message", commitMessage }),
-								);
-							}
+							if (!commitMessage) continue;
+							lastCommitMessage = commitMessage;
+							controller.enqueue(
+								formatEvent({ type: "commit-message", commitMessage }),
+							);
 						}
 
-						const output = await stream.output;
-						const finalCommitMessage = output?.commitMessage;
-						if (
-							typeof finalCommitMessage === "string" &&
-							finalCommitMessage !== lastCommitMessage
-						) {
+						const finalCommitMessage = rawCommitMessage
+							.replace(/\s+/g, " ")
+							.trim();
+						if (finalCommitMessage && finalCommitMessage !== lastCommitMessage) {
+							lastCommitMessage = finalCommitMessage;
 							controller.enqueue(
 								formatEvent({
 									type: "commit-message",

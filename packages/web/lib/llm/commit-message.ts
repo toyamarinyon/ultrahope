@@ -1,6 +1,5 @@
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { Output, streamText } from "ai";
-import { z } from "zod";
+import { streamText } from "ai";
 import { preprocessDiff } from "./diff";
 import { buildResponse, resolveModel, verboseLog } from "./llm-utils";
 import type { LanguageModel, LLMResponse } from "./types";
@@ -20,14 +19,6 @@ Quality rules:
 - Do not claim changes not supported by the diff. If intent is unclear, keep it neutral and factual.
 - If the diff is mostly formatting, use type "style" and describe what was formatted.
 `;
-
-const CommitMessageSchema = z.object({
-	commitMessage: z
-		.string()
-		.describe(
-			"A single-line commit message following conventional commits format (e.g., 'feat:', 'fix:', 'refactor:') that captures all changes in one concise sentence",
-		),
-});
 
 export type GenerateCommitMessageOptions = {
 	model: LanguageModel;
@@ -55,9 +46,6 @@ export function generateCommitMessageStream(
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
-		output: Output.object({
-			schema: CommitMessageSchema,
-		}),
 		providerOptions: {
 			openai: {
 				reasoningEffort: "none",
@@ -66,15 +54,19 @@ export function generateCommitMessageStream(
 	});
 }
 
+function normalizeCommitMessage(text: string): string {
+	return text.replace(/\s+/g, " ").trim();
+}
+
 export async function generateCommitMessage(
 	diff: string,
 	options: GenerateCommitMessageOptions,
 ): Promise<LLMResponse> {
 	const stream = generateCommitMessageStream(diff, options);
-	const output = await stream.output;
-	const commitMessage = output?.commitMessage;
+	const outputText = await stream.text;
+	const commitMessage = normalizeCommitMessage(outputText);
 
-	if (typeof commitMessage !== "string") {
+	if (!commitMessage) {
 		throw new Error("Failed to generate commit message.");
 	}
 

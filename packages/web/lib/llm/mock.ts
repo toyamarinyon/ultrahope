@@ -8,12 +8,9 @@ export function mockLanguageModel() {
 			stream: simulateReadableStream({
 				chunks: [
 					{ type: "text-start", id: "text-1" },
-					{ type: "text-delta", id: "text-1", delta: "{ " },
-					{ type: "text-delta", id: "text-1", delta: '"commitMessage": ' },
-					{ type: "text-delta", id: "text-1", delta: `"Hello, ` },
-					{ type: "text-delta", id: "text-1", delta: `world` },
-					{ type: "text-delta", id: "text-1", delta: `!"` },
-					{ type: "text-delta", id: "text-1", delta: " }" },
+					{ type: "text-delta", id: "text-1", delta: "Hello, " },
+					{ type: "text-delta", id: "text-1", delta: "world" },
+					{ type: "text-delta", id: "text-1", delta: "!" },
 					{ type: "text-end", id: "text-1" },
 					{
 						type: "finish",
