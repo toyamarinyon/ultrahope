@@ -10,7 +10,7 @@ const ADDITION_LINE_REGEX = /^\+(?!\+\+)/;
 const DELETION_LINE_REGEX = /^-(?!--)/;
 
 export function isGitDiff(input: string): boolean {
-	return DIFF_HEADER_REGEX.test(input);
+	return input.split(/\r?\n/).some((line) => DIFF_HEADER_REGEX.test(line));
 }
 
 export function parseDiff(input: string): FileDiff[] {
