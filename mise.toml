@@ -36,7 +36,7 @@ run = "mise -E sandbox exec -- pnpm exec tsx scripts/polar-sync.ts --server sand
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "mise -E sandbox exec -- pnpm exec tsx scripts/polar-sync.ts"
+run = "mise -E production exec -- pnpm exec tsx scripts/polar-sync.ts"
 
 [tasks."db:migrate"]
 description = "Run database migrations"
