@@ -123,10 +123,3 @@ export function createRenderer(output: NodeJS.WriteStream) {
 
 	return { render, flush, clearAll, reset };
 }
-
-const defaultRenderer = createRenderer(process.stdout);
-
-export const render = defaultRenderer.render;
-export const flush = defaultRenderer.flush;
-export const clearAll = defaultRenderer.clearAll;
-export const reset = defaultRenderer.reset;

@@ -394,18 +394,18 @@ async function selectFromSlots(
 			asyncCtx?.abortController.abort();
 		};
 
-	const cleanup = (clearOutput = true) => {
-		if (cleanedUp) return;
-		cleanedUp = true;
-		stopRenderLoop();
-		if (clearOutput) {
-			renderer.clearAll();
-		}
-		ttyInput.setRawMode(false);
-		rl.close();
-		ttyInput.destroy();
-		ttyOutput.destroy();
-	};
+		const cleanup = (clearOutput = true) => {
+			if (cleanedUp) return;
+			cleanedUp = true;
+			stopRenderLoop();
+			if (clearOutput) {
+				renderer.clearAll();
+			}
+			ttyInput.setRawMode(false);
+			rl.close();
+			ttyInput.destroy();
+			ttyOutput.destroy();
+		};
 
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,

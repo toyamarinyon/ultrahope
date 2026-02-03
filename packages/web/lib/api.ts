@@ -575,7 +575,10 @@ export const app = new Elysia({ prefix: "/api" })
 						const finalCommitMessage = rawCommitMessage
 							.replace(/\s+/g, " ")
 							.trim();
-						if (finalCommitMessage && finalCommitMessage !== lastCommitMessage) {
+						if (
+							finalCommitMessage &&
+							finalCommitMessage !== lastCommitMessage
+						) {
 							lastCommitMessage = finalCommitMessage;
 							controller.enqueue(
 								formatEvent({
