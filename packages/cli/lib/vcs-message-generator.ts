@@ -57,9 +57,11 @@ export async function* generateCommitMessages(
 		useStream = false,
 	} = options;
 
-	if (!cliSessionId) {
+	const resolvedCliSessionId = cliSessionId;
+	if (!resolvedCliSessionId) {
 		throw new Error("Missing cliSessionId for generate request.");
 	}
+	const requiredCliSessionId: string = resolvedCliSessionId;
 
 	const token = await getToken();
 	if (!token) {
@@ -117,7 +119,7 @@ export async function* generateCommitMessages(
 			let lastCommitMessage = "";
 			let providerMetadata: unknown;
 			for await (const event of generateWithRetry({
-				cliSessionId,
+				cliSessionId: requiredCliSessionId,
 				input: diff,
 				model,
 			})) {
