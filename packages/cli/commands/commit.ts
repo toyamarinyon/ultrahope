@@ -2,7 +2,11 @@ import { execSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isCommandExecutionAbort, mergeAbortSignals } from "../lib/abort";
+import {
+	abortReasonForError,
+	isCommandExecutionAbort,
+	mergeAbortSignals,
+} from "../lib/abort";
 import { createApiClient } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
@@ -146,7 +150,7 @@ export async function commit(args: string[]) {
 	const apiClient: ReturnType<typeof createApiClient> | null = api;
 
 	commandExecutionPromise.catch(async (error) => {
-		abortController.abort(error);
+		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
 			progress: { ready: 0, total: options.models.length },
 		});

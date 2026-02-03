@@ -1,7 +1,10 @@
-import {
-	DailyLimitExceededError,
-	UnauthorizedError,
-} from "./api-client";
+import { DailyLimitExceededError, UnauthorizedError } from "./api-client";
+
+export type CommandAbortReason =
+	| "daily_limit"
+	| "unauthorized"
+	| "user"
+	| "internal";
 
 export function mergeAbortSignals(
 	...signals: Array<AbortSignal | undefined>
@@ -32,11 +35,29 @@ export function mergeAbortSignals(
 	return controller.signal;
 }
 
-export function isCommandExecutionAbort(signal?: AbortSignal): boolean {
-	if (!signal?.aborted) return false;
+function commandAbortReason(
+	signal?: AbortSignal,
+): CommandAbortReason | undefined {
+	if (!signal?.aborted) return undefined;
 	const reason = signal.reason;
-	return (
-		reason instanceof DailyLimitExceededError ||
-		reason instanceof UnauthorizedError
-	);
+	if (reason === "daily_limit" || reason === "unauthorized") {
+		return reason;
+	}
+	if (reason === "user" || reason === "internal") {
+		return reason;
+	}
+	if (reason instanceof DailyLimitExceededError) return "daily_limit";
+	if (reason instanceof UnauthorizedError) return "unauthorized";
+	return "internal";
+}
+
+export function isCommandExecutionAbort(signal?: AbortSignal): boolean {
+	const reason = commandAbortReason(signal);
+	return reason === "daily_limit" || reason === "unauthorized";
+}
+
+export function abortReasonForError(error: unknown): CommandAbortReason {
+	if (error instanceof DailyLimitExceededError) return "daily_limit";
+	if (error instanceof UnauthorizedError) return "unauthorized";
+	return "internal";
 }

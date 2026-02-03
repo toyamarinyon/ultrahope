@@ -1,4 +1,8 @@
-import { isCommandExecutionAbort, mergeAbortSignals } from "../lib/abort";
+import {
+	abortReasonForError,
+	isCommandExecutionAbort,
+	mergeAbortSignals,
+} from "../lib/abort";
 import {
 	createApiClient,
 	type GenerateResponse,
@@ -91,7 +95,7 @@ async function handleVcsCommitMessage(
 	const apiClient: ReturnType<typeof createApiClient> | null = api;
 
 	commandExecutionPromise.catch(async (error) => {
-		abortController.abort(error);
+		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
 			progress: { ready: 0, total: models.length },
 		});
@@ -197,7 +201,7 @@ async function handleGenericTarget(
 
 	const ensureCommandExecution = commandExecutionPromise.catch(
 		async (error) => {
-			abortController.abort(error);
+			abortController.abort(abortReasonForError(error));
 			await handleCommandExecutionError(error);
 		},
 	);

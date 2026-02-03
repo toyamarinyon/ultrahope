@@ -1,5 +1,9 @@
 import { execSync, spawnSync } from "node:child_process";
-import { isCommandExecutionAbort, mergeAbortSignals } from "../lib/abort";
+import {
+	abortReasonForError,
+	isCommandExecutionAbort,
+	mergeAbortSignals,
+} from "../lib/abort";
 import { createApiClient } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
@@ -123,7 +127,7 @@ async function initCommandExecutionContext(
 		});
 
 	commandExecutionPromise.catch(async (error) => {
-		abortController.abort(error);
+		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
 			progress: { ready: 0, total: options.models.length },
 		});
