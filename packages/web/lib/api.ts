@@ -482,10 +482,40 @@ export const app = new Elysia({ prefix: "/api" })
 				console.log("[MOCKING] Using mocking model");
 			}
 
-			try {
-				const billingInfo = await getUserBillingInfo(session.user.id);
-				const plan = billingInfo?.plan ?? "free";
+			const ctx: GenerateContext = {
+				userId: session.user.id,
+				cliSessionId: body.cliSessionId,
+				model: MOCKING ? "mocking" : body.model,
+				abortSignal: request.signal,
+			};
 
+			const startedAt = Date.now();
+			const generationAbortController = new AbortController();
+			const generationSignal = combineAbortSignals(
+				ctx.abortSignal,
+				generationAbortController.signal,
+			);
+			const stream = generateCommitMessageStream(body.input, {
+				model: ctx.model,
+				abortSignal: generationSignal,
+			});
+			const billingInfoPromise = getUserBillingInfo(ctx.userId, {
+				throwOnError: true,
+			});
+			let billingInfo: Awaited<typeof billingInfoPromise>;
+			try {
+				billingInfo = await billingInfoPromise;
+			} catch (_error) {
+				generationAbortController.abort("billing_unavailable");
+				set.status = 503;
+				return {
+					error: "billing_unavailable" as const,
+					message: "Unable to verify billing info.",
+				};
+			}
+			const plan = billingInfo?.plan ?? "free";
+
+			try {
 				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
 					await assertDailyLimitNotExceeded(session.user.id);
 				} else if (MOCKING) {
@@ -494,6 +524,7 @@ export const app = new Elysia({ prefix: "/api" })
 					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
 				}
 			} catch (error) {
+				generationAbortController.abort("daily_limit_exceeded");
 				if (error instanceof DailyLimitExceededError) {
 					set.status = 402;
 					return {
@@ -511,27 +542,6 @@ export const app = new Elysia({ prefix: "/api" })
 				}
 				throw error;
 			}
-
-			const ctx: GenerateContext = {
-				userId: session.user.id,
-				cliSessionId: body.cliSessionId,
-				model: MOCKING ? "mocking" : body.model,
-				abortSignal: request.signal,
-			};
-
-			const startedAt = Date.now();
-			const billingInfoPromise = getUserBillingInfo(ctx.userId);
-			const generationAbortController = new AbortController();
-			const generationSignal = combineAbortSignals(
-				ctx.abortSignal,
-				generationAbortController.signal,
-			);
-			const stream = generateCommitMessageStream(body.input, {
-				model: ctx.model,
-				abortSignal: generationSignal,
-			});
-			const billingInfo = await billingInfoPromise;
-			const plan = billingInfo?.plan ?? "free";
 
 			if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
 				generationAbortController.abort("insufficient_balance");

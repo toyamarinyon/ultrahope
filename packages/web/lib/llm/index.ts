@@ -20,6 +20,7 @@ type UserPlan = "free" | "pro";
 
 export async function getUserBillingInfo(
 	externalCustomerId: number,
+	options?: { throwOnError?: boolean },
 ): Promise<UserBillingInfo | null> {
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		return null;
@@ -67,6 +68,9 @@ export async function getUserBillingInfo(
 		};
 	} catch (error) {
 		console.error("[polar] Failed to get user billing info:", error);
+		if (options?.throwOnError) {
+			throw error;
+		}
 		return null;
 	}
 }
