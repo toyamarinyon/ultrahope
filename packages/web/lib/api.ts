@@ -118,6 +118,234 @@ function combineAbortSignals(
 	return controller.signal;
 }
 
+type BillingInfoResult =
+	| {
+			billingInfo: Awaited<ReturnType<typeof getUserBillingInfo>>;
+			plan: "free" | "pro";
+	  }
+	| {
+			status: 503;
+			errorBody: { error: "billing_unavailable"; message: string };
+	  };
+
+async function getBillingInfoOr503(
+	userId: number,
+	generationAbortController: AbortController,
+	set: { status?: number | string },
+): Promise<BillingInfoResult> {
+	const billingInfoPromise = getUserBillingInfo(userId, {
+		throwOnError: true,
+	});
+	try {
+		const billingInfo = await billingInfoPromise;
+		return { billingInfo, plan: billingInfo?.plan ?? "free" };
+	} catch (_error) {
+		generationAbortController.abort("billing_unavailable");
+		set.status = 503;
+		return {
+			status: 503,
+			errorBody: {
+				error: "billing_unavailable",
+				message: "Unable to verify billing info.",
+			},
+		};
+	}
+}
+
+async function enforceDailyLimitOr402(
+	userId: number,
+	plan: "free" | "pro",
+	generationAbortController: AbortController,
+	set: { status?: number | string },
+): Promise<null | { status: 402; errorBody: DailyLimitExceededBody }> {
+	try {
+		if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
+			await assertDailyLimitNotExceeded(userId);
+		} else if (MOCKING) {
+			console.log("[MOCKING] Daily limit check bypassed");
+		} else if (SKIP_DAILY_LIMIT_CHECK) {
+			console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
+		}
+	} catch (error) {
+		generationAbortController.abort("daily_limit_exceeded");
+		if (error instanceof DailyLimitExceededError) {
+			set.status = 402;
+			return {
+				status: 402,
+				errorBody: {
+					error: "daily_limit_exceeded",
+					message: "Daily request limit reached.",
+					count: error.count,
+					limit: error.limit,
+					resetsAt: error.resetsAt.toISOString(),
+					plan: "free",
+					actions: {
+						upgrade: "https://ultrahope.dev/pricing",
+					},
+					hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
+				},
+			};
+		}
+		throw error;
+	}
+
+	return null;
+}
+
+function enforceProBalanceOr402(
+	plan: "free" | "pro",
+	billingInfo: Awaited<ReturnType<typeof getUserBillingInfo>>,
+	generationAbortController: AbortController,
+	set: { status?: number | string },
+): null | { status: 402; errorBody: InsufficientBalanceBody } {
+	if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+		generationAbortController.abort("insufficient_balance");
+		set.status = 402;
+		return {
+			status: 402,
+			errorBody: {
+				error: "insufficient_balance",
+				message: "Your usage credit has been exhausted.",
+				balance: billingInfo.balance,
+				plan: billingInfo.plan,
+				actions: {
+					buyCredits: "https://ultrahope.dev/settings/billing#credits",
+					enableAutoRecharge:
+						"https://ultrahope.dev/settings/billing#auto-recharge",
+				},
+				hint: "Purchase additional credits or enable auto-recharge to continue.",
+			},
+		};
+	}
+
+	return null;
+}
+
+async function fetchCommandExecutionId(
+	cliSessionId: string,
+	userId: number,
+): Promise<number | undefined> {
+	const commandExecutionRow = await db
+		.select({ id: commandExecution.id })
+		.from(commandExecution)
+		.where(
+			and(
+				eq(commandExecution.cliSessionId, cliSessionId),
+				eq(commandExecution.userId, userId),
+			),
+		)
+		.limit(1);
+	return commandExecutionRow[0]?.id;
+}
+
+type CommitMessageStreamOptions = {
+	stream: ReturnType<typeof generateCommitMessageStream>;
+	ctx: GenerateContext;
+	startedAt: number;
+};
+
+function createCommitMessageSSEStream({
+	stream,
+	ctx,
+	startedAt,
+}: CommitMessageStreamOptions): ReadableStream<Uint8Array> {
+	return new ReadableStream<Uint8Array>({
+		async start(controller) {
+			try {
+				let rawCommitMessage = "";
+				let lastCommitMessage = "";
+
+				for await (const chunk of stream.textStream) {
+					rawCommitMessage += chunk;
+					const commitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
+					if (VERBOSE) {
+						console.log(chunk);
+						console.log(commitMessage);
+					}
+					if (!commitMessage) continue;
+					lastCommitMessage = commitMessage;
+					controller.enqueue(
+						formatEvent({ type: "commit-message", commitMessage }),
+					);
+				}
+
+				const finalCommitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
+				if (finalCommitMessage && finalCommitMessage !== lastCommitMessage) {
+					lastCommitMessage = finalCommitMessage;
+					controller.enqueue(
+						formatEvent({
+							type: "commit-message",
+							commitMessage: finalCommitMessage,
+						}),
+					);
+				}
+
+				const [usage, providerMetadata, commandExecutionId] = await Promise.all(
+					[
+						stream.totalUsage,
+						stream.providerMetadata,
+						fetchCommandExecutionId(ctx.cliSessionId, ctx.userId),
+					],
+				);
+
+				const response = buildResponse(
+					{
+						text: finalCommitMessage ?? lastCommitMessage,
+						usage: {
+							inputTokens: usage.inputTokens,
+							outputTokens: usage.outputTokens,
+						},
+						providerMetadata,
+					},
+					ctx.model,
+				);
+
+				if (response.generationId && commandExecutionId) {
+					const costInMicrodollars =
+						response.cost != null
+							? Math.round(response.cost * MICRODOLLARS_PER_USD)
+							: 0;
+
+					db.insert(generation)
+						.values({
+							commandExecutionId,
+							vercelAiGatewayGenerationId: response.generationId,
+							providerName: response.vendor,
+							model: response.model,
+							cost: costInMicrodollars,
+							latency: Date.now() - startedAt,
+							createdAt: new Date(),
+							gatewayPayload: null,
+							output: response.content,
+						})
+						.catch((error) => {
+							console.error("[usage] Failed to persist generation:", error);
+						});
+				} else if (!response.generationId) {
+					console.warn(
+						"[usage] Missing generationId; skipping generation insert.",
+					);
+				} else if (!commandExecutionId) {
+					console.warn(
+						"[usage] Missing commandExecutionId for cliSessionId:",
+						ctx.cliSessionId,
+					);
+				}
+
+				controller.enqueue(formatEvent({ type: "usage", usage }));
+				controller.enqueue(
+					formatEvent({ type: "provider-metadata", providerMetadata }),
+				);
+				controller.close();
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				controller.enqueue(formatEvent({ type: "error", message }));
+				controller.close();
+			}
+		},
+	});
+}
+
 async function executeGeneration(
 	ctx: GenerateContext,
 	generateFn: (abortSignal: AbortSignal) => Promise<LLMResponse>,
@@ -499,178 +727,40 @@ export const app = new Elysia({ prefix: "/api" })
 				model: ctx.model,
 				abortSignal: generationSignal,
 			});
-			const billingInfoPromise = getUserBillingInfo(ctx.userId, {
-				throwOnError: true,
-			});
-			let billingInfo: Awaited<typeof billingInfoPromise>;
-			try {
-				billingInfo = await billingInfoPromise;
-			} catch (_error) {
-				generationAbortController.abort("billing_unavailable");
-				set.status = 503;
-				return {
-					error: "billing_unavailable" as const,
-					message: "Unable to verify billing info.",
-				};
+			const billingInfoResult = await getBillingInfoOr503(
+				ctx.userId,
+				generationAbortController,
+				set,
+			);
+			if ("errorBody" in billingInfoResult) {
+				return billingInfoResult.errorBody;
 			}
-			const plan = billingInfo?.plan ?? "free";
+			const { billingInfo, plan } = billingInfoResult;
 
-			try {
-				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
-					await assertDailyLimitNotExceeded(session.user.id);
-				} else if (MOCKING) {
-					console.log("[MOCKING] Daily limit check bypassed");
-				} else if (SKIP_DAILY_LIMIT_CHECK) {
-					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
-				}
-			} catch (error) {
-				generationAbortController.abort("daily_limit_exceeded");
-				if (error instanceof DailyLimitExceededError) {
-					set.status = 402;
-					return {
-						error: "daily_limit_exceeded" as const,
-						message: "Daily request limit reached.",
-						count: error.count,
-						limit: error.limit,
-						resetsAt: error.resetsAt.toISOString(),
-						plan: "free" as const,
-						actions: {
-							upgrade: "https://ultrahope.dev/pricing",
-						},
-						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
-					};
-				}
-				throw error;
+			const dailyLimitResult = await enforceDailyLimitOr402(
+				session.user.id,
+				plan,
+				generationAbortController,
+				set,
+			);
+			if (dailyLimitResult) {
+				return dailyLimitResult.errorBody;
 			}
 
-			if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
-				generationAbortController.abort("insufficient_balance");
-				set.status = 402;
-				return {
-					error: "insufficient_balance" as const,
-					message: "Your usage credit has been exhausted.",
-					balance: billingInfo.balance,
-					plan: billingInfo.plan,
-					actions: {
-						buyCredits: "https://ultrahope.dev/settings/billing#credits",
-						enableAutoRecharge:
-							"https://ultrahope.dev/settings/billing#auto-recharge",
-					},
-					hint: "Purchase additional credits or enable auto-recharge to continue.",
-				};
+			const balanceResult = enforceProBalanceOr402(
+				plan,
+				billingInfo,
+				generationAbortController,
+				set,
+			);
+			if (balanceResult) {
+				return balanceResult.errorBody;
 			}
 
-			const customStream = new ReadableStream<Uint8Array>({
-				async start(controller) {
-					try {
-						let rawCommitMessage = "";
-						let lastCommitMessage = "";
-
-						for await (const chunk of stream.textStream) {
-							rawCommitMessage += chunk;
-							const commitMessage = rawCommitMessage
-								.replace(/\s+/g, " ")
-								.trim();
-							if (VERBOSE) {
-								console.log(chunk);
-								console.log(commitMessage);
-							}
-							if (!commitMessage) continue;
-							lastCommitMessage = commitMessage;
-							controller.enqueue(
-								formatEvent({ type: "commit-message", commitMessage }),
-							);
-						}
-
-						const finalCommitMessage = rawCommitMessage
-							.replace(/\s+/g, " ")
-							.trim();
-						if (
-							finalCommitMessage &&
-							finalCommitMessage !== lastCommitMessage
-						) {
-							lastCommitMessage = finalCommitMessage;
-							controller.enqueue(
-								formatEvent({
-									type: "commit-message",
-									commitMessage: finalCommitMessage,
-								}),
-							);
-						}
-
-						const [usage, providerMetadata, commandExecutionRow] =
-							await Promise.all([
-								stream.totalUsage,
-								stream.providerMetadata,
-								db
-									.select({ id: commandExecution.id })
-									.from(commandExecution)
-									.where(
-										and(
-											eq(commandExecution.cliSessionId, ctx.cliSessionId),
-											eq(commandExecution.userId, ctx.userId),
-										),
-									)
-									.limit(1),
-							]);
-
-						const response = buildResponse(
-							{
-								text: finalCommitMessage ?? lastCommitMessage,
-								usage: {
-									inputTokens: usage.inputTokens,
-									outputTokens: usage.outputTokens,
-								},
-								providerMetadata,
-							},
-							ctx.model,
-						);
-
-						const commandExecutionId = commandExecutionRow[0]?.id;
-						if (response.generationId && commandExecutionId) {
-							const costInMicrodollars =
-								response.cost != null
-									? Math.round(response.cost * MICRODOLLARS_PER_USD)
-									: 0;
-
-							db.insert(generation)
-								.values({
-									commandExecutionId,
-									vercelAiGatewayGenerationId: response.generationId,
-									providerName: response.vendor,
-									model: response.model,
-									cost: costInMicrodollars,
-									latency: Date.now() - startedAt,
-									createdAt: new Date(),
-									gatewayPayload: null,
-									output: response.content,
-								})
-								.catch((error) => {
-									console.error("[usage] Failed to persist generation:", error);
-								});
-						} else if (!response.generationId) {
-							console.warn(
-								"[usage] Missing generationId; skipping generation insert.",
-							);
-						} else if (!commandExecutionId) {
-							console.warn(
-								"[usage] Missing commandExecutionId for cliSessionId:",
-								ctx.cliSessionId,
-							);
-						}
-
-						controller.enqueue(formatEvent({ type: "usage", usage }));
-						controller.enqueue(
-							formatEvent({ type: "provider-metadata", providerMetadata }),
-						);
-						controller.close();
-					} catch (error) {
-						const message =
-							error instanceof Error ? error.message : String(error);
-						controller.enqueue(formatEvent({ type: "error", message }));
-						controller.close();
-					}
-				},
+			const customStream = createCommitMessageSSEStream({
+				stream,
+				ctx,
+				startedAt,
 			});
 
 			return new Response(customStream, {
