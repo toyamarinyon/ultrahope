@@ -176,24 +176,21 @@ export function createApiClient(token?: string) {
 			options?: { signal?: AbortSignal },
 		): AsyncGenerator<CommitMessageStreamEvent> {
 			log("streamCommitMessage request", req);
-			const res = await fetch(
-				`${API_BASE_URL}/api/v1/commit-message/stream`,
-				{
-					method: "POST",
-					headers: {
-						...headers,
-						Accept: "text/event-stream",
-					},
-					body: JSON.stringify(req),
-					signal: options?.signal,
+			const res = await fetch(`${API_BASE_URL}/api/v1/commit-message/stream`, {
+				method: "POST",
+				headers: {
+					...headers,
+					Accept: "text/event-stream",
 				},
-			);
+				body: JSON.stringify(req),
+				signal: options?.signal,
+			});
 			if (res.status === 401) {
 				log("streamCommitMessage error (401)");
 				throw new UnauthorizedError();
 			}
 			if (res.status === 402) {
-				let errorPayload: unknown = undefined;
+				let errorPayload: unknown;
 				try {
 					errorPayload = await res.json();
 				} catch {
@@ -338,8 +335,7 @@ export function createApiClient(token?: string) {
 				throw new Error("API error: empty stream response");
 			}
 
-			const { generationId, cost } =
-				extractGatewayMetadata(providerMetadata);
+			const { generationId, cost } = extractGatewayMetadata(providerMetadata);
 			const result = {
 				output: lastCommitMessage,
 				cost,
