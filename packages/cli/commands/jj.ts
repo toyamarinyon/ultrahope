@@ -1,5 +1,5 @@
 import { execSync, spawnSync } from "node:child_process";
-import { mergeAbortSignals } from "../lib/abort";
+import { isCommandExecutionAbort, mergeAbortSignals } from "../lib/abort";
 import { createApiClient } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
@@ -123,7 +123,7 @@ async function initCommandExecutionContext(
 		});
 
 	commandExecutionPromise.catch(async (error) => {
-		abortController.abort();
+		abortController.abort(error);
 		await handleCommandExecutionError(error, {
 			progress: { ready: 0, total: options.models.length },
 		});
@@ -211,6 +211,9 @@ async function runInteractiveDescribe(
 		});
 
 		if (result.action === "abort") {
+			if (isCommandExecutionAbort(context.commandExecutionSignal)) {
+				return;
+			}
 			console.error("Aborted.");
 			process.exit(1);
 		}

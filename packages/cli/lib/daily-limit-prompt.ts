@@ -110,26 +110,28 @@ function promptChoice(): Promise<"1" | "2" | "q"> {
 			console.log("");
 		};
 
-		const handleKeypress = (_str: string | undefined, key: readline.Key) => {
-			if (!key) return;
+		const handleKeypress = (str: string | undefined, key: readline.Key) => {
+			if (!key && !str) return;
 
 			if (
-				key.name === "q" ||
-				(key.name === "c" && key.ctrl) ||
-				key.name === "escape"
+				str === "q" ||
+				str === "Q" ||
+				key?.name === "q" ||
+				(key?.name === "c" && key.ctrl) ||
+				key?.name === "escape"
 			) {
 				cleanup();
 				resolve("q");
 				return;
 			}
 
-			if (key.name === "1") {
+			if (str === "1" || key?.name === "1" || key?.sequence === "1") {
 				cleanup();
 				resolve("1");
 				return;
 			}
 
-			if (key.name === "2") {
+			if (str === "2" || key?.name === "2" || key?.sequence === "2") {
 				cleanup();
 				resolve("2");
 				return;
@@ -171,12 +173,16 @@ function handleRetryLater() {
 			console.log("");
 		};
 
-		const handleKeypress = (_str: string | undefined, key: readline.Key) => {
-			if (!key) return;
+		const handleKeypress = (str: string | undefined, key: readline.Key) => {
+			if (!key && !str) return;
 			if (
-				key.name === "return" ||
-				key.name === "q" ||
-				(key.name === "c" && key.ctrl)
+				str === "\r" ||
+				str === "\n" ||
+				str === "q" ||
+				str === "Q" ||
+				key?.name === "return" ||
+				key?.name === "q" ||
+				(key?.name === "c" && key.ctrl)
 			) {
 				cleanup();
 				resolve();

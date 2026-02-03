@@ -1,3 +1,8 @@
+import {
+	DailyLimitExceededError,
+	UnauthorizedError,
+} from "./api-client";
+
 export function mergeAbortSignals(
 	...signals: Array<AbortSignal | undefined>
 ): AbortSignal | undefined {
@@ -25,4 +30,13 @@ export function mergeAbortSignals(
 	}
 
 	return controller.signal;
+}
+
+export function isCommandExecutionAbort(signal?: AbortSignal): boolean {
+	if (!signal?.aborted) return false;
+	const reason = signal.reason;
+	return (
+		reason instanceof DailyLimitExceededError ||
+		reason instanceof UnauthorizedError
+	);
 }
