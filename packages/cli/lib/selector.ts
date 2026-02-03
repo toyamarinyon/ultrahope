@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
-import { clearAll, flush, render, reset, SPINNER_FRAMES } from "./renderer";
+import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
 import { ui } from "./ui";
 
@@ -53,17 +53,7 @@ interface SelectorOptions {
 	models?: string[];
 }
 
-function canUseInteractive(): boolean {
-	if (!process.stdout.isTTY) {
-		return false;
-	}
-	try {
-		accessSync("/dev/tty", constants.R_OK);
-		return true;
-	} catch {
-		return false;
-	}
-}
+const TTY_PATH = "/dev/tty";
 
 function formatModelName(model: string): string {
 	const parts = model.split("/");
@@ -178,7 +168,11 @@ function formatTotalCostLabel(cost: number): string {
 	return `$${cost.toFixed(6)}`;
 }
 
-function renderSelector(state: RenderState, nowMs: number): void {
+function renderSelector(
+	state: RenderState,
+	nowMs: number,
+	renderer: ReturnType<typeof createRenderer>,
+): void {
 	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
 	const lines: string[] = [];
@@ -222,10 +216,15 @@ function renderSelector(state: RenderState, nowMs: number): void {
 		}
 	}
 
-	render(`${lines.join("\n")}\n`);
+	renderer.render(`${lines.join("\n")}\n`);
 }
 
-function renderError(error: unknown, slots: Slot[], totalSlots: number): void {
+function renderError(
+	error: unknown,
+	slots: Slot[],
+	totalSlots: number,
+	output: tty.WriteStream,
+): void {
 	const readyCount = slots.filter((s) => s.status === "ready").length;
 	const message =
 		error instanceof Error ? error.message : String(error ?? "Unknown error");
@@ -237,7 +236,7 @@ function renderError(error: unknown, slots: Slot[], totalSlots: number): void {
 	];
 
 	for (const line of lines) {
-		console.log(line);
+		output.write(`${line}\n`);
 	}
 }
 
@@ -289,21 +288,25 @@ export async function selectCandidate(
 
 	const candidates = createCandidates(abortController.signal);
 
-	if (!canUseInteractive()) {
-		const iterator = candidates[Symbol.asyncIterator]();
-		const firstResult = await iterator.next();
-		abortController.abort();
-		await iterator.return?.();
-		const cost = firstResult.value?.cost;
-		const quota = firstResult.value?.quota;
-		return {
-			action: "confirm",
-			selected: firstResult.value?.content,
-			selectedIndex: 0,
-			selectedCandidate: firstResult.value,
-			totalCost: cost != null ? cost : undefined,
-			quota,
-		};
+	let ttyInput: tty.ReadStream | null = null;
+	let ttyOutput: tty.WriteStream | null = null;
+	try {
+		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
+		const inputFd = openSync(TTY_PATH, "r");
+		const outputFd = openSync(TTY_PATH, "w");
+		ttyInput = new tty.ReadStream(inputFd);
+		ttyOutput = new tty.WriteStream(outputFd);
+	} catch {
+		console.error(
+			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+		);
+		process.exit(1);
+	}
+	if (!ttyInput || !ttyOutput) {
+		console.error(
+			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+		);
+		process.exit(1);
 	}
 
 	const slots: Slot[] = Array.from({ length: maxSlots }, (_, i) => ({
@@ -311,7 +314,11 @@ export async function selectCandidate(
 		slotId: models?.[i] ?? `slot-${i}`,
 		model: models?.[i],
 	}));
-	return selectFromSlots(slots, { candidates, abortController, abortSignal });
+	return selectFromSlots(
+		slots,
+		{ candidates, abortController, abortSignal },
+		{ input: ttyInput, output: ttyOutput },
+	);
 }
 
 interface AsyncContext {
@@ -323,6 +330,7 @@ interface AsyncContext {
 async function selectFromSlots(
 	initialSlots: Slot[],
 	asyncCtx: AsyncContext | null,
+	ttyIo: { input: tty.ReadStream; output: tty.WriteStream },
 ): Promise<SelectorResult> {
 	return new Promise((resolve) => {
 		let resolved = false;
@@ -342,12 +350,13 @@ async function selectFromSlots(
 		let renderInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
 
-		const fd = openSync("/dev/tty", "r");
-		const ttyInput = new tty.ReadStream(fd);
+		const ttyInput = ttyIo.input;
+		const ttyOutput = ttyIo.output;
+		const renderer = createRenderer(ttyOutput);
 
 		const rl = readline.createInterface({
 			input: ttyInput,
-			output: process.stdout,
+			output: ttyOutput,
 			terminal: true,
 		});
 
@@ -356,7 +365,7 @@ async function selectFromSlots(
 
 		const doRender = () => {
 			if (!cleanedUp) {
-				renderSelector(state, Date.now());
+				renderSelector(state, Date.now(), renderer);
 			}
 		};
 
@@ -385,15 +394,18 @@ async function selectFromSlots(
 			asyncCtx?.abortController.abort();
 		};
 
-		const cleanup = () => {
-			if (cleanedUp) return;
-			cleanedUp = true;
-			stopRenderLoop();
-			ttyInput.setRawMode(false);
-			rl.close();
-			ttyInput.destroy();
-			clearAll();
-		};
+	const cleanup = (clearOutput = true) => {
+		if (cleanedUp) return;
+		cleanedUp = true;
+		stopRenderLoop();
+		if (clearOutput) {
+			renderer.clearAll();
+		}
+		ttyInput.setRawMode(false);
+		rl.close();
+		ttyInput.destroy();
+		ttyOutput.destroy();
+	};
 
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,
@@ -460,8 +472,9 @@ async function selectFromSlots(
 					}
 					if (!cleanedUp) {
 						cancelGeneration();
-						cleanup();
-						renderError(err, slots, state.totalSlots);
+						renderer.clearAll();
+						renderError(err, slots, state.totalSlots, ttyOutput);
+						cleanup(false);
 						resolveOnce({ action: "abort" });
 					}
 				} finally {
@@ -503,7 +516,7 @@ async function selectFromSlots(
 		const editSelection = async () => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
-			flush();
+			renderer.flush();
 			ttyInput.setRawMode(false);
 			let edited: string | null = null;
 			try {
@@ -511,7 +524,7 @@ async function selectFromSlots(
 				edited = result ? result : null;
 			} catch {}
 			ttyInput.setRawMode(true);
-			reset();
+			renderer.reset();
 			updateState(() => {
 				if (!edited) return;
 				slots[state.selectedIndex] = {

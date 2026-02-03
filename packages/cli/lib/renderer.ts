@@ -62,18 +62,12 @@ export const SPINNER_FRAMES = [
 	"⠏",
 ];
 
-let pendingHeight = 0;
-let committedHeight = 0;
-
-/**
- * Check if stdout supports interactive rendering (cursor movement).
- */
-function isTTY(): boolean {
-	return process.stdout.isTTY === true;
+function isTTY(output: NodeJS.WriteStream): boolean {
+	return output.isTTY === true;
 }
 
 /**
- * Render content to stdout, replacing the previous pending output.
+ * Render content to the provided output, replacing the previous pending output.
  *
  * Uses cursor movement to overwrite the last rendered content.
  * Call `flush()` to commit the current output and start fresh below.
@@ -82,77 +76,57 @@ function isTTY(): boolean {
  *
  * @param content - The text to render (include `\n` for line breaks)
  */
-export function render(content: string): void {
-	if (!isTTY()) {
-		process.stdout.write(content);
-		return;
-	}
+export function createRenderer(output: NodeJS.WriteStream) {
+	let pendingHeight = 0;
+	let committedHeight = 0;
 
-	if (pendingHeight > 0) {
-		readline.moveCursor(process.stdout, 0, -pendingHeight);
-		readline.cursorTo(process.stdout, 0);
-		readline.clearScreenDown(process.stdout);
-	}
+	const render = (content: string): void => {
+		if (!isTTY(output)) {
+			output.write(content);
+			return;
+		}
 
-	process.stdout.write(content);
-	pendingHeight = content.split("\n").length - 1;
+		if (pendingHeight > 0) {
+			readline.moveCursor(output, 0, -pendingHeight);
+			readline.cursorTo(output, 0);
+			readline.clearScreenDown(output);
+		}
+
+		output.write(content);
+		pendingHeight = content.split("\n").length - 1;
+	};
+
+	const flush = (): void => {
+		committedHeight += pendingHeight;
+		pendingHeight = 0;
+	};
+
+	const clearAll = (): void => {
+		if (!isTTY(output)) {
+			return;
+		}
+
+		const totalHeight = pendingHeight + committedHeight;
+		if (totalHeight > 0) {
+			readline.moveCursor(output, 0, -totalHeight);
+			readline.cursorTo(output, 0);
+			readline.clearScreenDown(output);
+		}
+		pendingHeight = 0;
+		committedHeight = 0;
+	};
+
+	const reset = (): void => {
+		pendingHeight = 0;
+		committedHeight = 0;
+	};
+
+	return { render, flush, clearAll, reset };
 }
 
-/**
- * Commit the current pending output to static.
- *
- * After calling flush, new `render()` calls will appear below
- * the committed content instead of replacing it.
- */
-export function flush(): void {
-	committedHeight += pendingHeight;
-	pendingHeight = 0;
-}
+const defaultRenderer = createRenderer(process.stdout);
 
-/**
- * Clear pending output without committing.
- *
- * Wipes the current pending content and resets to the last committed state.
- * Useful before showing error messages.
- */
-function _clear(): void {
-	if (!isTTY() || pendingHeight === 0) {
-		return;
-	}
-
-	readline.moveCursor(process.stdout, 0, -pendingHeight);
-	readline.cursorTo(process.stdout, 0);
-	readline.clearScreenDown(process.stdout);
-	pendingHeight = 0;
-}
-
-/**
- * Clear all rendered output (both pending and committed).
- *
- * Wipes everything since the renderer started (or last reset).
- * Useful for complete cleanup on abort/error.
- */
-export function clearAll(): void {
-	if (!isTTY()) {
-		return;
-	}
-
-	const totalHeight = pendingHeight + committedHeight;
-	if (totalHeight > 0) {
-		readline.moveCursor(process.stdout, 0, -totalHeight);
-		readline.cursorTo(process.stdout, 0);
-		readline.clearScreenDown(process.stdout);
-	}
-	pendingHeight = 0;
-	committedHeight = 0;
-}
-
-/**
- * Reset height tracking without clearing output.
- *
- * Call this when external code (e.g., editor spawn) may have modified the terminal.
- */
-export function reset(): void {
-	pendingHeight = 0;
-	committedHeight = 0;
-}
+export const render = defaultRenderer.render;
+export const flush = defaultRenderer.flush;
+export const clearAll = defaultRenderer.clearAll;
+export const reset = defaultRenderer.reset;
