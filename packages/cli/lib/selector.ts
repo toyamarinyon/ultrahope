@@ -293,9 +293,15 @@ export async function selectCandidate(
 	try {
 		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
 		const inputFd = openSync(TTY_PATH, "r");
-		const outputFd = openSync(TTY_PATH, "w");
 		ttyInput = new tty.ReadStream(inputFd);
-		ttyOutput = new tty.WriteStream(outputFd);
+		// Use process.stdout if it's a TTY, otherwise open /dev/tty
+		// This works around a Bun bug with tty.WriteStream and kqueue
+		if (process.stdout.isTTY) {
+			ttyOutput = process.stdout as tty.WriteStream;
+		} else {
+			const outputFd = openSync(TTY_PATH, "w");
+			ttyOutput = new tty.WriteStream(outputFd);
+		}
 	} catch {
 		console.error(
 			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
