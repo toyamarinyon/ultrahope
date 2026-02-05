@@ -21,7 +21,7 @@ export default async function RootPage() {
 			<section className="max-w-6xl mx-auto">
 				<div className="flex flex-col gap-10">
 					<div className="relative overflow-hidden rounded-3xl border border-border-subtle bg-canvas-dark px-10 py-12">
-						<div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,_#2f2a22,_transparent_65%)] opacity-70 blur-2xl" />
+						<div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-radial-gradient(circle,_#2f2a22,_transparent_65%) opacity-70 blur-2xl" />
 						<p className="text-sm uppercase tracking-[0.2em] text-foreground-muted mb-4">
 							Welcome back
 						</p>
