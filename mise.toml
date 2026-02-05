@@ -28,7 +28,7 @@ run = "pnpm -C packages/web --silent run typecheck"
 
 [tasks.web]
 description = "Start web dev server (sandbox env)"
-run = "mise -E sandbox exec -- pnpm -C packages/web run dev --port 3100"
+run = "mise -E sandbox exec -- bun --cwd packages/web dev --port 3100"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
