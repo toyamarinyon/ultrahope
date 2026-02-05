@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { auth, polarClient } from "@/lib/auth";
+import { getAuth, getPolarClient } from "@/lib/auth";
 import { CheckoutButton } from "./checkout-button";
 import { ResetTime } from "./reset-time";
+
+export const dynamic = "force-dynamic";
 
 const plans = [
 	{
@@ -45,6 +47,7 @@ async function getActiveSubscriptions(
 	userId: string,
 ): Promise<SubscriptionInfo[]> {
 	try {
+		const polarClient = getPolarClient();
 		const customerState = await polarClient.customers.getStateExternal({
 			externalId: userId,
 		});
@@ -61,6 +64,7 @@ async function getActiveSubscriptions(
 }
 
 export default async function PricingPage() {
+	const auth = getAuth();
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

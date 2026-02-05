@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { auth, polarClient } from "@/lib/auth";
+import { getAuth, getPolarClient } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+	const auth = getAuth();
+	const polarClient = getPolarClient();
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

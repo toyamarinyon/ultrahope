@@ -2,9 +2,12 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { MarketingHome } from "@/components/marketing-home";
 import { SignOutButton } from "@/components/sign-out-button";
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export default async function RootPage() {
+	const auth = getAuth();
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

@@ -1,6 +1,6 @@
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { commandExecution } from "@/db";
-import { db } from "@/db/client";
+import type { Db } from "@/db/client";
 
 const FREE_DAILY_LIMIT = 5;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -16,7 +16,11 @@ export class DailyLimitExceededError extends Error {
 	}
 }
 
-async function getUsageCount(userId: number, sinceMs: number): Promise<number> {
+async function getUsageCount(
+	db: Db,
+	userId: number,
+	sinceMs: number,
+): Promise<number> {
 	const result = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(commandExecution)
@@ -30,7 +34,11 @@ async function getUsageCount(userId: number, sinceMs: number): Promise<number> {
 	return result[0]?.count ?? 0;
 }
 
-async function getResetTime(userId: number, sinceMs: number): Promise<Date> {
+async function getResetTime(
+	db: Db,
+	userId: number,
+	sinceMs: number,
+): Promise<Date> {
 	const oldest = await db
 		.select({ startedAt: commandExecution.startedAt })
 		.from(commandExecution)
@@ -51,15 +59,16 @@ async function getResetTime(userId: number, sinceMs: number): Promise<Date> {
 }
 
 export async function assertDailyLimitNotExceeded(
+	db: Db,
 	userId: number,
 ): Promise<void> {
 	const sinceMs = Date.now() - WINDOW_MS;
-	const count = await getUsageCount(userId, sinceMs);
+	const count = await getUsageCount(db, userId, sinceMs);
 	if (count >= FREE_DAILY_LIMIT) {
 		throw new DailyLimitExceededError(
 			count,
 			FREE_DAILY_LIMIT,
-			await getResetTime(userId, sinceMs),
+			await getResetTime(db, userId, sinceMs),
 		);
 	}
 }
@@ -72,11 +81,12 @@ export interface DailyUsageInfo {
 }
 
 export async function getDailyUsageInfo(
+	db: Db,
 	userId: number,
 ): Promise<DailyUsageInfo> {
 	const sinceMs = Date.now() - WINDOW_MS;
-	const count = await getUsageCount(userId, sinceMs);
-	const resetsAt = await getResetTime(userId, sinceMs);
+	const count = await getUsageCount(db, userId, sinceMs);
+	const resetsAt = await getResetTime(db, userId, sinceMs);
 	return {
 		count,
 		limit: FREE_DAILY_LIMIT,

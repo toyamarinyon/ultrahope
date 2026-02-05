@@ -1,0 +1,25 @@
+{
+	"$schema": "https://turborepo.org/schema.json",
+	"globalEnv": ["IMPORTANT_GLOBAL_VARIABLE"],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**", ".next/**"],
+			"env": ["TURSO_*", "RESEND_API_KEY", "GITHUB_*", "EMAIL_FROM", "POLAR_*"],
+			"inputs": ["$TURBO_DEFAULT$", ".env.*"]
+		},
+		"typecheck": {
+			"dependsOn": ["^build"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"//#check": {},
+		"//#knip": {},
+		"ok": {
+			"dependsOn": ["//#check", "typecheck", "//#knip"],
+			"cache": false
+		}
+	}
+}

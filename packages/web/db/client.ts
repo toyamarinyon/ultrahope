@@ -3,15 +3,31 @@ import { drizzle } from "drizzle-orm/libsql";
 import { authRelations } from "./relations/auth-relations";
 import * as schema from "./schemas";
 
-const client = createClient({
-	url: process.env.TURSO_DATABASE_URL ?? "",
-	authToken: process.env.TURSO_AUTH_TOKEN,
-});
+export type Db = ReturnType<typeof makeDb>;
 
-export const db = drizzle({
-	client,
-	schema,
-	relations: {
-		...authRelations,
-	},
-});
+let cachedDb: Db | null = null;
+
+function makeClient() {
+	return createClient({
+		url: process.env.TURSO_DATABASE_URL ?? "",
+		authToken: process.env.TURSO_AUTH_TOKEN,
+	});
+}
+
+export function makeDb() {
+	const client = makeClient();
+	return drizzle({
+		client,
+		schema,
+		relations: {
+			...authRelations,
+		},
+	});
+}
+
+export function getDb(): Db {
+	if (!cachedDb) {
+		cachedDb = makeDb();
+	}
+	return cachedDb;
+}

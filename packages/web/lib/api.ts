@@ -3,8 +3,14 @@ import { openapi } from "@elysiajs/openapi";
 import type { LanguageModelUsage, ProviderMetadata } from "ai";
 import { and, eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
-import { commandExecution, db, generation, generationScore } from "@/db";
-import { auth } from "@/lib/auth";
+import {
+	commandExecution,
+	type Db,
+	generation,
+	generationScore,
+	getDb,
+} from "@/db";
+import { getAuth } from "@/lib/auth";
 import {
 	assertDailyLimitNotExceeded,
 	getDailyUsageInfo,
@@ -48,6 +54,7 @@ type GenerateContext = {
 	cliSessionId: string;
 	model: LanguageModel;
 	abortSignal: AbortSignal;
+	db: Db;
 };
 
 type GenerateResult =
@@ -153,6 +160,7 @@ async function getBillingInfoOr503(
 }
 
 async function enforceDailyLimitOr402(
+	db: Db,
 	userId: number,
 	plan: "free" | "pro",
 	generationAbortController: AbortController,
@@ -160,7 +168,7 @@ async function enforceDailyLimitOr402(
 ): Promise<null | { status: 402; errorBody: DailyLimitExceededBody }> {
 	try {
 		if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
-			await assertDailyLimitNotExceeded(userId);
+			await assertDailyLimitNotExceeded(db, userId);
 		} else if (MOCKING) {
 			console.log("[MOCKING] Daily limit check bypassed");
 		} else if (SKIP_DAILY_LIMIT_CHECK) {
@@ -222,6 +230,7 @@ function enforceProBalanceOr402(
 }
 
 async function fetchCommandExecutionId(
+	db: Db,
 	cliSessionId: string,
 	userId: number,
 ): Promise<number | undefined> {
@@ -242,12 +251,14 @@ type CommitMessageStreamOptions = {
 	stream: ReturnType<typeof generateCommitMessageStream>;
 	ctx: GenerateContext;
 	startedAt: number;
+	db: Db;
 };
 
 function createCommitMessageSSEStream({
 	stream,
 	ctx,
 	startedAt,
+	db,
 }: CommitMessageStreamOptions): ReadableStream<Uint8Array> {
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -284,7 +295,7 @@ function createCommitMessageSSEStream({
 					[
 						stream.totalUsage,
 						stream.providerMetadata,
-						fetchCommandExecutionId(ctx.cliSessionId, ctx.userId),
+						fetchCommandExecutionId(db, ctx.cliSessionId, ctx.userId),
 					],
 				);
 
@@ -384,7 +395,7 @@ async function executeGeneration(
 
 	const [response, commandExecutionRow] = await Promise.all([
 		generationPromise,
-		db
+		ctx.db
 			.select({ id: commandExecution.id })
 			.from(commandExecution)
 			.where(
@@ -404,7 +415,8 @@ async function executeGeneration(
 				? Math.round(response.cost * MICRODOLLARS_PER_USD)
 				: 0;
 
-		db.insert(generation)
+		ctx.db
+			.insert(generation)
 			.values({
 				commandExecutionId,
 				vercelAiGatewayGenerationId: response.generationId,
@@ -434,7 +446,7 @@ async function executeGeneration(
 	};
 
 	if (plan === "free") {
-		const usageInfo = await getDailyUsageInfo(ctx.userId);
+		const usageInfo = await getDailyUsageInfo(ctx.db, ctx.userId);
 		result.quota = {
 			remaining: usageInfo.remaining,
 			limit: usageInfo.limit,
@@ -498,28 +510,33 @@ const GenerateErrorResponses = {
 	]),
 };
 
-export const app = new Elysia({ prefix: "/api" })
-	.use(
-		openapi({
-			path: "/openapi",
-			specPath: "/openapi/json",
-			documentation: {
-				info: {
-					title: "Ultrahope API",
-					version: packageJson.version ?? "0.0.0",
-				},
-				components: {
-					securitySchemes: {
-						bearerAuth: {
-							type: "http",
-							scheme: "bearer",
-						},
+const rootApp = new Elysia({ prefix: "/api" }).use(
+	openapi({
+		path: "/openapi",
+		specPath: "/openapi/json",
+		documentation: {
+			info: {
+				title: "Ultrahope API",
+				version: packageJson.version ?? "0.0.0",
+			},
+			components: {
+				securitySchemes: {
+					bearerAuth: {
+						type: "http",
+						scheme: "bearer",
 					},
 				},
 			},
-		}),
-	)
+		},
+	}),
+);
+
+const apiRoutes = new Elysia()
+	.derive(() => ({
+		db: getDb(),
+	}))
 	.resolve(async ({ request: { headers } }) => {
+		const auth = getAuth();
 		const session = await auth.api.getSession({ headers });
 		if (session === null) {
 			return {
@@ -553,7 +570,7 @@ export const app = new Elysia({ prefix: "/api" })
 	})
 	.post(
 		"/v1/command_execution",
-		async ({ body, session, set }) => {
+		async ({ body, session, set, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -564,7 +581,7 @@ export const app = new Elysia({ prefix: "/api" })
 				const plan = billingInfo?.plan ?? "free";
 
 				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
-					await assertDailyLimitNotExceeded(session.user.id);
+					await assertDailyLimitNotExceeded(db, session.user.id);
 				} else if (MOCKING) {
 					console.log("[MOCKING] Daily limit check bypassed");
 				} else if (SKIP_DAILY_LIMIT_CHECK) {
@@ -652,7 +669,7 @@ export const app = new Elysia({ prefix: "/api" })
 	)
 	.post(
 		"/v1/commit-message",
-		async ({ body, session, set, request }) => {
+		async ({ body, session, set, request, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -667,6 +684,7 @@ export const app = new Elysia({ prefix: "/api" })
 				cliSessionId: body.cliSessionId,
 				model: MOCKING ? "mocking" : body.model,
 				abortSignal: request.signal,
+				db,
 			};
 
 			const result = await executeGeneration(ctx, (abortSignal) =>
@@ -700,7 +718,7 @@ export const app = new Elysia({ prefix: "/api" })
 	)
 	.post(
 		"/v1/commit-message/stream",
-		async ({ body, session, set, request }) => {
+		async ({ body, session, set, request, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -715,6 +733,7 @@ export const app = new Elysia({ prefix: "/api" })
 				cliSessionId: body.cliSessionId,
 				model: MOCKING ? "mocking" : body.model,
 				abortSignal: request.signal,
+				db,
 			};
 
 			const startedAt = Date.now();
@@ -738,6 +757,7 @@ export const app = new Elysia({ prefix: "/api" })
 			const { billingInfo, plan } = billingInfoResult;
 
 			const dailyLimitResult = await enforceDailyLimitOr402(
+				db,
 				session.user.id,
 				plan,
 				generationAbortController,
@@ -761,6 +781,7 @@ export const app = new Elysia({ prefix: "/api" })
 				stream,
 				ctx,
 				startedAt,
+				db,
 			});
 
 			return new Response(customStream, {
@@ -782,7 +803,7 @@ export const app = new Elysia({ prefix: "/api" })
 	)
 	.post(
 		"/v1/pr-title-body",
-		async ({ body, session, set, request }) => {
+		async ({ body, session, set, request, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -797,6 +818,7 @@ export const app = new Elysia({ prefix: "/api" })
 				cliSessionId: body.cliSessionId,
 				model: MOCKING ? "mocking" : body.model,
 				abortSignal: request.signal,
+				db,
 			};
 
 			const result = await executeGeneration(ctx, (abortSignal) =>
@@ -832,7 +854,7 @@ export const app = new Elysia({ prefix: "/api" })
 	)
 	.post(
 		"/v1/pr-intent",
-		async ({ body, session, set, request }) => {
+		async ({ body, session, set, request, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -847,6 +869,7 @@ export const app = new Elysia({ prefix: "/api" })
 				cliSessionId: body.cliSessionId,
 				model: MOCKING ? "mocking" : body.model,
 				abortSignal: request.signal,
+				db,
 			};
 
 			const result = await executeGeneration(ctx, (abortSignal) =>
@@ -880,7 +903,7 @@ export const app = new Elysia({ prefix: "/api" })
 	)
 	.post(
 		"/v1/generation_score",
-		async ({ body, session, set }) => {
+		async ({ body, session, set, db }) => {
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
@@ -949,3 +972,5 @@ export const app = new Elysia({ prefix: "/api" })
 			tags: ["health"],
 		},
 	});
+
+export const app = rootApp.use(apiRoutes);

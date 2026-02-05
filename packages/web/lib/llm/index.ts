@@ -1,4 +1,4 @@
-import { polarClient } from "@/lib/auth";
+import { getPolarClient } from "@/lib/auth";
 
 export { DailyLimitExceededError } from "@/lib/daily-limit";
 
@@ -38,6 +38,7 @@ export async function getUserBillingInfo(
 	const externalCustomerIdString = externalCustomerId.toString();
 
 	try {
+		const polarClient = getPolarClient();
 		const [meterResponse, customerState] = await Promise.all([
 			polarClient.customerMeters.list({
 				externalCustomerId: externalCustomerIdString,

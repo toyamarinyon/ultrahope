@@ -1,6 +1,7 @@
 node_modules
 dist
 .env
+.turbo
 .mise.toml
 .mise.*.toml
 .next

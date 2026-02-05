@@ -10,8 +10,9 @@
 
 import { Polar } from "@polar-sh/sdk";
 import { eq } from "drizzle-orm";
-import { account, db, deviceCode, session, user } from "../db";
+import { account, deviceCode, getDb, session, user } from "../db";
 
+const db = getDb();
 const email = process.argv[2];
 
 if (!email) {
