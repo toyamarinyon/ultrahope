@@ -20,12 +20,12 @@ run = "mise -E production exec -- bun scripts/polar-sync.ts"
 
 [tasks."db:migrate"]
 description = "Run database migrations"
-run = "bun --cwd packages/web exec drizzle-kit migrate"
+run = "bun --cwd packages/web drizzle-kit migrate"
 
 [tasks."db:generate-migration"]
 description = "Generate a new migration"
-run = "bun --cwd packages/web exec drizzle-kit generate"
+run = "bun --cwd packages/web drizzle-kit generate"
 
 [tasks."clear-test-user"]
 description = "Clear test user from Turso and Polar"
-run = "bun -C packages/web exec tsx scripts/clear-test-user.ts {{arg(name='email')}}"
+run = "bun -C packages/web scripts/clear-test-user.ts {{arg(name='email')}}"
