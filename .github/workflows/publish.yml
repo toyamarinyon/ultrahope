@@ -25,20 +25,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - name: Ensure npm CLI version
-        run: npm install -g npm@11.5.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Bump version
         working-directory: packages/cli
@@ -57,7 +54,7 @@ jobs:
 
       - name: Build
         working-directory: packages/cli
-        run: pnpm run build
+        run: bun run build
 
       - name: Publish to npm
         working-directory: packages/cli
