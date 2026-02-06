@@ -1,6 +1,10 @@
+import { createRequire } from "node:module";
 import { jj } from "./commands/jj";
 import { login } from "./commands/login";
 import { translate } from "./commands/translate";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -15,6 +19,10 @@ async function main() {
 		case "login":
 			await login(args);
 			break;
+		case "--version":
+		case "-v":
+			console.log(`ultrahope ${version}`);
+			break;
 		case "--help":
 		case "-h":
 		case undefined:
@@ -27,7 +35,9 @@ async function main() {
 }
 
 function printHelp() {
-	console.log(`Usage: ultrahope <command>
+	console.log(`ultrahope ${version}
+
+Usage: ultrahope <command>
 
 Commands:
   translate  Translate input to various formats
@@ -35,7 +45,8 @@ Commands:
   login      Authenticate with device flow
 
 Options:
-  --help, -h  Show this help message`);
+  --version, -v  Show version
+  --help, -h     Show this help message`);
 }
 
 main().catch((err) => {
