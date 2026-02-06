@@ -56,6 +56,21 @@ jobs:
         working-directory: packages/cli
         run: bun run build
 
+      - name: Debug auth
+        run: |
+          echo "=== npm version ==="
+          npm --version
+          echo "=== node version ==="
+          node --version
+          echo "=== .npmrc (home) ==="
+          cat ~/.npmrc 2>/dev/null || echo "not found"
+          echo "=== .npmrc (project root) ==="
+          cat .npmrc 2>/dev/null || echo "not found"
+          echo "=== .npmrc (packages/cli) ==="
+          cat packages/cli/.npmrc 2>/dev/null || echo "not found"
+          echo "=== npm config list ==="
+          npm config list
+
       - name: Publish to npm
         working-directory: packages/cli
         run: npm publish --provenance --access public
