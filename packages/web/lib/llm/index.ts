@@ -35,6 +35,11 @@ export async function getUserBillingInfo(
 	}
 
 	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
+	/**
+	 * Founder Plan: unlisted developer-only plan. Free but grants $999/month in credits.
+	 * Grouped into {@link paidProductIds} so it is treated the same as Pro.
+	 */
+	const founderProductId = process.env.POLAR_PRODUCT_FOUNDER_ID;
 	const externalCustomerIdString = externalCustomerId.toString();
 
 	try {
@@ -56,10 +61,14 @@ export async function getUserBillingInfo(
 		}
 
 		const meter = meters[0];
+		// Treat both Pro and Founder subscriptions as the "pro" plan
+		const paidProductIds = [proProductId, founderProductId].filter(
+			(id): id is string => id != null,
+		);
 		const isPro =
-			proProductId != null &&
-			customerState.activeSubscriptions.some(
-				(sub: { productId: string }) => sub.productId === proProductId,
+			paidProductIds.length > 0 &&
+			customerState.activeSubscriptions.some((sub: { productId: string }) =>
+				paidProductIds.includes(sub.productId),
 			);
 
 		return {

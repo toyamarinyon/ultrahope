@@ -129,6 +129,14 @@ const CONFIG: Config = {
 			rollover: false,
 		},
 		{
+			key: "founder_credits",
+			type: "meter_credit",
+			description: "Founder unlimited credit",
+			meterName: "Usage Cost",
+			units: 999 * MICRODOLLARS_PER_USD, // $999.00
+			rollover: false,
+		},
+		{
 			key: "credit_10",
 			type: "meter_credit",
 			description: "$10 credit top-up",
@@ -166,6 +174,13 @@ const CONFIG: Config = {
 				},
 			],
 			benefitKeys: ["pro_credits"],
+		},
+		{
+			name: "Founder",
+			description: "Internal founder plan",
+			recurringInterval: "month",
+			prices: [{ amountType: "free" }],
+			benefitKeys: ["founder_credits"],
 		},
 	],
 
