@@ -4,27 +4,7 @@ pnpm = "latest"
 
 [tasks.ok]
 description = "Run format, typecheck, and knip checks"
-run = [
-  { task = "format" },
-  { tasks = ["typecheck:cli", "typecheck:web"] },
-  { task = "knip" },
-]
-
-[tasks.format]
-description = "Format code with Biome"
-run = "pnpm -w --silent run format"
-
-[tasks.knip]
-description = "Check for unused exports and dependencies"
-run = "pnpm -w --silent run knip"
-
-[tasks."typecheck:cli"]
-description = "Typecheck packages/cli"
-run = "pnpm -C packages/cli --silent run typecheck"
-
-[tasks."typecheck:web"]
-description = "Typecheck packages/web"
-run = "pnpm -C packages/web --silent run typecheck"
+run = "bun run ok"
 
 [tasks.web]
 description = "Start web dev server (sandbox env)"
@@ -32,20 +12,20 @@ run = "mise -E sandbox exec -- bun --cwd packages/web dev --port 3100"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
-run = "mise -E sandbox exec -- pnpm exec tsx scripts/polar-sync.ts --server sandbox --recreate"
+run = "mise -E sandbox exec -- bun scripts/polar-sync.ts --server sandbox --recreate"
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "mise -E production exec -- pnpm exec tsx scripts/polar-sync.ts"
+run = "mise -E production exec -- bun scripts/polar-sync.ts"
 
 [tasks."db:migrate"]
 description = "Run database migrations"
-run = "pnpm -C packages/web exec drizzle-kit migrate"
+run = "bun --cwd packages/web exec drizzle-kit migrate"
 
 [tasks."db:generate-migration"]
 description = "Generate a new migration"
-run = "pnpm -C packages/web exec drizzle-kit generate"
+run = "bun --cwd packages/web exec drizzle-kit generate"
 
 [tasks."clear-test-user"]
 description = "Clear test user from Turso and Polar"
-run = "pnpm -C packages/web exec tsx scripts/clear-test-user.ts {{arg(name='email')}}"
+run = "bun -C packages/web exec tsx scripts/clear-test-user.ts {{arg(name='email')}}"
