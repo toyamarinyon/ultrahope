@@ -1,10 +1,9 @@
-import { createRequire } from "node:module";
 import { jj } from "./commands/jj";
 import { login } from "./commands/login";
 import { translate } from "./commands/translate";
+import pkg from "./package.json";
 
-const require = createRequire(import.meta.url);
-const { version } = require("../package.json");
+const { version } = pkg;
 
 const [command, ...args] = process.argv.slice(2);
 
