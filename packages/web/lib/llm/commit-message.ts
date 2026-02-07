@@ -19,6 +19,34 @@ Quality rules:
 - If the diff is mostly formatting, use type "style" and describe what was formatted.
 `;
 
+let grokReasoningErrorWarned = false;
+
+// Grok models emit `response.reasoning_text.delta` SSE events that the AI SDK's
+// openaiResponsesChunkSchema doesn't recognise, causing AI_TypeValidationError.
+// This was fixed for direct @ai-sdk/xai usage (https://github.com/vercel/ai/issues/10491),
+// but AI Gateway internally uses @ai-sdk/openai's responses provider where the
+// schema hasn't been updated yet, so the error still occurs through the gateway.
+function isKnownGrokReasoningError(
+	error: unknown,
+	model: LanguageModel,
+): boolean {
+	if (!String(model).includes("grok")) return false;
+	if (
+		typeof error !== "object" ||
+		error === null ||
+		!("name" in error) ||
+		(error as { name: string }).name !== "AI_TypeValidationError"
+	)
+		return false;
+	const value = (error as { value?: unknown }).value;
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"type" in value &&
+		(value as { type: string }).type === "response.reasoning_text.delta"
+	);
+}
+
 export type GenerateCommitMessageOptions = {
 	model: LanguageModel;
 	abortSignal?: AbortSignal;
@@ -40,11 +68,26 @@ export function generateCommitMessageStream(
 		);
 	}
 
+	const resolved = resolveModel(options.model);
+
 	return streamText({
-		model: resolveModel(options.model),
+		model: resolved,
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
+		onError({ error }) {
+			if (isKnownGrokReasoningError(error, options.model)) {
+				if (!grokReasoningErrorWarned) {
+					grokReasoningErrorWarned = true;
+					console.warn(
+						"[commit-message] Ignoring known AI_TypeValidationError for grok reasoning_text.delta chunk. " +
+							"See https://github.com/vercel/ai/issues/10491",
+					);
+				}
+				return;
+			}
+			console.error("[commit-message] streamText onError:", error);
+		},
 	});
 }
 
