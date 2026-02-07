@@ -1,4 +1,3 @@
-import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { preprocessDiff } from "./diff";
 import { buildResponse, resolveModel, verboseLog } from "./llm-utils";
@@ -46,11 +45,6 @@ export function generateCommitMessageStream(
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
-		providerOptions: {
-			openai: {
-				reasoningEffort: "none",
-			} satisfies OpenAIResponsesProviderOptions,
-		},
 	});
 }
 
