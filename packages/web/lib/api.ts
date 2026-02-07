@@ -302,7 +302,10 @@ function createCommitMessageSSEStream({
 				let rawCommitMessage = "";
 				let lastCommitMessage = "";
 
+				console.log("[DEBUG:SSE] Starting to consume textStream for model:", ctx.model);
+
 				for await (const chunk of stream.textStream) {
+					console.log("[DEBUG:SSE] chunk received:", JSON.stringify(chunk));
 					rawCommitMessage += chunk;
 					const commitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
 					if (VERBOSE) {
@@ -315,6 +318,7 @@ function createCommitMessageSSEStream({
 						formatEvent({ type: "commit-message", commitMessage }),
 					);
 				}
+				console.log("[DEBUG:SSE] textStream exhausted. Final raw:", JSON.stringify(rawCommitMessage));
 
 				const finalCommitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
 				if (finalCommitMessage && finalCommitMessage !== lastCommitMessage) {
@@ -395,6 +399,12 @@ function createCommitMessageSSEStream({
 				);
 				controller.close();
 			} catch (error) {
+				if (error instanceof Error) {
+					console.error("[DEBUG:SSE] error.name:", error.name);
+					if ("value" in error) {
+						console.error("[DEBUG:SSE] error.value:", JSON.stringify((error as any).value, null, 2));
+					}
+				}
 				const message = error instanceof Error ? error.message : String(error);
 				controller.enqueue(formatEvent({ type: "error", message }));
 				controller.close();
