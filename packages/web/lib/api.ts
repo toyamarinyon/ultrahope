@@ -10,7 +10,7 @@ import {
 	generationScore,
 	getDb,
 } from "@/db";
-import { getAuth } from "@/lib/auth";
+import { getAuth, getPolarClient } from "@/lib/auth";
 import {
 	assertDailyLimitNotExceeded,
 	getDailyUsageInfo,
@@ -247,6 +247,42 @@ async function fetchCommandExecutionId(
 	return commandExecutionRow[0]?.id;
 }
 
+function ingestUsageEvent({
+	userId,
+	costInMicrodollars,
+	model,
+	vendor,
+	generationId,
+}: {
+	userId: number;
+	costInMicrodollars: number;
+	model: string;
+	vendor: string;
+	generationId: string;
+}): void {
+	if (costInMicrodollars <= 0) return;
+
+	const polarClient = getPolarClient();
+	polarClient.events
+		.ingest({
+			events: [
+				{
+					name: "usage",
+					externalCustomerId: userId.toString(),
+					metadata: {
+						cost: costInMicrodollars,
+						model,
+						provider: vendor,
+						generationId,
+					},
+				},
+			],
+		})
+		.catch((error) => {
+			console.error("[polar] Failed to ingest usage event:", error);
+		});
+}
+
 type CommitMessageStreamOptions = {
 	stream: ReturnType<typeof generateCommitMessageStream>;
 	ctx: GenerateContext;
@@ -311,35 +347,45 @@ function createCommitMessageSSEStream({
 					ctx.model,
 				);
 
-				if (response.generationId && commandExecutionId) {
-					const costInMicrodollars =
-						response.cost != null
-							? Math.round(response.cost * MICRODOLLARS_PER_USD)
-							: 0;
+				const costInMicrodollars =
+					response.cost != null
+						? Math.round(response.cost * MICRODOLLARS_PER_USD)
+						: 0;
 
-					db.insert(generation)
-						.values({
-							commandExecutionId,
-							vercelAiGatewayGenerationId: response.generationId,
-							providerName: response.vendor,
-							model: response.model,
-							cost: costInMicrodollars,
-							latency: Date.now() - startedAt,
-							createdAt: new Date(),
-							gatewayPayload: null,
-							output: response.content,
-						})
-						.catch((error) => {
-							console.error("[usage] Failed to persist generation:", error);
-						});
-				} else if (!response.generationId) {
+				if (response.generationId) {
+					ingestUsageEvent({
+						userId: ctx.userId,
+						costInMicrodollars,
+						model: response.model,
+						vendor: response.vendor,
+						generationId: response.generationId,
+					});
+
+					if (commandExecutionId) {
+						db.insert(generation)
+							.values({
+								commandExecutionId,
+								vercelAiGatewayGenerationId: response.generationId,
+								providerName: response.vendor,
+								model: response.model,
+								cost: costInMicrodollars,
+								latency: Date.now() - startedAt,
+								createdAt: new Date(),
+								gatewayPayload: null,
+								output: response.content,
+							})
+							.catch((error) => {
+								console.error("[usage] Failed to persist generation:", error);
+							});
+					} else {
+						console.warn(
+							"[usage] Missing commandExecutionId for cliSessionId:",
+							ctx.cliSessionId,
+						);
+					}
+				} else {
 					console.warn(
 						"[usage] Missing generationId; skipping generation insert.",
-					);
-				} else if (!commandExecutionId) {
-					console.warn(
-						"[usage] Missing commandExecutionId for cliSessionId:",
-						ctx.cliSessionId,
 					);
 				}
 
@@ -409,35 +455,45 @@ async function executeGeneration(
 
 	const commandExecutionId = commandExecutionRow[0]?.id;
 
-	if (response.generationId && commandExecutionId) {
-		const costInMicrodollars =
-			response.cost != null
-				? Math.round(response.cost * MICRODOLLARS_PER_USD)
-				: 0;
+	const costInMicrodollars =
+		response.cost != null
+			? Math.round(response.cost * MICRODOLLARS_PER_USD)
+			: 0;
 
-		ctx.db
-			.insert(generation)
-			.values({
-				commandExecutionId,
-				vercelAiGatewayGenerationId: response.generationId,
-				providerName: response.vendor,
-				model: response.model,
-				cost: costInMicrodollars,
-				latency: Date.now() - startedAt,
-				createdAt: new Date(),
-				gatewayPayload: null,
-				output: response.content,
-			})
-			.catch((error) => {
-				console.error("[usage] Failed to persist generation:", error);
-			});
-	} else if (!response.generationId) {
+	if (response.generationId) {
+		ingestUsageEvent({
+			userId: ctx.userId,
+			costInMicrodollars,
+			model: response.model,
+			vendor: response.vendor,
+			generationId: response.generationId,
+		});
+
+		if (commandExecutionId) {
+			ctx.db
+				.insert(generation)
+				.values({
+					commandExecutionId,
+					vercelAiGatewayGenerationId: response.generationId,
+					providerName: response.vendor,
+					model: response.model,
+					cost: costInMicrodollars,
+					latency: Date.now() - startedAt,
+					createdAt: new Date(),
+					gatewayPayload: null,
+					output: response.content,
+				})
+				.catch((error) => {
+					console.error("[usage] Failed to persist generation:", error);
+				});
+		} else {
+			console.warn(
+				"[usage] Missing commandExecutionId for cliSessionId:",
+				ctx.cliSessionId,
+			);
+		}
+	} else {
 		console.warn("[usage] Missing generationId; skipping generation insert.");
-	} else if (!commandExecutionId) {
-		console.warn(
-			"[usage] Missing commandExecutionId for cliSessionId:",
-			ctx.cliSessionId,
-		);
 	}
 
 	const result: GenerateResult = {
