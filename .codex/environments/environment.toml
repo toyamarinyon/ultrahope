@@ -3,10 +3,7 @@ version = 1
 name = "ultrahope"
 
 [setup]
-script = '''
-eval "$($HOME/.local/bin/mise activate bash --shims)"
-mise trust
-'''
+script = "mise trust"
 
 [[actions]]
 name = "web"
