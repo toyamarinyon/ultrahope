@@ -43,7 +43,7 @@ function isKnownGrokReasoningError(
 		typeof value === "object" &&
 		value !== null &&
 		"type" in value &&
-		(value as { type: string }).type === "response.reasoning_text.delta"
+		(value as { type: string }).type.startsWith("response.reasoning_text.")
 	);
 }
 
@@ -86,7 +86,10 @@ export function generateCommitMessageStream(
 				}
 				return;
 			}
-			console.error("[commit-message] streamText onError:", error);
+			console.error(
+				`[commit-message] streamText onError (model: ${String(options.model)}):`,
+				error,
+			);
 		},
 	});
 }
