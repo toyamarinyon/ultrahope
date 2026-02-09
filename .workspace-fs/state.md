@@ -20,6 +20,12 @@
   - [ ] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
     - Count per CLI command (session), not per API request
     - New tables: `cli_sessions`, `api_requests` for better observability
+- [ ] **User/account deletion feature** (Privacy Policy compliance)
+  - Required by Privacy Policy commitments (GDPR, CCPA): users can request account deletion via contact
+  - Remove user data from Turso database
+  - Cancel Polar.sh subscription
+  - Revoke GitHub OAuth tokens/sessions
+  - Until self-service UI is built, handle via manual "Contact us" flow
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
   - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
