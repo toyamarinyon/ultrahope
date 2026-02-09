@@ -101,7 +101,7 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (phase !== "typing") return;
 		if (typedText.length >= activeDemo.command.length) {
-			const timeout = setTimeout(() => setPhase("waitingEnter"), 180);
+			const timeout = setTimeout(() => setPhase("waitingEnter"), 480);
 			return () => clearTimeout(timeout);
 		}
 		const timeout = setTimeout(
@@ -255,12 +255,18 @@ export function TerminalTabsDemo() {
 					<code className="text-foreground whitespace-pre-wrap break-all">
 						{typedText}
 					</code>
-					{(phase === "initial" || phase === "typing") && (
-						<span className="mt-0.5 h-4 w-2 bg-foreground/90 animate-pulse" />
-					)}
-					{phase === "waitingEnter" && (
-						<span className="animate-pulse text-foreground-muted">
-							press enter to continue ↵
+					{(phase === "initial" ||
+						phase === "typing" ||
+						phase === "waitingEnter") && (
+						<span className="flex items-center gap-2 animate-pulse">
+							<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
+							<span
+								className={`text-foreground-muted transition-opacity duration-400 ${
+									phase === "waitingEnter" ? "opacity-100" : "opacity-0"
+								}`}
+							>
+								press enter to continue ↵
+							</span>
 						</span>
 					)}
 				</div>

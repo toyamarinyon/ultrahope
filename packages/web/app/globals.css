@@ -140,6 +140,20 @@ h3 {
 	line-height: var(--text-xl--line-height);
 }
 
+/* Terminal demo: fade-in for smooth transitions */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.animate-fade-in {
+	animation: fade-in 400ms ease-out both;
+}
+
 /* Buttons */
 button,
 [role="button"] {
