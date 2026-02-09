@@ -3,9 +3,14 @@ version = 1
 name = "ultrahope"
 
 [setup]
-script = "mise trust"
+script = '''
+mise trust
+bun i
+bun x vercel link --cwd packages/web --project ultrahope-web --yes
+bun x turbo link --scope toyamarinyon --yes
+'''
 
 [[actions]]
 name = "web"
 icon = "run"
-command = "pnpm -C packages/web dev"
+command = "mise run web"
