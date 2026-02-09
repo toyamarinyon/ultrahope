@@ -6,7 +6,12 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!packages/web/public/privacy/termly-policy.html",
+			"!packages/web/openapi.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
