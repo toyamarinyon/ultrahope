@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TerminalDemo } from "./terminal-demo";
+import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
 export function MarketingHome() {
 	return (
@@ -62,15 +62,15 @@ export function MarketingHome() {
 
 					{/* Right: Interactive Terminal Demo */}
 					<div className="flex flex-col justify-center">
-						<div className="relative">
-							<div className="absolute -inset-6 rounded-[28px] bg-[radial-gradient(ellipse_at_top,_#2b261f,_transparent_60%)] opacity-70 blur-2xl" />
 							<div className="relative">
-								<TerminalDemo />
+								<div className="absolute -inset-6 rounded-[28px] bg-[radial-gradient(ellipse_at_top,_#2b261f,_transparent_60%)] opacity-70 blur-2xl" />
+								<div className="relative">
+									<TerminalTabsDemo />
+								</div>
 							</div>
-						</div>
-						<p className="mt-4 text-sm text-foreground-muted text-center">
-							Interactive demo — hover or click to start, use ↑↓ to navigate
-						</p>
+							<p className="mt-4 text-sm text-foreground-muted text-center">
+								Switch tabs to preview common CLI flows
+							</p>
 					</div>
 				</div>
 			</section>
