@@ -2,7 +2,7 @@
 
 /*
  * Ultrahope Design System
- * 
+ *
  * 灯り、発光ではなく。
  * 王道の上に空気を乗せる。
  * 色で主張しない。
@@ -101,21 +101,6 @@ pre {
 	font-family: var(--font-mono);
 }
 
-pre {
-	background-color: var(--color-canvas-dark);
-	border: 1px solid var(--color-border-subtle);
-	border-radius: var(--radius-md);
-	padding: 1rem;
-	overflow-x: auto;
-}
-
-code:not(pre code) {
-	background-color: var(--color-surface);
-	padding: 0.125rem 0.375rem;
-	border-radius: var(--radius-sm);
-	font-size: 0.875em;
-}
-
 /* Links */
 a:not(.no-underline) {
 	text-decoration: underline;
@@ -159,5 +144,4 @@ h3 {
 button,
 [role="button"] {
 	cursor: pointer;
-	transition: all var(--transition-base);
 }

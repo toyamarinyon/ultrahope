@@ -42,7 +42,8 @@ const DEMO_TABS: DemoTab[] = [
 	{
 		id: "unix-style",
 		label: "unix style",
-		command: "git diff --staged | ultrahope translate --target vcs-commit-message",
+		command:
+			"git diff --staged | ultrahope translate --target vcs-commit-message",
 		foundLine: "✔ Reading input from stdin",
 		runLine: "Generating commit message translations",
 		options: [
@@ -81,6 +82,7 @@ export function TerminalTabsDemo() {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [slots, setSlots] = useState<Slot[]>([]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: activeDemo.id is intentionally used as a reset trigger when the active tab changes
 	useEffect(() => {
 		setPhase("initial");
 		setTypedText("");
@@ -102,9 +104,12 @@ export function TerminalTabsDemo() {
 			const timeout = setTimeout(() => setPhase("waitingEnter"), 180);
 			return () => clearTimeout(timeout);
 		}
-		const timeout = setTimeout(() => {
-			setTypedText(activeDemo.command.slice(0, typedText.length + 1));
-		}, 28 + Math.random() * 24);
+		const timeout = setTimeout(
+			() => {
+				setTypedText(activeDemo.command.slice(0, typedText.length + 1));
+			},
+			28 + Math.random() * 24,
+		);
 		return () => clearTimeout(timeout);
 	}, [phase, typedText, activeDemo.command]);
 
@@ -133,17 +138,20 @@ export function TerminalTabsDemo() {
 			const timeout = setTimeout(() => setPhase("selector"), 280);
 			return () => clearTimeout(timeout);
 		}
-		const timeout = setTimeout(() => {
-			setSlots((prev) => {
-				const next = [...prev];
-				next[generatedCount] = {
-					status: "ready",
-					content: activeDemo.options[generatedCount],
-				};
-				return next;
-			});
-			setGeneratedCount((count) => count + 1);
-		}, 420 + Math.random() * 350);
+		const timeout = setTimeout(
+			() => {
+				setSlots((prev) => {
+					const next = [...prev];
+					next[generatedCount] = {
+						status: "ready",
+						content: activeDemo.options[generatedCount],
+					};
+					return next;
+				});
+				setGeneratedCount((count) => count + 1);
+			},
+			420 + Math.random() * 350,
+		);
 		return () => clearTimeout(timeout);
 	}, [phase, generatedCount, activeDemo.options]);
 
@@ -155,7 +163,11 @@ export function TerminalTabsDemo() {
 	}, [activeDemo.options.length]);
 
 	useEffect(() => {
-		if (phase !== "waitingEnter" && phase !== "selector" && phase !== "selected")
+		if (
+			phase !== "waitingEnter" &&
+			phase !== "selector" &&
+			phase !== "selected"
+		)
 			return;
 
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -213,7 +225,7 @@ export function TerminalTabsDemo() {
 				</span>
 			</div>
 
-			<div className="flex border-b border-border-subtle bg-surface/70">
+			<div className="flex bg-surface/70">
 				{DEMO_TABS.map((tab) => {
 					const isActive = tab.id === activeDemo.id;
 					return (
@@ -221,16 +233,20 @@ export function TerminalTabsDemo() {
 							key={tab.id}
 							type="button"
 							onClick={() => setActiveTab(tab.id)}
-							className={`px-3 py-2 text-xs border-r border-border-subtle transition-colors ${
+							className={`px-3 py-2 text-xs border-r border-border-subtle ${
 								isActive
 									? "bg-canvas-dark text-foreground"
-									: "text-foreground-muted hover:text-foreground-secondary"
+									: "border-b border-border-subtle text-foreground-muted hover:text-foreground-secondary"
 							}`}
 						>
 							{tab.label}
 						</button>
 					);
 				})}
+				<div
+					aria-hidden="true"
+					className="flex-1 border-b border-border-subtle"
+				/>
 			</div>
 
 			<div className="h-72 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed">
@@ -272,12 +288,14 @@ export function TerminalTabsDemo() {
 					</p>
 				)}
 
-				{(phase === "generating" || phase === "selector" || phase === "selected") && (
+				{(phase === "generating" ||
+					phase === "selector" ||
+					phase === "selected") && (
 					<div className="mt-3 space-y-2">
 						{slots.map((slot, index) => {
 							if (slot.status === "pending") {
 								return (
-									<div key={`pending-${index}`} className="opacity-50">
+									<div key={`pending-${String(index)}`} className="opacity-50">
 										○ Generating...
 									</div>
 								);
@@ -310,7 +328,9 @@ export function TerminalTabsDemo() {
 					<div className="mt-4">
 						<p className="text-green-400">✔ Candidate selected</p>
 						<p className="text-green-400">{activeDemo.applyLine}</p>
-						<p className="mt-1 text-foreground-muted">{selectedSlot?.content}</p>
+						<p className="mt-1 text-foreground-muted">
+							{selectedSlot?.content}
+						</p>
 						<p className="mt-2 animate-pulse text-foreground-muted">
 							press r to reroll
 						</p>
