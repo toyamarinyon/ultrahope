@@ -154,6 +154,12 @@ export default async function PricingPage() {
 						);
 					})}
 				</section>
+
+				<div className="mt-10 text-sm text-foreground-secondary">
+					<Link href="/privacy" className="hover:opacity-80">
+						Privacy Policy
+					</Link>
+				</div>
 			</div>
 		</main>
 	);

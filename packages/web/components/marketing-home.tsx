@@ -109,6 +109,11 @@ export function MarketingHome() {
 				<pre className="text-lg">
 					<code>npm install -g @ultrahope/cli</code>
 				</pre>
+				<div className="mt-6 text-sm text-foreground-secondary">
+					<Link href="/privacy" className="hover:opacity-80">
+						Privacy Policy
+					</Link>
+				</div>
 			</section>
 		</main>
 	);

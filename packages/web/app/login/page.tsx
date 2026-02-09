@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -50,6 +51,11 @@ export default function LoginPage() {
 				>
 					Sign in with GitHub
 				</button>
+				<div className="mt-6 text-center text-sm text-foreground-secondary">
+					<Link href="/privacy" className="hover:opacity-80">
+						Privacy Policy
+					</Link>
+				</div>
 			</div>
 		</main>
 	);
