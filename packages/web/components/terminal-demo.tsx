@@ -8,24 +8,33 @@ const COMMIT_MESSAGES = [
 	{
 		content: "feat(auth): add OAuth2 device flow for CLI authentication",
 		model: "mistral/mistral-nemo",
-		cost: "$0.00012",
+		cost: 0.00012,
 	},
 	{
 		content: "feat: implement device authorization flow with token refresh",
 		model: "cerebras/llama-3.1-8b",
-		cost: "$0.00008",
+		cost: 0.00008,
 	},
 	{
 		content: "feat(cli): add login command with device code verification",
 		model: "openai/gpt-5-nano",
-		cost: "$0.00015",
+		cost: 0.00015,
 	},
 	{
 		content: "feat: OAuth2 device flow integration for CLI",
 		model: "xai/grok-code-fast-1",
-		cost: "$0.00010",
+		cost: 0.0001,
 	},
 ];
+
+type Slot =
+	| { status: "pending"; model: string }
+	| {
+			status: "ready";
+			content: string;
+			model: string;
+			cost: number;
+	  };
 
 type Phase =
 	| "initial"
@@ -34,7 +43,32 @@ type Phase =
 	| "analyzing"
 	| "generating"
 	| "selector"
-	| "committed";
+	| "selected";
+
+function createPendingSlots(): Slot[] {
+	return COMMIT_MESSAGES.map((message) => ({
+		status: "pending" as const,
+		model: message.model,
+	}));
+}
+
+function formatModelName(model: string): string {
+	const parts = model.split("/");
+	return parts.length > 1 ? parts[1] : model;
+}
+
+function formatTotalCost(totalCost: number): string {
+	return `$${totalCost.toFixed(6)}`;
+}
+
+function getTotalCost(slots: Slot[]): number {
+	return slots.reduce((sum, slot) => {
+		if (slot.status === "ready") {
+			return sum + slot.cost;
+		}
+		return sum;
+	}, 0);
+}
 
 export function TerminalDemo() {
 	const [phase, setPhase] = useState<Phase>("initial");
@@ -42,22 +76,22 @@ export function TerminalDemo() {
 	const [spinnerFrame, setSpinnerFrame] = useState(0);
 	const [generatedCount, setGeneratedCount] = useState(0);
 	const [selectedIndex, setSelectedIndex] = useState(0);
-	const [visibleMessages, setVisibleMessages] = useState<
-		typeof COMMIT_MESSAGES
-	>([]);
+	const [slots, setSlots] = useState<Slot[]>([]);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 
 	const command = "git ultrahope commit";
 
-	const reset = useCallback(() => {
-		setPhase("initial");
-		setTypedText("");
-		setSpinnerFrame(0);
+	const reroll = useCallback(() => {
+		setPhase("generating");
 		setGeneratedCount(0);
 		setSelectedIndex(0);
-		setVisibleMessages([]);
+		setSlots(createPendingSlots());
 	}, []);
+
+	const readyCount = slots.filter((slot) => slot.status === "ready").length;
+	const totalCost = getTotalCost(slots);
+	const costSuffix = totalCost > 0 ? ` (total: ${formatTotalCost(totalCost)})` : "";
 
 	// Initial delay before typing starts
 	useEffect(() => {
@@ -80,7 +114,7 @@ export function TerminalDemo() {
 			60 + Math.random() * 40,
 		);
 		return () => clearTimeout(timeout);
-	}, [phase, typedText]);
+	}, [phase, typedText, command]);
 
 	// Waiting for Enter - keyboard/click handler
 	useEffect(() => {
@@ -104,7 +138,12 @@ export function TerminalDemo() {
 	// Analyzing phase
 	useEffect(() => {
 		if (phase !== "analyzing") return;
-		const timeout = setTimeout(() => setPhase("generating"), 800);
+		const timeout = setTimeout(() => {
+			setGeneratedCount(0);
+			setSelectedIndex(0);
+			setSlots(createPendingSlots());
+			setPhase("generating");
+		}, 800);
 		return () => clearTimeout(timeout);
 	}, [phase]);
 
@@ -117,52 +156,68 @@ export function TerminalDemo() {
 		return () => clearInterval(interval);
 	}, [phase]);
 
-	// Generating phase - add messages
+	// Generating phase - fill slots
 	useEffect(() => {
 		if (phase !== "generating") return;
+
 		if (generatedCount >= COMMIT_MESSAGES.length) {
-			setTimeout(() => setPhase("selector"), 300);
-			return;
+			const timeout = setTimeout(() => {
+				setSlots((prev) => prev.filter((slot) => slot.status === "ready"));
+				setSelectedIndex(0);
+				setPhase("selector");
+			}, 300);
+			return () => clearTimeout(timeout);
 		}
+
 		const delay = 400 + Math.random() * 600;
 		const timeout = setTimeout(() => {
-			setVisibleMessages((prev) => [...prev, COMMIT_MESSAGES[generatedCount]]);
-			setGeneratedCount((c) => c + 1);
+			const nextMessage = COMMIT_MESSAGES[generatedCount];
+			setSlots((prev) => {
+				const next = [...prev];
+				next[generatedCount] = {
+					status: "ready",
+					content: nextMessage.content,
+					model: nextMessage.model,
+					cost: nextMessage.cost,
+				};
+				return next;
+			});
+			setGeneratedCount((count) => count + 1);
 		}, delay);
+
 		return () => clearTimeout(timeout);
 	}, [phase, generatedCount]);
 
-	// Keyboard navigation for selector and committed
+	// Keyboard navigation for selector and selected phases
 	useEffect(() => {
-		if (phase !== "selector" && phase !== "committed") return;
+		if (phase !== "selector" && phase !== "selected") return;
+
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (phase === "committed") {
-				if (e.key === "r") {
-					e.preventDefault();
-					reset();
-				}
+			if (e.key === "r") {
+				e.preventDefault();
+				reroll();
 				return;
 			}
+
+			if (phase === "selected") {
+				return;
+			}
+
 			if (e.key === "ArrowUp" || e.key === "k") {
 				e.preventDefault();
 				setSelectedIndex((i) => Math.max(0, i - 1));
 			} else if (e.key === "ArrowDown" || e.key === "j") {
 				e.preventDefault();
-				setSelectedIndex((i) => Math.min(visibleMessages.length - 1, i + 1));
+				setSelectedIndex((i) => Math.min(slots.length - 1, i + 1));
 			} else if (e.key === "Enter") {
 				e.preventDefault();
-				setPhase("committed");
-			} else if (e.key === "r") {
-				e.preventDefault();
-				setPhase("generating");
-				setGeneratedCount(0);
-				setVisibleMessages([]);
-				setSelectedIndex(0);
+				setPhase("selected");
 			}
 		};
+
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [phase, visibleMessages.length, reset]);
+	}, [phase, reroll, slots.length]);
 
 	// Auto-scroll to bottom when content changes
 	useEffect(() => {
@@ -214,59 +269,81 @@ export function TerminalDemo() {
 					)}
 				</div>
 
-				{/* Analyzing */}
+				{/* Found staged changes */}
 				{(phase === "analyzing" ||
 					phase === "generating" ||
 					phase === "selector" ||
-					phase === "committed") && (
+					phase === "selected") && (
 					<div className="mt-4 text-green-400">
 						✔ Found 1 file, 5 insertions, 3 deletions
 					</div>
 				)}
 
-				{/* Generating */}
+				{/* Generating header */}
 				{phase === "generating" && (
 					<div className="mt-2 text-yellow-400">
 						<span>{SPINNER_FRAMES[spinnerFrame]}</span>
 						<span className="ml-2">
-							Generating commit messages... {generatedCount}/
-							{COMMIT_MESSAGES.length}
+							Generating commit messages... {readyCount}/{COMMIT_MESSAGES.length}
+							{costSuffix}
 						</span>
 					</div>
 				)}
 
-				{/* Selector */}
-				{(phase === "selector" || phase === "committed") && (
+				{/* Selector header */}
+				{(phase === "selector" || phase === "selected") && (
 					<>
 						<div className="mt-2 text-green-400">
-							✔ {visibleMessages.length} commit messages generated
+							✔ {slots.length} commit messages generated
+							{costSuffix}
 						</div>
 						<div className="mt-2">
 							<span className="text-cyan-400">?</span>
 							<span className="ml-2">Select a commit message</span>
 							<span className="ml-2 text-foreground-muted">
-								↑↓ navigate ⏎ confirm e edit r reroll q quit
+								↑↓ navigate ⏎ confirm r reroll
 							</span>
 						</div>
+					</>
+				)}
 
-						<div className="mt-4 space-y-3">
-							{visibleMessages.map((msg, i) => (
+				{/* Slots */}
+				{(phase === "generating" || phase === "selector" || phase === "selected") && (
+					<div className="mt-4 space-y-3">
+						{slots.map((slot, i) => {
+							if (slot.status === "pending") {
+								return (
+									<div key={`pending-${slot.model}`} className="opacity-60">
+										<div className="flex items-center gap-2">
+											<span className="text-foreground-muted">○</span>
+											<span>Generating...</span>
+										</div>
+										<div className="ml-6 text-foreground-muted text-xs">
+											{formatModelName(slot.model)}
+										</div>
+									</div>
+								);
+							}
+
+							const isSelected = i === selectedIndex;
+							return (
 								// biome-ignore lint/a11y/useSemanticElements: Interactive list item with complex children
 								<div
-									key={msg.model}
+									key={`ready-${slot.model}`}
 									className={`cursor-pointer transition-opacity ${
-										i === selectedIndex ? "opacity-100" : "opacity-50"
+										isSelected ? "opacity-100" : "opacity-50"
 									}`}
 									role="button"
 									tabIndex={0}
 									onMouseEnter={() =>
-										phase === "selector" && setSelectedIndex(i)
+										(phase === "selector" || phase === "selected") &&
+										setSelectedIndex(i)
 									}
 									onClick={(e) => {
 										e.stopPropagation();
 										if (phase === "selector") {
 											setSelectedIndex(i);
-											setPhase("committed");
+											setPhase("selected");
 										}
 									}}
 									onKeyDown={(e) => {
@@ -274,52 +351,31 @@ export function TerminalDemo() {
 											e.stopPropagation();
 											if (phase === "selector") {
 												setSelectedIndex(i);
-												setPhase("committed");
+												setPhase("selected");
 											}
 										}
 									}}
 								>
 									<div className="flex items-center gap-2">
-										<span
-											className={
-												i === selectedIndex
-													? "text-foreground"
-													: "text-foreground-muted"
-											}
-										>
-											{i === selectedIndex ? "●" : "○"}
+										<span className={isSelected ? "text-foreground" : "text-foreground-muted"}>
+											{isSelected ? "●" : "○"}
 										</span>
-										<span
-											className={
-												i === selectedIndex ? "font-bold text-foreground" : ""
-											}
-										>
-											{msg.content}
+										<span className={isSelected ? "font-bold text-foreground" : ""}>
+											{slot.content}
 										</span>
 									</div>
 									<div className="ml-6 text-cyan-400 text-xs">
-										{msg.model.split("/")[1]} {msg.cost}
+										{formatModelName(slot.model)} ${slot.cost.toFixed(6)}
 									</div>
 								</div>
-							))}
-						</div>
-					</>
+							);
+						})}
+					</div>
 				)}
 
-				{/* Committed */}
-				{phase === "committed" && (
-					<div className="mt-6">
-						<div className="text-green-400">✔ Message selected</div>
-						<div className="text-green-400">✔ Running git commit</div>
-						<div className="mt-2 text-foreground-muted">
-							[main abc1234] {visibleMessages[selectedIndex]?.content}
-						</div>
-						<div className="text-foreground-muted">
-							1 file changed, 5 insertions(+), 3 deletions(-)
-						</div>
-						<div className="mt-4 text-foreground-muted text-sm animate-pulse">
-							press r to replay
-						</div>
+				{phase === "selected" && (
+					<div className="mt-4 text-foreground-muted text-sm animate-pulse">
+						press r to reroll
 					</div>
 				)}
 			</div>
