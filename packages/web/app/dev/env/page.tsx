@@ -1,10 +1,17 @@
 export const dynamic = "force-dynamic";
 
+type EnvEntry = [key: string, value: string | undefined];
+
 export default function DevEnvPage() {
-	const nextEnvEntries = Object.entries(process.env)
-		.filter(([key]) => key.startsWith("NEXT_"))
-		.sort(([a], [b]) => a.localeCompare(b));
-	const explicitNextPublicEntries = [
+	const sortEnvEntries = (entries: EnvEntry[]) =>
+		entries.sort(([a], [b]) => a.localeCompare(b));
+
+	const nextEnvEntries = sortEnvEntries(
+		(Object.entries(process.env) as EnvEntry[]).filter(([key]) =>
+			key.startsWith("NEXT_"),
+		),
+	);
+	const explicitNextPublicEntries: EnvEntry[] = [
 		["NEXT_PUBLIC_VERCEL_ENV", process.env.NEXT_PUBLIC_VERCEL_ENV],
 		["NEXT_PUBLIC_VERCEL_TARGET_ENV", process.env.NEXT_PUBLIC_VERCEL_TARGET_ENV],
 		["NEXT_PUBLIC_VERCEL_URL", process.env.NEXT_PUBLIC_VERCEL_URL],
@@ -53,7 +60,8 @@ export default function DevEnvPage() {
 			"NEXT_PUBLIC_VERCEL_GIT_PULL_REQUEST_ID",
 			process.env.NEXT_PUBLIC_VERCEL_GIT_PULL_REQUEST_ID,
 		],
-	].sort(([a], [b]) => a.localeCompare(b));
+	];
+	sortEnvEntries(explicitNextPublicEntries);
 
 	return (
 		<main className="min-h-screen px-8 py-12">
