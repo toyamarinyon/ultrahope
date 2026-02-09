@@ -11,6 +11,7 @@ import {
 	getDb,
 } from "@/db";
 import { getAuth, getPolarClient } from "@/lib/auth";
+import { baseUrl } from "@/lib/base-url";
 import {
 	assertDailyLimitNotExceeded,
 	getDailyUsageInfo,
@@ -188,7 +189,7 @@ async function enforceDailyLimitOr402(
 					resetsAt: error.resetsAt.toISOString(),
 					plan: "free",
 					actions: {
-						upgrade: "https://ultrahope.dev/pricing",
+						upgrade: `${baseUrl}/pricing`,
 					},
 					hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
 				},
@@ -217,9 +218,8 @@ function enforceProBalanceOr402(
 				balance: billingInfo.balance,
 				plan: billingInfo.plan,
 				actions: {
-					buyCredits: "https://ultrahope.dev/settings/billing#credits",
-					enableAutoRecharge:
-						"https://ultrahope.dev/settings/billing#auto-recharge",
+					buyCredits: `${baseUrl}/settings/billing#credits`,
+					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
 				hint: "Purchase additional credits or enable auto-recharge to continue.",
 			},
@@ -455,9 +455,8 @@ async function executeGeneration(
 				balance: billingInfo.balance,
 				plan: billingInfo.plan,
 				actions: {
-					buyCredits: "https://ultrahope.dev/settings/billing#credits",
-					enableAutoRecharge:
-						"https://ultrahope.dev/settings/billing#auto-recharge",
+					buyCredits: `${baseUrl}/settings/billing#credits`,
+					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
 				hint: "Purchase additional credits or enable auto-recharge to continue.",
 			},
@@ -695,7 +694,7 @@ const apiRoutes = new Elysia()
 						resetsAt: error.resetsAt.toISOString(),
 						plan: "free" as const,
 						actions: {
-							upgrade: "https://ultrahope.dev/pricing",
+							upgrade: `${baseUrl}/pricing`,
 						},
 						hint: "Upgrade to Pro for unlimited requests with $5 included credit.",
 					};

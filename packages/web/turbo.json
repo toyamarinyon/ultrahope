@@ -10,7 +10,7 @@
 				"GITHUB_*",
 				"EMAIL_FROM",
 				"POLAR_*",
-				"BETTER_AUTH"
+				"BETTER_AUTH_*"
 			],
 			"inputs": ["$TURBO_DEFAULT$", ".env.*"]
 		}

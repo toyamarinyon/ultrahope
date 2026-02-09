@@ -1,12 +1,10 @@
 import { polarClient } from "@polar-sh/better-auth";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
+import { baseUrl } from "./base-url";
 
 const authClient = createAuthClient({
-	baseURL:
-		process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-			? `https://ultrahope.dev`
-			: "http://localhost:3100",
+	baseURL: baseUrl,
 	plugins: [deviceAuthorizationClient(), polarClient()],
 });
 

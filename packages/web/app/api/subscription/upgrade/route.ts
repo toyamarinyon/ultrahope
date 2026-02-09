@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAuth, getPolarClient } from "@/lib/auth";
+import { baseUrl } from "@/lib/base-url";
 
 export async function POST(request: NextRequest) {
 	const auth = getAuth();
@@ -22,11 +23,6 @@ export async function POST(request: NextRequest) {
 			{ status: 400 },
 		);
 	}
-
-	const baseUrl =
-		process.env.NODE_ENV === "production"
-			? "https://ultrahope.dev"
-			: "http://localhost:3100";
 
 	try {
 		const checkout = await polarClient.checkouts.create({
