@@ -303,7 +303,10 @@ function createCommitMessageSSEStream({
 				let lastCommitMessage = "";
 
 				if (VERBOSE) {
-					console.log("[VERBOSE:SSE] Starting to consume textStream for model:", ctx.model);
+					console.log(
+						"[VERBOSE:SSE] Starting to consume textStream for model:",
+						ctx.model,
+					);
 				}
 
 				for await (const chunk of stream.textStream) {
@@ -323,7 +326,10 @@ function createCommitMessageSSEStream({
 					);
 				}
 				if (VERBOSE) {
-					console.log("[VERBOSE:SSE] textStream exhausted. Final raw:", JSON.stringify(rawCommitMessage));
+					console.log(
+						"[VERBOSE:SSE] textStream exhausted. Final raw:",
+						JSON.stringify(rawCommitMessage),
+					);
 				}
 
 				const finalCommitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
@@ -408,7 +414,10 @@ function createCommitMessageSSEStream({
 				if (VERBOSE && error instanceof Error) {
 					console.error("[VERBOSE:SSE] error.name:", error.name);
 					if ("value" in error) {
-						console.error("[VERBOSE:SSE] error.value:", JSON.stringify((error as any).value, null, 2));
+						console.error(
+							"[VERBOSE:SSE] error.value:",
+							JSON.stringify(error.value, null, 2),
+						);
 					}
 				}
 				const message = error instanceof Error ? error.message : String(error);
