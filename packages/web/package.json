@@ -12,7 +12,6 @@
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "3.0.25",
-		"@ai-sdk/xai": "3.0.48",
 		"@elysiajs/openapi": "^1.4.14",
 		"@libsql/client": "0.17.0",
 		"@libsql/isomorphic-ws": "0.1.5",
