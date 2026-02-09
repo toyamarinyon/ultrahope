@@ -4,7 +4,14 @@
 	"tasks": {
 		"build": {
 			"outputs": [".next/**/*", "!.next/cache/**/*", "!.next/dev/**/*"],
-			"env": ["TURSO_*", "RESEND_API_KEY", "GITHUB_*", "EMAIL_FROM", "POLAR_*"],
+			"env": [
+				"TURSO_*",
+				"RESEND_API_KEY",
+				"GITHUB_*",
+				"EMAIL_FROM",
+				"POLAR_*",
+				"BETTER_AUTH"
+			],
 			"inputs": ["$TURBO_DEFAULT$", ".env.*"]
 		}
 	}
