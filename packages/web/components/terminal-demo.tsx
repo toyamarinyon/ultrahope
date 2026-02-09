@@ -92,6 +92,10 @@ export function TerminalDemo() {
 	const readyCount = slots.filter((slot) => slot.status === "ready").length;
 	const totalCost = getTotalCost(slots);
 	const costSuffix = totalCost > 0 ? ` (total: ${formatTotalCost(totalCost)})` : "";
+	const selectedSlot =
+		slots[selectedIndex] && slots[selectedIndex].status === "ready"
+			? slots[selectedIndex]
+			: null;
 
 	// Initial delay before typing starts
 	useEffect(() => {
@@ -374,8 +378,18 @@ export function TerminalDemo() {
 				)}
 
 				{phase === "selected" && (
-					<div className="mt-4 text-foreground-muted text-sm animate-pulse">
-						press r to reroll
+					<div className="mt-6">
+						<div className="text-green-400">✔ Message selected</div>
+						<div className="text-green-400">✔ Running git commit</div>
+						<div className="mt-2 text-foreground-muted">
+							[main abc1234] {selectedSlot?.content}
+						</div>
+						<div className="text-foreground-muted">
+							1 file changed, 5 insertions(+), 3 deletions(-)
+						</div>
+						<div className="mt-4 text-foreground-muted text-sm animate-pulse">
+							press r to reroll
+						</div>
 					</div>
 				)}
 			</div>
