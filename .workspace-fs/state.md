@@ -20,12 +20,18 @@
   - [ ] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
     - Count per CLI command (session), not per API request
     - New tables: `cli_sessions`, `api_requests` for better observability
-- [ ] **User/account deletion feature** (Privacy Policy compliance)
-  - Required by Privacy Policy commitments (GDPR, CCPA): users can request account deletion via contact
-  - Remove user data from Turso database
-  - Cancel Polar.sh subscription
-  - Revoke GitHub OAuth tokens/sessions
-  - Until self-service UI is built, handle via manual "Contact us" flow
+- [ ] **Account management**
+  - [ ] **Billing & plan change**
+    - [ ] Pro → Free downgrade (Polar `subscriptions.cancel()` + recreate Free subscription, or delegate to Polar portal)
+    - [ ] Link to Polar customer portal (`portal()` plugin already enabled; add link from settings page)
+    - [ ] Billing history display
+  - [ ] **Account deletion** (Privacy Policy compliance: GDPR, CCPA)
+    - [ ] Phase 1: Operational script `scripts/delete-user.ts` (manual "Contact us" flow)
+      - Delete Polar customer (`customers.delete()`)
+      - Revoke GitHub OAuth token (GitHub API `DELETE /applications/{client_id}/grant`)
+      - Delete Turso user (CASCADE removes all related rows)
+    - [ ] Phase 2: Self-service API endpoint + settings UI
+  - [ ] **Settings UI** (unified account settings page for all of the above)
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
   - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
@@ -69,7 +75,7 @@
   - [x] Verify translate command (after Minimax API implementation)
   - [x] npm publish
 - [ ] `packages/web` remaining tasks → [decisions/web-package.md](decisions/web-package.md)
-  - [ ] Account management
+  - ~~Account management~~ → consolidated into top-level "Account management" task
   - [x] Add Email/Password auth alongside GitHub OAuth
     - `/login`: sign in + sign up with email/password
     - `/device`: unauthenticated state supports email/password auth
