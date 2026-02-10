@@ -13,6 +13,21 @@ import { baseUrl } from "./base-url";
 let cachedAuth: ReturnType<typeof betterAuth> | null = null;
 let cachedPolarClient: Polar | null = null;
 
+function resolvePolarServer(): "sandbox" | "production" {
+	const fromEnv = process.env.POLAR_SERVER;
+	if (fromEnv === "sandbox" || fromEnv === "production") {
+		return fromEnv;
+	}
+
+	// On Vercel, NODE_ENV is "production" for both preview and production.
+	// Use VERCEL_ENV to avoid pointing preview deployments to Polar production.
+	if (process.env.VERCEL_ENV) {
+		return process.env.VERCEL_ENV === "production" ? "production" : "sandbox";
+	}
+
+	return process.env.NODE_ENV === "production" ? "production" : "sandbox";
+}
+
 export function getAuth() {
 	if (cachedAuth) return cachedAuth;
 
@@ -153,7 +168,7 @@ export function getPolarClient() {
 	if (!cachedPolarClient) {
 		cachedPolarClient = new Polar({
 			accessToken: process.env.POLAR_ACCESS_TOKEN,
-			server: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+			server: resolvePolarServer(),
 		});
 	}
 	return cachedPolarClient;
