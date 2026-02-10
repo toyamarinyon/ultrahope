@@ -1,5 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Markdown from "react-markdown";
 
 export const metadata: Metadata = {
 	title: "Privacy Policy | Ultrahope",
@@ -7,6 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPage() {
+	const mdPath = path.join(process.cwd(), "app/privacy/privacy.md");
+	const content = fs.readFileSync(mdPath, "utf-8");
+
 	return (
 		<main className="min-h-screen px-8 py-12">
 			<div className="mx-auto w-full max-w-5xl">
@@ -17,11 +23,9 @@ export default function PrivacyPage() {
 				>
 					ULTRAHOPE
 				</Link>
-				<iframe
-					src="/privacy/termly-policy.html"
-					title="Ultrahope Privacy Policy"
-					className="w-full min-h-[85vh] rounded-xl border border-border-subtle"
-				/>
+				<article className="privacy-content">
+					<Markdown>{content}</Markdown>
+				</article>
 			</div>
 		</main>
 	);
