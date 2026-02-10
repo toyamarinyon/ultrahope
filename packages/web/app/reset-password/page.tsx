@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
 import { resetPassword } from "@/lib/auth-client";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
 	const searchParams = useSearchParams();
 	const token = useMemo(() => searchParams.get("token") ?? "", [searchParams]);
 	const [newPassword, setNewPassword] = useState("");
@@ -118,5 +118,21 @@ export default function ResetPasswordPage() {
 				)}
 			</div>
 		</main>
+	);
+}
+
+export default function ResetPasswordPage() {
+	return (
+		<Suspense
+			fallback={
+				<main className="min-h-screen px-8 py-24 flex items-center justify-center">
+					<div className="w-full max-w-md border border-border-subtle bg-surface rounded-lg p-8">
+						<p className="text-foreground-secondary">Loading...</p>
+					</div>
+				</main>
+			}
+		>
+			<ResetPasswordContent />
+		</Suspense>
 	);
 }
