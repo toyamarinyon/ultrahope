@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { requestPasswordReset } from "@/lib/auth-client";
 
 export default function ForgotPasswordPage() {
@@ -47,8 +47,8 @@ export default function ForgotPasswordPage() {
 				{submitted ? (
 					<div className="space-y-4">
 						<p className="text-sm text-foreground-secondary">
-							If an account exists for this email, a password reset link has been
-							sent.
+							If an account exists for this email, a password reset link has
+							been sent.
 						</p>
 						<Link
 							href="/login"

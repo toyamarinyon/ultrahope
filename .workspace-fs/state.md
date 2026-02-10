@@ -26,10 +26,14 @@
     - [ ] Link to Polar customer portal (`portal()` plugin already enabled; add link from settings page)
     - [ ] Billing history display
   - [ ] **Account deletion** (Privacy Policy compliance: GDPR, CCPA)
-    - [ ] Phase 1: Operational script `scripts/delete-user.ts` (manual "Contact us" flow)
-      - Delete Polar customer (`customers.delete()`)
-      - Revoke GitHub OAuth token (GitHub API `DELETE /applications/{client_id}/grant`)
-      - Delete Turso user (CASCADE removes all related rows)
+    - [x] Phase 1: Operational script `scripts/delete-user.ts` (manual "Contact us" flow)
+      - [x] Delete Polar customer (`customers.delete()`)
+      - [x] Revoke GitHub OAuth token (GitHub API `DELETE /applications/{client_id}/grant`)
+      - [x] Delete Turso user (CASCADE removes all related rows)
+      - [x] Add safety controls (`--dry-run` default, `--execute --confirm <email>` required)
+      - Runbook:
+        - Dry run: `mise run delete-user:dry-run <user@example.com>`
+        - Execute: `mise run delete-user:execute <user@example.com> <user@example.com>`
     - [ ] Phase 2: Self-service API endpoint + settings UI
   - [ ] **Settings UI** (unified account settings page for all of the above)
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)

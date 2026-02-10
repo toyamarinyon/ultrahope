@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { signIn, signUp, useSession } from "@/lib/auth-client";
 
 type AuthMode = "signin" | "signup";
@@ -108,8 +108,7 @@ export default function LoginPage() {
 					Sign in to Ultrahope
 				</h1>
 				<p className="text-foreground-secondary mb-8">
-					Continue with GitHub or Email/Password to authorize the web
-					dashboard.
+					Continue with GitHub or Email/Password to authorize the web dashboard.
 				</p>
 				<div className="grid grid-cols-2 gap-2 mb-4">
 					<button
