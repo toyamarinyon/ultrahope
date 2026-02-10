@@ -70,6 +70,10 @@
   - [x] npm publish
 - [ ] `packages/web` remaining tasks → [decisions/web-package.md](decisions/web-package.md)
   - [ ] Account management
+  - [x] Add Email/Password auth alongside GitHub OAuth
+    - `/login`: sign in + sign up with email/password
+    - `/device`: unauthenticated state supports email/password auth
+    - Password reset flow: `/forgot-password` and `/reset-password`
   - [x] Pricing / billing (Polar.sh integration) — Better Auth Polar plugin integration complete
   - [ ] API Playground
 - [x] Adjust Polar.sh Benefits/Meters (details: [decisions/billing-meter-design.md](decisions/billing-meter-design.md))

@@ -139,6 +139,16 @@ Use the same Better Auth instance and authenticate via cookie-based sessions. Th
 | Magic Link | ✅ Plugin | ✅ Built-in |
 | GitHub OAuth | ✅ Built-in | ✅ Built-in |
 
+## Update: Email/Password + Reset Password
+
+- Keep GitHub OAuth as-is and enable Better Auth `emailAndPassword` for web auth.
+- Allow sign up with email/password in all environments (including Preview) to simplify test-user creation.
+- Add email/password auth entry on `/device` so CLI Device Flow can be completed without OAuth.
+- Implement password reset end-to-end:
+  - request form: `/forgot-password`
+  - reset form: `/reset-password?token=...`
+  - reset email delivery via Resend (`emailAndPassword.sendResetPassword`)
+
 ## References
 
 - [Better Auth Device Authorization](https://www.better-auth.com/docs/plugins/device-authorization)

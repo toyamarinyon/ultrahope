@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { device, signIn, useSession } from "@/lib/auth-client";
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { device, signIn, signUp, useSession } from "@/lib/auth-client";
 
 type Status =
 	| "idle"
@@ -11,12 +12,19 @@ type Status =
 	| "approved"
 	| "denied"
 	| "error";
+type AuthMode = "signin" | "signup";
 
 export default function DevicePage() {
 	const { data: session, isPending } = useSession();
 	const [userCode, setUserCode] = useState("");
 	const [status, setStatus] = useState<Status>("idle");
 	const [error, setError] = useState<string | null>(null);
+	const [authMode, setAuthMode] = useState<AuthMode>("signin");
+	const [authName, setAuthName] = useState("");
+	const [authEmail, setAuthEmail] = useState("");
+	const [authPassword, setAuthPassword] = useState("");
+	const [authError, setAuthError] = useState<string | null>(null);
+	const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 	const containerClass =
 		"min-h-screen px-8 py-24 flex items-center justify-center";
 	const panelClass =
@@ -25,6 +33,59 @@ export default function DevicePage() {
 		"inline-flex items-center justify-center px-4 py-3 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60 disabled:cursor-wait";
 	const secondaryButtonClass =
 		"inline-flex items-center justify-center px-4 py-3 border border-border text-foreground font-medium rounded-md hover:bg-surface-hover disabled:opacity-60 disabled:cursor-wait";
+
+	const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setAuthError(null);
+
+		const normalizedEmail = authEmail.trim().toLowerCase();
+		if (!normalizedEmail || !normalizedEmail.includes("@")) {
+			setAuthError("Please enter a valid email address.");
+			return;
+		}
+		if (!authPassword) {
+			setAuthError("Please enter your password.");
+			return;
+		}
+		if (authMode === "signup" && authPassword.length < 8) {
+			setAuthError("Password must be at least 8 characters.");
+			return;
+		}
+		if (authMode === "signup" && !authName.trim()) {
+			setAuthError("Please enter your name.");
+			return;
+		}
+
+		setIsAuthSubmitting(true);
+		try {
+			if (authMode === "signin") {
+				const result = await signIn.email({
+					email: normalizedEmail,
+					password: authPassword,
+					callbackURL: "/device",
+				});
+				if (result.error) {
+					setAuthError(result.error.message || "Failed to sign in.");
+					return;
+				}
+			} else {
+				const result = await signUp.email({
+					name: authName.trim(),
+					email: normalizedEmail,
+					password: authPassword,
+					callbackURL: "/device",
+				});
+				if (result.error) {
+					setAuthError(result.error.message || "Failed to create account.");
+					return;
+				}
+			}
+		} catch {
+			setAuthError("Authentication failed. Please try again.");
+		} finally {
+			setIsAuthSubmitting(false);
+		}
+	};
 
 	const handleVerify = async () => {
 		if (!userCode.trim()) return;
@@ -108,12 +169,99 @@ export default function DevicePage() {
 						Sign in to continue
 					</h1>
 					<p className="text-foreground-secondary mb-6">
-						Authorize your CLI by signing in with GitHub.
+						Authorize your CLI by signing in with GitHub or Email/Password.
 					</p>
+					<div className="grid grid-cols-2 gap-2 mb-3">
+						<button
+							type="button"
+							onClick={() => {
+								setAuthMode("signin");
+								setAuthError(null);
+							}}
+							className={`px-3 py-2 rounded-md border text-sm ${
+								authMode === "signin"
+									? "bg-foreground text-canvas border-foreground"
+									: "border-border text-foreground"
+							}`}
+						>
+							Email sign in
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								setAuthMode("signup");
+								setAuthError(null);
+							}}
+							className={`px-3 py-2 rounded-md border text-sm ${
+								authMode === "signup"
+									? "bg-foreground text-canvas border-foreground"
+									: "border-border text-foreground"
+							}`}
+						>
+							Create account
+						</button>
+					</div>
+					<form onSubmit={handleAuthSubmit} className="space-y-3 mb-4">
+						{authMode === "signup" ? (
+							<input
+								type="text"
+								value={authName}
+								onChange={(e) => setAuthName(e.target.value)}
+								placeholder="Name"
+								className="w-full px-4 py-3 bg-canvas-dark border border-border rounded-md placeholder:text-foreground-muted"
+								disabled={isAuthSubmitting}
+							/>
+						) : null}
+						<input
+							type="email"
+							value={authEmail}
+							onChange={(e) => setAuthEmail(e.target.value)}
+							placeholder="Email"
+							className="w-full px-4 py-3 bg-canvas-dark border border-border rounded-md placeholder:text-foreground-muted"
+							disabled={isAuthSubmitting}
+						/>
+						<input
+							type="password"
+							value={authPassword}
+							onChange={(e) => setAuthPassword(e.target.value)}
+							placeholder="Password"
+							className="w-full px-4 py-3 bg-canvas-dark border border-border rounded-md placeholder:text-foreground-muted"
+							disabled={isAuthSubmitting}
+						/>
+						{authError ? (
+							<p className="text-sm text-red-400">{authError}</p>
+						) : null}
+						<button
+							type="submit"
+							disabled={isAuthSubmitting}
+							className={`${primaryButtonClass} w-full`}
+						>
+							{isAuthSubmitting
+								? "Processing..."
+								: authMode === "signin"
+									? "Sign in with Email"
+									: "Create account with Email"}
+						</button>
+					</form>
+					<div className="text-right mb-5">
+						<Link href="/forgot-password" className="text-sm hover:opacity-80">
+							Forgot password?
+						</Link>
+					</div>
+					<div className="relative my-5">
+						<div className="absolute inset-0 flex items-center">
+							<div className="w-full border-t border-border" />
+						</div>
+						<div className="relative flex justify-center text-xs uppercase">
+							<span className="bg-surface px-2 text-foreground-secondary">
+								Or
+							</span>
+						</div>
+					</div>
 					<button
 						type="button"
 						onClick={() =>
-							signIn.social({ provider: "github", callbackURL: "/device" })
+							void signIn.social({ provider: "github", callbackURL: "/device" })
 						}
 						className={primaryButtonClass}
 					>
