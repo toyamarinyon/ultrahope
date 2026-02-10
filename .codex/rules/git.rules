@@ -1,0 +1,8 @@
+prefix_rule(
+  pattern=["git", "pull"],
+  decision="allow"
+)
+prefix_rule(
+  pattern=["git", "push"],
+  decision="allow"
+)
