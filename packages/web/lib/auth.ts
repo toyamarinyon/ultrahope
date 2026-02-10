@@ -8,9 +8,25 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
 import { getDb } from "@/db";
 import * as schema from "@/db/schemas";
+import { baseUrl } from "./base-url";
 
 let cachedAuth: ReturnType<typeof betterAuth> | null = null;
 let cachedPolarClient: Polar | null = null;
+
+function resolvePolarServer(): "sandbox" | "production" {
+	const fromEnv = process.env.POLAR_SERVER;
+	if (fromEnv === "sandbox" || fromEnv === "production") {
+		return fromEnv;
+	}
+
+	// On Vercel, NODE_ENV is "production" for both preview and production.
+	// Use VERCEL_ENV to avoid pointing preview deployments to Polar production.
+	if (process.env.VERCEL_ENV) {
+		return process.env.VERCEL_ENV === "production" ? "production" : "sandbox";
+	}
+
+	return process.env.NODE_ENV === "production" ? "production" : "sandbox";
+}
 
 export function getAuth() {
 	if (cachedAuth) return cachedAuth;
@@ -29,6 +45,20 @@ export function getAuth() {
 			github: {
 				clientId: process.env.GITHUB_CLIENT_ID ?? "",
 				clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+			},
+		},
+		emailAndPassword: {
+			enabled: true,
+			disableSignUp: false,
+			sendResetPassword: async ({ user, token }) => {
+				const resend = new Resend(process.env.RESEND_API_KEY);
+				const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+				await resend.emails.send({
+					from: process.env.EMAIL_FROM ?? "noreply@ultrahope.dev",
+					to: user.email,
+					subject: "Reset your Ultrahope password",
+					html: `<p>Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+				});
 			},
 		},
 		databaseHooks: {
@@ -138,7 +168,7 @@ export function getPolarClient() {
 	if (!cachedPolarClient) {
 		cachedPolarClient = new Polar({
 			accessToken: process.env.POLAR_ACCESS_TOKEN,
-			server: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+			server: resolvePolarServer(),
 		});
 	}
 	return cachedPolarClient;

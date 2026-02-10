@@ -8,6 +8,13 @@ const authClient = createAuthClient({
 	plugins: [deviceAuthorizationClient(), polarClient()],
 });
 
-export const { signIn, signOut, useSession } = authClient;
+export const {
+	signIn,
+	signUp,
+	signOut,
+	useSession,
+	requestPasswordReset,
+	resetPassword,
+} = authClient;
 export const device = authClient.device;
 export const checkout = authClient.checkout;
