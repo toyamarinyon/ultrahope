@@ -6,6 +6,9 @@ pnpm = "latest"
 description = "Run format, typecheck, and knip checks"
 run = "bun run ok"
 
+[tasks."web:dev"]
+run = "bun --cwd packages/web dev"
+
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
 run = "mise -E sandbox exec -- bun scripts/polar-sync.ts --server sandbox --recreate"

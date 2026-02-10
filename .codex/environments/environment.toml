@@ -4,13 +4,16 @@ name = "ultrahope"
 
 [setup]
 script = '''
+eval "$($HOME/.local/bin/mise activate bash --cd $PWD --shims)"
 mise trust
+
 bun i
 bun x vercel link --cwd packages/web --project ultrahope-web --yes
 bun x turbo link --scope toyamarinyon --yes
+bun scripts/randomize-port.ts
 '''
 
 [[actions]]
 name = "web"
 icon = "run"
-command = "mise run web"
+command = "bun --cwd packages/web dev"
