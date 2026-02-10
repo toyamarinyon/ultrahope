@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useMemo, useState } from "react";
+import { type FormEvent, Suspense, useMemo, useState } from "react";
 import { resetPassword } from "@/lib/auth-client";
 
 function ResetPasswordContent() {

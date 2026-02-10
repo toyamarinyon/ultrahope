@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { device, signIn, signUp, useSession } from "@/lib/auth-client";
 
 type Status =
