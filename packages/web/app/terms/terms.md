@@ -111,14 +111,13 @@ You are solely responsible for your Submissions and you expressly agree to reimb
 ## 3. USER REPRESENTATIONS
 
 By using the Services, you represent and warrant that: (1) you have the legal capacity and you agree to comply with these Legal Terms; (2) you are not a
-minor in the jurisdiction in which you reside; (3) you will not access the Services through automated or non-human means, whether through a bot, script or
-otherwise; (4) you will not use the Services for any illegal or unauthorized purpose; and (5) your use of the Services will not violate any applicable law or regulation.
+minor in the jurisdiction in which you reside; (3) you will not access the Services through unauthorized automated or non-human means, including through a bot, script, scraper, or similar method that is not expressly permitted by us; (4) you will not use the Services for any illegal or unauthorized purpose; and (5) your use of the Services will not violate any applicable law or regulation.
 
 If you provide any information that is untrue, inaccurate, not current, or incomplete, we have the right to suspend or terminate your account and refuse any and all current or future use of the Services (or any portion thereof).
 
 ## 4. PROHIBITED ACTIVITIES
 
-You may not access or use the Services for any purpose other than that for which we make the Services available. The Services may not be used in connection with any commercial endeavors except those that are specifically endorsed or approved by us.
+You may not access or use the Services for any purpose other than that for which we make the Services available. Subject to your plan and these Legal Terms, you may use the Services for personal or internal business purposes, including legitimate commercial use. You may not resell, sublicense, or provide the Services to third parties as a standalone service without our prior written permission.
 
 As a user of the Services, you agree not to:
 
@@ -140,7 +139,7 @@ As a user of the Services, you agree not to:
 
 - Upload or transmit (or attempt to upload or to transmit) viruses, Trojan horses, or other material, including excessive use of capital letters and spamming (continuous posting of repetitive text), that interferes with any party’s uninterrupted use and enjoyment of the Services or modifies, impairs, disrupts, alters, or interferes with the use, features, functions, operation, or maintenance of the Services.
 
-- Engage in any automated use of the system, such as using scripts to send comments or messages, or using any data mining, robots, or similar data gathering and extraction tools.
+- Engage in unauthorized automated use of the system, such as using scripts to send spam, abusive, or fraudulent comments or messages, or using unauthorized data mining, robots, or similar data gathering and extraction tools.
 
 - Delete the copyright or other proprietary rights notice from any Content.
 
@@ -158,13 +157,13 @@ As a user of the Services, you agree not to:
 
 - Except as permitted by applicable law, decipher, decompile, disassemble, or reverse engineer any of the software comprising or in any way making up a part of the Services.
 
-- Except as may be the result of standard search engine or Internet browser usage, use, launch, develop, or distribute any automated system, including without limitation, any spider, robot, cheat utility, scraper, or offline reader that accesses the Services, or use or launch any unauthorized script or other software.
+- Except as may be the result of standard search engine or Internet browser usage or our expressly permitted tools and APIs (including the official Ultrahope CLI), use, launch, develop, or distribute any unauthorized automated system, including without limitation, any spider, robot, cheat utility, scraper, or offline reader that accesses the Services, or use or launch any unauthorized script or other software.
 
 - Use a buying agent or purchasing agent to make purchases on the Services.
 
 - Make any unauthorized use of the Services, including collecting usernames and/or email addresses of users by electronic or other means for the purpose of sending unsolicited email, or creating user accounts by automated means or under false pretenses.
 
-- Use the Services as part of any effort to compete with us or otherwise use the Services and/or the Content for any revenue-generating endeavor or commercial enterprise.
+- Use the Services as part of any effort to compete with us, or to build, benchmark, train, market, or operate a substantially similar service using the Services or Content, except as expressly permitted by us.
 
 ## 5. USER GENERATED CONTRIBUTIONS
 

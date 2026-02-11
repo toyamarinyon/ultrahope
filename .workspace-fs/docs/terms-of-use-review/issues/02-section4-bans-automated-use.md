@@ -1,7 +1,7 @@
 # Issue #2: Section 4 bans automated use/scripts — contradicts CLI tool
 
 **Priority:** HIGH
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -25,4 +25,18 @@ Rewrite the prohibited activities to carve out authorized CLI/API usage and legi
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Updated Section 4 in the Terms of Use to prohibit only unauthorized automation and to explicitly allow authorized tools and APIs, including the official CLI. Also removed blanket commercial-use prohibition and replaced it with a narrower competitive-use restriction.
+
+**Summary of changes:**
+- Updated opening paragraph of Section 4 to allow legitimate commercial use under plan terms and prohibit resale/sublicensing without permission.
+- Rewrote automated-use prohibition to target unauthorized, abusive, spam, or fraudulent automation.
+- Added explicit carve-out for expressly permitted tools and APIs, including the official Ultrahope CLI.
+- Replaced broad "revenue-generating endeavor or commercial enterprise" prohibition with a narrower competition/clone-building restriction.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:120`
+- `packages/web/app/terms/terms.md:142`
+- `packages/web/app/terms/terms.md:160`
+- `packages/web/app/terms/terms.md:166`

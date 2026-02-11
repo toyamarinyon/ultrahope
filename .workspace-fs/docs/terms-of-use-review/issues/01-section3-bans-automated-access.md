@@ -1,7 +1,7 @@
 # Issue #1: Section 3 bans automated/bot access — contradicts CLI tool
 
 **Priority:** HIGH
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -21,4 +21,12 @@ Remove or rewrite this representation to exclude authorized CLI and API usage. F
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Updated Section 3 in the Terms of Use to prohibit only unauthorized automation, rather than banning all automated or non-human access. This resolves the direct contradiction with authorized CLI/API usage.
+
+**Updated wording (Section 3, item 3):**
+> "you will not access the Services through unauthorized automated or non-human means, including through a bot, script, scraper, or similar method that is not expressly permitted by us"
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:114`

@@ -8,8 +8,8 @@
 
 | Priority | # | Issue | Status |
 |----------|---|-------|--------|
-| HIGH | [1](issues/01-section3-bans-automated-access.md) | Section 3 bans automated/bot access — contradicts CLI tool | ⬜ TODO |
-| HIGH | [2](issues/02-section4-bans-automated-use.md) | Section 4 bans automated use/scripts — contradicts CLI tool | ⬜ TODO |
+| HIGH | [1](issues/01-section3-bans-automated-access.md) | Section 3 bans automated/bot access — contradicts CLI tool | ✅ DONE |
+| HIGH | [2](issues/02-section4-bans-automated-use.md) | Section 4 bans automated use/scripts — contradicts CLI tool | ✅ DONE |
 | HIGH | [3](issues/03-submissions-clause-ip-assignment.md) | "Submissions" clause implies IP assignment of user code | ⬜ TODO |
 | HIGH | [4](issues/04-section5-contradicts-itself.md) | Section 5 contradicts itself about user content | ⬜ TODO |
 | HIGH | [5](issues/05-no-ai-llm-disclaimers.md) | No mention of AI/LLM or disclaimers about generated content | ⬜ TODO |
