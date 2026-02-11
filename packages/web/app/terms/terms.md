@@ -28,7 +28,7 @@ We recommend that you print a copy of these Legal Terms for your records.
 
 [5. USER GENERATED CONTRIBUTIONS](#5-user-generated-contributions)
 
-[6. CONTRIBUTION LICENSE](#6-contribution-license)
+[6. CONTRIBUTIONS, DATA USE, AND AI OUTPUT](#6-contributions-data-use-and-ai-output)
 
 [7. SERVICES MANAGEMENT](#7-services-management)
 
@@ -78,6 +78,8 @@ We may throttle, delay, reject, or suspend requests that exceed applicable limit
 
 Certain features require an account. You agree to provide accurate account information and to keep it up to date.
 
+If you choose to sign in through a third-party authentication provider (such as GitHub), you authorize us to receive account information from that provider as permitted by your authorization settings and the provider's policies. Your use of such provider is also subject to that provider's terms and policies.
+
 You are responsible for maintaining the confidentiality of your account credentials and access tokens, and for all activities that occur under your account. If you suspect unauthorized use of your account, you must promptly notify us.
 
 You may delete your account using available account settings. Account deletion may result in loss of access to associated data and features, subject to legal retention requirements and our data handling policies.
@@ -90,7 +92,7 @@ We are the owner or the licensee of all intellectual property rights in our Serv
 
 Our Content and Marks are protected by copyright and trademark laws (and various other intellectual property rights and unfair competition laws) and treaties around the world.
 
-The Content and Marks are provided in or through the Services "AS IS" for your personal, non-commercial use or internal business purpose only.
+The Content and Marks are provided in or through the Services "AS IS" for your personal use, internal business use, or other uses expressly permitted under your plan and these Legal Terms.
 
 ### Your use of our Services
 
@@ -99,7 +101,7 @@ Subject to your compliance with these Legal Terms, including the "PROHIBITED ACT
 - access the Services; and
 
 - download or print a copy of any portion of the Content to which you have properly gained access,
-solely for your personal, non-commercial use or internal business purpose.
+solely for your personal use, internal business use, or other uses expressly permitted under your plan and these Legal Terms.
 
 Except as set out in this section or elsewhere in our Legal Terms, no part of the Services and no Content or Marks may be copied, reproduced,
 aggregated, republished, uploaded, posted, publicly displayed, encoded,
@@ -190,9 +192,9 @@ As a user of the Services, you agree not to:
 
 ## 5. USER GENERATED CONTRIBUTIONS
 
-The Services allow you to submit content to us in order to use the product features (for example, repository metadata, code diffs, prompts, commands, and feedback) (collectively, "Contributions"). The Services are not a public publishing platform, and your Contributions are submitted primarily for processing and service operation rather than public display. When you create or submit any Contributions, you represent and warrant that:
+The Services allow you to submit content to us in order to use the product features (for example, repository metadata, code diffs, prompts, commands, and feedback) (collectively, "Contributions"). The Services are not a public publishing platform, and your Contributions are submitted primarily for processing and service operation rather than public display.
 
-## 6. CONTRIBUTION LICENSE
+## 6. CONTRIBUTIONS, DATA USE, AND AI OUTPUT
 
 You and Services agree that we may access, store, process, and use any information and personal data that you provide and your choices (including settings).
 
@@ -266,7 +268,7 @@ of data, you are solely responsible for all data that you transmit or that
 relates to any activity you have undertaken using the Services. You agree
 that we shall have no liability to you for any loss or corruption of any such
 data, and you hereby waive any right of action against us arising from any such
-loss or corruption of such data.
+loss or corruption of such data. We retain account and service usage data for as long as needed to provide the Services, comply with legal obligations, resolve disputes, and enforce these Legal Terms. For details about retention periods and data handling practices, see our Privacy Policy at [https://ultrahope.dev/privacy](https://ultrahope.dev/privacy).
 
 ## 17. ELECTRONIC COMMUNICATIONS, TRANSACTIONS, AND SIGNATURES
 

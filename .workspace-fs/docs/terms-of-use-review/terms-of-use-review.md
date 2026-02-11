@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-11
 **File reviewed:** `packages/web/app/terms/terms.md`
-**Status:** 🟢 Complete
+**Status:** 🟢 Complete (Round 2)
 
 ## Progress
 
@@ -19,6 +19,11 @@
 | MEDIUM | [9](issues/09-european-arbitration-chamber.md) | European Arbitration Chamber unusual for Japan-based company | ✅ DONE |
 | LOW | [10](issues/10-no-api-rate-limits.md) | No mention of API rate limits or usage quotas | ✅ DONE |
 | LOW | [11](issues/11-no-account-terms.md) | No account-related terms despite full auth system | ✅ DONE |
+| MEDIUM | [12](issues/12-section2-commercial-use-contradiction.md) | Section 2 "non-commercial use" contradicts paid plans | ✅ DONE |
+| LOW | [13](issues/13-section5-incomplete-sentence.md) | Section 5 ends with incomplete sentence | ✅ DONE |
+| LOW | [14](issues/14-section6-title-mismatch.md) | Section 6 title doesn't match content structure | ✅ DONE |
+| MEDIUM | [15](issues/15-no-data-retention-policy.md) | No data retention policy disclosed | ✅ DONE |
+| LOW | [16](issues/16-github-oauth-not-mentioned.md) | GitHub OAuth authentication not mentioned | ✅ DONE |
 
 > Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
 
@@ -26,28 +31,40 @@
 
 ## Summary
 
-Found **11 issues** where the Terms of Use diverge from the actual implementation:
+**Round 1 (Initial Review):** Found 11 issues — all resolved ✅
 
-### Critical Issues (HIGH Priority)
+**Round 2 (Full Re-read):** Found 5 additional issues where the Terms of Use have minor inconsistencies or omissions:
 
-The most serious problems involve fundamental contradictions between the terms and the core service:
+### Round 1 Issues (All Resolved ✅)
 
-- **Issues #1-2:** The terms ban automated/bot access and scripts, but the CLI tool (the primary interface) is literally a script that makes automated API calls
-- **Issue #3:** The "Submissions" clause could be read as assigning IP rights to user source code
-- **Issue #4:** Section 5 contradicts itself about whether users can submit content
-- **Issue #5:** No disclosure that the service uses AI/LLM or processes code through third-party AI providers
+#### Critical Issues (HIGH Priority) — RESOLVED
+- **Issues #1-2:** The terms ban automated/bot access and scripts, but the CLI tool (the primary interface) is literally a script that makes automated API calls ✅
+- **Issue #3:** The "Submissions" clause could be read as assigning IP rights to user source code ✅
+- **Issue #4:** Section 5 contradicts itself about whether users can submit content ✅
+- **Issue #5:** No disclosure that the service uses AI/LLM or processes code through third-party AI providers ✅
 
-### Business Model Gaps (MEDIUM Priority)
+#### Business Model Gaps (MEDIUM Priority) — RESOLVED
+- **Issue #6:** No mention of pricing, subscriptions, billing, refunds despite full payment system ✅
+- **Issue #7:** CLI tool not included in service definition ✅
+- **Issue #8:** Commercial use is prohibited, but Pro plan is sold for commercial use ✅
+- **Issue #9:** Belgian arbitration institution specified for Japan-based company ✅
 
-- **Issue #6:** No mention of pricing, subscriptions, billing, refunds despite full payment system
-- **Issue #7:** CLI tool not included in service definition
-- **Issue #8:** Commercial use is prohibited, but Pro plan is sold for commercial use
-- **Issue #9:** Belgian arbitration institution specified for Japan-based company
+#### Operational Details (LOW Priority) — RESOLVED
+- **Issue #10:** API rate limits and quotas not disclosed ✅
+- **Issue #11:** No account registration, security, or deletion terms ✅
 
-### Operational Details (LOW Priority)
+---
 
-- **Issue #10:** API rate limits and quotas not disclosed
-- **Issue #11:** No account registration, security, or deletion terms
+### Round 2 Issues (New Findings)
+
+#### MEDIUM Priority
+- **Issue #12:** Section 2 still restricts use to "non-commercial" despite Section 4 allowing commercial use under plan terms — internal contradiction
+- **Issue #15:** No data retention policy disclosed in Terms (though Privacy Policy covers it)
+
+#### LOW Priority
+- **Issue #13:** Section 5 ends with incomplete sentence ("...you represent and warrant that:")
+- **Issue #14:** Section 6 title "CONTRIBUTION LICENSE" doesn't reflect that it includes a major AI subsection
+- **Issue #16:** GitHub OAuth authentication not mentioned in account terms
 
 ---
 
