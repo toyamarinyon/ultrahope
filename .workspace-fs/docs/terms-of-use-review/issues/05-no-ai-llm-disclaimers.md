@@ -1,7 +1,7 @@
 # Issue #5: No mention of AI/LLM or disclaimers about generated content
 
 **Priority:** HIGH
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -30,4 +30,16 @@ Add a dedicated section covering:
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Added a dedicated AI section under Section 6 to disclose AI usage and set clear expectations for generated output.
+
+**Summary of changes:**
+- Added explicit statement that Ultrahope uses AI/LLM systems to generate commit messages and PR text.
+- Added user responsibility clause requiring review/validation of generated output before use.
+- Added non-determinism and no-quality-guarantee language for AI output.
+- Added disclosure that third-party providers are used via Vercel AI Gateway.
+- Added statement that models/providers/routing may change without notice for operational reasons.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:179`

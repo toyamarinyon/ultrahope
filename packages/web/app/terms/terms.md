@@ -101,6 +101,8 @@ Input Content and Output: Source code, diffs, prompts, repository metadata, and 
 
 Limited license to operate the Services: You grant us a non-exclusive, worldwide, royalty-free license to host, copy, transmit, process, and display your Input Content only as necessary to provide, maintain, secure, and improve the Services for you, comply with law, and prevent abuse.
 
+No hidden or exploitative use: We do not sell your Input Content, claim ownership of it, or use it for unrelated purposes beyond the limited purposes described in these Legal Terms.
+
 Third-party AI processing: To provide the Services, we may process Input Content through third-party infrastructure and AI model providers, including via Vercel AI Gateway. We configure model/provider routing to providers that support zero data retention.
 
 No training use without consent: We do not use your Input Content or Output to train foundation models unless you explicitly opt in.
@@ -175,6 +177,18 @@ You and Services agree that we may access, store, process, and use any informati
 By submitting suggestions or other feedback regarding the Services, you agree that we can use and share such feedback for any purpose without compensation to you.
 
 We do not assert any ownership over your Contributions. You retain full ownership of all of your Contributions and any intellectual property rights or other proprietary rights associated with your Contributions. We are not liable for any statements or representations in your Contributions provided by you in any area on the Services. You are solely responsible for your Contributions to the Services and you expressly agree to exonerate us from any and all responsibility and to refrain from any legal action against us regarding your Contributions.
+
+### AI SERVICES AND GENERATED OUTPUT
+
+The Services use artificial intelligence and large language models ("AI Services") to generate content such as commit messages, pull request titles, and pull request descriptions ("Output").
+
+Output may be incomplete, inaccurate, offensive, or unsuitable for your use case. You are solely responsible for reviewing, validating, and approving Output before use in your repositories, workflows, or production systems.
+
+AI Services are probabilistic and may produce different Output for similar or identical inputs. We do not guarantee that Output will be correct, complete, consistent, or fit for any particular purpose.
+
+To provide the Services, we may process your Contributions and related request data through third-party providers, including via Vercel AI Gateway. We may change models, providers, and routing configurations at any time, including for performance, reliability, safety, availability, or cost reasons.
+
+Tool role in your workflow: The Services function as a developer tool in your workflow, similar to a Unix pipeline component. The Services process your input and return assistive output, but you remain solely responsible for deciding whether and how to use that output.
 
 ## 7. SERVICES MANAGEMENT
 
