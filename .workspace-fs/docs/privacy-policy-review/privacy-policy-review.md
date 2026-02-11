@@ -2,8 +2,28 @@
 
 **Date:** 2026-02-11
 **File reviewed:** `packages/web/public/privacy/pivacy.md`
+**Status:** 🔴 In Progress
 
-## Accurate Sections
+## Progress
+
+| Priority | # | Issue | Status |
+|----------|---|-------|--------|
+| HIGH | 1 | Section 15 says data isn't stored — it is | ⬜ TODO |
+| HIGH | 2 | AI provider list is hardcoded and inaccurate | ⬜ TODO |
+| HIGH | 3 | Collected data significantly under-disclosed | ⬜ TODO |
+| MEDIUM | 4 | Resend not listed as third-party provider | ⬜ TODO |
+| MEDIUM | 5 | Vercel not listed as third-party provider | ⬜ TODO |
+| MEDIUM | 6 | Cookie/tracking section overstates reality | ⬜ TODO |
+| MEDIUM | 7 | Polar data sharing under-specified | ⬜ TODO |
+| LOW | 8 | Data retention policy is vague | ⬜ TODO |
+| LOW | 9 | Data deletion/export not implemented | ⬜ TODO |
+| LOW | 10 | Database region (Japan) not disclosed | ⬜ TODO |
+
+> Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
+
+---
+
+## Accurate Sections (No Action Needed)
 
 - CLI + Web API dual-component description (Introduction)
 - Core functionality: sending git diffs to third-party LLM providers for commit message generation
@@ -13,11 +33,13 @@
 - Section 15: user-submitted content processed by AI
 - Servers located in the US (Vercel hosting)
 
-## Issues Found
+---
+
+## Issues
 
 ### HIGH Priority
 
-#### 1. Section 15 contradicts actual data storage
+#### 1. Section 15 contradicts actual data storage — ⬜ TODO
 
 **Policy states:** Content is not stored beyond the duration of the request.
 
@@ -25,7 +47,12 @@
 
 **Action:** Either disclose that data is stored and specify a retention period, or implement code to delete payloads after processing.
 
-#### 2. AI provider list is inaccurate (Section 6)
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 2. AI provider list is inaccurate (Section 6) — ⬜ TODO
 
 **Policy states:** Cerebras, OpenAI, xAI, Mistral AI.
 
@@ -33,7 +60,12 @@
 
 **Action:** Replace the fixed list with a reference to a `/models` page that can be updated alongside code deployments.
 
-#### 3. Collected data is under-disclosed (Section 1)
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 3. Collected data is under-disclosed (Section 1) — ⬜ TODO
 
 **Policy lists:** IP address, browser info, device info (standard log data).
 
@@ -47,21 +79,36 @@
 
 **Action:** Add these to the "Automatically Collected Information" or "Information Collected During Service Use" sections.
 
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
 ### MEDIUM Priority
 
-#### 4. Resend (email service) not disclosed
+#### 4. Resend (email service) not disclosed — ⬜ TODO
 
 **Reality:** Resend sends password-reset and magic-link emails. User email addresses are shared with Resend.
 
 **Action:** List Resend as a third-party service provider.
 
-#### 5. Vercel not disclosed
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 5. Vercel not disclosed — ⬜ TODO
 
 **Reality:** The application is hosted on Vercel, and Vercel AI Gateway routes all LLM requests.
 
 **Action:** List Vercel under "Website Hosting Service Providers" and "AI Platforms."
 
-#### 6. Cookie / tracking section overstates reality (Section 5)
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 6. Cookie / tracking section overstates reality (Section 5) — ⬜ TODO
 
 **Policy states:** Third-party advertising tracking technologies are permitted; mentions targeted advertising.
 
@@ -69,7 +116,12 @@
 
 **Action:** Remove references to targeted advertising and third-party tracking that do not exist.
 
-#### 7. Polar usage-data sharing under-specified (Section 4)
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 7. Polar usage-data sharing under-specified (Section 4) — ⬜ TODO
 
 **Policy states:** Data shared with "Payment Processors" (generic).
 
@@ -77,9 +129,14 @@
 
 **Action:** Specify what usage data is shared with Polar.
 
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
 ### LOW Priority
 
-#### 8. Data retention is vague (Section 9)
+#### 8. Data retention is vague (Section 9) — ⬜ TODO
 
 **Policy states:** "As long as you have an account."
 
@@ -87,7 +144,12 @@
 
 **Action:** Define a retention policy and implement automated cleanup, or be explicit that data is retained indefinitely.
 
-#### 9. Data deletion / export not implemented
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 9. Data deletion / export not implemented — ⬜ TODO
 
 **Policy states (Section 18):** Users can request data review, update, and deletion via GitHub Issues.
 
@@ -95,7 +157,12 @@
 
 **Action:** Implement a deletion workflow to back the policy promise, especially for GDPR/CCPA compliance.
 
-#### 10. Database region not disclosed
+**Resolution:**
+<!-- Record what was done here -->
+
+---
+
+#### 10. Database region not disclosed — ⬜ TODO
 
 **Policy states:** Servers in the United States.
 
@@ -103,17 +170,5 @@
 
 **Action:** Add Japan to Section 8 (International Transfers) as a data-storage location.
 
-## Summary
-
-| Priority | # | Issue |
-|----------|---|-------|
-| HIGH | 1 | Section 15 says data isn't stored — it is |
-| HIGH | 2 | AI provider list is hardcoded and inaccurate |
-| HIGH | 3 | Collected data significantly under-disclosed |
-| MEDIUM | 4 | Resend not listed as third-party provider |
-| MEDIUM | 5 | Vercel not listed as third-party provider |
-| MEDIUM | 6 | Cookie/tracking section overstates reality |
-| MEDIUM | 7 | Polar data sharing under-specified |
-| LOW | 8 | Data retention policy is vague |
-| LOW | 9 | Data deletion/export not implemented |
-| LOW | 10 | Database region (Japan) not disclosed |
+**Resolution:**
+<!-- Record what was done here -->
