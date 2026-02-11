@@ -216,7 +216,7 @@ The categories of third parties we may share personal information with are as fo
 
 - Data Storage Service Providers (Turso — [https://turso.tech/privacy](https://turso.tech/privacy))
 
-- Payment Processors (Polar — [https://polar.sh/legal/privacy](https://polar.sh/legal/privacy)). For each generation event, we send your customer ID, generation cost in microdollars, AI model name, provider name, and generation ID to Polar for metered billing purposes.
+- Payment Processors (Polar — [https://polar.sh/legal/privacy](https://polar.sh/legal/privacy)). When you sign up, we create a customer record in Polar for all users, including users on the free plan. For each generation event, we send your customer ID, generation cost in microdollars, AI model name, provider name, and generation ID to Polar for metered billing purposes.
 
 - Social Networks
 
