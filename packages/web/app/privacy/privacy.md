@@ -94,7 +94,7 @@ Sensitive Information. We do not process sensitive information.
 
 Payment Data. We may collect data necessary to process your payment if you choose to make purchases, such as your payment instrument number, and the security code associated with your payment instrument. All payment data is handled and stored by Polar. You may find their privacy notice link(s) here: [https://polar.sh/legal/privacy](https://polar.sh/legal/privacy).
 
-Social Media Login Data. We may provide you with the option to register with us using your existing social media account details, like your Facebook, X, or other social media account. If you choose to register in this way, we will collect certain profile information about you from the social media provider, as described in the section called "[HOW DO WE HANDLE YOUR SOCIAL LOGINS?](#sociallogins)" below.
+Social Media Login Data. We may provide you with the option to register with us using your existing social media account details, like your GitHub account. If you choose to register in this way, we will collect certain profile information about you from the social media provider, as described in the section called "[HOW DO WE HANDLE YOUR SOCIAL LOGINS?](#sociallogins)" below.
 
 All personal information that you provide to us must be true, complete, and accurate, and you must notify us of any changes to such personal information.
 
@@ -262,7 +262,7 @@ All personal information processed using our AI Products is handled in line with
 
 In Short: If you choose to register or log in to our Services using a social media account, we may have access to certain information about you.
 
-Our Services offer you the ability to register and log in using your third-party social media account details (like your Facebook or X logins). Where you choose to do this, we will receive certain profile information about you from your social media provider. The profile information we receive may vary depending on the social media provider concerned, but will often include your name, email address, friends list, and profile picture, as well as other information you choose to make public on such a social media platform.
+Our Services offer you the ability to register and log in using your third-party social media account details (like your GitHub login). Where you choose to do this, we will receive certain profile information about you from your social media provider. The profile information we receive may vary depending on the social media provider concerned, but will often include your name, email address, friends list, and profile picture, as well as other information you choose to make public on such a social media platform.
 
 We will use the information we receive only for the purposes that are described in this Privacy Notice or that are otherwise made clear to you on the relevant Services. Please note that we do not control, and are not responsible for, other uses of your personal information by your third-party social media provider. We recommend that you review their privacy notice to understand how they collect, use, and share your personal information, and how you can set your privacy preferences on their sites and apps.
 
