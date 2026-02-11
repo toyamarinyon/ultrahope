@@ -16,4 +16,4 @@ bun scripts/randomize-port.ts
 [[actions]]
 name = "web"
 icon = "run"
-command = "bun --cwd packages/web dev"
+command = "mise run web:dev"

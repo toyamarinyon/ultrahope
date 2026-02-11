@@ -19,6 +19,7 @@ Required scopes:
 - `checkouts:write` - create checkout sessions (`POST /v1/checkouts/`)
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
 - `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
+- `orders:read` - list user billing history on the settings page (`GET /v1/orders/`)
 - `events:write` - ingest token consumption events for usage-based billing (`POST /v1/events/ingest`)
 - `customer_meters:read` - check token balance before API calls (`GET /v1/customer-meters/`)
 
