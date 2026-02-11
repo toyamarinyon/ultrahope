@@ -216,7 +216,7 @@ The categories of third parties we may share personal information with are as fo
 
 - Payment Processors (Polar — [https://polar.sh/legal/privacy](https://polar.sh/legal/privacy)). When you sign up, we create a customer record in Polar for all users, including users on the free plan. For each generation event, we send your customer ID, generation cost in microdollars, AI model name, provider name, and generation ID to Polar for metered billing purposes.
 
-- Social Networks
+- Social Networks (GitHub — [https://docs.github.com/privacy](https://docs.github.com/privacy)) for optional OAuth login
 
 - User Account Registration & Authentication Services
 

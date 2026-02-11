@@ -4,11 +4,11 @@
 **Category:** Third-Party Sharing
 **Impact:** Unclear what this refers to
 **Effort:** 2 minutes
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy lists (Section 4, line 221):**
 ```markdown
@@ -235,3 +235,20 @@ After updating:
 - But misleading category name
 - Easy to clarify with 2-minute edit
 - Improves developer understanding
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Clarify the category with concrete provider and purpose
+
+Findings:
+- The "Social Networks" category referred to GitHub OAuth login.
+- Without naming GitHub, the category was ambiguous and could be misread as broader social-media sharing.
+
+Policy update:
+- Replaced the generic category entry with:
+  `Social Networks (GitHub — https://docs.github.com/privacy) for optional OAuth login`
+- This keeps disclosure while removing ambiguity.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`

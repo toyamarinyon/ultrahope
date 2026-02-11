@@ -16,7 +16,7 @@
 | MEDIUM | 6 | Security measures too vague | ✅ DONE |
 | MEDIUM | 7 | Backup retention period unclear | ✅ DONE |
 | MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ✅ DONE |
-| MEDIUM | 9 | "Social Networks" unclear | ⬜ TODO |
+| MEDIUM | 9 | "Social Networks" unclear | ✅ DONE |
 | LOW | 10 | Document too long (535 lines) | ⬜ TODO |
 | LOW | 11 | "may" overuse creates ambiguity | ⬜ TODO |
 | LOW | 12 | Passive voice overuse | ⬜ TODO |
@@ -47,7 +47,7 @@
 | Overall Structure & Readability | 7.5/10 | 10% | Too long (535 lines), US state laws overly detailed |
 | Information Collection Transparency | 8.5/10 | 20% | Excellent detail; IP/User-Agent wording now aligned with implementation |
 | AI Processing Explanation | 7.0/10 | 15% | Transparency is good; Section 6 now serves as the canonical explanation |
-| Third-Party Sharing Clarity | 6.5/10 | 15% | Polar very detailed; remaining clarity issues are category wording |
+| Third-Party Sharing Clarity | 6.5/10 | 15% | Third-party categories are now more concrete; further improvement is possible with a full service table |
 | Data Retention & Security | 7.0/10 | 15% | Retention tradeoffs are explicit and security controls are now concrete |
 | User Rights | 6.0/10 | 15% | Deletion easy, but no export yet |
 | Tone & Language | 5.0/10 | 5% | Too much legal boilerplate, passive voice |
