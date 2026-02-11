@@ -122,7 +122,7 @@ When you use Ultrahope to generate commit messages, pull request descriptions, o
 
 - Generated Output. The complete AI-generated text (e.g., commit messages, pull request titles and descriptions) returned by our AI Service Providers.
 
-- Usage Metadata. Information about each generation event, including the AI model and provider used, processing cost in microdollars, and timestamps.
+- Usage Metadata. Information about each generation event, including the AI model and provider used, processing cost in microdollars, processing latency, timestamps, and Vercel AI Gateway response metadata (JSON).
 
 - User Feedback. If you choose to rate a generation result, we store the feedback score (1–5) you provide.
 
