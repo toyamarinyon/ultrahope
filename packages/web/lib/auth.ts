@@ -4,7 +4,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins/bearer";
 import { deviceAuthorization } from "better-auth/plugins/device-authorization";
-import { magicLink } from "better-auth/plugins/magic-link";
 import { Resend } from "resend";
 import { getDb } from "@/db";
 import * as schema from "@/db/schemas";
@@ -113,17 +112,6 @@ export function getAuth() {
 				expiresIn: "30m",
 				validateClient: async (clientId) => {
 					return clientId === "ultrahope-cli";
-				},
-			}),
-			magicLink({
-				sendMagicLink: async ({ email, url }) => {
-					const resend = new Resend(process.env.RESEND_API_KEY);
-					await resend.emails.send({
-						from: process.env.EMAIL_FROM ?? "noreply@ultrahope.dev",
-						to: email,
-						subject: "Sign in to Ultrahope",
-						html: `<p>Click the link below to sign in:</p><p><a href="${url}">${url}</a></p>`,
-					});
 				},
 			}),
 			polar({
