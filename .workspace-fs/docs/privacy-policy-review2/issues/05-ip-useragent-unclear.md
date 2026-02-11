@@ -4,21 +4,21 @@
 **Category:** Information Collection Transparency
 **Impact:** Potential accuracy issue (claiming to collect data that may not be collected)
 **Effort:** 1 hour (investigation) + 2 minutes (fix)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy claims (Section 1, line 119):**
 ```markdown
 Session Data. A unique CLI session identifier, IP address, and User-Agent string are recorded for each session.
 ```
 
-**Reality:**
-- ✅ CLI session ID: Confirmed collected (`cliSessionId` in code)
-- ⚠️ IP address: **Unclear if actually collected**
-- ⚠️ User-Agent: **Unclear if actually collected**
+**Reality (verified):**
+- ✅ CLI session ID: collected in `command_execution.cliSessionId`
+- ✅ IP/User-Agent: collected for authentication sessions in Better-Auth `session` records
+- ⚠️ Original policy wording incorrectly implied IP/User-Agent are recorded per CLI session
 
 **Database schema:**
 ```typescript
@@ -27,13 +27,11 @@ ipAddress: text("ip_address"),
 userAgent: text("user_agent"),
 ```
 
-The schema **fields exist**, but:
-- ❌ No explicit code found that **sets** these values
-- ❓ Better-Auth **may** auto-populate them (version-dependent behavior)
+The schema fields exist and Better-Auth populates them during session creation using request headers.
 
 ---
 
-## Investigation Needed
+## Investigation Summary
 
 ### Question 1: Does Better-Auth Auto-Populate IP/User-Agent?
 
@@ -42,31 +40,19 @@ The schema **fields exist**, but:
 **Hypothesis:**
 Better-Auth session creation might automatically extract `IP` and `User-Agent` from request headers and populate these fields.
 
-**How to verify:**
-1. Check Better-Auth v1.4.18 documentation
-2. Inspect session creation behavior in Better-Auth source code
-3. Test in dev environment: Create session → Check database
+**Verification performed:**
+1. Checked Better-Auth source code in `opensrc/`
+2. Confirmed `createSession` sets `ipAddress` and `userAgent` from request headers
+3. Confirmed project does not disable IP tracking in Better-Auth advanced options
 
-**Expected behavior:**
-```typescript
-// If Better-Auth auto-populates (likely):
-const session = await auth.api.createSession({
-  userId: user.id,
-  // IP and User-Agent extracted from req.headers automatically
-});
-
-// Database record:
-{
-  userId: 123,
-  token: "abc...",
-  ipAddress: "192.168.1.1",  // ← Auto-populated by Better-Auth
-  userAgent: "Mozilla/5.0..."  // ← Auto-populated by Better-Auth
-}
-```
+**Result:**
+Auto-population is confirmed by code:
+- `ipAddress: headers ? getIp(headers, options) || "" : ""`
+- `userAgent: headers?.get("user-agent") || ""`
 
 ---
 
-### Question 2: If NOT Auto-Populated, Should We Collect This Data?
+### Question 2: Policy alignment fix
 
 **Two options:**
 
@@ -135,28 +121,11 @@ Most privacy-focused developers prefer **minimal data collection**. If IP/User-A
 
 ## Recommended Approach
 
-### Step 1: Verify Current Behavior
+Update policy wording to distinguish:
+- CLI/API command execution data (`cliSessionId`)
+- Authentication session data (`ipAddress`, `userAgent`)
 
-**Test in development:**
-```bash
-# 1. Create a new session (login via web or CLI)
-# 2. Check database:
-SELECT id, user_id, ip_address, user_agent FROM session ORDER BY created_at DESC LIMIT 5;
-```
-
-**Expected results:**
-- If IP/User-Agent are populated → Better-Auth is auto-collecting
-- If NULL → Not being collected, policy is inaccurate
-
-### Step 2: Decide Based on Results
-
-**If Better-Auth IS collecting:**
-- ✅ Keep policy as-is (accurate)
-- ✅ Optionally mention in Section 5 (Cookie/Tracking) that sessions include IP/User-Agent for security
-
-**If Better-Auth is NOT collecting:**
-- ✅ **Recommended:** Remove from policy (Option B)
-- ⏭️ Alternative: Implement explicit collection (Option A) if needed for security
+This avoids claiming per-CLI IP/User-Agent capture while preserving correct disclosure of auth-session logging.
 
 ---
 
@@ -195,14 +164,11 @@ This makes the collection more justifiable to privacy-conscious developers.
 
 ## Testing Checklist
 
-After investigation:
+After fix:
 
-- [ ] Verify if Better-Auth v1.4.18 auto-populates IP/User-Agent
-- [ ] Check database for sample sessions (IP/User-Agent populated?)
-- [ ] Decide: Keep collection OR remove from policy
-- [ ] Update privacy policy accordingly
-- [ ] If removing: Consider dropping schema columns (optional)
-- [ ] If keeping: Add security justification to policy
+- [x] Verify Better-Auth v1.4.18 auto-populates IP/User-Agent in source
+- [x] Confirm project config does not disable IP tracking
+- [x] Update privacy policy wording to remove CLI-session ambiguity
 
 ---
 
@@ -219,11 +185,23 @@ After investigation:
 - Database schema: `packages/web/db/schemas/auth-schema.ts:33-34`
 - Better-Auth configuration: `packages/web/lib/auth.ts`
 - Better-Auth version: `packages/web/package.json` (1.4.18)
+- Better-Auth session creation: `opensrc/repos/github.com/better-auth/better-auth/packages/better-auth/src/db/internal-adapter.ts:299-300`
+- Better-Auth IP options: `opensrc/repos/github.com/better-auth/better-auth/packages/core/src/types/init-options.ts:142-160`
 
 ---
 
-**Priority rationale:** MEDIUM because:
-- Not a critical error (overclaiming data collection is safer than underclaiming)
-- Needs investigation before fix
-- May affect security posture decision
-- Lower impact than Section 18 error or Better-Auth omission
+**Priority rationale:** MEDIUM because wording accuracy impacts transparency and trust, but the data handling itself was already implemented.
+
+## Resolution
+
+**Completed:** 2026-02-12
+
+Findings:
+- Better-Auth auto-populates and stores `ipAddress`/`userAgent` for authentication sessions.
+- `command_execution` stores `cliSessionId` but does not store IP/User-Agent.
+
+Policy update:
+- Rewrote Section 1 "Session Data" to clearly separate CLI/API command session identifiers from authentication session IP/User-Agent logging.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`

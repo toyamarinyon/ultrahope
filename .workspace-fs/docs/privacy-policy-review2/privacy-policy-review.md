@@ -12,7 +12,7 @@
 | HIGH | 2 | Better-Auth not listed as third-party service | ✅ DONE (Not an issue) |
 | HIGH | 3 | Data export not implemented | ✅ DONE (Documented manual process) |
 | HIGH | 4 | Sections 6 and 15 duplicate AI processing | ✅ DONE |
-| MEDIUM | 5 | IP/User-Agent recording unclear | ⬜ TODO |
+| MEDIUM | 5 | IP/User-Agent recording unclear | ✅ DONE |
 | MEDIUM | 6 | Security measures too vague | ⬜ TODO |
 | MEDIUM | 7 | Backup retention period unclear | ⬜ TODO |
 | MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ⬜ TODO |
@@ -45,7 +45,7 @@
 | Category | Score | Weight | Notes |
 |----------|-------|--------|-------|
 | Overall Structure & Readability | 7.5/10 | 10% | Too long (535 lines), US state laws overly detailed |
-| Information Collection Transparency | 8.5/10 | 20% | Excellent detail, but IP/User-Agent unclear |
+| Information Collection Transparency | 8.5/10 | 20% | Excellent detail; IP/User-Agent wording now aligned with implementation |
 | AI Processing Explanation | 7.0/10 | 15% | Transparency is good; Section 6 now serves as the canonical explanation |
 | Third-Party Sharing Clarity | 6.5/10 | 15% | Polar very detailed; remaining clarity issues are category wording |
 | Data Retention & Security | 7.0/10 | 15% | Honest about no auto-cleanup, but security vague |
@@ -78,9 +78,8 @@
 
 ### ⚠️ Needs Verification/Correction
 
-1. **IP/User-Agent**: Schema fields exist but setting code not found
-2. **Backup retention**: Says "limited period" but not specified
-3. **Security details**: Generic statements, no specific measures listed
+1. **Backup retention**: Says "limited period" but not specified
+2. **Security details**: Generic statements, no specific measures listed
 
 ---
 
@@ -110,7 +109,7 @@
 
 1. Fix Section 18 (misleading deletion instructions) ✅ Done (2026-02-12)
 2. Better-Auth listing reviewed and closed as Not an issue ✅ Done (2026-02-12)
-3. Verify IP/User-Agent recording
+3. Verify IP/User-Agent recording ✅ Done (2026-02-12)
 4. Specify backup retention period (e.g., "30 days")
 
 ### Phase 2: High Priority (1-2 weeks)

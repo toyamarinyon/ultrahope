@@ -116,7 +116,7 @@ In Short: When you use our CLI or API to generate content, we collect the data y
 
 When you use Ultrahope to generate commit messages, pull request descriptions, or other developer-oriented text, we collect and store the following information:
 
-- Session Data. A unique CLI session identifier, IP address, and User-Agent string are recorded for each session.
+- Session Data. A unique CLI session identifier is recorded for each CLI/API command execution. For authentication sessions, IP address and User-Agent are recorded for security and session management.
 
 - Request Payload. The full content you submit for processing, including code diffs and command arguments.
 
