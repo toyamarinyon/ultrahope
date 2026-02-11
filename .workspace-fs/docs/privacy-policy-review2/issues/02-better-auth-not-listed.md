@@ -2,13 +2,13 @@
 
 **Priority:** 🟠 HIGH
 **Category:** Third-Party Sharing
-**Impact:** Missing major third-party service
+**Impact:** Reclassified - not a third-party recipient
 **Effort:** 2 minutes
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy (Section 4, lines 211-227):**
 Lists third-party service categories but does **not** include Better-Auth.
@@ -84,7 +84,7 @@ Better-Auth should be under **"User Account Registration & Authentication Servic
 
 ---
 
-## Recommended Fix
+## Recommended Fix (Superseded)
 
 ### Add to Section 4 (after line 223)
 
@@ -135,7 +135,7 @@ This table format is **much more developer-friendly** and ensures no services ar
 
 ---
 
-## Testing Checklist
+## Testing Checklist (Superseded)
 
 After adding Better-Auth:
 
@@ -157,11 +157,9 @@ After adding Better-Auth:
 ## Why This Matters
 
 **Legal compliance:**
-Privacy policies must disclose **all** third parties who process personal information. Better-Auth processes:
-- Authentication credentials
-- Session data
-- OAuth tokens
-- Email addresses
+Privacy policies must disclose third parties that receive personal information.
+If Better-Auth is used only as an in-process authentication library/middleware and does
+not send data to Better-Auth-operated infrastructure, it is not a third-party recipient.
 
 **Developer trust:**
 Developers expect technical accuracy. Missing the core authentication provider is a glaring omission.
@@ -177,4 +175,19 @@ Developers expect technical accuracy. Missing the core authentication provider i
 
 ---
 
-**Priority rationale:** HIGH because it's a major omission that affects legal compliance and developer trust. However, not CRITICAL because the privacy policy correctly describes data collection (even if it doesn't attribute it to Better-Auth).
+## Resolution
+
+**Completed:** 2026-02-12
+**Disposition:** Not an issue (classification error in the initial review)
+
+After discussion and implementation review, this issue was reclassified:
+
+- Better-Auth is used as an authentication library/middleware in the application runtime.
+- No personal data is sent to Better-Auth as an external service provider.
+- Therefore, Better-Auth does not belong in Section 4 as a third-party data recipient.
+
+Policy direction:
+- Keep third-party lists focused on external recipients (for example: Vercel AI Gateway, Turso, Polar, Resend, GitHub OAuth).
+- Optional clarity improvement in cookie/auth sections is acceptable, but not required for third-party disclosure compliance.
+
+**Priority rationale (updated):** Closed as "Not an issue." No Section 4 change required.
