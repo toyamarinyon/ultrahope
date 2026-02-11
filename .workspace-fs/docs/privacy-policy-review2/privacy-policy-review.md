@@ -10,7 +10,7 @@
 |----------|---|-------|--------|
 | CRITICAL | 1 | Section 18 is misleading (実装と記載が異なる) | ✅ DONE |
 | HIGH | 2 | Better-Auth not listed as third-party service | ✅ DONE (Not an issue) |
-| HIGH | 3 | Data export not implemented | ⬜ TODO |
+| HIGH | 3 | Data export not implemented | ✅ DONE (Documented manual process) |
 | HIGH | 4 | Sections 6 and 15 duplicate AI processing | ⬜ TODO |
 | MEDIUM | 5 | IP/User-Agent recording unclear | ⬜ TODO |
 | MEDIUM | 6 | Security measures too vague | ⬜ TODO |
@@ -79,9 +79,8 @@
 ### ⚠️ Needs Verification/Correction
 
 1. **IP/User-Agent**: Schema fields exist but setting code not found
-2. **Data export**: Not implemented (only deletion)
-3. **Backup retention**: Says "limited period" but not specified
-4. **Security details**: Generic statements, no specific measures listed
+2. **Backup retention**: Says "limited period" but not specified
+3. **Security details**: Generic statements, no specific measures listed
 
 ---
 
@@ -118,7 +117,7 @@
 
 5. Merge Sections 6 & 15 (eliminate duplication)
 6. Add specific security measures (TLS 1.3, bcrypt, etc.)
-7. Implement data export OR update policy to say "not yet available"
+7. Implement self-service data export (policy already clarifies current manual process)
 8. Add table format for third-party services
 
 ### Phase 3: Polish (1-2 months)

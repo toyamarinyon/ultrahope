@@ -4,7 +4,7 @@
 **Category:** User Rights / GDPR Compliance
 **Impact:** GDPR/CCPA requirement gap
 **Effort:** Days (if implementing) OR Minutes (if documenting status)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
@@ -273,3 +273,20 @@ When implementing export:
 ---
 
 **Priority rationale:** HIGH because it's a GDPR/CCPA requirement and a user expectation for developer tools. However, not CRITICAL because manual fulfillment via email is legally compliant.
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Option 2 (document current manual process)
+
+Decision:
+- Do not claim or imply a self-service export feature that is not implemented.
+- Keep legal rights language, but make request path explicit.
+
+Policy updates made:
+- Added explicit statement that self-service data export is not currently available.
+- Clarified that access/correction/export requests are handled via `support@ultrahope.dev`.
+- Clarified that provided data will be delivered in a commonly used electronic format when required by applicable law.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`

@@ -1,6 +1,6 @@
 # PRIVACY POLICY
 
-Last updated February 08, 2026
+Last updated February 12, 2026
 
 This Privacy Notice for Satoshi Toyama (doing business as Ultrahope) ("we," "us," or "our"), describes how and why we might access, collect, store, use, and/or share ("process") your personal information when you use our services ("Services"), including when you:
 
@@ -489,7 +489,7 @@ Depending upon the state where you live, you may also have the following rights:
 
 ### How to Exercise Your Rights
 
-To exercise these rights, you can use the account settings page for account deletion, email us at [support@ultrahope.dev](mailto:support@ultrahope.dev), or refer to the contact details at the bottom of this document.
+To exercise these rights, you can use the account settings page for account deletion, email us at [support@ultrahope.dev](mailto:support@ultrahope.dev) for access/correction/export requests, or refer to the contact details at the bottom of this document.
 
 Under certain US state data protection laws, you can designate an authorized agent to make a request on your behalf. We may deny a request from an authorized agent that does not submit proof that they have been validly authorized to act on your behalf in accordance with applicable laws.
 
@@ -535,4 +535,6 @@ Based on the applicable laws of your country or state of residence in the US, yo
 
 For account deletion, use the account settings page in the Services.
 
-For access, correction, or other privacy requests, contact us at [support@ultrahope.dev](mailto:support@ultrahope.dev).
+Self-service data export is not currently available.
+
+For access, correction, data portability (export), or other privacy requests, contact us at [support@ultrahope.dev](mailto:support@ultrahope.dev). We provide requested personal data in a commonly used electronic format where required by applicable law.
