@@ -14,7 +14,7 @@
 | HIGH | 4 | Sections 6 and 15 duplicate AI processing | ✅ DONE |
 | MEDIUM | 5 | IP/User-Agent recording unclear | ✅ DONE |
 | MEDIUM | 6 | Security measures too vague | ✅ DONE |
-| MEDIUM | 7 | Backup retention period unclear | ⬜ TODO |
+| MEDIUM | 7 | Backup retention period unclear | ✅ DONE |
 | MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ⬜ TODO |
 | MEDIUM | 9 | "Social Networks" unclear | ⬜ TODO |
 | LOW | 10 | Document too long (535 lines) | ⬜ TODO |
@@ -78,7 +78,7 @@
 
 ### ⚠️ Needs Verification/Correction
 
-1. **Backup retention**: Says "limited period" but not specified
+- None at this time (for previously identified medium-priority accuracy items).
 
 ---
 
@@ -98,7 +98,7 @@
 - ✅ Good: No tracking/analytics
 - ⚠️ Needs improvement: Too verbose (535 lines vs. typical 200-300)
 - ⚠️ Needs improvement: Legal boilerplate heavy
-- ⚠️ Needs improvement: Security details vague
+- ⚠️ Needs improvement: Overall length and legal boilerplate remain high
 
 ---
 
@@ -109,7 +109,7 @@
 1. Fix Section 18 (misleading deletion instructions) ✅ Done (2026-02-12)
 2. Better-Auth listing reviewed and closed as Not an issue ✅ Done (2026-02-12)
 3. Verify IP/User-Agent recording ✅ Done (2026-02-12)
-4. Specify backup retention period (e.g., "30 days")
+4. Clarify backup handling policy ✅ Done (2026-02-12) — currently no backup archives are operated for user data
 
 ### Phase 2: High Priority (1-2 weeks)
 

@@ -295,7 +295,11 @@ We retain your personal information for as long as you maintain an account with 
 
 We do not currently implement automated data cleanup based on age or inactivity. Your data remains available so you can access your history and reprocess past submissions at any time.
 
-When you request account deletion (as described in Section 18), we will delete your account and associated personal information from our active databases. However, some information may be retained in backup archives for a limited period to comply with legal obligations, resolve disputes, and enforce our agreements. Billing records may be retained longer as required by tax and accounting regulations.
+When you request account deletion (as described in Section 18), we will delete your account and associated personal information from our active databases.
+
+We do not currently operate backup archives for user data. If this changes in the future, we will update this Privacy Notice with the applicable backup retention period.
+
+Billing records may be retained longer as required by tax and accounting regulations.
 
 ## 10. HOW DO WE KEEP YOUR INFORMATION SAFE?
 

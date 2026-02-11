@@ -4,11 +4,11 @@
 **Category:** Data Retention & Security
 **Impact:** Unclear expectations for deleted data
 **Effort:** 5 minutes (if known) OR 1 hour (if needs research)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy states (Section 9, line 294):**
 ```markdown
@@ -267,3 +267,21 @@ After updating the policy:
 - But significantly improves transparency
 - Easy to fix once retention period is known
 - Common user question ("How long until my data is fully deleted?")
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Document operational reality directly
+
+Findings:
+- We do not currently operate backup archives for user data.
+- Existing "limited period in backup archives" wording was inaccurate for current operations.
+
+Policy update:
+- Removed the ambiguous backup-retention sentence.
+- Added explicit statement that backup archives are not currently operated for user data.
+- Added a commitment to update the Privacy Notice with a retention period if backups are introduced later.
+- Kept billing record retention language for legal/accounting requirements.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
