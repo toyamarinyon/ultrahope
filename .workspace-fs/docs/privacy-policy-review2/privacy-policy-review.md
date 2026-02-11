@@ -15,7 +15,7 @@
 | MEDIUM | 5 | IP/User-Agent recording unclear | ✅ DONE |
 | MEDIUM | 6 | Security measures too vague | ✅ DONE |
 | MEDIUM | 7 | Backup retention period unclear | ✅ DONE |
-| MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ⬜ TODO |
+| MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ✅ DONE |
 | MEDIUM | 9 | "Social Networks" unclear | ⬜ TODO |
 | LOW | 10 | Document too long (535 lines) | ⬜ TODO |
 | LOW | 11 | "may" overuse creates ambiguity | ⬜ TODO |

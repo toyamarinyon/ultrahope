@@ -4,11 +4,11 @@
 **Category:** Third-Party Sharing
 **Impact:** Unclear what this refers to
 **Effort:** 2 minutes (if removing) OR 5 minutes (if specifying)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy lists (Section 4, line 215):**
 ```markdown
@@ -170,3 +170,19 @@ Third parties:
 - Easy to remove
 - Doesn't affect legal compliance
 - But undermines document credibility
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Remove unused category
+
+Findings:
+- No concrete communication/collaboration service was identified as a third-party recipient in the current implementation.
+- The category was template-like and ambiguous without a named provider.
+
+Policy update:
+- Removed `Communication & Collaboration Tools` from Section 4 third-party categories.
+- Kept concrete categories/providers only.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
