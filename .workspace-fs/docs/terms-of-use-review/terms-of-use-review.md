@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-11
 **File reviewed:** `packages/web/app/terms/terms.md`
-**Status:** 🟢 Complete (Round 2)
+**Status:** 🟢 Complete (Round 2 + Final Verification)
 
 ## Progress
 
@@ -24,6 +24,7 @@
 | LOW | [14](issues/14-section6-title-mismatch.md) | Section 6 title doesn't match content structure | ✅ DONE |
 | MEDIUM | [15](issues/15-no-data-retention-policy.md) | No data retention policy disclosed | ✅ DONE |
 | LOW | [16](issues/16-github-oauth-not-mentioned.md) | GitHub OAuth authentication not mentioned | ✅ DONE |
+| LOW | [17](issues/17-magic-link-not-actually-implemented.md) | Magic Link plugin configured but no UI (codebase cleanup) | ⬜ TODO |
 
 > Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
 
@@ -62,9 +63,10 @@
 - **Issue #15:** No data retention policy disclosed in Terms (though Privacy Policy covers it)
 
 #### LOW Priority
-- **Issue #13:** Section 5 ends with incomplete sentence ("...you represent and warrant that:")
-- **Issue #14:** Section 6 title "CONTRIBUTION LICENSE" doesn't reflect that it includes a major AI subsection
-- **Issue #16:** GitHub OAuth authentication not mentioned in account terms
+- **Issue #13:** Section 5 ends with incomplete sentence ("...you represent and warrant that:") ✅
+- **Issue #14:** Section 6 title "CONTRIBUTION LICENSE" doesn't reflect that it includes a major AI subsection ✅
+- **Issue #16:** GitHub OAuth authentication not mentioned in account terms ✅
+- **Issue #17:** Magic Link plugin configured in backend but no UI implementation — consider removing unused code for clarity
 
 ---
 

@@ -20,7 +20,8 @@
 3. Users should understand that using GitHub OAuth means GitHub's terms also apply
 
 **Relevant code:**
-- `packages/web/lib/auth.ts` — Better-Auth with GitHub provider
+- `packages/web/lib/auth.ts:44-48` — Better-Auth with GitHub provider
+- `packages/web/app/login/page.tsx:26-31` — GitHub sign-in button in UI
 - `packages/web/lib/account-deletion.ts:76-90` — GitHub OAuth grant revocation
 
 ## Recommended Action
