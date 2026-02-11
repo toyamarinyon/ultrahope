@@ -93,20 +93,19 @@ Any breach of these Intellectual Property Rights will constitute a material brea
 
 ### Your submissions
 
-Please review this section and the "PROHIBITED ACTIVITIES" section carefully prior to using our Services to understand the (a) rights you give us and (b) obligations you have when you post or upload any content through the Services.
+This section distinguishes between (a) feedback you provide about the Services and (b) code and related materials you submit for processing through the Services.
 
-Submissions: By directly sending us any question, comment, suggestion, idea, feedback, or other information about the Services ("Submissions"), you agree to assign to us all intellectual property rights in such Submission. You agree that we shall own this Submission and be entitled to its unrestricted use and dissemination for any lawful purpose, commercial or otherwise, without acknowledgment or compensation to you.
+Feedback: If you send us questions, comments, suggestions, ideas, bug reports, or other feedback about the Services ("Feedback"), you grant us a non-exclusive, worldwide, perpetual, irrevocable, royalty-free license to use, copy, modify, and incorporate that Feedback into our products and services without compensation to you.
 
-You are responsible for what you post or upload: By sending us Submissions through any part of the Services you:
+Input Content and Output: Source code, diffs, prompts, repository metadata, and other materials you submit to the Services for processing ("Input Content") are not Feedback unless you clearly submit them as Feedback. You retain all right, title, and interest in and to your Input Content. We do not acquire ownership of your Input Content.
 
-- confirm that you have read and agree with our "PROHIBITED ACTIVITIES" and will not post, send, publish, upload, or transmit through the Services any Submission that is illegal, harassing, hateful, harmful, defamatory, obscene, bullying, abusive, discriminatory, threatening to any person or group, sexually explicit, false, inaccurate, deceitful, or misleading;
+Limited license to operate the Services: You grant us a non-exclusive, worldwide, royalty-free license to host, copy, transmit, process, and display your Input Content only as necessary to provide, maintain, secure, and improve the Services for you, comply with law, and prevent abuse.
 
-- to the extent permissible by applicable law, waive any and all moral rights to any such Submission;
+Third-party AI processing: To provide the Services, we may process Input Content through third-party infrastructure and AI model providers, including via Vercel AI Gateway. We configure model/provider routing to providers that support zero data retention.
 
-- warrant that any such Submission are original to you or that you have the necessary rights and licenses to submit such Submissions and that you have full authority to grant us the above-mentioned rights in relation to your Submissions; and
+No training use without consent: We do not use your Input Content or Output to train foundation models unless you explicitly opt in.
 
-- warrant and represent that your Submissions do not constitute confidential information.
-You are solely responsible for your Submissions and you expressly agree to reimburse us for any and all losses that we may suffer because of your breach of (a) this section, (b) any third party’s intellectual property rights, or (c) applicable law.
+You are responsible for what you submit: By sending Feedback or Input Content through any part of the Services, you confirm that you have the rights needed to submit it and that your submission does not violate law or third-party rights. You remain solely responsible for your submissions and for the consequences of submitting unlawful content.
 
 ## 3. USER REPRESENTATIONS
 

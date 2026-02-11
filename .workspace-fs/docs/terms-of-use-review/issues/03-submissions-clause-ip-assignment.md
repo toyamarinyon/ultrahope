@@ -1,7 +1,7 @@
 # Issue #3: "Submissions" clause implies IP assignment of user code
 
 **Priority:** HIGH
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -21,4 +21,18 @@ Clarify that "Submissions" refers only to feedback, suggestions, and communicati
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Rewrote "Your submissions" in Section 2 to eliminate IP assignment language and separate Feedback from user code/input content. The updated text now makes ownership and processing scope explicit.
+
+**Summary of changes:**
+- Removed "assign to us all intellectual property rights" wording.
+- Defined `Feedback` and granted a license only for feedback usage.
+- Defined `Input Content` (code, diffs, prompts, metadata) as distinct from feedback.
+- Explicitly stated users retain all rights in Input Content and Ultrahope does not acquire ownership.
+- Added a limited license for service operation only (provide/maintain/secure/improve for the user, legal compliance, abuse prevention).
+- Added third-party AI processing disclosure via Vercel AI Gateway with zero data retention provider routing.
+- Added explicit statement that Input Content/Output is not used to train foundation models unless user opt-in.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:94`
