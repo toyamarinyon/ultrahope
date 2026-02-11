@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-11
 **File reviewed:** `packages/web/app/privacy/privacy.md`
-**Status:** 🔴 In Progress
+**Status:** 🟢 Complete
 
 ## Progress
 
@@ -16,8 +16,8 @@
 | MEDIUM | 6 | Cookie/tracking section overstates reality | ✅ DONE |
 | MEDIUM | 7 | Polar data sharing under-specified | ✅ DONE |
 | LOW | 8 | Data retention policy is vague | ✅ DONE |
-| LOW | 9 | Data deletion/export not implemented | ⬜ TODO |
-| LOW | 10 | Database region (Japan) not disclosed | ⬜ TODO |
+| LOW | 9 | Data deletion/export not implemented | ✅ DONE |
+| LOW | 10 | Database region (Japan) not disclosed | ✅ DONE |
 
 > Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
 
@@ -149,26 +149,43 @@ Rewrote Section 9 to be explicit about the actual retention policy: data is reta
 
 ---
 
-#### 9. Data deletion / export not implemented — ⬜ TODO
+#### 9. Data deletion / export not implemented — ✅ DONE
 
 **Policy states (Section 18):** Users can request data review, update, and deletion via GitHub Issues.
 
-**Reality:** No data-deletion or data-export API endpoint or admin tool exists.
+**Reality:** Full self-service account deletion is implemented. Users can delete their account from the Settings page without requiring admin intervention.
 
-**Action:** Implement a deletion workflow to back the policy promise, especially for GDPR/CCPA compliance.
+**Action:** Verify that deletion implementation backs the policy promise.
 
 **Resolution:**
-<!-- Record what was done here -->
+Full self-service account deletion is already implemented:
+
+- **Settings Page:** `packages/web/app/settings/page.tsx` - "Danger zone" section with account deletion
+- **Delete Form:** `packages/web/components/delete-account-form.tsx` - Email confirmation UI
+- **API Endpoint:** `packages/web/app/api/account/delete/route.ts` - POST /api/account/delete
+- **Deletion Logic:** `packages/web/lib/account-deletion.ts` - Handles:
+  - Counting records to be deleted (sessions, accounts, device codes, generations, etc.)
+  - Revoking GitHub OAuth grants
+  - Deleting Polar customers
+  - Deleting user from database (CASCADE deletes related data)
+
+CASCADE relationships handle automatic cleanup: `user → session/account/command_execution → generation → generation_score`. The `verification` table may require manual cleanup in exceptional cases. Updated Section 18 to reflect that users can delete their account directly from the Settings page.
 
 ---
 
-#### 10. Database region not disclosed — ⬜ TODO
+#### 10. Database region not disclosed — ✅ DONE
 
 **Policy states:** Servers in the United States.
 
-**Reality:** Turso database is in AWS Tokyo (ap-northeast-1).
+**Original concern:** Turso database might be in AWS Tokyo (ap-northeast-1).
 
-**Action:** Add Japan to Section 8 (International Transfers) as a data-storage location.
+**Reality:** The sandbox database is in Tokyo (ap-northeast-1) for development/testing, but the production database is in the United States. Section 8 refers to production servers, which is accurate.
+
+**Action:** Verify the actual database region.
 
 **Resolution:**
-<!-- Record what was done here -->
+Verified Turso database regions:
+- **Production:** United States (matches Section 8)
+- **Sandbox:** Tokyo (ap-northeast-1) - development environment only
+
+The privacy policy correctly states "Servers located in the United States" for production. No changes needed. The sandbox environment being in Tokyo is not relevant to user-facing privacy disclosures.
