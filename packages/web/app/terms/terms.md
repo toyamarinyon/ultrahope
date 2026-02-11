@@ -166,7 +166,7 @@ As a user of the Services, you agree not to:
 
 ## 5. USER GENERATED CONTRIBUTIONS
 
-The Services does not offer users to submit or post content. We may provide you with the opportunity to create, submit, post, display, transmit, perform, publish, distribute, or broadcast content and materials to us or on the Services, including but not limited to text, writings, video, audio, photographs, graphics, comments, suggestions, or personal information or other material (collectively, "Contributions"). Contributions may be viewable by other users of the Services and through third-party websites. When you create or make available any Contributions, you thereby represent and warrant that:
+The Services allow you to submit content to us in order to use the product features (for example, repository metadata, code diffs, prompts, commands, and feedback) (collectively, "Contributions"). The Services are not a public publishing platform, and your Contributions are submitted primarily for processing and service operation rather than public display. When you create or submit any Contributions, you represent and warrant that:
 
 ## 6. CONTRIBUTION LICENSE
 

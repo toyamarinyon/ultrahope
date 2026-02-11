@@ -11,7 +11,7 @@
 | HIGH | [1](issues/01-section3-bans-automated-access.md) | Section 3 bans automated/bot access — contradicts CLI tool | ✅ DONE |
 | HIGH | [2](issues/02-section4-bans-automated-use.md) | Section 4 bans automated use/scripts — contradicts CLI tool | ✅ DONE |
 | HIGH | [3](issues/03-submissions-clause-ip-assignment.md) | "Submissions" clause implies IP assignment of user code | ✅ DONE |
-| HIGH | [4](issues/04-section5-contradicts-itself.md) | Section 5 contradicts itself about user content | ⬜ TODO |
+| HIGH | [4](issues/04-section5-contradicts-itself.md) | Section 5 contradicts itself about user content | ✅ DONE |
 | HIGH | [5](issues/05-no-ai-llm-disclaimers.md) | No mention of AI/LLM or disclaimers about generated content | ⬜ TODO |
 | MEDIUM | [6](issues/06-no-pricing-subscription-terms.md) | No pricing, subscription, or refund terms for a paid service | ⬜ TODO |
 | MEDIUM | [7](issues/07-no-cli-in-service-description.md) | Service description doesn't mention the CLI tool | ⬜ TODO |

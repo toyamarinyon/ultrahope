@@ -1,7 +1,7 @@
 # Issue #4: Section 5 contradicts itself about user content
 
 **Priority:** HIGH
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -23,4 +23,14 @@ Rewrite Section 5 to accurately describe the content users submit (git diffs, co
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Rewrote the opening paragraph of Section 5 to remove the direct contradiction and align with actual product behavior.
+
+**Summary of changes:**
+- Removed the false statement that users cannot submit content.
+- Clarified that users do submit Contributions (including repository metadata, code diffs, prompts, commands, and feedback) in order to use product features.
+- Clarified that Ultrahope is not a public publishing platform and that Contributions are primarily submitted for processing/service operation.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:169`
