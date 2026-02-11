@@ -10,7 +10,7 @@ This Privacy Notice for Satoshi Toyama (doing business as Ultrahope) ("we," "us,
 
 - Engage with us in other related ways, including any marketing or events
 
-Questions or concerns? Reading this Privacy Notice will help you understand your privacy rights and choices. We are responsible for making decisions about how your personal information is processed. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev).
+Questions or concerns? Reading this Privacy Notice will help you understand your privacy rights and choices. We are responsible for making decisions about how your personal information is processed. If you do not agree with our policies and practices, please do not use our Services. If you still have any questions or concerns, please contact us at [support@ultrahope.dev](mailto:support@ultrahope.dev).
 
 ## SUMMARY OF KEY POINTS
 
@@ -303,7 +303,7 @@ We have implemented appropriate and reasonable technical and organizational secu
 
 In Short: We do not knowingly collect data from or market to children under 18 years of age or the equivalent age as specified by law in your jurisdiction.
 
-We do not knowingly collect, solicit data from, or market to children under 18 years of age or the equivalent age as specified by law in your jurisdiction, nor do we knowingly sell such personal information. By using the Services, you represent that you are at least 18 or the equivalent age as specified by law in your jurisdiction or that you are the parent or guardian of such a minor and consent to such minor dependents use of the Services. If we learn that personal information from users less than 18 years of age or the equivalent age as specified by law in your jurisdiction has been collected, we will deactivate the account and take reasonable measures to promptly delete such data from our records. If you become aware of any data we may have collected from children under age 18 or the equivalent age as specified by law in your jurisdiction, please contact us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev).
+We do not knowingly collect, solicit data from, or market to children under 18 years of age or the equivalent age as specified by law in your jurisdiction, nor do we knowingly sell such personal information. By using the Services, you represent that you are at least 18 or the equivalent age as specified by law in your jurisdiction or that you are the parent or guardian of such a minor and consent to such minor dependents use of the Services. If we learn that personal information from users less than 18 years of age or the equivalent age as specified by law in your jurisdiction has been collected, we will deactivate the account and take reasonable measures to promptly delete such data from our records. If you become aware of any data we may have collected from children under age 18 or the equivalent age as specified by law in your jurisdiction, please contact us at [support@ultrahope.dev](mailto:support@ultrahope.dev).
 
 ## 12. WHAT ARE YOUR PRIVACY RIGHTS?
 
@@ -332,7 +332,7 @@ Upon your request to terminate your account, we will deactivate or delete your a
 
 Cookies and similar technologies: Most Web browsers are set to accept cookies by default. If you prefer, you can usually choose to set your browser to remove cookies and to reject cookies. If you choose to remove cookies or reject cookies, you will not be able to log in to your account or use the Services.
 
-If you have questions or comments about your privacy rights, you may email us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev).
+If you have questions or comments about your privacy rights, you may email us at [support@ultrahope.dev](mailto:support@ultrahope.dev).
 
 ## 13. CONTROLS FOR DO-NOT-TRACK FEATURES
 
@@ -489,7 +489,7 @@ Depending upon the state where you live, you may also have the following rights:
 
 ### How to Exercise Your Rights
 
-To exercise these rights, you can contact us by visiting [https://github.com/toyamarinyon/ultrahope/issues](https://github.com/toyamarinyon/ultrahope/issues), by emailing us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev), [https://github.com/toyamarinyon/ultrahope](https://github.com/toyamarinyon/ultrahope), or by referring to the contact details at the bottom of this document.
+To exercise these rights, you can contact us by visiting [https://github.com/toyamarinyon/ultrahope/issues](https://github.com/toyamarinyon/ultrahope/issues), by emailing us at [support@ultrahope.dev](mailto:support@ultrahope.dev), [https://github.com/toyamarinyon/ultrahope](https://github.com/toyamarinyon/ultrahope), or by referring to the contact details at the bottom of this document.
 
 Under certain US state data protection laws, you can designate an authorized agent to make a request on your behalf. We may deny a request from an authorized agent that does not submit proof that they have been validly authorized to act on your behalf in accordance with applicable laws.
 
@@ -500,7 +500,7 @@ Upon receiving your request, we will need to verify your identity to determine y
 If you submit the request through an authorized agent, we may need to collect additional information to verify your identity before processing your request and the agent will need to provide a written and signed permission from you to submit such request on your behalf.
 ### Appeals
 
-Under certain US state data protection laws, if we decline to take action regarding your request, you may appeal our decision by emailing us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev). We will inform you in writing of any action taken or not taken in response to the appeal, including a written explanation of the reasons for the decisions. If your appeal is denied, you may submit a complaint to your state attorney general.
+Under certain US state data protection laws, if we decline to take action regarding your request, you may appeal our decision by emailing us at [support@ultrahope.dev](mailto:support@ultrahope.dev). We will inform you in writing of any action taken or not taken in response to the appeal, including a written explanation of the reasons for the decisions. If your appeal is denied, you may submit a complaint to your state attorney general.
 ### California "Shine The Light" Law
 
 California Civil Code Section 1798.83, also known as the "Shine The Light" law, permits our users who are California residents to request and obtain from us, once a year and free of charge, information about categories of personal information (if any) we disclosed to third parties for direct marketing purposes and the names and addresses of all third parties with which we shared personal information in the immediately preceding calendar year. If you are a California resident and would like to make such a request, please submit your request in writing to us by using the contact details provided in the section "[HOW CAN YOU CONTACT US ABOUT THIS NOTICE?](#contact)"
@@ -517,7 +517,7 @@ We may update this Privacy Notice from time to time. The updated version will be
 
 ## 17. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?
 
-If you have questions or comments about this notice, you may email us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev) or contact us by post at:
+If you have questions or comments about this notice, you may email us at [support@ultrahope.dev](mailto:support@ultrahope.dev) or contact us by post at:
 
 Satoshi Toyama
 
