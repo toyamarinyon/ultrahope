@@ -121,14 +121,14 @@ export default async function RootPage() {
 							<div className="rounded-2xl border border-border-subtle bg-surface px-6 py-6">
 								<h3 className="text-lg font-semibold mb-3">Account</h3>
 								<p className="text-sm text-foreground-secondary mb-4">
-									Manage billing or sign out anytime.
+									Manage billing, deletion, or sign out anytime.
 								</p>
 								<div className="flex flex-wrap gap-3">
 									<Link
-										href="/pricing"
+										href="/settings"
 										className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface-hover"
 									>
-										Billing
+										Settings
 									</Link>
 									<SignOutButton />
 								</div>

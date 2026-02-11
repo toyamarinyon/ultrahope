@@ -23,7 +23,7 @@
 - [ ] **Account management**
   - [ ] **Billing & plan change**
     - [ ] Pro → Free downgrade (Polar `subscriptions.cancel()` + recreate Free subscription, or delegate to Polar portal)
-    - [ ] Link to Polar customer portal (`portal()` plugin already enabled; add link from settings page)
+    - [x] Link to Polar customer portal (`portal()` plugin already enabled; add link from settings page)
     - [ ] Billing history display
   - [ ] **Account deletion** (Privacy Policy compliance: GDPR, CCPA)
     - [x] Phase 1: Operational script `scripts/delete-user.ts` (manual "Contact us" flow)
@@ -34,7 +34,7 @@
       - Runbook:
         - Dry run: `mise run delete-user:dry-run <user@example.com>`
         - Execute: `mise run delete-user:execute <user@example.com> <user@example.com>`
-    - [ ] Phase 2: Self-service API endpoint + settings UI
+    - [x] Phase 2: Self-service API endpoint + settings UI
   - [ ] **Settings UI** (unified account settings page for all of the above)
 - [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
