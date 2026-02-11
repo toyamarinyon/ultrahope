@@ -1,6 +1,6 @@
 import {
-	deleteUserByEmail,
 	type DeleteUserReport,
+	deleteUserByEmail,
 	type Mode,
 	requireAccountDeletionEnvVars,
 } from "../lib/account-deletion";

@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuth } from "@/lib/auth";
 import {
 	deleteUserByEmail,
 	requireAccountDeletionEnvVars,
 } from "@/lib/account-deletion";
+import { getAuth } from "@/lib/auth";
 
 const RequestSchema = z.object({
 	confirmEmail: z.string().email(),

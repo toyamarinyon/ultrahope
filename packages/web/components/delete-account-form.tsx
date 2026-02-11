@@ -33,7 +33,10 @@ export function DeleteAccountForm({ email }: DeleteAccountFormProps) {
 				body: JSON.stringify({ confirmEmail }),
 			});
 
-			const data = (await response.json()) as { error?: string; message?: string };
+			const data = (await response.json()) as {
+				error?: string;
+				message?: string;
+			};
 			if (!response.ok) {
 				setError(data.message ?? data.error ?? "Failed to delete account.");
 				return;

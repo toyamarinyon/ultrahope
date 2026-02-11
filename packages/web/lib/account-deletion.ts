@@ -47,7 +47,7 @@ export type DeleteUserReport = {
 	};
 };
 
-export const REQUIRED_ACCOUNT_DELETION_ENV_VARS = [
+const REQUIRED_ACCOUNT_DELETION_ENV_VARS = [
 	"TURSO_DATABASE_URL",
 	"TURSO_AUTH_TOKEN",
 	"POLAR_ACCESS_TOKEN",
@@ -107,7 +107,7 @@ export function requireAccountDeletionEnvVars(): void {
 	}
 }
 
-export function resolvePolarServer(): "sandbox" | "production" {
+function resolvePolarServer(): "sandbox" | "production" {
 	const value = process.env.POLAR_SERVER;
 	if (value === "sandbox" || value === "production") {
 		return value;
@@ -153,7 +153,11 @@ export async function deleteUserByEmail({
 		},
 	};
 
-	const targetUser = await db.select().from(user).where(eq(user.email, email)).get();
+	const targetUser = await db
+		.select()
+		.from(user)
+		.where(eq(user.email, email))
+		.get();
 
 	if (!targetUser) {
 		return report;
