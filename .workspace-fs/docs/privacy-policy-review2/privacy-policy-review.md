@@ -11,7 +11,7 @@
 | CRITICAL | 1 | Section 18 is misleading (実装と記載が異なる) | ✅ DONE |
 | HIGH | 2 | Better-Auth not listed as third-party service | ✅ DONE (Not an issue) |
 | HIGH | 3 | Data export not implemented | ✅ DONE (Documented manual process) |
-| HIGH | 4 | Sections 6 and 15 duplicate AI processing | ⬜ TODO |
+| HIGH | 4 | Sections 6 and 15 duplicate AI processing | ✅ DONE |
 | MEDIUM | 5 | IP/User-Agent recording unclear | ⬜ TODO |
 | MEDIUM | 6 | Security measures too vague | ⬜ TODO |
 | MEDIUM | 7 | Backup retention period unclear | ⬜ TODO |
@@ -46,7 +46,7 @@
 |----------|-------|--------|-------|
 | Overall Structure & Readability | 7.5/10 | 10% | Too long (535 lines), US state laws overly detailed |
 | Information Collection Transparency | 8.5/10 | 20% | Excellent detail, but IP/User-Agent unclear |
-| AI Processing Explanation | 7.0/10 | 15% | Good transparency, but Sections 6 & 15 duplicate |
+| AI Processing Explanation | 7.0/10 | 15% | Transparency is good; Section 6 now serves as the canonical explanation |
 | Third-Party Sharing Clarity | 6.5/10 | 15% | Polar very detailed; remaining clarity issues are category wording |
 | Data Retention & Security | 7.0/10 | 15% | Honest about no auto-cleanup, but security vague |
 | User Rights | 6.0/10 | 15% | Deletion easy, but no export yet |
@@ -115,7 +115,7 @@
 
 ### Phase 2: High Priority (1-2 weeks)
 
-5. Merge Sections 6 & 15 (eliminate duplication)
+5. Merge Sections 6 & 15 (eliminate duplication) ✅ Done (2026-02-12)
 6. Add specific security measures (TLS 1.3, bcrypt, etc.)
 7. Implement self-service data export (policy already clarifies current manual process)
 8. Add table format for third-party services

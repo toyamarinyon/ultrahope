@@ -256,7 +256,11 @@ Our AI Products are designed for the following functions:
 
 How We Process Your Data Using AI
 
-All personal information processed using our AI Products is handled in line with our Privacy Notice and our agreement with third parties. This ensures high security and safeguards your personal information throughout the process, giving you peace of mind about your data's safety.
+When you use our Service, the content you submit (such as code diffs and version control data) is transmitted to third-party large language model providers for processing. We store your submitted content and the generated output (e.g., commit messages, pull request descriptions) in your account so that you can review past results and reprocess them with different models or settings.
+
+This data is retained for as long as you maintain your account and is used solely to provide the Service to you. We do not use your submitted content or generated output to train AI models or for any other purpose. You may request deletion of this data as described in Section 18.
+
+All personal information processed using our AI Products is handled in line with our Privacy Notice and our agreement with third parties.
 
 ## 7. HOW DO WE HANDLE YOUR SOCIAL LOGINS?
 
@@ -507,7 +511,7 @@ California Civil Code Section 1798.83, also known as the "Shine The Light" law, 
 
 ## 15. USER-SUBMITTED CONTENT AND AI PROCESSING
 
-When you use our Service, the content you submit (such as code diffs and version control data) is transmitted to third-party large language model providers for processing. We store your submitted content and the generated output (e.g., commit messages, pull request descriptions) in your account so that you can review past results and reprocess them with different models or settings. This data is retained for as long as you maintain your account and is used solely to provide the Service to you. We do not use your submitted content or generated output to train AI models or for any other purpose. You may request deletion of this data at any time by contacting us as described in Section 18. Please be mindful of any sensitive or proprietary information contained in the content you submit.
+The details of how we process AI-related user submissions, generated output, retention, and deletion are described in Section 6. Please be mindful of any sensitive or proprietary information contained in the content you submit.
 
 ## 16. DO WE MAKE UPDATES TO THIS NOTICE?
 

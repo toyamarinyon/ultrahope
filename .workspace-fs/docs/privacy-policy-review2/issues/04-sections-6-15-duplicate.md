@@ -4,7 +4,7 @@
 **Category:** Structure / Readability
 **Impact:** Document appears unedited, confusing navigation
 **Effort:** 15 minutes
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
@@ -241,3 +241,21 @@ Merging sections helps with both issues.
 ---
 
 **Priority rationale:** HIGH because duplication undermines document credibility and confuses readers. However, not CRITICAL because both sections are accurate (just redundant).
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Differentiate sections with Section 6 as source of truth
+
+Implemented changes:
+- Moved AI submission/retention/no-training/deletion details into Section 6.
+- Rewrote Section 15 as a short pointer to Section 6 plus user caution language.
+- Kept numbering intact to avoid broad renumbering churn.
+
+Result:
+- Duplicate AI-processing paragraphs removed.
+- One canonical section for AI data handling.
+- Existing section numbering and anchors remain stable.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
