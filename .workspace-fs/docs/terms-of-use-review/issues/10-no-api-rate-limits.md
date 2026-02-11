@@ -1,7 +1,7 @@
 # Issue #10: No mention of API rate limits or usage quotas
 
 **Priority:** LOW
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -22,4 +22,14 @@ Add a clause reserving the right to impose usage limits and referencing the plan
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Added a dedicated usage-limits section to the Terms to disclose quotas/rate limiting controls and enforcement behavior.
+
+**Summary of changes:**
+- Added clause that usage may be subject to quotas, rate limits, fair-use restrictions, request-size limits, and concurrency limits.
+- Clarified that limits may vary by plan and may change over time.
+- Added enforcement rights (throttle, delay, reject, suspend) for over-limit or abusive traffic.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:71`

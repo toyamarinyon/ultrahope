@@ -1,7 +1,7 @@
 # Issue #11: No account-related terms despite full auth system
 
 **Priority:** LOW
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -29,4 +29,15 @@ Add a section covering:
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Added an account section to cover account data accuracy, credential security responsibilities, unauthorized-access notification, and account deletion effects.
+
+**Summary of changes:**
+- Added requirement to provide and maintain accurate account information.
+- Added user responsibility for account credentials and access tokens.
+- Added requirement to promptly notify Ultrahope of suspected unauthorized access.
+- Added account deletion statement and consequences (access/data loss subject to legal retention and data policies).
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:77`

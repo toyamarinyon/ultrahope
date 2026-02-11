@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-11
 **File reviewed:** `packages/web/app/terms/terms.md`
-**Status:** 🔴 In Progress
+**Status:** 🟢 Complete
 
 ## Progress
 
@@ -17,8 +17,8 @@
 | MEDIUM | [7](issues/07-no-cli-in-service-description.md) | Service description doesn't mention the CLI tool | ✅ DONE |
 | MEDIUM | [8](issues/08-section4-bans-commercial-use.md) | Section 4 bans commercial use — contradicts Pro plan | ✅ DONE |
 | MEDIUM | [9](issues/09-european-arbitration-chamber.md) | European Arbitration Chamber unusual for Japan-based company | ✅ DONE |
-| LOW | [10](issues/10-no-api-rate-limits.md) | No mention of API rate limits or usage quotas | ⬜ TODO |
-| LOW | [11](issues/11-no-account-terms.md) | No account-related terms despite full auth system | ⬜ TODO |
+| LOW | [10](issues/10-no-api-rate-limits.md) | No mention of API rate limits or usage quotas | ✅ DONE |
+| LOW | [11](issues/11-no-account-terms.md) | No account-related terms despite full auth system | ✅ DONE |
 
 > Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
 

@@ -68,6 +68,20 @@ If you purchase a paid plan, you authorize us and our payment processors to char
 
 You may cancel your paid plan at any time. Unless required by applicable law, fees already paid are non-refundable and cancellations take effect at the end of the current paid billing period. We may change pricing, plan features, usage limits, or credit policies from time to time. Any such changes will apply prospectively after notice through the Services or by email.
 
+### Usage limits and rate limiting
+
+Your use of the Services may be subject to usage quotas, rate limits, fair-use restrictions, request-size limits, concurrency limits, or similar controls. These limits may vary by plan and may be updated from time to time.
+
+We may throttle, delay, reject, or suspend requests that exceed applicable limits or that we reasonably determine are abusive, harmful, or likely to impair service stability, security, or availability.
+
+### Accounts and access
+
+Certain features require an account. You agree to provide accurate account information and to keep it up to date.
+
+You are responsible for maintaining the confidentiality of your account credentials and access tokens, and for all activities that occur under your account. If you suspect unauthorized use of your account, you must promptly notify us.
+
+You may delete your account using available account settings. Account deletion may result in loss of access to associated data and features, subject to legal retention requirements and our data handling policies.
+
 ## 2. INTELLECTUAL PROPERTY RIGHTS
 
 ### Our intellectual property
