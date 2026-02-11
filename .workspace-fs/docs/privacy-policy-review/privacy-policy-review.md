@@ -1,18 +1,18 @@
 # Privacy Policy Review
 
 **Date:** 2026-02-11
-**File reviewed:** `packages/web/public/privacy/pivacy.md`
+**File reviewed:** `packages/web/app/privacy/privacy.md`
 **Status:** 🔴 In Progress
 
 ## Progress
 
 | Priority | # | Issue | Status |
 |----------|---|-------|--------|
-| HIGH | 1 | Section 15 says data isn't stored — it is | ⬜ TODO |
-| HIGH | 2 | AI provider list is hardcoded and inaccurate | ⬜ TODO |
-| HIGH | 3 | Collected data significantly under-disclosed | ⬜ TODO |
-| MEDIUM | 4 | Resend not listed as third-party provider | ⬜ TODO |
-| MEDIUM | 5 | Vercel not listed as third-party provider | ⬜ TODO |
+| HIGH | 1 | Section 15 says data isn't stored — it is | ✅ DONE |
+| HIGH | 2 | AI provider list is hardcoded and inaccurate | ✅ DONE |
+| HIGH | 3 | Collected data significantly under-disclosed | ✅ DONE |
+| MEDIUM | 4 | Resend not listed as third-party provider | ✅ DONE |
+| MEDIUM | 5 | Vercel not listed as third-party provider | ✅ DONE |
 | MEDIUM | 6 | Cookie/tracking section overstates reality | ⬜ TODO |
 | MEDIUM | 7 | Polar data sharing under-specified | ⬜ TODO |
 | LOW | 8 | Data retention policy is vague | ⬜ TODO |
@@ -39,7 +39,7 @@
 
 ### HIGH Priority
 
-#### 1. Section 15 contradicts actual data storage — ⬜ TODO
+#### 1. Section 15 contradicts actual data storage — ✅ DONE
 
 **Policy states:** Content is not stored beyond the duration of the request.
 
@@ -48,11 +48,11 @@
 **Action:** Either disclose that data is stored and specify a retention period, or implement code to delete payloads after processing.
 
 **Resolution:**
-<!-- Record what was done here -->
+Rewrote Section 15 to disclose that submitted content and generated output are stored. Stated that data is retained so users can review past results and reprocess with different models/settings, kept for the lifetime of the account, not used for model training or any other purpose, and deletable on request via Section 18.
 
 ---
 
-#### 2. AI provider list is inaccurate (Section 6) — ⬜ TODO
+#### 2. AI provider list is inaccurate (Section 6) — ✅ DONE
 
 **Policy states:** Cerebras, OpenAI, xAI, Mistral AI.
 
@@ -61,11 +61,11 @@
 **Action:** Replace the fixed list with a reference to a `/models` page that can be updated alongside code deployments.
 
 **Resolution:**
-<!-- Record what was done here -->
+Replaced the hardcoded provider list in Section 6 with a reference to `https://ultrahope.dev/models`. Created `packages/web/app/models/page.tsx` listing current default models (`mistral/ministral-3b`, `xai/grok-code-fast-1`) with their providers, so the page can be updated alongside code deployments without touching the privacy policy.
 
 ---
 
-#### 3. Collected data is under-disclosed (Section 1) — ⬜ TODO
+#### 3. Collected data is under-disclosed (Section 1) — ✅ DONE
 
 **Policy lists:** IP address, browser info, device info (standard log data).
 
@@ -80,31 +80,31 @@
 **Action:** Add these to the "Automatically Collected Information" or "Information Collected During Service Use" sections.
 
 **Resolution:**
-<!-- Record what was done here -->
+Added a new "Information collected during service use" subsection to Section 1. It discloses five categories of data: Session Data (CLI session ID, IP, User-Agent), Request Payload (diffs and command arguments), Generated Output (AI-generated text), Usage Metadata (model, provider, cost in microdollars, timestamps), and User Feedback (1–5 score). Framed consistently with Issue #1: data is stored so users can review past results and reprocess with different models/settings, not used for model training, deletable on request.
 
 ---
 
 ### MEDIUM Priority
 
-#### 4. Resend (email service) not disclosed — ⬜ TODO
+#### 4. Resend (email service) not disclosed — ✅ DONE
 
 **Reality:** Resend sends password-reset and magic-link emails. User email addresses are shared with Resend.
 
 **Action:** List Resend as a third-party service provider.
 
 **Resolution:**
-<!-- Record what was done here -->
+Added "Email Service Providers" as a new category in the third-party sharing list in Section 4 of `packages/web/app/privacy/privacy.md`. This covers Resend, which processes user email addresses to deliver password-reset and magic-link emails on our behalf.
 
 ---
 
-#### 5. Vercel not disclosed — ⬜ TODO
+#### 5. Vercel not disclosed — ✅ DONE
 
 **Reality:** The application is hosted on Vercel, and Vercel AI Gateway routes all LLM requests.
 
 **Action:** List Vercel under "Website Hosting Service Providers" and "AI Platforms."
 
 **Resolution:**
-<!-- Record what was done here -->
+Added Vercel to the Section 4 third-party category list in two places: "AI Platforms" (as Vercel AI Gateway) and "Website Hosting Service Providers," each with a link to Vercel's privacy policy at https://vercel.com/legal/privacy-policy.
 
 ---
 

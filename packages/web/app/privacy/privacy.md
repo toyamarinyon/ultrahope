@@ -110,6 +110,24 @@ The information we collect includes:
 
 - Log and Usage Data. Log and usage data is service-related, diagnostic, usage, and performance information our servers automatically collect when you access or use our Services and which we record in log files. Depending on how you interact with us, this log data may include your IP address, device information, browser type, and settings and information about your activity in the Services (such as the date/time stamps associated with your usage, pages and files viewed, searches, and other actions you take such as which features you use), device event information (such as system activity, error reports (sometimes called "crash dumps"), and hardware settings).
 
+### Information collected during service use
+
+In Short: When you use our CLI or API to generate content, we collect the data you submit, the output we produce, and related usage metadata. This data is stored so you can review past results and reprocess them with different models or settings. It is not used for model training or any other purpose.
+
+When you use Ultrahope to generate commit messages, pull request descriptions, or other developer-oriented text, we collect and store the following information:
+
+- Session Data. A unique CLI session identifier, IP address, and User-Agent string are recorded for each session.
+
+- Request Payload. The full content you submit for processing, including code diffs and command arguments.
+
+- Generated Output. The complete AI-generated text (e.g., commit messages, pull request titles and descriptions) returned by our AI Service Providers.
+
+- Usage Metadata. Information about each generation event, including the AI model and provider used, processing cost in microdollars, and timestamps.
+
+- User Feedback. If you choose to rate a generation result, we store the feedback score (1–5) you provide.
+
+This data is retained for the lifetime of your account so you can access your history and reprocess past submissions. It is not used for AI model training or any purpose other than providing the Services to you. You may request deletion of this data as described in "[HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?](#request)"
+
 ## 2. HOW DO WE PROCESS YOUR INFORMATION?
 
 In Short: We process your information to provide, improve, and administer our Services, communicate with you, for security and fraud prevention, and to comply with law. We process the personal information for the following purposes listed below. We may also process your information for other purposes only with your prior explicit consent.
@@ -192,7 +210,7 @@ Vendors, Consultants, and Other Third-Party Service Providers. We may share your
 
 The categories of third parties we may share personal information with are as follows:
 
-- AI Platforms
+- AI Platforms (Vercel AI Gateway — [https://vercel.com/legal/privacy-policy](https://vercel.com/legal/privacy-policy))
 
 - Communication & Collaboration Tools
 
@@ -204,7 +222,9 @@ The categories of third parties we may share personal information with are as fo
 
 - User Account Registration & Authentication Services
 
-- Website Hosting Service Providers
+- Email Service Providers
+
+- Website Hosting Service Providers (Vercel — [https://vercel.com/legal/privacy-policy](https://vercel.com/legal/privacy-policy))
 
 We also may need to share your personal information in the following situations:
 
@@ -484,7 +504,7 @@ California Civil Code Section 1798.83, also known as the "Shine The Light" law, 
 
 ## 15. USER-SUBMITTED CONTENT AND AI PROCESSING
 
- When you use our Service, the content you submit (such as code diffs and version control data) is transmitted to third-party large language model providers for processing. This content is sent solely for the purpose of generating the requested output (e.g., commit messages, pull request descriptions) and is not stored by us beyond the duration of the request. We do not use your submitted content to train AI models. Please be mindful of any sensitive or proprietary information contained in the content you submit.
+When you use our Service, the content you submit (such as code diffs and version control data) is transmitted to third-party large language model providers for processing. We store your submitted content and the generated output (e.g., commit messages, pull request descriptions) in your account so that you can review past results and reprocess them with different models or settings. This data is retained for as long as you maintain your account and is used solely to provide the Service to you. We do not use your submitted content or generated output to train AI models or for any other purpose. You may request deletion of this data at any time by contacting us as described in Section 18. Please be mindful of any sensitive or proprietary information contained in the content you submit.
 
 ## 16. DO WE MAKE UPDATES TO THIS NOTICE?
 
