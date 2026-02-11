@@ -25,7 +25,7 @@ export function buildResponse(
 		);
 	}
 
-	const { generationId, cost, vendor } = extractGatewayMetadata(
+	const { generationId, cost, vendor, gatewayPayload } = extractGatewayMetadata(
 		result.providerMetadata,
 	);
 
@@ -37,6 +37,7 @@ export function buildResponse(
 		outputTokens: result.usage.outputTokens ?? 0,
 		cost,
 		generationId,
+		gatewayPayload,
 	};
 }
 

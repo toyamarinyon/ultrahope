@@ -387,7 +387,7 @@ function createCommitMessageSSEStream({
 								cost: costInMicrodollars,
 								latency: Date.now() - startedAt,
 								createdAt: new Date(),
-								gatewayPayload: null,
+								gatewayPayload: response.gatewayPayload ?? null,
 								output: response.content,
 							})
 							.catch((error) => {
@@ -504,7 +504,7 @@ async function executeGeneration(
 					cost: costInMicrodollars,
 					latency: Date.now() - startedAt,
 					createdAt: new Date(),
-					gatewayPayload: null,
+					gatewayPayload: response.gatewayPayload ?? null,
 					output: response.content,
 				})
 				.catch((error) => {
