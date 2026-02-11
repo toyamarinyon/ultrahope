@@ -163,8 +163,8 @@ The document is **production-ready** with one minor optional enhancement (docume
 **Code validation:**
 - Email/Password: `emailAndPassword` plugin (auth.ts:50) + UI implemented (login/page.tsx:33-89) ✅
 - GitHub OAuth: `socialProviders.github` (auth.ts:44) + UI implemented (login/page.tsx:26-31) ✅
-- Device Flow: `deviceAuthorization` plugin (auth.ts:111) — CLI only, no web UI ✅
-- Magic Link: `magicLink` plugin configured (auth.ts:118) but **NO UI IMPLEMENTATION** — users cannot access this feature ✅ Correctly not mentioned in ToU
+- Device Flow: `deviceAuthorization` plugin (auth.ts:110) — CLI only, no web UI ✅
+- Magic Link: ~~Previously configured but unused~~ **REMOVED** (Issue #17) ✅
 
 ---
 
@@ -221,7 +221,7 @@ The document is **production-ready** with one minor optional enhancement (docume
 3. Device Flow (CLI) — ✅ Backend implemented, no web UI (by design)
 4. Magic Link — ❌ Backend configured, NO UI (not user-facing)
 
-**Recommendation:** Consider removing the unused `magicLink` plugin from `auth.ts` to reduce codebase complexity, or document it as a future feature. See Issue #17 for details.
+**Resolution:** ✅ The unused `magicLink` plugin has been removed from `auth.ts` (Issue #17 completed). The codebase now only includes actively used authentication methods.
 
 ---
 
@@ -331,9 +331,10 @@ The document is ready for deployment and provides clear, enforceable legal terms
 | 14 | Section 6 title mismatch | LOW | ✅ DONE | Renamed to "CONTRIBUTIONS, DATA USE, AND AI OUTPUT" |
 | 15 | No data retention policy | MEDIUM | ✅ DONE | Added Privacy Policy reference |
 | 16 | GitHub OAuth not mentioned | LOW | ✅ DONE | Added third-party auth disclosure |
+| 17 | Magic Link plugin unused | LOW | ✅ DONE | Removed unused magicLink plugin from auth.ts |
 
-**Total Issues: 16**
-**Resolved: 16**
+**Total Issues: 17**
+**Resolved: 17**
 **Success Rate: 100%**
 
 ---

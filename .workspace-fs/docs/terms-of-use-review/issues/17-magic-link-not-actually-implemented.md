@@ -1,7 +1,7 @@
 # Issue #17: Magic Link plugin configured but not accessible to users
 
 **Priority:** LOW
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -56,4 +56,24 @@ There is **no Magic Link input field or "Send magic link" button** in the UI, so
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Removed the unused `magicLink` plugin from `packages/web/lib/auth.ts` to reduce codebase complexity and eliminate confusion about available authentication methods.
+
+**Summary of changes:**
+- Removed `magicLink` import from better-auth/plugins
+- Removed `magicLink({ sendMagicLink: ... })` configuration block from auth plugins array
+- Verified no other references to magicLink exist in the codebase
+
+**Impact:**
+- Cleaner codebase with only actively used authentication methods
+- Better alignment between configured plugins and implemented UI
+- No user-facing impact (feature was never accessible)
+
+**Available authentication methods after cleanup:**
+1. Email/Password — Backend + UI ✅
+2. GitHub OAuth — Backend + UI ✅
+3. Device Flow (CLI) — Backend only (by design) ✅
+
+**Files changed:**
+- `packages/web/lib/auth.ts` — Removed magicLink plugin and import

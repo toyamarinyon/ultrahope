@@ -24,7 +24,7 @@
 | LOW | [14](issues/14-section6-title-mismatch.md) | Section 6 title doesn't match content structure | ✅ DONE |
 | MEDIUM | [15](issues/15-no-data-retention-policy.md) | No data retention policy disclosed | ✅ DONE |
 | LOW | [16](issues/16-github-oauth-not-mentioned.md) | GitHub OAuth authentication not mentioned | ✅ DONE |
-| LOW | [17](issues/17-magic-link-not-actually-implemented.md) | Magic Link plugin configured but no UI (codebase cleanup) | ⬜ TODO |
+| LOW | [17](issues/17-magic-link-not-actually-implemented.md) | Magic Link plugin configured but no UI (codebase cleanup) | ✅ DONE |
 
 > Status: ⬜ TODO / 🔧 IN PROGRESS / ✅ DONE / ⏭️ DEFERRED
 
