@@ -104,7 +104,7 @@ In Short: Some information  such as your Internet Protocol (IP) address and/or b
 
 We automatically collect certain information when you visit, use, or navigate the Services. This information does not reveal your specific identity (like your name or contact information) but may include device and usage information, such as your IP address, browser and device characteristics, operating system, language preferences, referring URLs, device name, country, location, information about how and when you use our Services, and other technical information. This information is primarily needed to maintain the security and operation of our Services, and for our internal analytics and reporting purposes.
 
-Like many businesses, we also collect information through cookies and similar technologies. You can find out more about this in our Cookie Notice: [https://ultrahope.dev/cookies](https://ultrahope.dev/cookies).
+We use cookies solely for session management and authentication purposes.
 
 The information we collect includes:
 
@@ -232,15 +232,11 @@ We also may need to share your personal information in the following situations:
 
 ## 5. DO WE USE COOKIES AND OTHER TRACKING TECHNOLOGIES?
 
-In Short: We may use cookies and other tracking technologies to collect and store your information.
+In Short: We use cookies to maintain your session and secure your account. We do not use third-party tracking or advertising technologies.
 
-We may use cookies and similar tracking technologies (like web beacons and pixels) to gather information when you interact with our Services. Some online tracking technologies help us maintain the security of our Services and your account, prevent crashes, fix bugs, save your preferences, and assist with basic site functions.
+We use cookies to maintain the security of our Services and your account. Specifically, we use session cookies issued by our authentication system (Better-Auth) to keep you logged in, prevent unauthorized access, and provide basic site functions. These cookies are essential for the operation of the Services.
 
-We also permit third parties and service providers to use online tracking technologies on our Services for analytics and advertising, including to help manage and display advertisements, to tailor advertisements to your interests, or to send abandoned shopping cart reminders (depending on your communication preferences). The third parties and service providers use their technology to provide advertising about products and services tailored to your interests which may appear either on our Services or on other websites.
-
-To the extent these online tracking technologies are deemed to be a "sale"/"sharing" (which includes targeted advertising, as defined under the applicable laws) under applicable US state laws, you can opt out of these online tracking technologies by submitting a request as described below under section "[DO UNITED STATES RESIDENTS HAVE SPECIFIC PRIVACY RIGHTS?](#uslaws)"
-
-Specific information about how we use such technologies and how you can refuse certain cookies is set out in our Cookie Notice: [https://ultrahope.dev/cookies](https://ultrahope.dev/cookies).
+We do not use third-party analytics tools, advertising networks, or tracking technologies. We do not collect data for targeted advertising or share your data for such purposes.
 
 ## 6. DO WE OFFER ARTIFICIAL INTELLIGENCE-BASED PRODUCTS?
 
@@ -327,7 +323,7 @@ If you would at any time like to review or change the information in your accoun
 
 Upon your request to terminate your account, we will deactivate or delete your account and information from our active databases. However, we may retain some information in our files to prevent fraud, troubleshoot problems, assist with any investigations, enforce our legal terms and/or comply with applicable legal requirements.
 
-Cookies and similar technologies: Most Web browsers are set to accept cookies by default. If you prefer, you can usually choose to set your browser to remove cookies and to reject cookies. If you choose to remove cookies or reject cookies, this could affect certain features or services of our Services. For further information, please see our Cookie Notice: [https://ultrahope.dev/cookies](https://ultrahope.dev/cookies).
+Cookies and similar technologies: Most Web browsers are set to accept cookies by default. If you prefer, you can usually choose to set your browser to remove cookies and to reject cookies. If you choose to remove cookies or reject cookies, you will not be able to log in to your account or use the Services.
 
 If you have questions or comments about your privacy rights, you may email us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev).
 

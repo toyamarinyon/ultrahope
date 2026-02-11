@@ -13,7 +13,7 @@
 | HIGH | 3 | Collected data significantly under-disclosed | ✅ DONE |
 | MEDIUM | 4 | Resend not listed as third-party provider | ✅ DONE |
 | MEDIUM | 5 | Vercel not listed as third-party provider | ✅ DONE |
-| MEDIUM | 6 | Cookie/tracking section overstates reality | ⬜ TODO |
+| MEDIUM | 6 | Cookie/tracking section overstates reality | ✅ DONE |
 | MEDIUM | 7 | Polar data sharing under-specified | ⬜ TODO |
 | LOW | 8 | Data retention policy is vague | ⬜ TODO |
 | LOW | 9 | Data deletion/export not implemented | ⬜ TODO |
@@ -108,7 +108,7 @@ Added Vercel to the Section 4 third-party category list in two places: "AI Platf
 
 ---
 
-#### 6. Cookie / tracking section overstates reality (Section 5) — ⬜ TODO
+#### 6. Cookie / tracking section overstates reality (Section 5) — ✅ DONE
 
 **Policy states:** Third-party advertising tracking technologies are permitted; mentions targeted advertising.
 
@@ -117,7 +117,7 @@ Added Vercel to the Section 4 third-party category list in two places: "AI Platf
 **Action:** Remove references to targeted advertising and third-party tracking that do not exist.
 
 **Resolution:**
-<!-- Record what was done here -->
+Rewrote Section 5 to accurately reflect reality: only session cookies from Better-Auth are used for authentication and security. Removed all references to third-party analytics, advertising networks, and targeted advertising. Also removed references to the Cookie Notice page (https://ultrahope.dev/cookies) from Section 1 and Section 12, since it is not needed for authentication-only cookies.
 
 ---
 
