@@ -216,7 +216,7 @@ The categories of third parties we may share personal information with are as fo
 
 - Data Storage Service Providers
 
-- Payment Processors
+- Payment Processors (Polar — [https://polar.sh/legal/privacy](https://polar.sh/legal/privacy)). For each generation event, we send your customer ID, generation cost in microdollars, AI model name, provider name, and generation ID to Polar for metered billing purposes.
 
 - Social Networks
 

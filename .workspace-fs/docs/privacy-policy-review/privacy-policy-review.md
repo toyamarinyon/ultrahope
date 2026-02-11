@@ -14,7 +14,7 @@
 | MEDIUM | 4 | Resend not listed as third-party provider | ✅ DONE |
 | MEDIUM | 5 | Vercel not listed as third-party provider | ✅ DONE |
 | MEDIUM | 6 | Cookie/tracking section overstates reality | ✅ DONE |
-| MEDIUM | 7 | Polar data sharing under-specified | ⬜ TODO |
+| MEDIUM | 7 | Polar data sharing under-specified | ✅ DONE |
 | LOW | 8 | Data retention policy is vague | ⬜ TODO |
 | LOW | 9 | Data deletion/export not implemented | ⬜ TODO |
 | LOW | 10 | Database region (Japan) not disclosed | ⬜ TODO |
@@ -121,7 +121,7 @@ Rewrote Section 5 to accurately reflect reality: only session cookies from Bette
 
 ---
 
-#### 7. Polar usage-data sharing under-specified (Section 4) — ⬜ TODO
+#### 7. Polar usage-data sharing under-specified (Section 4) — ✅ DONE
 
 **Policy states:** Data shared with "Payment Processors" (generic).
 
@@ -130,7 +130,7 @@ Rewrote Section 5 to accurately reflect reality: only session cookies from Bette
 **Action:** Specify what usage data is shared with Polar.
 
 **Resolution:**
-<!-- Record what was done here -->
+Updated Section 4 to specify that for each generation event, we send customer ID, generation cost in microdollars, AI model name, provider name, and generation ID to Polar for metered billing purposes. Referenced `packages/web/lib/api.ts:250-284` (`ingestUsageEvent()` function) as the implementation.
 
 ---
 
