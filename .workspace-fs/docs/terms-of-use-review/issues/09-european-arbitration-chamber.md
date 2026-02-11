@@ -1,7 +1,7 @@
 # Issue #9: European Arbitration Chamber unusual for Japan-based company
 
 **Priority:** MEDIUM
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -16,4 +16,15 @@ Consider using a Japan-based or Asia-Pacific arbitration institution (e.g., Japa
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Removed the foreign arbitration structure and simplified dispute handling to Japanese law plus exclusive court jurisdiction in Kyoto, Japan.
+
+**Summary of changes:**
+- Section 10 now states governing law only (Japan).
+- Section 11 now uses a single court-based clause: exclusive first-instance jurisdiction of Kyoto District Court.
+- Removed the prior arbitration framework to reduce complexity and align with a Japan-based individual developer operation.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:219`
+- `packages/web/app/terms/terms.md:223`

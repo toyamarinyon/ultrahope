@@ -13,10 +13,10 @@
 | HIGH | [3](issues/03-submissions-clause-ip-assignment.md) | "Submissions" clause implies IP assignment of user code | ✅ DONE |
 | HIGH | [4](issues/04-section5-contradicts-itself.md) | Section 5 contradicts itself about user content | ✅ DONE |
 | HIGH | [5](issues/05-no-ai-llm-disclaimers.md) | No mention of AI/LLM or disclaimers about generated content | ✅ DONE |
-| MEDIUM | [6](issues/06-no-pricing-subscription-terms.md) | No pricing, subscription, or refund terms for a paid service | ⬜ TODO |
-| MEDIUM | [7](issues/07-no-cli-in-service-description.md) | Service description doesn't mention the CLI tool | ⬜ TODO |
-| MEDIUM | [8](issues/08-section4-bans-commercial-use.md) | Section 4 bans commercial use — contradicts Pro plan | ⬜ TODO |
-| MEDIUM | [9](issues/09-european-arbitration-chamber.md) | European Arbitration Chamber unusual for Japan-based company | ⬜ TODO |
+| MEDIUM | [6](issues/06-no-pricing-subscription-terms.md) | No pricing, subscription, or refund terms for a paid service | ✅ DONE |
+| MEDIUM | [7](issues/07-no-cli-in-service-description.md) | Service description doesn't mention the CLI tool | ✅ DONE |
+| MEDIUM | [8](issues/08-section4-bans-commercial-use.md) | Section 4 bans commercial use — contradicts Pro plan | ✅ DONE |
+| MEDIUM | [9](issues/09-european-arbitration-chamber.md) | European Arbitration Chamber unusual for Japan-based company | ✅ DONE |
 | LOW | [10](issues/10-no-api-rate-limits.md) | No mention of API rate limits or usage quotas | ⬜ TODO |
 | LOW | [11](issues/11-no-account-terms.md) | No account-related terms despite full auth system | ⬜ TODO |
 

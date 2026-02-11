@@ -1,7 +1,7 @@
 # Issue #7: Service description doesn't mention the CLI tool
 
 **Priority:** MEDIUM
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -21,4 +21,9 @@ Explicitly include the CLI tool in the service definition. For example: "We oper
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Updated the Introduction service definition to explicitly include the Ultrahope CLI as part of the Services covered by these Legal Terms.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:9`

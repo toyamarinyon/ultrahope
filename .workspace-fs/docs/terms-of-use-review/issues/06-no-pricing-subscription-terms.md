@@ -1,7 +1,7 @@
 # Issue #6: No pricing, subscription, or refund terms for a paid service
 
 **Priority:** MEDIUM
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -31,4 +31,16 @@ Add a section covering:
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Added a dedicated billing section under "1. OUR SERVICES" to cover paid plans, subscription renewals, usage-based charges, cancellation, refunds, and pricing changes.
+
+**Summary of changes:**
+- Added plan/pricing incorporation by reference to pricing page/checkout.
+- Added payment authorization language for fees, taxes, and usage-based charges.
+- Added auto-renewal default and cancellation handling.
+- Added refund policy baseline (non-refundable unless required by law).
+- Added prospective pricing/feature/limit/credit-policy change notice language.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:63`

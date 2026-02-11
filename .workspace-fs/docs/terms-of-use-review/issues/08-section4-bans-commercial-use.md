@@ -1,7 +1,7 @@
 # Issue #8: Section 4 bans commercial use — contradicts Pro plan
 
 **Priority:** MEDIUM
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ## Problem
 
@@ -22,4 +22,10 @@ Remove the blanket commercial use prohibition. Replace with language that permit
 
 ## Resolution
 
-<!-- When resolved, update status above and fill in details here -->
+**Completed:** 2026-02-11
+
+Resolved by the Section 4 rewrite completed in earlier updates. The prior blanket prohibition on commercial use was replaced with language that allows legitimate commercial use subject to plan terms, while prohibiting unauthorized resale/sublicensing and competitive cloning behavior.
+
+**Files changed:**
+- `packages/web/app/terms/terms.md:128`
+- `packages/web/app/terms/terms.md:174`

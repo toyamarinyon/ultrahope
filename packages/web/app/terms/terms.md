@@ -6,7 +6,7 @@ Last updated February 11, 2026
 
 We are Satoshi Toyama (doing business as Ultrahope) ("Company," "we," "us," "our").
 
-We operate [https://ultrahope.dev](https://ultrahope.dev), as well as any other related products and services that refer or link to these legal terms (the "Legal Terms") (collectively, the "Services").
+We operate [https://ultrahope.dev](https://ultrahope.dev), the Ultrahope command-line interface ("CLI"), and any other related products and services that refer or link to these legal terms (the "Legal Terms") (collectively, the "Services").
 
 You can contact us by email at [support@ultrahope.dev](mailto:support@ultrahope.dev) or by mail to Satoshi Toyama, Villa Sugigahon #302, Uzumasa Sugigahoncho, Ukyo-ku, kyoto, Kyoto 616-8126, Japan.
 
@@ -59,6 +59,14 @@ We recommend that you print a copy of these Legal Terms for your records.
 ## 1. OUR SERVICES
 
 The information provided when using the Services is not intended for distribution to or use by any person or entity in any jurisdiction or country where such distribution or use would be contrary to law or regulation or which would subject us to any registration requirement within such jurisdiction or country. Accordingly, those persons who choose to access the Services from other locations do so on their own initiative and are solely responsible for compliance with local laws, if and to the extent local laws are applicable.
+
+### Plans, billing, and refunds
+
+Some features of the Services require a paid plan, usage-based charges, credits, or other fees. Current plan details and pricing are described on our pricing page or checkout flow and are incorporated into these Legal Terms by reference.
+
+If you purchase a paid plan, you authorize us and our payment processors to charge the applicable fees, taxes, and any usage-based amounts according to the plan terms you selected. Unless otherwise stated, subscriptions renew automatically for successive billing periods until canceled.
+
+You may cancel your paid plan at any time. Unless required by applicable law, fees already paid are non-refundable and cancellations take effect at the end of the current paid billing period. We may change pricing, plan features, usage limits, or credit policies from time to time. Any such changes will apply prospectively after notice through the Services or by email.
 
 ## 2. INTELLECTUAL PROPERTY RIGHTS
 
@@ -208,25 +216,11 @@ We cannot guarantee the Services will be available at all times. We may experien
 
 ## 10. GOVERNING LAW
 
-These Legal Terms shall be governed by and defined following the laws of Japan. Satoshi Toyama (doing business as Ultrahope) and yourself irrevocably consent that the courts of Kyoto, Japan shall have exclusive jurisdiction to resolve any dispute which may arise in connection with these Legal Terms.
+These Legal Terms shall be governed by and defined following the laws of Japan.
 
 ## 11. DISPUTE RESOLUTION
 
-### Informal Negotiations
-
-To expedite resolution and control the cost of any dispute, controversy, or claim related to these Legal Terms (each a "Dispute" and collectively, the "Disputes") brought by either you or us (individually, a "Party" and collectively, the "Parties"), the Parties agree to first attempt to negotiate any Dispute (except those Disputes expressly provided below) informally for at least thirty (30) days before initiating arbitration. Such informal negotiations commence upon written notice from one Party to the other Party.
-
-### Binding Arbitration
-
-Any dispute arising out of or in connection with these Legal Terms, including any question regarding its existence, validity, or termination, shall be referred to and finally resolved by the International Commercial Arbitration Court under the European Arbitration Chamber (Belgium, Brussels, Avenue Louise, 146) according to the Rules of this ICAC, which, as a result of referring to it, is considered as the part of this clause. The number of arbitrators shall be one (1). The seat, or legal place, or arbitration shall be Kyoto, Japan. The language of the proceedings shall be English. The governing law of these Legal Terms shall be substantive law of Japan.
-
-### Restrictions
-
-The Parties agree that any arbitration shall be limited to the Dispute between the Parties individually. To the full extent permitted by law, (a) no arbitration shall be joined with any other proceeding; (b) there is no right or authority for any Dispute to be arbitrated on a class-action basis or to utilize class action procedures; and (c) there is no right or authority for any Dispute to be brought in a purported representative capacity on behalf of the general public or any other persons.
-
-### Exceptions to Informal Negotiations and Arbitration
-
-The Parties agree that the following Disputes are not subject to the above provisions concerning informal negotiations binding arbitration: (a) any Disputes seeking to enforce or protect, or concerning the validity of, any of the intellectual property rights of a Party; (b) any Dispute related to, or arising from, allegations of theft, piracy, invasion of privacy, or unauthorized use; and (c) any claim for injunctive relief. If this provision is found to be illegal or unenforceable, then neither Party will elect to arbitrate any Dispute falling within that portion of this provision found to be illegal or unenforceable and such Dispute shall be decided by a court of competent jurisdiction within the courts listed for jurisdiction above, and the Parties agree to submit to the personal jurisdiction of that court.
+Any dispute arising out of or in connection with these Legal Terms or the Services shall be subject to the exclusive jurisdiction of the Kyoto District Court in Japan as the court of first instance.
 
 ## 12. CORRECTIONS
 
