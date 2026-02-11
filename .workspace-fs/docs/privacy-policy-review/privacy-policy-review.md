@@ -15,7 +15,7 @@
 | MEDIUM | 5 | Vercel not listed as third-party provider | ✅ DONE |
 | MEDIUM | 6 | Cookie/tracking section overstates reality | ✅ DONE |
 | MEDIUM | 7 | Polar data sharing under-specified | ✅ DONE |
-| LOW | 8 | Data retention policy is vague | ⬜ TODO |
+| LOW | 8 | Data retention policy is vague | ✅ DONE |
 | LOW | 9 | Data deletion/export not implemented | ⬜ TODO |
 | LOW | 10 | Database region (Japan) not disclosed | ⬜ TODO |
 
@@ -136,7 +136,7 @@ Updated Section 4 to specify that for each generation event, we send customer ID
 
 ### LOW Priority
 
-#### 8. Data retention is vague (Section 9) — ⬜ TODO
+#### 8. Data retention is vague (Section 9) — ✅ DONE
 
 **Policy states:** "As long as you have an account."
 
@@ -145,7 +145,7 @@ Updated Section 4 to specify that for each generation event, we send customer ID
 **Action:** Define a retention policy and implement automated cleanup, or be explicit that data is retained indefinitely.
 
 **Resolution:**
-<!-- Record what was done here -->
+Rewrote Section 9 to be explicit about the actual retention policy: data is retained for as long as the user maintains an account, with no automated cleanup based on age or inactivity. Specified what categories of data are retained (account info, usage data, sessions, billing records). Clarified that data is deleted upon account deletion request, though backup archives and legally-required records (tax/accounting) may be retained longer.
 
 ---
 
