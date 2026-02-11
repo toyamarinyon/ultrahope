@@ -489,7 +489,7 @@ Depending upon the state where you live, you may also have the following rights:
 
 ### How to Exercise Your Rights
 
-To exercise these rights, you can contact us by visiting [https://github.com/toyamarinyon/ultrahope/issues](https://github.com/toyamarinyon/ultrahope/issues), by emailing us at [toyamarinyon@gmail.com](mailto:toyamarinyon@gmail.com), [https://github.com/toyamarinyon/ultrahope](https://github.com/toyamarinyon/ultrahope), or by referring to the contact details at the bottom of this document.
+To exercise these rights, you can contact us by visiting [https://github.com/toyamarinyon/ultrahope/issues](https://github.com/toyamarinyon/ultrahope/issues), by emailing us at [privacy@ultrahope.dev](mailto:privacy@ultrahope.dev), [https://github.com/toyamarinyon/ultrahope](https://github.com/toyamarinyon/ultrahope), or by referring to the contact details at the bottom of this document.
 
 Under certain US state data protection laws, you can designate an authorized agent to make a request on your behalf. We may deny a request from an authorized agent that does not submit proof that they have been validly authorized to act on your behalf in accordance with applicable laws.
 
