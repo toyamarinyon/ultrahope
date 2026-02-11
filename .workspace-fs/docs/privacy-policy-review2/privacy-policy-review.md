@@ -8,7 +8,7 @@
 
 | Priority | # | Issue | Status |
 |----------|---|-------|--------|
-| CRITICAL | 1 | Section 18 is misleading (実装と記載が異なる) | ⬜ TODO |
+| CRITICAL | 1 | Section 18 is misleading (実装と記載が異なる) | ✅ DONE |
 | HIGH | 2 | Better-Auth not listed as third-party service | ⬜ TODO |
 | HIGH | 3 | Data export not implemented | ⬜ TODO |
 | HIGH | 4 | Sections 6 and 15 duplicate AI processing | ⬜ TODO |
@@ -49,9 +49,9 @@
 | AI Processing Explanation | 7.0/10 | 15% | Good transparency, but Sections 6 & 15 duplicate |
 | Third-Party Sharing Clarity | 6.5/10 | 15% | Polar very detailed, but Better-Auth missing |
 | Data Retention & Security | 7.0/10 | 15% | Honest about no auto-cleanup, but security vague |
-| User Rights | 6.0/10 | 15% | Deletion easy, but Section 18 misleading, no export |
+| User Rights | 6.0/10 | 15% | Deletion easy, but no export yet |
 | Tone & Language | 5.0/10 | 5% | Too much legal boilerplate, passive voice |
-| Technical Accuracy | 8.0/10 | 5% | Implementation matches policy (except Section 18) |
+| Technical Accuracy | 8.0/10 | 5% | Implementation mostly matches policy; follow-up items remain |
 
 **Overall Developer Score: 7.08/10**
 
@@ -80,10 +80,9 @@
 
 1. **Better-Auth**: Used extensively but not listed in Section 4
 2. **IP/User-Agent**: Schema fields exist but setting code not found
-3. **Section 18**: Says "GitHub Issues" but Settings page has delete button
-4. **Data export**: Not implemented (only deletion)
-5. **Backup retention**: Says "limited period" but not specified
-6. **Security details**: Generic statements, no specific measures listed
+3. **Data export**: Not implemented (only deletion)
+4. **Backup retention**: Says "limited period" but not specified
+5. **Security details**: Generic statements, no specific measures listed
 
 ---
 
@@ -111,7 +110,7 @@
 
 ### Phase 1: Critical Fixes (1-2 days)
 
-1. Fix Section 18 (misleading deletion instructions)
+1. Fix Section 18 (misleading deletion instructions) ✅ Done (2026-02-12)
 2. Add Better-Auth to third-party services
 3. Verify IP/User-Agent recording
 4. Specify backup retention period (e.g., "30 days")

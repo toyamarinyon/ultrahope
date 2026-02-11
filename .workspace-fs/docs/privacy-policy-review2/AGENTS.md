@@ -1,5 +1,121 @@
 # Agents Used in Privacy Policy Review
 
+## Structure and Workflow
+
+### Directory Structure
+
+```
+privacy-policy-review2/
+├── AGENTS.md                           # This file (workflow documentation)
+├── privacy-policy-review.md            # Index/summary of all issues
+├── FINAL-REPORT.md                     # Comprehensive report
+└── issues/                             # Individual issue files
+    ├── 01-section-18-misleading.md
+    ├── 02-better-auth-not-listed.md
+    ├── 03-data-export-not-implemented.md
+    ├── 04-sections-6-15-duplicate.md
+    ├── 05-ip-useragent-unclear.md
+    ├── 06-security-measures-vague.md
+    ├── 07-backup-retention-unclear.md
+    ├── 08-communication-tools-unclear.md
+    ├── 09-social-networks-unclear.md
+    ├── 10-document-too-long.md
+    ├── 11-may-overuse.md
+    └── 12-passive-voice.md
+```
+
+### File Purposes
+
+#### `privacy-policy-review.md` (Index)
+- **Purpose:** High-level overview and progress tracking
+- **Contents:**
+  - Metadata (date, file reviewed, overall status)
+  - Progress table (all issues at a glance)
+  - Accurate sections (no action needed)
+  - Scores and action plan
+  - References
+
+#### `issues/*.md` (Individual Issues)
+- **Purpose:** Detailed tracking of each specific issue
+- **Contents:**
+  - Priority and status
+  - Problem description
+  - Reality check with code/policy references
+  - Recommended action
+  - Resolution notes (filled when resolved)
+
+### Workflow for Updating Issues
+
+#### Starting Work on an Issue
+
+1. **Open the issue file** (e.g., `issues/01-section-18-misleading.md`)
+2. **Update status** in the issue file:
+   ```markdown
+   **Status:** 🔧 IN PROGRESS
+   ```
+3. **Update the index** (`privacy-policy-review.md`):
+   - Update the matching row in the Progress table
+   - Update top-level Status if needed (⬜→🔧)
+
+#### Completing an Issue
+
+1. **In the issue file:**
+   - Update status: `**Status:** ✅ DONE`
+   - Fill in the Resolution section with:
+     - Summary of what was done
+     - Files changed (with paths)
+     - Date completed
+
+   Example:
+   ```markdown
+   ## Resolution
+
+   **Completed:** 2026-02-12
+
+   Updated Section 18 to remove GitHub Issues as the primary deletion path and
+   replaced it with account settings + support email guidance.
+
+   **Files changed:**
+   - `packages/web/app/privacy/privacy.md`
+   ```
+
+2. **Update the index** (`privacy-policy-review.md`):
+   - Update the matching row in the Progress table (status to ✅)
+   - Update any summary sections that still treat the issue as open
+   - If all issues are ✅ or ⏭️, update top-level Status to 🟢 Complete
+
+#### Deferring an Issue
+
+1. **In the issue file:**
+   - Update status: `**Status:** ⏭️ DEFERRED`
+   - Fill in Resolution with reason:
+   ```markdown
+   ## Resolution
+
+   **Deferred:** 2026-02-12
+   **Reason:** Waiting for legal review.
+   ```
+
+2. **Update the index** as above.
+
+### Status Values
+
+| Emoji | Meaning |
+|-------|---------|
+| ⬜ | TODO — not started |
+| 🔧 | IN PROGRESS — work underway |
+| ✅ | DONE — resolved and verified |
+| ⏭️ | DEFERRED — intentionally postponed with reason noted in Resolution |
+
+### Rules
+
+1. **Never change issue numbers** — they are stable identifiers
+2. **Always keep index and issue files in sync** — update both when changing status
+3. **Resolution sections are required** when marking ✅ DONE or ⏭️ DEFERRED
+4. **Don't delete issues** — only change their status
+5. **Link to code** — use `file_path:line_number` where possible
+6. **Date resolutions** — always include completion/deferral date
+
 ## Review Date
 2026-02-12
 
