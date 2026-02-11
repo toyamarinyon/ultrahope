@@ -13,7 +13,7 @@
 | HIGH | 3 | Data export not implemented | ✅ DONE (Documented manual process) |
 | HIGH | 4 | Sections 6 and 15 duplicate AI processing | ✅ DONE |
 | MEDIUM | 5 | IP/User-Agent recording unclear | ✅ DONE |
-| MEDIUM | 6 | Security measures too vague | ⬜ TODO |
+| MEDIUM | 6 | Security measures too vague | ✅ DONE |
 | MEDIUM | 7 | Backup retention period unclear | ⬜ TODO |
 | MEDIUM | 8 | "Communication & Collaboration Tools" unclear | ⬜ TODO |
 | MEDIUM | 9 | "Social Networks" unclear | ⬜ TODO |
@@ -48,7 +48,7 @@
 | Information Collection Transparency | 8.5/10 | 20% | Excellent detail; IP/User-Agent wording now aligned with implementation |
 | AI Processing Explanation | 7.0/10 | 15% | Transparency is good; Section 6 now serves as the canonical explanation |
 | Third-Party Sharing Clarity | 6.5/10 | 15% | Polar very detailed; remaining clarity issues are category wording |
-| Data Retention & Security | 7.0/10 | 15% | Honest about no auto-cleanup, but security vague |
+| Data Retention & Security | 7.0/10 | 15% | Retention tradeoffs are explicit and security controls are now concrete |
 | User Rights | 6.0/10 | 15% | Deletion easy, but no export yet |
 | Tone & Language | 5.0/10 | 5% | Too much legal boilerplate, passive voice |
 | Technical Accuracy | 8.0/10 | 5% | Implementation mostly matches policy; follow-up items remain |
@@ -79,7 +79,6 @@
 ### ⚠️ Needs Verification/Correction
 
 1. **Backup retention**: Says "limited period" but not specified
-2. **Security details**: Generic statements, no specific measures listed
 
 ---
 
@@ -115,7 +114,7 @@
 ### Phase 2: High Priority (1-2 weeks)
 
 5. Merge Sections 6 & 15 (eliminate duplication) ✅ Done (2026-02-12)
-6. Add specific security measures (TLS 1.3, bcrypt, etc.)
+6. Add specific security measures (implementation-backed) ✅ Done (2026-02-12)
 7. Implement self-service data export (policy already clarifies current manual process)
 8. Add table format for third-party services
 

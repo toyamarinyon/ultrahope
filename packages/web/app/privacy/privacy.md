@@ -301,7 +301,17 @@ When you request account deletion (as described in Section 18), we will delete y
 
 In Short: We aim to protect your personal information through a system of organizational and technical security measures.
 
-We have implemented appropriate and reasonable technical and organizational security measures designed to protect the security of any personal information we process. However, despite our safeguards and efforts to secure your information, no electronic transmission over the Internet or information storage technology can be guaranteed to be 100% secure, so we cannot promise or guarantee that hackers, cybercriminals, or other unauthorized third parties will not be able to defeat our security and improperly collect, access, steal, or modify your information. Although we will do our best to protect your personal information, transmission of personal information to and from our Services is at your own risk. You should only access the Services within a secure environment.
+Our security controls include:
+
+- Authentication and session management through Better-Auth, including session cookies and account authentication flows.
+- Protected API access using authenticated sessions and bearer-token based authorization for CLI/API usage.
+- Device authorization flow support for CLI sign-in.
+- Request quota controls for free-tier usage to reduce abuse (daily request limits).
+- Password reset flows using single-use reset tokens delivered by email.
+- Managed infrastructure providers for hosting and data storage (Vercel and Turso).
+- Secret management through environment variables (for example, OAuth credentials and third-party API keys), rather than hardcoding secrets in client code.
+
+However, despite our safeguards and efforts to secure your information, no electronic transmission over the Internet or information storage technology can be guaranteed to be 100% secure, so we cannot promise or guarantee that hackers, cybercriminals, or other unauthorized third parties will not be able to defeat our security and improperly collect, access, steal, or modify your information. Although we will do our best to protect your personal information, transmission of personal information to and from our Services is at your own risk. You should only access the Services within a secure environment.
 
 ## 11. DO WE COLLECT INFORMATION FROM MINORS?
 

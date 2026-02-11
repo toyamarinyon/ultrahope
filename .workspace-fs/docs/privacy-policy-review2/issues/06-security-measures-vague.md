@@ -4,11 +4,11 @@
 **Category:** Data Retention & Security
 **Impact:** Trust issue (developers expect specific security details)
 **Effort:** 30 minutes (research) + 5 minutes (update policy)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Policy states (Section 10, lines 298-300):**
 ```markdown
@@ -255,3 +255,19 @@ We have implemented appropriate and reasonable security measures...
 - But significantly impacts developer trust
 - Easy to fix once security measures are verified
 - Common expectation for developer tools
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Add concrete, implementation-backed controls to Section 10
+
+Implemented update:
+- Replaced generic "appropriate and reasonable" wording with explicit controls actually used in the codebase.
+- Listed concrete measures for authentication/session handling, API authorization, CLI device auth, quota controls, password reset tokens, managed infrastructure, and environment-variable secret handling.
+- Kept the existing limitation statement that no system can be 100% secure.
+
+Scope note:
+- Avoided unverified claims (for example, specific TLS versions, HSTS details, or named hashing cost factors) unless directly confirmed in the implementation/docs.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
