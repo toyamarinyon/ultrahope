@@ -281,6 +281,20 @@ export interface operations {
 					};
 				};
 			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "invalid_model";
+						message: string;
+						allowedModels: string[];
+					};
+				};
+			};
 			/** @description Response for status 401 */
 			401: {
 				headers: {
@@ -409,6 +423,20 @@ export interface operations {
 					};
 				};
 			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "invalid_model";
+						message: string;
+						allowedModels: string[];
+					};
+				};
+			};
 			/** @description Response for status 401 */
 			401: {
 				headers: {
@@ -506,6 +534,20 @@ export interface operations {
 							limit: number;
 							resetsAt: string;
 						};
+					};
+				};
+			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "invalid_model";
+						message: string;
+						allowedModels: string[];
 					};
 				};
 			};

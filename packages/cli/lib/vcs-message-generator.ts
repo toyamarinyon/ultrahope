@@ -3,6 +3,7 @@ import {
 	createApiClient,
 	extractGatewayMetadata,
 	InsufficientBalanceError,
+	InvalidModelError,
 } from "./api-client";
 import { getToken } from "./auth";
 import { log } from "./logger";
@@ -154,6 +155,7 @@ export async function* generateCommitMessages(
 			}
 		} catch (error) {
 			if (signal?.aborted || isAbortError(error)) return;
+			if (error instanceof InvalidModelError) throw error;
 			if (error instanceof InsufficientBalanceError) throw error;
 			if (isInvalidCliSessionIdError(error)) throw error;
 		}
@@ -217,6 +219,9 @@ export async function* generateCommitMessages(
 			}
 		}
 	} catch (error) {
+		if (error instanceof InvalidModelError) {
+			throw error;
+		}
 		if (error instanceof InsufficientBalanceError) {
 			console.error(
 				"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",

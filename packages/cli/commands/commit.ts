@@ -7,7 +7,7 @@ import {
 	isCommandExecutionAbort,
 	mergeAbortSignals,
 } from "../lib/abort";
-import { createApiClient } from "../lib/api-client";
+import { createApiClient, InvalidModelError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
@@ -24,6 +24,14 @@ interface CommitOptions {
 	message: boolean;
 	interactive: boolean;
 	cliModels?: string[];
+}
+
+function exitWithInvalidModelError(error: InvalidModelError): never {
+	console.error(`Error: Model '${error.model}' is not supported.`);
+	if (error.allowedModels.length > 0) {
+		console.error(`Available models: ${error.allowedModels.join(", ")}`);
+	}
+	process.exit(1);
 }
 
 function showQuotaInfo(quota: QuotaInfo): void {
@@ -189,7 +197,12 @@ export async function commit(args: string[]) {
 			cliSessionId,
 			commandExecutionPromise,
 		});
-		const first = await gen.next();
+		const first = await gen.next().catch((error) => {
+			if (error instanceof InvalidModelError) {
+				exitWithInvalidModelError(error);
+			}
+			throw error;
+		});
 		await recordSelection(first.value?.generationId);
 		const message = first.value?.content ?? "";
 
@@ -219,6 +232,9 @@ export async function commit(args: string[]) {
 		});
 
 		if (result.action === "abort") {
+			if (result.error instanceof InvalidModelError) {
+				exitWithInvalidModelError(result.error);
+			}
 			if (isCommandExecutionAbort(commandExecutionSignal)) {
 				return;
 			}

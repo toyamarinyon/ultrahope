@@ -26,6 +26,7 @@ import {
 	type LLMResponse,
 } from "@/lib/llm";
 import { buildResponse } from "@/lib/llm/llm-utils";
+import { ALLOWED_MODEL_IDS, isAllowedModelId } from "@/lib/llm/models";
 import type { LanguageModel } from "./llm/types";
 
 const packageJson = JSON.parse(
@@ -90,6 +91,12 @@ type InsufficientBalanceBody = {
 	hint: string;
 };
 
+type InvalidModelBody = {
+	error: "invalid_model";
+	message: string;
+	allowedModels: readonly string[];
+};
+
 type CommitMessageStreamEvent =
 	| { type: "commit-message"; commitMessage: string }
 	| { type: "usage"; usage: LanguageModelUsage }
@@ -103,6 +110,14 @@ const encoder = new TextEncoder();
 
 function formatEvent(event: CommitMessageStreamEvent): Uint8Array {
 	return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function invalidModelErrorBody(model: string): InvalidModelBody {
+	return {
+		error: "invalid_model",
+		message: `Model '${model}' is not supported.`,
+		allowedModels: ALLOWED_MODEL_IDS,
+	};
 }
 
 function combineAbortSignals(
@@ -562,7 +577,14 @@ const GenerateSuccessResponse = t.Object({
 	),
 });
 
+const InvalidModelErrorResponse = t.Object({
+	error: t.Literal("invalid_model"),
+	message: t.String(),
+	allowedModels: t.Array(t.String()),
+});
+
 const GenerateErrorResponses = {
+	400: InvalidModelErrorResponse,
 	401: t.Object({ error: t.String() }),
 	402: t.Union([
 		t.Object({
@@ -754,6 +776,10 @@ const apiRoutes = new Elysia()
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
+			if (!isAllowedModelId(body.model)) {
+				set.status = 400;
+				return invalidModelErrorBody(body.model);
+			}
 
 			if (MOCKING) {
 				console.log("[MOCKING] Using mocking model");
@@ -802,6 +828,10 @@ const apiRoutes = new Elysia()
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
+			}
+			if (!isAllowedModelId(body.model)) {
+				set.status = 400;
+				return invalidModelErrorBody(body.model);
 			}
 
 			if (MOCKING) {
@@ -888,6 +918,10 @@ const apiRoutes = new Elysia()
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
+			if (!isAllowedModelId(body.model)) {
+				set.status = 400;
+				return invalidModelErrorBody(body.model);
+			}
 
 			if (MOCKING) {
 				console.log("[MOCKING] Using mocking model");
@@ -938,6 +972,10 @@ const apiRoutes = new Elysia()
 			if (!session) {
 				set.status = 401;
 				return { error: "Unauthorized" };
+			}
+			if (!isAllowedModelId(body.model)) {
+				set.status = 400;
+				return invalidModelErrorBody(body.model);
 			}
 
 			if (MOCKING) {

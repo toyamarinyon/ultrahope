@@ -4,7 +4,7 @@ import {
 	isCommandExecutionAbort,
 	mergeAbortSignals,
 } from "../lib/abort";
-import { createApiClient } from "../lib/api-client";
+import { createApiClient, InvalidModelError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
@@ -21,6 +21,14 @@ interface DescribeOptions {
 	revision: string;
 	interactive: boolean;
 	cliModels?: string[];
+}
+
+function exitWithInvalidModelError(error: InvalidModelError): never {
+	console.error(`Error: Model '${error.model}' is not supported.`);
+	if (error.allowedModels.length > 0) {
+		console.error(`Available models: ${error.allowedModels.join(", ")}`);
+	}
+	process.exit(1);
 }
 
 function showQuotaInfo(quota: QuotaInfo): void {
@@ -189,7 +197,12 @@ async function runNonInteractiveDescribe(
 		commandExecutionPromise: context.commandExecutionPromise,
 		useStream: true,
 	});
-	const first = await gen.next();
+	const first = await gen.next().catch((error) => {
+		if (error instanceof InvalidModelError) {
+			exitWithInvalidModelError(error);
+		}
+		throw error;
+	});
 	await recordSelection(context.apiClient, first.value?.generationId);
 	const message = first.value?.content ?? "";
 
@@ -216,6 +229,9 @@ async function runInteractiveDescribe(
 		});
 
 		if (result.action === "abort") {
+			if (result.error instanceof InvalidModelError) {
+				exitWithInvalidModelError(result.error);
+			}
 			if (isCommandExecutionAbort(context.commandExecutionSignal)) {
 				return;
 			}
