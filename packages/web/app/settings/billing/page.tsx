@@ -1,1 +1,5 @@
-export { default, dynamic } from "../page";
+import SettingsPage from "../page";
+
+export const dynamic = "force-dynamic";
+
+export default SettingsPage;
