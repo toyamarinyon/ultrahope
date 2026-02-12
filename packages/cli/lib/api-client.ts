@@ -338,14 +338,8 @@ export function createApiClient(token?: string) {
 				throw new UnauthorizedError();
 			}
 			if (response.status === 402) {
-				const payload = error as
-					| { count?: number; limit?: number; resetsAt?: string }
-					| undefined;
-				const count = typeof payload?.count === "number" ? payload.count : 0;
-				const limit = typeof payload?.limit === "number" ? payload.limit : 0;
-				const resetsAt = payload?.resetsAt ?? "";
 				log("command_execution error (402)", error);
-				throw new DailyLimitExceededError(count, limit, resetsAt);
+				handle402Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
