@@ -312,12 +312,11 @@ For material changes, we update the "Last updated" date and may provide addition
 
 Contact:
 
-Satoshi Toyama  
-Villa Sugigahon #302, Uzumasa Sugigahoncho  
-Ukyo-ku, Kyoto 616-8126  
-Japan
+Satoshi Toyama
 
 Email: [support@ultrahope.dev](mailto:support@ultrahope.dev)
+
+Our physical mailing address is available upon request via email.
 
 ## 18. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?
 

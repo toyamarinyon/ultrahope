@@ -8,7 +8,7 @@ We are Satoshi Toyama (doing business as Ultrahope) ("Company," "we," "us," "our
 
 We operate [https://ultrahope.dev](https://ultrahope.dev), the Ultrahope command-line interface ("CLI"), and any other related products and services that refer or link to these legal terms (the "Legal Terms") (collectively, the "Services").
 
-You can contact us by email at [support@ultrahope.dev](mailto:support@ultrahope.dev) or by mail to Satoshi Toyama, Villa Sugigahon #302, Uzumasa Sugigahoncho, Ukyo-ku, kyoto, Kyoto 616-8126, Japan.
+You can contact us by email at [support@ultrahope.dev](mailto:support@ultrahope.dev). Our physical mailing address is available upon request via email.
 
 These Legal Terms constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you"), and Satoshi Toyama (doing business as Ultrahope), concerning your access to and use of the Services. You agree that by accessing the Services, you have read, understood, and agreed to be bound by all of these Legal Terms. IF YOU DO NOT AGREE WITH ALL OF THESE LEGAL TERMS, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SERVICES AND YOU MUST DISCONTINUE USE IMMEDIATELY.
 
@@ -284,12 +284,6 @@ In order to resolve a complaint regarding the Services or to receive further inf
 
 Satoshi Toyama
 
-Villa Sugigahon #302, Uzumasa Sugigahoncho
+Email: [support@ultrahope.dev](mailto:support@ultrahope.dev)
 
-Ukyo-ku
-
-kyoto, Kyoto 616-8126
-
-Japan
-
-[support@ultrahope.dev](mailto:support@ultrahope.dev)
+Our physical mailing address is available upon request via email.
