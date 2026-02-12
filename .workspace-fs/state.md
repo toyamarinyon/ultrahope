@@ -10,7 +10,7 @@
 ## Next
 
 - [x] **Core/Web unification + OpenAPI export** → [tasks/core-web-unify-openapi-plan.md](tasks/core-web-unify-openapi-plan.md)
-- [ ] **Free plan daily limit** → [decisions/free-plan-daily-limit.md](decisions/free-plan-daily-limit.md)
+- [x] **Free plan daily limit** → [decisions/free-plan-daily-limit.md](decisions/free-plan-daily-limit.md)
   - [x] Create decision doc
   - [x] Add `daily_usage` table to Turso (user_id, date, count)
   - [x] Implement daily limit check in API (5 requests/day, UTC reset)
@@ -45,8 +45,8 @@
     - [x] Update balance check logic (use new meter via `POLAR_USAGE_COST_METER_ID`)
     - [x] Remove metered price from Pro (no automatic overage)
     - [x] Add one-time credit products (Credit $10, Credit $20)
-    - [ ] Apply to sandbox with `--recreate` flag
-    - [ ] Apply to production
+    - [x] Apply to sandbox with `--recreate` flag
+    - [x] Apply to production
     - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
     - [ ] Implement auto-recharge feature:
       - [ ] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
@@ -92,7 +92,7 @@
 - [x] **Implement meter balance check**
   - [x] Check balance via Polar API before running translate
   - [x] Return error response on insufficient balance (HTTP 402)
-- [ ] Production deploy (Vercel + ultrahope.dev domain)
+- [x] Production deploy (Vercel + ultrahope.dev domain)
 
 
 ## Task (Human)
