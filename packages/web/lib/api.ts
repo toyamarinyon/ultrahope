@@ -11,11 +11,7 @@ import {
 	getDb,
 } from "@/db";
 import { getAuth, getPolarClient } from "@/lib/auth";
-import {
-	createCreditCheckout,
-	getAutoRechargeSettings,
-	MICRODOLLARS_PER_USD,
-} from "@/lib/auto-recharge";
+import { MICRODOLLARS_PER_USD } from "@/lib/auto-recharge";
 import { baseUrl } from "@/lib/base-url";
 import {
 	assertDailyLimitNotExceeded,
@@ -91,7 +87,7 @@ type InsufficientBalanceBody = {
 	message: string;
 	balance: number;
 	plan: "free" | "pro";
-	actions: { buyCredits: string; enableAutoRecharge: string };
+	actions: { buyCredits: string };
 	hint: string;
 };
 
@@ -238,9 +234,8 @@ function enforceProBalanceOr402(
 				plan: billingInfo.plan,
 				actions: {
 					buyCredits: `${baseUrl}/settings/billing#credits`,
-					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
-				hint: "Purchase additional credits or enable auto-recharge to continue.",
+				hint: "Purchase additional credits to continue.",
 			},
 		};
 	}
@@ -307,54 +302,13 @@ type CommitMessageStreamOptions = {
 	ctx: GenerateContext;
 	startedAt: number;
 	db: Db;
-	plan: "free" | "pro";
-	balanceBeforeGeneration: number | null;
 };
-
-async function triggerAutoRechargeIfNeeded({
-	db,
-	userId,
-	plan,
-	balanceBeforeGeneration,
-	costInMicrodollars,
-}: {
-	db: Db;
-	userId: number;
-	plan: "free" | "pro";
-	balanceBeforeGeneration: number | null;
-	costInMicrodollars: number;
-}): Promise<void> {
-	if (plan !== "pro") return;
-	if (balanceBeforeGeneration == null) return;
-	if (costInMicrodollars <= 0) return;
-
-	const settings = await getAutoRechargeSettings(db, userId);
-	if (!settings.enabled) return;
-
-	const balanceAfterGeneration = balanceBeforeGeneration - costInMicrodollars;
-	const crossedThreshold =
-		balanceBeforeGeneration > settings.threshold &&
-		balanceAfterGeneration <= settings.threshold;
-	if (!crossedThreshold) return;
-
-	const checkout = await createCreditCheckout(userId, settings.amount);
-	if (!checkout) {
-		console.warn("[polar] Auto-recharge enabled but credit product is not set");
-		return;
-	}
-
-	console.log(
-		`[polar] Auto-recharge checkout created for user ${userId}: ${checkout.id}`,
-	);
-}
 
 function createCommitMessageSSEStream({
 	stream,
 	ctx,
 	startedAt,
 	db,
-	plan,
-	balanceBeforeGeneration,
 }: CommitMessageStreamOptions): ReadableStream<Uint8Array> {
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -436,15 +390,6 @@ function createCommitMessageSSEStream({
 						vendor: response.vendor,
 						generationId: response.generationId,
 					});
-					void triggerAutoRechargeIfNeeded({
-						db,
-						userId: ctx.userId,
-						plan,
-						balanceBeforeGeneration,
-						costInMicrodollars,
-					}).catch((error) => {
-						console.error("[polar] Failed to trigger auto-recharge:", error);
-					});
 
 					if (commandExecutionId) {
 						db.insert(generation)
@@ -525,9 +470,8 @@ async function executeGeneration(
 				plan: billingInfo.plan,
 				actions: {
 					buyCredits: `${baseUrl}/settings/billing#credits`,
-					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
-				hint: "Purchase additional credits or enable auto-recharge to continue.",
+				hint: "Purchase additional credits to continue.",
 			},
 		};
 	}
@@ -552,7 +496,6 @@ async function executeGeneration(
 		response.cost != null
 			? Math.round(response.cost * MICRODOLLARS_PER_USD)
 			: 0;
-	const balanceBeforeGeneration = billingInfo?.balance ?? null;
 
 	if (response.generationId) {
 		ingestUsageEvent({
@@ -561,15 +504,6 @@ async function executeGeneration(
 			model: response.model,
 			vendor: response.vendor,
 			generationId: response.generationId,
-		});
-		void triggerAutoRechargeIfNeeded({
-			db: ctx.db,
-			userId: ctx.userId,
-			plan,
-			balanceBeforeGeneration,
-			costInMicrodollars,
-		}).catch((error) => {
-			console.error("[polar] Failed to trigger auto-recharge:", error);
 		});
 
 		if (commandExecutionId) {
@@ -956,8 +890,6 @@ const apiRoutes = new Elysia()
 				ctx,
 				startedAt,
 				db,
-				plan,
-				balanceBeforeGeneration: billingInfo?.balance ?? null,
 			});
 
 			return new Response(customStream, {

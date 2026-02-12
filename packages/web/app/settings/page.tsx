@@ -4,12 +4,8 @@ import { redirect } from "next/navigation";
 import { BillingSettingsControls } from "@/components/billing-settings-controls";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { DowngradePlanButton } from "@/components/downgrade-plan-button";
-import { getDb } from "@/db";
 import { getAuth } from "@/lib/auth";
-import {
-	getAutoRechargeSettings,
-	MICRODOLLARS_PER_USD,
-} from "@/lib/auto-recharge";
+import { MICRODOLLARS_PER_USD } from "@/lib/auto-recharge";
 import {
 	getActiveSubscriptions,
 	getBillingHistory,
@@ -57,19 +53,9 @@ export default async function SettingsPage() {
 		getActiveSubscriptions(userId),
 		getBillingHistory(userId, 10),
 	]);
-	const [autoRecharge, billingInfo] = Number.isFinite(userIdNumber)
-		? await Promise.all([
-				getAutoRechargeSettings(getDb(), userIdNumber),
-				getUserBillingInfo(userIdNumber),
-			])
-		: [
-				{
-					enabled: false,
-					threshold: MICRODOLLARS_PER_USD,
-					amount: 10 as const,
-				},
-				null,
-			];
+	const billingInfo = Number.isFinite(userIdNumber)
+		? await getUserBillingInfo(userIdNumber)
+		: null;
 	const currentPlan = resolveCurrentPlan(activeSubscriptions);
 	const hasProPlan = activeSubscriptions.some(
 		(subscription) => subscription.plan === "pro",
@@ -137,13 +123,7 @@ export default async function SettingsPage() {
 						</div>
 					) : null}
 					<div className="mt-4 border-t border-border-subtle pt-4">
-						<BillingSettingsControls
-							initialAutoRecharge={{
-								enabled: autoRecharge.enabled,
-								thresholdUsd: autoRecharge.threshold / MICRODOLLARS_PER_USD,
-								amount: autoRecharge.amount,
-							}}
-						/>
+						<BillingSettingsControls />
 					</div>
 				</div>
 

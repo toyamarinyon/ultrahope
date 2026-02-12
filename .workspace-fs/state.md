@@ -47,12 +47,9 @@
     - [x] Add one-time credit products (Credit $10, Credit $20)
     - [x] Apply to sandbox with `--recreate` flag
     - [x] Apply to production
-    - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
-    - [x] Implement auto-recharge feature:
-      - [x] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
-      - [x] Check threshold after usage events
-      - [x] Create Polar checkout when balance falls below threshold
-    - [x] Build settings UI for credit purchases + auto-recharge toggle
+    - [x] Update 402 response with new actions (`buyCredits`)
+    - ~~Auto-recharge feature~~ → Rejected: Polar.sh requires user interaction for checkout; see [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
+    - [x] Build settings UI for credit purchases
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
   - [x] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)

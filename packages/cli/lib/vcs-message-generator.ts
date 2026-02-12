@@ -223,9 +223,7 @@ export async function* generateCommitMessages(
 			throw error;
 		}
 		if (error instanceof InsufficientBalanceError) {
-			console.error(
-				"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-			);
+			console.error(error.formatMessage());
 			process.exit(1);
 		}
 		throw error;
