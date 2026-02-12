@@ -139,12 +139,19 @@ Simple rule: **each model generates 1 output**.
 
 **API:** `models` param controls which models to use for generation.
 
-**CLI UX:** Users configure their preferred model set via **settings UI** (web). No need to type `--models` on every command.
+**CLI UX:** Users configure model preferences with local TOML files. No settings UI dependency.
 
-Flow:
-1. User logs in → visits settings UI on ultrahope.dev
-2. Selects preferred models (e.g., OpenAI + Anthropic)
-3. CLI reads user's saved preferences from API
-4. All commands use configured models automatically
+Resolution order (highest priority first):
+1. CLI flag: `--models openai/gpt-5-nano,mistral/ministral-3b`
+2. Project config: nearest `.ultrahope.toml` or `ultrahope.toml` while walking up from `cwd`
+3. Global config: `${XDG_CONFIG_HOME:-~/.config}/ultrahope/config.toml`
+4. Built-in `DEFAULT_MODELS`
 
-**Default:** Single model (Cerebras) for new users until they configure their preferences.
+No merging between levels. The first source that provides `models` wins.
+
+Config format:
+```toml
+models = ["mistral/ministral-3b", "xai/grok-code-fast-1"]
+```
+
+`ultrahope login` creates the global config file on first successful login if it does not exist.

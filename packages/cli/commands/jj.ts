@@ -10,19 +10,17 @@ import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
+import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { formatTotalCost, ui } from "../lib/ui";
-import {
-	DEFAULT_MODELS,
-	generateCommitMessages,
-} from "../lib/vcs-message-generator";
+import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface DescribeOptions {
 	revision: string;
 	interactive: boolean;
-	models: string[];
+	cliModels?: string[];
 }
 
 function showQuotaInfo(quota: QuotaInfo): void {
@@ -45,7 +43,7 @@ interface CommandExecutionContext {
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let interactive = true;
-	let models: string[] = [];
+	let cliModels: string[] | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -53,16 +51,17 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 			revision = args[++i] || "@";
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "--models" && args[i + 1]) {
-			models = args[++i].split(",").map((m) => m.trim());
+		} else if (arg === "--models") {
+			const value = args[++i];
+			if (!value) {
+				console.error("Error: --models requires a value");
+				process.exit(1);
+			}
+			cliModels = parseModelsArg(value);
 		}
 	}
 
-	if (models.length === 0) {
-		models = DEFAULT_MODELS;
-	}
-
-	return { revision, interactive, models };
+	return { revision, interactive, cliModels };
 }
 
 function getJjDiff(revision: string): string {
@@ -103,7 +102,7 @@ function assertDiffAvailable(revision: string, diff: string): void {
 
 async function initCommandExecutionContext(
 	args: string[],
-	options: DescribeOptions,
+	models: string[],
 	diff: string,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
@@ -122,14 +121,14 @@ async function initCommandExecutionContext(
 			requestPayload: {
 				input: diff,
 				target: "vcs-commit-message",
-				models: options.models,
+				models,
 			},
 		});
 
 	commandExecutionPromise.catch(async (error) => {
 		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
-			progress: { ready: 0, total: options.models.length },
+			progress: { ready: 0, total: models.length },
 		});
 	});
 
@@ -162,13 +161,13 @@ async function recordSelection(
 
 function createCandidateFactory(
 	diff: string,
-	options: DescribeOptions,
+	models: string[],
 	context: CommandExecutionContext,
 ) {
 	return (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
-			models: options.models,
+			models,
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -177,13 +176,14 @@ function createCandidateFactory(
 }
 
 async function runNonInteractiveDescribe(
-	options: DescribeOptions,
+	revision: string,
+	models: string[],
 	diff: string,
 	context: CommandExecutionContext,
 ): Promise<void> {
 	const gen = generateCommitMessages({
 		diff,
-		models: options.models.slice(0, 1),
+		models: models.slice(0, 1),
 		signal: context.commandExecutionSignal,
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
@@ -193,11 +193,12 @@ async function runNonInteractiveDescribe(
 	await recordSelection(context.apiClient, first.value?.generationId);
 	const message = first.value?.content ?? "";
 
-	describeRevision(options.revision, message);
+	describeRevision(revision, message);
 }
 
 async function runInteractiveDescribe(
 	options: DescribeOptions,
+	models: string[],
 	createCandidates: (
 		signal: AbortSignal,
 	) => ReturnType<typeof generateCommitMessages>,
@@ -209,9 +210,9 @@ async function runInteractiveDescribe(
 	while (true) {
 		const result = await selectCandidate({
 			createCandidates,
-			maxSlots: options.models.length,
+			maxSlots: models.length,
 			abortSignal: context.commandExecutionSignal,
-			models: options.models,
+			models,
 		});
 
 		if (result.action === "abort") {
@@ -251,18 +252,19 @@ async function runInteractiveDescribe(
 
 async function describe(args: string[]) {
 	const options = parseDescribeArgs(args);
+	const models = resolveModels(options.cliModels);
 	const diff = getJjDiff(options.revision);
 	assertDiffAvailable(options.revision, diff);
 
-	const context = await initCommandExecutionContext(args, options, diff);
-	const createCandidates = createCandidateFactory(diff, options, context);
+	const context = await initCommandExecutionContext(args, models, diff);
+	const createCandidates = createCandidateFactory(diff, models, context);
 
 	if (!options.interactive) {
-		await runNonInteractiveDescribe(options, diff, context);
+		await runNonInteractiveDescribe(options.revision, models, diff, context);
 		return;
 	}
 
-	await runInteractiveDescribe(options, createCandidates, context);
+	await runInteractiveDescribe(options, models, createCandidates, context);
 }
 
 function printHelp() {
@@ -274,6 +276,7 @@ Commands:
 Describe options:
    -r <revset>       Revision to describe (default: @)
    --no-interactive  Single candidate, no selection
+   --models <list>   Comma-separated model list (overrides config)
 
 Examples:
    ultrahope jj describe              # interactive mode

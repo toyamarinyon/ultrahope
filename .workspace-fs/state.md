@@ -55,7 +55,7 @@
     - [ ] Build settings UI for credit purchases + auto-recharge toggle
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
-  - [ ] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)
+  - [x] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)
 - [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
   - [x] Add `jj` subcommand to main CLI
   - [x] Implement `ultrahope jj describe` command

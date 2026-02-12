@@ -13,12 +13,10 @@ import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
+import { parseModelsArg, resolveModels } from "../lib/config";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
-import {
-	DEFAULT_MODELS,
-	generateCommitMessages,
-} from "../lib/vcs-message-generator";
+import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
@@ -37,7 +35,7 @@ const TARGET_TO_API_PATH: Record<Target, string> = {
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
-	model?: string;
+	cliModels?: string[];
 }
 
 export async function translate(args: string[]) {
@@ -64,7 +62,7 @@ async function handleVcsCommitMessage(
 	options: TranslateOptions,
 	args: string[],
 ): Promise<void> {
-	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	const models = resolveModels(options.cliModels);
 
 	const token = await getToken();
 	if (!token) {
@@ -180,7 +178,7 @@ async function handleGenericTarget(
 	}
 
 	const api = createApiClient(token);
-	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	const models = resolveModels(options.cliModels);
 	const defaultModel = models[0];
 	const requestPayload =
 		models.length === 1
@@ -370,7 +368,7 @@ async function handleGenericTarget(
 function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
-	let model: string | undefined;
+	let cliModels: string[] | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -384,13 +382,16 @@ function parseArgs(args: string[]): TranslateOptions {
 			target = value as Target;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "--model") {
+		} else if (arg === "--models") {
 			const value = args[++i];
 			if (!value) {
-				console.error("Error: --model requires a value");
+				console.error("Error: --models requires a value");
 				process.exit(1);
 			}
-			model = value;
+			cliModels = parseModelsArg(value);
+		} else if (arg === "--model") {
+			console.error("Error: --model is no longer supported. Use --models.");
+			process.exit(1);
 		}
 	}
 
@@ -402,5 +403,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, model };
+	return { target, interactive, cliModels };
 }
