@@ -7,18 +7,17 @@ import {
 	createApiClient,
 	type GenerateResponse,
 	InsufficientBalanceError,
+	InvalidModelError,
 } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
+import { parseModelsArg, resolveModels } from "../lib/config";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
 import { stdin } from "../lib/stdin";
-import {
-	DEFAULT_MODELS,
-	generateCommitMessages,
-} from "../lib/vcs-message-generator";
+import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
 
@@ -37,7 +36,15 @@ const TARGET_TO_API_PATH: Record<Target, string> = {
 interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
-	model?: string;
+	cliModels?: string[];
+}
+
+function exitWithInvalidModelError(error: InvalidModelError): never {
+	console.error(`Error: Model '${error.model}' is not supported.`);
+	if (error.allowedModels.length > 0) {
+		console.error(`Available models: ${error.allowedModels.join(", ")}`);
+	}
+	process.exit(1);
 }
 
 export async function translate(args: string[]) {
@@ -64,7 +71,7 @@ async function handleVcsCommitMessage(
 	options: TranslateOptions,
 	args: string[],
 ): Promise<void> {
-	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	const models = resolveModels(options.cliModels);
 
 	const token = await getToken();
 	if (!token) {
@@ -134,7 +141,12 @@ async function handleVcsCommitMessage(
 			cliSessionId,
 			commandExecutionPromise,
 		});
-		const first = await gen.next();
+		const first = await gen.next().catch((error) => {
+			if (error instanceof InvalidModelError) {
+				exitWithInvalidModelError(error);
+			}
+			throw error;
+		});
 		await recordSelection(first.value?.generationId);
 		console.log(first.value?.content ?? "");
 		return;
@@ -149,6 +161,9 @@ async function handleVcsCommitMessage(
 		});
 
 		if (result.action === "abort") {
+			if (result.error instanceof InvalidModelError) {
+				exitWithInvalidModelError(result.error);
+			}
 			if (isCommandExecutionAbort(commandExecutionSignal)) {
 				return;
 			}
@@ -180,7 +195,7 @@ async function handleGenericTarget(
 	}
 
 	const api = createApiClient(token);
-	const models = options.model ? [options.model] : DEFAULT_MODELS;
+	const models = resolveModels(options.cliModels);
 	const defaultModel = models[0];
 	const requestPayload =
 		models.length === 1
@@ -270,6 +285,9 @@ async function handleGenericTarget(
 				if (isAbortError(error) || abortController.signal.aborted) {
 					return candidates;
 				}
+				if (error instanceof InvalidModelError) {
+					exitWithInvalidModelError(error);
+				}
 				if (error instanceof InsufficientBalanceError) {
 					console.error(
 						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
@@ -290,6 +308,9 @@ async function handleGenericTarget(
 		const result = await generateWithRetry(defaultModel).catch((error) => {
 			if (isAbortError(error) || abortController.signal.aborted) {
 				return null;
+			}
+			if (error instanceof InvalidModelError) {
+				exitWithInvalidModelError(error);
 			}
 			if (error instanceof InsufficientBalanceError) {
 				console.error(
@@ -337,6 +358,9 @@ async function handleGenericTarget(
 		});
 
 		if (result.action === "abort") {
+			if (result.error instanceof InvalidModelError) {
+				exitWithInvalidModelError(result.error);
+			}
 			console.error("Aborted.");
 			process.exit(1);
 		}
@@ -370,7 +394,7 @@ async function handleGenericTarget(
 function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
-	let model: string | undefined;
+	let cliModels: string[] | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -384,13 +408,16 @@ function parseArgs(args: string[]): TranslateOptions {
 			target = value as Target;
 		} else if (arg === "--no-interactive") {
 			interactive = false;
-		} else if (arg === "--model") {
+		} else if (arg === "--models") {
 			const value = args[++i];
 			if (!value) {
-				console.error("Error: --model requires a value");
+				console.error("Error: --models requires a value");
 				process.exit(1);
 			}
-			model = value;
+			cliModels = parseModelsArg(value);
+		} else if (arg === "--model") {
+			console.error("Error: --model is no longer supported. Use --models.");
+			process.exit(1);
 		}
 	}
 
@@ -402,5 +429,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, model };
+	return { target, interactive, cliModels };
 }

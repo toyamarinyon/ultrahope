@@ -10,16 +10,16 @@
 ## Next
 
 - [x] **Core/Web unification + OpenAPI export** → [tasks/core-web-unify-openapi-plan.md](tasks/core-web-unify-openapi-plan.md)
-- [ ] **Free plan daily limit** → [decisions/free-plan-daily-limit.md](decisions/free-plan-daily-limit.md)
+- [x] **Free plan daily limit** → [decisions/free-plan-daily-limit.md](decisions/free-plan-daily-limit.md)
   - [x] Create decision doc
   - [x] Add `daily_usage` table to Turso (user_id, date, count)
   - [x] Implement daily limit check in API (5 requests/day, UTC reset)
   - [x] Update 402 response for daily limit exceeded
   - [x] Remove `free_credits` benefit from Polar
   - [x] Update pricing page UI (show "5 requests/day" + reset time in user TZ)
-  - [ ] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
+  - [x] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
     - Count per CLI command (session), not per API request
-    - New tables: `cli_sessions`, `api_requests` for better observability
+    - New tables: `command_execution`, `generation` for better observability
 - [x] **Account management**
   - [x] **Billing & plan change**
     - [x] Pro → Free downgrade (Polar `subscriptions.cancel()` + recreate Free subscription, or delegate to Polar portal)
@@ -45,8 +45,8 @@
     - [x] Update balance check logic (use new meter via `POLAR_USAGE_COST_METER_ID`)
     - [x] Remove metered price from Pro (no automatic overage)
     - [x] Add one-time credit products (Credit $10, Credit $20)
-    - [ ] Apply to sandbox with `--recreate` flag
-    - [ ] Apply to production
+    - [x] Apply to sandbox with `--recreate` flag
+    - [x] Apply to production
     - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
     - [x] Implement auto-recharge feature:
       - [x] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
@@ -55,11 +55,11 @@
     - [x] Build settings UI for credit purchases + auto-recharge toggle
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
-  - [ ] Build settings UI for user model preferences
+  - [x] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)
 - [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
   - [x] Add `jj` subcommand to main CLI
   - [x] Implement `ultrahope jj describe` command
-  - [ ] Test with real jj repository
+  - [x] Test with real jj repository
 - [x] **Interactive selector** (applies to all translate-based commands)
   - [x] Add `n` parameter to translate API for multiple candidates
   - [x] Build shared interactive selector UI component
@@ -92,7 +92,7 @@
 - [x] **Implement meter balance check**
   - [x] Check balance via Polar API before running translate
   - [x] Return error response on insufficient balance (HTTP 402)
-- [ ] Production deploy (Vercel + ultrahope.dev domain)
+- [x] Production deploy (Vercel + ultrahope.dev domain)
 
 
 ## Task (Human)

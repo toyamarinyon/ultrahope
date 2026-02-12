@@ -28,6 +28,7 @@ Commands:
 Commit options:
    -m, --message     Commit directly with generated message
    --no-interactive  Single candidate, open in editor
+   --models <list>   Comma-separated model list (overrides config)
 
 Examples:
    git ultrahope commit               # interactive selector (default)

@@ -48,6 +48,17 @@ export class UnauthorizedError extends Error {
 	}
 }
 
+export class InvalidModelError extends Error {
+	constructor(
+		public model: string,
+		public allowedModels: string[],
+		message?: string,
+	) {
+		super(message ?? `Model '${model}' is not supported.`);
+		this.name = "InvalidModelError";
+	}
+}
+
 export type GenerationScoreRequest = {
 	generationId: string;
 	value: number;
@@ -157,6 +168,22 @@ function handle402Error(error: unknown): never {
 	throw new DailyLimitExceededError(count, limit, resetsAt);
 }
 
+function throwInvalidModelError(error: unknown): never {
+	const payload = error as
+		| { model?: string; message?: string; allowedModels?: unknown }
+		| undefined;
+	const message = payload?.message ?? "Model is not supported.";
+	const modelMatch = message.match(/Model '([^']+)' is not supported\./);
+	const model = payload?.model ?? modelMatch?.[1] ?? "unknown";
+	const allowedModels = Array.isArray(payload?.allowedModels)
+		? payload.allowedModels.filter(
+				(value): value is string => typeof value === "string",
+			)
+		: [];
+	log("generate error (400 invalid_model)", error);
+	throw new InvalidModelError(model, allowedModels, message);
+}
+
 export function createApiClient(token?: string) {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
@@ -197,6 +224,15 @@ export function createApiClient(token?: string) {
 					errorPayload = await getErrorText(res, null);
 				}
 				handle402Error(errorPayload);
+			}
+			if (res.status === 400) {
+				let errorPayload: unknown;
+				try {
+					errorPayload = await res.json();
+				} catch {
+					errorPayload = await getErrorText(res, null);
+				}
+				throwInvalidModelError(errorPayload);
 			}
 			if (!res.ok) {
 				const text = await getErrorText(res, null);
@@ -303,6 +339,9 @@ export function createApiClient(token?: string) {
 			if (response.status === 402) {
 				handle402Error(error);
 			}
+			if (response.status === 400) {
+				throwInvalidModelError(error);
+			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
 				log("generateCommitMessage error", { status: response.status, text });
@@ -364,6 +403,9 @@ export function createApiClient(token?: string) {
 			if (response.status === 402) {
 				handle402Error(error);
 			}
+			if (response.status === 400) {
+				throwInvalidModelError(error);
+			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
 				log("generatePrTitleBody error", { status: response.status, text });
@@ -391,6 +433,9 @@ export function createApiClient(token?: string) {
 			}
 			if (response.status === 402) {
 				handle402Error(error);
+			}
+			if (response.status === 400) {
+				throwInvalidModelError(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);

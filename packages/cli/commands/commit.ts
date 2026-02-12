@@ -7,25 +7,31 @@ import {
 	isCommandExecutionAbort,
 	mergeAbortSignals,
 } from "../lib/abort";
-import { createApiClient } from "../lib/api-client";
+import { createApiClient, InvalidModelError } from "../lib/api-client";
 import { getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
+import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { formatTotalCost, ui } from "../lib/ui";
-import {
-	DEFAULT_MODELS,
-	generateCommitMessages,
-} from "../lib/vcs-message-generator";
+import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface CommitOptions {
 	message: boolean;
 	interactive: boolean;
-	models: string[];
+	cliModels?: string[];
+}
+
+function exitWithInvalidModelError(error: InvalidModelError): never {
+	console.error(`Error: Model '${error.model}' is not supported.`);
+	if (error.allowedModels.length > 0) {
+		console.error(`Available models: ${error.allowedModels.join(", ")}`);
+	}
+	process.exit(1);
 }
 
 function showQuotaInfo(quota: QuotaInfo): void {
@@ -39,24 +45,25 @@ function showQuotaInfo(quota: QuotaInfo): void {
 }
 
 function parseArgs(args: string[]): CommitOptions {
-	let models: string[] = [];
+	let cliModels: string[] | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
-		if (arg === "--models" && args[i + 1]) {
-			models = args[i + 1].split(",").map((m) => m.trim());
+		if (arg === "--models") {
+			const value = args[i + 1];
+			if (!value) {
+				console.error("Error: --models requires a value");
+				process.exit(1);
+			}
+			cliModels = parseModelsArg(value);
 			i++;
 		}
-	}
-
-	if (models.length === 0) {
-		models = DEFAULT_MODELS;
 	}
 
 	return {
 		message: args.includes("-m") || args.includes("--message"),
 		interactive: !args.includes("--no-interactive"),
-		models,
+		cliModels,
 	};
 }
 
@@ -111,6 +118,7 @@ function commitWithMessage(message: string): void {
 
 export async function commit(args: string[]) {
 	const options = parseArgs(args);
+	const models = resolveModels(options.cliModels);
 	const diff = getStagedDiff();
 
 	if (!diff.trim()) {
@@ -139,7 +147,7 @@ export async function commit(args: string[]) {
 		requestPayload: {
 			input: diff,
 			target: "vcs-commit-message",
-			models: options.models,
+			models,
 		},
 	});
 
@@ -152,7 +160,7 @@ export async function commit(args: string[]) {
 	commandExecutionPromise.catch(async (error) => {
 		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
-			progress: { ready: 0, total: options.models.length },
+			progress: { ready: 0, total: models.length },
 		});
 	});
 
@@ -175,7 +183,7 @@ export async function commit(args: string[]) {
 	const createCandidates = (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
-			models: options.models,
+			models,
 			signal: mergeAbortSignals(signal, commandExecutionSignal),
 			cliSessionId,
 			commandExecutionPromise,
@@ -184,12 +192,17 @@ export async function commit(args: string[]) {
 	if (!options.interactive) {
 		const gen = generateCommitMessages({
 			diff,
-			models: options.models.slice(0, 1),
+			models: models.slice(0, 1),
 			signal: commandExecutionSignal,
 			cliSessionId,
 			commandExecutionPromise,
 		});
-		const first = await gen.next();
+		const first = await gen.next().catch((error) => {
+			if (error instanceof InvalidModelError) {
+				exitWithInvalidModelError(error);
+			}
+			throw error;
+		});
 		await recordSelection(first.value?.generationId);
 		const message = first.value?.content ?? "";
 
@@ -213,12 +226,15 @@ export async function commit(args: string[]) {
 	while (true) {
 		const result = await selectCandidate({
 			createCandidates,
-			maxSlots: options.models.length,
+			maxSlots: models.length,
 			abortSignal: commandExecutionSignal,
-			models: options.models,
+			models,
 		});
 
 		if (result.action === "abort") {
+			if (result.error instanceof InvalidModelError) {
+				exitWithInvalidModelError(result.error);
+			}
 			if (isCommandExecutionAbort(commandExecutionSignal)) {
 				return;
 			}

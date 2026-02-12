@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
+import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
 import { ui } from "./ui";
@@ -23,6 +24,7 @@ export interface SelectorResult {
 	selectedCandidate?: CandidateWithModel;
 	totalCost?: number;
 	quota?: QuotaInfo;
+	error?: unknown;
 }
 
 export interface QuotaInfo {
@@ -478,10 +480,15 @@ async function selectFromSlots(
 					}
 					if (!cleanedUp) {
 						cancelGeneration();
+						if (err instanceof InvalidModelError) {
+							cleanup();
+							resolveOnce({ action: "abort", error: err });
+							return;
+						}
 						renderer.clearAll();
 						renderError(err, slots, state.totalSlots, ttyOutput);
 						cleanup(false);
-						resolveOnce({ action: "abort" });
+						resolveOnce({ action: "abort", error: err });
 					}
 				} finally {
 					iterator.return?.();

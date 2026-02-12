@@ -19,7 +19,9 @@
 │   ├── monorepo-tooling.md
 │   ├── monolith-migration.md
 │   ├── web-design-direction.md
-│   └── web-package.md
+│   ├── web-package.md
+│   ├── cli-config-file.md
+│   └── model-allowlist.md
 └── docs/            # External docs: reference info for libraries/frameworks
     ├── elysiajs/ 
     └── mise/tasks

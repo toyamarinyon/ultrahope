@@ -1,5 +1,6 @@
 import { createApiClient } from "../lib/api-client";
 import { saveToken } from "../lib/auth";
+import { ensureGlobalConfigFile } from "../lib/config";
 
 export async function login(_args: string[]) {
 	const api = createApiClient();
@@ -21,6 +22,7 @@ export async function login(_args: string[]) {
 	);
 
 	await saveToken(token);
+	await ensureGlobalConfigFile();
 	console.log("Successfully authenticated!");
 }
 

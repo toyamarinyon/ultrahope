@@ -1,23 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ALLOWED_MODELS } from "@/lib/llm/models";
 
 export const metadata: Metadata = {
 	title: "Models | Ultrahope",
 	description: "AI models and providers used by Ultrahope",
 };
-
-const models = [
-	{
-		id: "mistral/ministral-3b",
-		provider: "Mistral AI",
-		providerUrl: "https://mistral.ai",
-	},
-	{
-		id: "xai/grok-code-fast-1",
-		provider: "xAI",
-		providerUrl: "https://x.ai",
-	},
-];
 
 export default function ModelsPage() {
 	return (
@@ -53,7 +41,7 @@ export default function ModelsPage() {
 						Default Models
 					</h2>
 					<ul className="space-y-4">
-						{models.map((model) => (
+						{ALLOWED_MODELS.map((model) => (
 							<li
 								key={model.id}
 								className="rounded-lg border border-border-subtle bg-surface p-4"
@@ -79,7 +67,7 @@ export default function ModelsPage() {
 					<p>
 						You can override the default model using the{" "}
 						<code className="font-mono bg-surface-hover px-1.5 py-0.5 rounded">
-							--model
+							--models
 						</code>{" "}
 						flag in the CLI.
 					</p>

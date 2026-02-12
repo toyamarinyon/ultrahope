@@ -48,6 +48,7 @@ const GatewayMetadataSchema = z.object({
 	cost: z.string(),
 	marketCost: z.string(),
 	generationId: z.string(),
+	responseMetadata: z.unknown().optional(),
 });
 
 const GatewayProviderMetadataSchema = z
@@ -68,6 +69,7 @@ export function extractGatewayMetadata(providerMetadata: unknown): {
 	generationId: string;
 	cost: number | undefined;
 	vendor: string;
+	gatewayPayload: unknown;
 } {
 	const result = GatewayProviderMetadataSchema.safeParse(providerMetadata);
 
@@ -80,7 +82,12 @@ export function extractGatewayMetadata(providerMetadata: unknown): {
 		);
 		const vendor = successfulAttempt?.provider ?? "unknown";
 
-		return { generationId: gateway.generationId, cost, vendor };
+		return {
+			generationId: gateway.generationId,
+			cost,
+			vendor,
+			gatewayPayload: gateway.responseMetadata ?? null,
+		};
 	}
 
 	for (const issue of result.error.issues) {
@@ -92,5 +99,6 @@ export function extractGatewayMetadata(providerMetadata: unknown): {
 		generationId: generateFallbackId(),
 		cost: undefined,
 		vendor: "unknown",
+		gatewayPayload: null,
 	};
 }
