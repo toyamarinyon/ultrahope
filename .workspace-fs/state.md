@@ -17,9 +17,9 @@
   - [x] Update 402 response for daily limit exceeded
   - [x] Remove `free_credits` benefit from Polar
   - [x] Update pricing page UI (show "5 requests/day" + reset time in user TZ)
-  - [ ] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
+  - [x] **Redesign usage tracking** → [tasks/usage-tracking-redesign.md](tasks/usage-tracking-redesign.md)
     - Count per CLI command (session), not per API request
-    - New tables: `cli_sessions`, `api_requests` for better observability
+    - New tables: `command_execution`, `generation` for better observability
 - [x] **Account management**
   - [x] **Billing & plan change**
     - [x] Pro → Free downgrade (Polar `subscriptions.cancel()` + recreate Free subscription, or delegate to Polar portal)
@@ -55,11 +55,11 @@
     - [ ] Build settings UI for credit purchases + auto-recharge toggle
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
-  - [ ] Build settings UI for user model preferences
+  - [ ] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)
 - [x] **Jujutsu (jj) integration** → [to-be/jj-subcommand.md](to-be/jj-subcommand.md)
   - [x] Add `jj` subcommand to main CLI
   - [x] Implement `ultrahope jj describe` command
-  - [ ] Test with real jj repository
+  - [x] Test with real jj repository
 - [x] **Interactive selector** (applies to all translate-based commands)
   - [x] Add `n` parameter to translate API for multiple candidates
   - [x] Build shared interactive selector UI component
