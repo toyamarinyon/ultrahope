@@ -36,9 +36,9 @@
         - Execute: `mise run delete-user:execute <user@example.com> <user@example.com>`
     - [x] Phase 2: Self-service API endpoint + settings UI
   - [x] **Settings UI** (unified account settings page for all of the above)
-- [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
+- [x] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
-  - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
+  - [x] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
     - [x] Design: Zed-style pricing (subscription + included credit, microdollars unit)
     - [x] Update `polar-sync.ts` (new meter "Usage Cost", USD-based benefits)
     - [x] Event ingestion update (microdollars)
