@@ -9,6 +9,13 @@ export const user = sqliteTable("user", {
 		.default(false)
 		.notNull(),
 	image: text("image"),
+	autoRechargeEnabled: integer("auto_recharge_enabled", { mode: "boolean" })
+		.default(false)
+		.notNull(),
+	autoRechargeThreshold: integer("auto_recharge_threshold")
+		.default(1_000_000)
+		.notNull(),
+	autoRechargeAmount: integer("auto_recharge_amount").default(10).notNull(),
 	createdAt: integer("created_at", { mode: "timestamp_ms" })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

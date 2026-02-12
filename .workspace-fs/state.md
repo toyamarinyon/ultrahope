@@ -48,11 +48,11 @@
     - [ ] Apply to sandbox with `--recreate` flag
     - [ ] Apply to production
     - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
-    - [ ] Implement auto-recharge feature:
-      - [ ] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
-      - [ ] Check threshold after usage events
-      - [ ] Create Polar checkout when balance falls below threshold
-    - [ ] Build settings UI for credit purchases + auto-recharge toggle
+    - [x] Implement auto-recharge feature:
+      - [x] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
+      - [x] Check threshold after usage events
+      - [x] Create Polar checkout when balance falls below threshold
+    - [x] Build settings UI for credit purchases + auto-recharge toggle
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
   - [ ] Build settings UI for user model preferences

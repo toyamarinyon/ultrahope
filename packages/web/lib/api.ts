@@ -11,6 +11,11 @@ import {
 	getDb,
 } from "@/db";
 import { getAuth, getPolarClient } from "@/lib/auth";
+import {
+	createCreditCheckout,
+	getAutoRechargeSettings,
+	MICRODOLLARS_PER_USD,
+} from "@/lib/auto-recharge";
 import { baseUrl } from "@/lib/base-url";
 import {
 	assertDailyLimitNotExceeded,
@@ -32,7 +37,6 @@ const packageJson = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 ) as { version?: string };
 
-const MICRODOLLARS_PER_USD = 1_000_000;
 const VERBOSE = process.env.VERBOSE === "1";
 const MOCKING = process.env.MOCKING === "1";
 const SKIP_DAILY_LIMIT_CHECK =
@@ -288,13 +292,54 @@ type CommitMessageStreamOptions = {
 	ctx: GenerateContext;
 	startedAt: number;
 	db: Db;
+	plan: "free" | "pro";
+	balanceBeforeGeneration: number | null;
 };
+
+async function triggerAutoRechargeIfNeeded({
+	db,
+	userId,
+	plan,
+	balanceBeforeGeneration,
+	costInMicrodollars,
+}: {
+	db: Db;
+	userId: number;
+	plan: "free" | "pro";
+	balanceBeforeGeneration: number | null;
+	costInMicrodollars: number;
+}): Promise<void> {
+	if (plan !== "pro") return;
+	if (balanceBeforeGeneration == null) return;
+	if (costInMicrodollars <= 0) return;
+
+	const settings = await getAutoRechargeSettings(db, userId);
+	if (!settings.enabled) return;
+
+	const balanceAfterGeneration = balanceBeforeGeneration - costInMicrodollars;
+	const crossedThreshold =
+		balanceBeforeGeneration > settings.threshold &&
+		balanceAfterGeneration <= settings.threshold;
+	if (!crossedThreshold) return;
+
+	const checkout = await createCreditCheckout(userId, settings.amount);
+	if (!checkout) {
+		console.warn("[polar] Auto-recharge enabled but credit product is not set");
+		return;
+	}
+
+	console.log(
+		`[polar] Auto-recharge checkout created for user ${userId}: ${checkout.id}`,
+	);
+}
 
 function createCommitMessageSSEStream({
 	stream,
 	ctx,
 	startedAt,
 	db,
+	plan,
+	balanceBeforeGeneration,
 }: CommitMessageStreamOptions): ReadableStream<Uint8Array> {
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -375,6 +420,15 @@ function createCommitMessageSSEStream({
 						model: response.model,
 						vendor: response.vendor,
 						generationId: response.generationId,
+					});
+					void triggerAutoRechargeIfNeeded({
+						db,
+						userId: ctx.userId,
+						plan,
+						balanceBeforeGeneration,
+						costInMicrodollars,
+					}).catch((error) => {
+						console.error("[polar] Failed to trigger auto-recharge:", error);
 					});
 
 					if (commandExecutionId) {
@@ -483,6 +537,7 @@ async function executeGeneration(
 		response.cost != null
 			? Math.round(response.cost * MICRODOLLARS_PER_USD)
 			: 0;
+	const balanceBeforeGeneration = billingInfo?.balance ?? null;
 
 	if (response.generationId) {
 		ingestUsageEvent({
@@ -491,6 +546,15 @@ async function executeGeneration(
 			model: response.model,
 			vendor: response.vendor,
 			generationId: response.generationId,
+		});
+		void triggerAutoRechargeIfNeeded({
+			db: ctx.db,
+			userId: ctx.userId,
+			plan,
+			balanceBeforeGeneration,
+			costInMicrodollars,
+		}).catch((error) => {
+			console.error("[polar] Failed to trigger auto-recharge:", error);
 		});
 
 		if (commandExecutionId) {
@@ -862,6 +926,8 @@ const apiRoutes = new Elysia()
 				ctx,
 				startedAt,
 				db,
+				plan,
+				balanceBeforeGeneration: billingInfo?.balance ?? null,
 			});
 
 			return new Response(customStream, {
