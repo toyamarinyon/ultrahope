@@ -4,11 +4,11 @@
 **Category:** Tone & Language
 **Impact:** Creates uncertainty, reduces trust
 **Effort:** 1-2 hours (find-and-replace review)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Conditional language overuse:**
 - "We **may** process your information..."
@@ -278,6 +278,19 @@ grep -n "may" packages/web/app/privacy/privacy.md
 ---
 
 ## Benefits
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Strong replacement of ambiguous modal language in core sections
+
+Results:
+- Reduced `may` usage in `privacy.md` from 62 occurrences to 8.
+- Kept `may` only where uncertainty, legal conditionals, or future changes are appropriate.
+- Converted most operational statements to definitive language (`we collect`, `we share`, `we retain`).
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
 
 **Before (with "may"):**
 - Uncertainty: "What do they actually do with my data?"

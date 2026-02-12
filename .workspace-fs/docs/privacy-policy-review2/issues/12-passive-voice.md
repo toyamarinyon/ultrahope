@@ -4,11 +4,11 @@
 **Category:** Tone & Language
 **Impact:** Sounds evasive, reduces clarity
 **Effort:** 1-2 hours (rewrite review)
-**Status:** ⬜ TODO
+**Status:** ✅ DONE
 
 ---
 
-## Problem
+## Problem (Original Assessment)
 
 **Passive voice patterns:**
 - "Information **is collected**..." (by whom?)
@@ -396,3 +396,16 @@ After converting to active voice:
 - But significantly improves readability and trust
 - Moderate effort (1-2 hours)
 - Best done together with Issue #11 (replace "may")
+
+## Resolution
+
+**Completed:** 2026-02-12
+**Approach taken:** Active-voice rewrite across major policy sections
+
+Results:
+- Rewrote key sections to make the actor explicit (`we` / `you`) for collection, sharing, retention, rights handling, and security controls.
+- Reduced passive template phrasing and shortened sentence length for readability.
+- Preserved legal meaning while improving accountability and clarity.
+
+**Files changed:**
+- `packages/web/app/privacy/privacy.md`
