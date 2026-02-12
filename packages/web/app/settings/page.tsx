@@ -1,14 +1,17 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BillingSettingsControls } from "@/components/billing-settings-controls";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { DowngradePlanButton } from "@/components/downgrade-plan-button";
 import { getAuth } from "@/lib/auth";
+import { MICRODOLLARS_PER_USD } from "@/lib/auto-recharge";
 import {
 	getActiveSubscriptions,
 	getBillingHistory,
 	resolveCurrentPlan,
 } from "@/lib/billing";
+import { getUserBillingInfo } from "@/lib/llm";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +20,13 @@ function formatAmount(amountInCents: number, currency: string) {
 		style: "currency",
 		currency: currency.toUpperCase(),
 	}).format(amountInCents / 100);
+}
+
+function formatMicrodollars(amountInMicrodollars: number) {
+	return new Intl.NumberFormat(undefined, {
+		style: "currency",
+		currency: "USD",
+	}).format(amountInMicrodollars / MICRODOLLARS_PER_USD);
 }
 
 function formatDate(date: Date) {
@@ -38,10 +48,14 @@ export default async function SettingsPage() {
 	}
 
 	const userId = String(session.user.id);
+	const userIdNumber = Number.parseInt(userId, 10);
 	const [activeSubscriptions, billingHistory] = await Promise.all([
 		getActiveSubscriptions(userId),
 		getBillingHistory(userId, 10),
 	]);
+	const billingInfo = Number.isFinite(userIdNumber)
+		? await getUserBillingInfo(userIdNumber)
+		: null;
 	const currentPlan = resolveCurrentPlan(activeSubscriptions);
 	const hasProPlan = activeSubscriptions.some(
 		(subscription) => subscription.plan === "pro",
@@ -60,7 +74,10 @@ export default async function SettingsPage() {
 					</p>
 				</div>
 
-				<div className="rounded-2xl border border-border-subtle bg-surface px-6 py-6">
+				<div
+					id="billing"
+					className="rounded-2xl border border-border-subtle bg-surface px-6 py-6"
+				>
 					<h2 className="text-xl font-semibold">Billing & plan</h2>
 					<p className="mt-2 text-sm text-foreground-secondary">
 						Manage your subscription, invoices, and payment method.
@@ -95,6 +112,19 @@ export default async function SettingsPage() {
 							</div>
 						</div>
 					) : null}
+					{billingInfo ? (
+						<div className="mt-4 border-t border-border-subtle pt-4">
+							<p className="text-sm text-foreground-secondary">
+								Current usage balance
+							</p>
+							<p className="mt-1 text-lg font-semibold">
+								{formatMicrodollars(billingInfo.balance)}
+							</p>
+						</div>
+					) : null}
+					<div className="mt-4 border-t border-border-subtle pt-4">
+						<BillingSettingsControls />
+					</div>
 				</div>
 
 				<div className="rounded-2xl border border-border-subtle bg-surface px-6 py-6">

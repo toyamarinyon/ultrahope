@@ -11,6 +11,7 @@ import {
 	getDb,
 } from "@/db";
 import { getAuth, getPolarClient } from "@/lib/auth";
+import { MICRODOLLARS_PER_USD } from "@/lib/auto-recharge";
 import { baseUrl } from "@/lib/base-url";
 import {
 	assertDailyLimitNotExceeded,
@@ -33,7 +34,6 @@ const packageJson = JSON.parse(
 	readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 ) as { version?: string };
 
-const MICRODOLLARS_PER_USD = 1_000_000;
 const VERBOSE = process.env.VERBOSE === "1";
 const MOCKING = process.env.MOCKING === "1";
 const SKIP_DAILY_LIMIT_CHECK =
@@ -87,7 +87,7 @@ type InsufficientBalanceBody = {
 	message: string;
 	balance: number;
 	plan: "free" | "pro";
-	actions: { buyCredits: string; enableAutoRecharge: string };
+	actions: { buyCredits: string };
 	hint: string;
 };
 
@@ -234,9 +234,8 @@ function enforceProBalanceOr402(
 				plan: billingInfo.plan,
 				actions: {
 					buyCredits: `${baseUrl}/settings/billing#credits`,
-					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
-				hint: "Purchase additional credits or enable auto-recharge to continue.",
+				hint: "Purchase additional credits to continue.",
 			},
 		};
 	}
@@ -471,9 +470,8 @@ async function executeGeneration(
 				plan: billingInfo.plan,
 				actions: {
 					buyCredits: `${baseUrl}/settings/billing#credits`,
-					enableAutoRecharge: `${baseUrl}/settings/billing#auto-recharge`,
 				},
-				hint: "Purchase additional credits or enable auto-recharge to continue.",
+				hint: "Purchase additional credits to continue.",
 			},
 		};
 	}
@@ -678,31 +676,45 @@ const apiRoutes = new Elysia()
 				return { error: "Unauthorized" };
 			}
 
-			try {
-				const billingInfo = await getUserBillingInfo(session.user.id);
-				const plan = billingInfo?.plan ?? "free";
+				try {
+					const billingInfo = await getUserBillingInfo(session.user.id);
+					const plan = billingInfo?.plan ?? "free";
 
-				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
-					await assertDailyLimitNotExceeded(db, session.user.id);
-				} else if (MOCKING) {
-					console.log("[MOCKING] Daily limit check bypassed");
-				} else if (SKIP_DAILY_LIMIT_CHECK) {
-					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
-				}
+					if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
+						await assertDailyLimitNotExceeded(db, session.user.id);
+					} else if (MOCKING) {
+						console.log("[MOCKING] Daily limit check bypassed");
+					} else if (SKIP_DAILY_LIMIT_CHECK) {
+						console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
+					}
 
-				await db
-					.insert(commandExecution)
-					.values({
-						cliSessionId: body.cliSessionId,
-						userId: session.user.id,
-						command: body.command,
-						args: JSON.stringify(body.args),
-						api: body.api,
-						requestPayload: body.requestPayload,
-						startedAt: new Date(),
-						finishedAt: null,
-					})
-					.onConflictDoNothing();
+					if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+						set.status = 402;
+						return {
+							error: "insufficient_balance" as const,
+							message: "Your usage credit has been exhausted.",
+							balance: billingInfo.balance,
+							plan: billingInfo.plan,
+							actions: {
+								buyCredits: `${baseUrl}/settings/billing#credits`,
+							},
+							hint: "Purchase additional credits to continue.",
+						};
+					}
+
+					await db
+						.insert(commandExecution)
+						.values({
+							cliSessionId: body.cliSessionId,
+							userId: session.user.id,
+							command: body.command,
+							args: JSON.stringify(body.args),
+							api: body.api,
+							requestPayload: body.requestPayload,
+							startedAt: new Date(),
+							finishedAt: null,
+						})
+						.onConflictDoNothing();
 
 				return { commandExecutionId: body.commandExecutionId };
 			} catch (error) {
@@ -742,26 +754,38 @@ const apiRoutes = new Elysia()
 					models: t.Optional(t.Array(t.String())),
 				}),
 			}),
-			response: {
-				200: t.Object({
-					commandExecutionId: t.String(),
-				}),
-				401: t.Object({
-					error: t.String(),
-				}),
-				402: t.Object({
-					error: t.Literal("daily_limit_exceeded"),
-					message: t.String(),
-					count: t.Number(),
-					limit: t.Number(),
-					resetsAt: t.String(),
-					plan: t.Literal("free"),
-					actions: t.Object({
-						upgrade: t.String(),
+				response: {
+					200: t.Object({
+						commandExecutionId: t.String(),
 					}),
-					hint: t.String(),
-				}),
-			},
+					401: t.Object({
+						error: t.String(),
+					}),
+					402: t.Union([
+						t.Object({
+							error: t.Literal("daily_limit_exceeded"),
+							message: t.String(),
+							count: t.Number(),
+							limit: t.Number(),
+							resetsAt: t.String(),
+							plan: t.Literal("free"),
+							actions: t.Object({
+								upgrade: t.String(),
+							}),
+							hint: t.String(),
+						}),
+						t.Object({
+							error: t.Literal("insufficient_balance"),
+							message: t.String(),
+							balance: t.Number(),
+							plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+							actions: t.Object({
+								buyCredits: t.String(),
+							}),
+							hint: t.String(),
+						}),
+					]),
+				},
 			detail: {
 				summary: "Create a command execution record",
 				tags: ["command_execution"],

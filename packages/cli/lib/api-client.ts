@@ -24,9 +24,34 @@ export type CommandExecutionResponse =
 	paths["/api/v1/command_execution"]["post"]["responses"][200]["content"]["application/json"];
 
 export class InsufficientBalanceError extends Error {
-	constructor(public balance: number) {
+	constructor(
+		public balance: number,
+		public plan: "free" | "pro" = "free",
+		public hint?: string,
+		public actions?: Record<string, string>,
+	) {
 		super("Token balance exhausted");
 		this.name = "InsufficientBalanceError";
+	}
+
+	formatMessage(): string {
+		const lines: string[] = [];
+		if (this.plan === "pro") {
+			lines.push(
+				"Error: Your usage credit has been exhausted. Purchase additional credits to continue.",
+			);
+			if (this.actions?.buyCredits) {
+				lines.push(`  Buy credits: ${this.actions.buyCredits}`);
+			}
+		} else {
+			lines.push(
+				"Error: Your free credit has been exhausted. Upgrade to Pro for unlimited requests with $5 included credit.",
+			);
+			if (this.actions?.upgrade) {
+				lines.push(`  Upgrade: ${this.actions.upgrade}`);
+			}
+		}
+		return lines.join("\n");
 	}
 }
 
@@ -153,14 +178,28 @@ function parseSseEvents(buffer: string): {
 }
 
 function handle402Error(error: unknown): never {
-	const errorBalance = (error as { balance?: number } | undefined)?.balance;
-	if (typeof errorBalance === "number") {
-		log("generate error (402 insufficient_balance)", error);
-		throw new InsufficientBalanceError(errorBalance);
-	}
 	const payload = error as
-		| { count?: number; limit?: number; resetsAt?: string }
+		| {
+				balance?: number;
+				plan?: string;
+				hint?: string;
+				actions?: Record<string, string>;
+				count?: number;
+				limit?: number;
+				resetsAt?: string;
+		  }
 		| undefined;
+	if (typeof payload?.balance === "number") {
+		log("generate error (402 insufficient_balance)", error);
+		const plan =
+			payload.plan === "pro" || payload.plan === "free" ? payload.plan : "free";
+		throw new InsufficientBalanceError(
+			payload.balance,
+			plan,
+			payload.hint,
+			payload.actions,
+		);
+	}
 	const count = typeof payload?.count === "number" ? payload.count : 0;
 	const limit = typeof payload?.limit === "number" ? payload.limit : 0;
 	const resetsAt = payload?.resetsAt ?? "";
@@ -299,14 +338,8 @@ export function createApiClient(token?: string) {
 				throw new UnauthorizedError();
 			}
 			if (response.status === 402) {
-				const payload = error as
-					| { count?: number; limit?: number; resetsAt?: string }
-					| undefined;
-				const count = typeof payload?.count === "number" ? payload.count : 0;
-				const limit = typeof payload?.limit === "number" ? payload.limit : 0;
-				const resetsAt = payload?.resetsAt ?? "";
 				log("command_execution error (402)", error);
-				throw new DailyLimitExceededError(count, limit, resetsAt);
+				handle402Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);

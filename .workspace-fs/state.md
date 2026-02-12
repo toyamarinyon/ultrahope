@@ -36,9 +36,9 @@
         - Execute: `mise run delete-user:execute <user@example.com> <user@example.com>`
     - [x] Phase 2: Self-service API endpoint + settings UI
   - [x] **Settings UI** (unified account settings page for all of the above)
-- [ ] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
+- [x] **Multi-model generation** → [to-be/multi-model-generation.md](to-be/multi-model-generation.md)
   - [x] Migrate to Vercel AI Gateway (for `total_cost` per request)
-  - [ ] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
+  - [x] Update billing to USD-based credits → [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
     - [x] Design: Zed-style pricing (subscription + included credit, microdollars unit)
     - [x] Update `polar-sync.ts` (new meter "Usage Cost", USD-based benefits)
     - [x] Event ingestion update (microdollars)
@@ -47,12 +47,9 @@
     - [x] Add one-time credit products (Credit $10, Credit $20)
     - [x] Apply to sandbox with `--recreate` flag
     - [x] Apply to production
-    - [x] Update 402 response with new actions (`buyCredits`, `enableAutoRecharge`)
-    - [ ] Implement auto-recharge feature:
-      - [ ] Add `autoRecharge` settings to user model (`enabled`, `threshold`, `amount`)
-      - [ ] Check threshold after usage events
-      - [ ] Create Polar checkout when balance falls below threshold
-    - [ ] Build settings UI for credit purchases + auto-recharge toggle
+    - [x] Update 402 response with new actions (`buyCredits`)
+    - ~~Auto-recharge feature~~ → Rejected: Polar.sh requires user interaction for checkout; see [decisions/billing-model-v2.md](decisions/billing-model-v2.md)
+    - [x] Build settings UI for credit purchases
   - [x] Add `models` param to translate API
   - [x] Update selector UI to show model name per candidate
   - [x] CLI config file for model preferences → [decisions/cli-config-file.md](decisions/cli-config-file.md)

@@ -4,6 +4,7 @@ import {
 	type CommandExecutionRequest,
 	type CommandExecutionResponse,
 	DailyLimitExceededError,
+	InsufficientBalanceError,
 	UnauthorizedError,
 } from "./api-client";
 import { showDailyLimitPrompt } from "./daily-limit-prompt";
@@ -82,6 +83,11 @@ export async function handleCommandExecutionError(
 			resetsAt: error.resetsAt,
 			progress: options?.progress,
 		});
+		process.exit(1);
+	}
+
+	if (error instanceof InsufficientBalanceError) {
+		console.error(error.formatMessage());
 		process.exit(1);
 	}
 

@@ -128,7 +128,7 @@ pnpm -w exec tsx scripts/polar-sync.ts
 pnpm -w exec tsx scripts/polar-sync.ts --production
 ```
 
-## Credit Top-up & Auto-Recharge
+## Credit Top-up
 
 ### Design Decision: No Automatic Metered Overage
 
@@ -136,6 +136,10 @@ We explicitly chose **not** to use Polar.sh's automatic metered billing on Pro:
 - Users should have explicit control over spending
 - Avoids surprise charges
 - One-time credit purchases give clear "I'm buying $X more" UX
+
+### Auto-Recharge: Rejected
+
+Auto-recharge (automatically purchasing credits when balance falls below a threshold) was designed and implemented but **removed**. Polar.sh does not support charging a saved payment method programmatically — `checkouts.create` always generates a URL requiring user interaction. This makes auto-recharge functionally identical to manual "buy credits", so the feature was dropped to reduce complexity.
 
 ### Credit Top-up Products
 
@@ -148,26 +152,9 @@ Pro users can purchase additional credits when balance is low:
 
 These are one-time purchases (no `recurringInterval`). Credits from top-ups **roll over** (unlike subscription credits).
 
-### Auto-Recharge Feature
-
-Users can enable auto-recharge to avoid interruptions:
-
-| Setting | Description |
-|---------|-------------|
-| `autoRecharge.enabled` | Enable/disable auto-recharge (default: false) |
-| `autoRecharge.threshold` | Balance threshold to trigger recharge (default: 1,000,000 = $1) |
-| `autoRecharge.amount` | Amount to recharge: 10 or 20 (maps to Credit $10 or $20 product) |
-
-**Flow:**
-1. After each usage event, check if balance ≤ threshold
-2. If auto-recharge enabled and balance below threshold → create checkout for the selected credit product
-3. Polar.sh processes payment → webhook grants credits
-
 ### 402 Response Structure
 
 When credits are exhausted, return a structured 402 response with actionable links.
-
-**Location:** `packages/web/src/app/api/[[...slugs]]/route.ts`
 
 **Pro user:**
 ```json
@@ -177,10 +164,9 @@ When credits are exhausted, return a structured 402 response with actionable lin
   "balance": 0,
   "plan": "pro",
   "actions": {
-    "buyCredits": "https://ultrahope.dev/settings/billing#credits",
-    "enableAutoRecharge": "https://ultrahope.dev/settings/billing#auto-recharge"
+    "buyCredits": "https://ultrahope.dev/settings/billing#credits"
   },
-  "hint": "Purchase additional credits or enable auto-recharge to continue."
+  "hint": "Purchase additional credits to continue."
 }
 ```
 

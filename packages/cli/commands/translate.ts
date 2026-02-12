@@ -289,9 +289,7 @@ async function handleGenericTarget(
 					exitWithInvalidModelError(error);
 				}
 				if (error instanceof InsufficientBalanceError) {
-					console.error(
-						"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-					);
+					console.error(error.formatMessage());
 					process.exit(1);
 				}
 				throw error;
@@ -313,9 +311,7 @@ async function handleGenericTarget(
 				exitWithInvalidModelError(error);
 			}
 			if (error instanceof InsufficientBalanceError) {
-				console.error(
-					"Error: Token balance exhausted. Upgrade your plan at https://ultrahope.dev/pricing",
-				);
+				console.error(error.formatMessage());
 				process.exit(1);
 			}
 			throw error;
