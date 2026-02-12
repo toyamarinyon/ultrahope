@@ -209,6 +209,10 @@ export default function LoginPage() {
 					<Link href="/privacy" className="hover:opacity-80">
 						Privacy Policy
 					</Link>
+					<span className="mx-2">·</span>
+					<Link href="/terms" className="hover:opacity-80">
+						Terms of Use
+					</Link>
 				</div>
 			</div>
 		</main>
