@@ -4,7 +4,7 @@ import { getPolarClient } from "@/lib/auth";
 import { baseUrl } from "@/lib/base-url";
 
 export const MICRODOLLARS_PER_USD = 1_000_000;
-export const DEFAULT_AUTO_RECHARGE_THRESHOLD = 1 * MICRODOLLARS_PER_USD;
+const DEFAULT_AUTO_RECHARGE_THRESHOLD = 1 * MICRODOLLARS_PER_USD;
 
 export const AUTO_RECHARGE_AMOUNTS = [10, 20] as const;
 export type AutoRechargeAmount = (typeof AUTO_RECHARGE_AMOUNTS)[number];
