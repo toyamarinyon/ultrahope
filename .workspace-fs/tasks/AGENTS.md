@@ -16,6 +16,7 @@
 - Done items should keep completed outcomes and links to artifacts; avoid deleting completed task files.
 - File naming should be short and easy to find.
 - A task MAY include one or more `related_decisions` links to ADR documents when relevant.
+- File/document links in task files MUST use repository-root-relative paths (for example, `./.workspace-fs/decisions/authentication.md`), not absolute filesystem paths.
 - `status`, `created_at`, `updated_at` are not required in file content; use directory location for status and `git log` for temporal history.
 
 ## Naming rules
