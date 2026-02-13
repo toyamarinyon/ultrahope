@@ -1,38 +1,43 @@
 # .workspace-fs Structure
 
+## Core layout (operational view)
+
 ```
 .workspace-fs/
-├── state.md         # Index: current status, Next/Done, links to other files
-├── to-be/           # Spec: what to build (to-be, not as-is)
-│   ├── cli.md
-│   └── api.md
-├── decisions/       # Decisions: how we build and why (ADR-like)
-│   ├── authentication.md
-│   ├── billing.md
-│   ├── billing-meter-design.md
-│   ├── billing-model-v2.md
-│   ├── billing-free-plan-auto-subscription.md
-│   ├── free-plan-daily-limit.md
-│   ├── cli-implementation.md
-│   ├── infrastructure.md
-│   ├── project-structure.md
-│   ├── monorepo-tooling.md
-│   ├── monolith-migration.md
-│   ├── web-design-direction.md
-│   ├── web-package.md
-│   ├── cli-config-file.md
-│   └── model-allowlist.md
-└── docs/            # External docs: reference info for libraries/frameworks
-    ├── elysiajs/ 
+├── tasks/                     # Task board
+│   ├── AGENTS.md
+│   ├── active/
+│   ├── backlog/
+│   ├── blocked/
+│   └── done/
+├── decisions/                 # ADR-like decision records
+│   ├── AGENTS.md
+│   └── ...
+└── docs/                      # External documentation references and reference notes
+    ├── elysiajs/
     └── mise/tasks
 ```
 
+## Index and update rule
+
+- Current state is derived by inspecting the filesystem:
+  - `tasks/active`, `tasks/backlog`, `tasks/blocked`, `tasks/done`
+- Any update to leaf files under `tasks/` should be reflected in commit history and follow `tasks/AGENTS.md` rules.
+
+## Inspection commands
+
+- Full task board snapshot: `find .workspace-fs/tasks -maxdepth 2 -type f | sort`
+- Active: `find .workspace-fs/tasks/active -maxdepth 1 -type f | sort`
+- Backlog: `find .workspace-fs/tasks/backlog -maxdepth 1 -type f | sort`
+- Blocked: `find .workspace-fs/tasks/blocked -maxdepth 1 -type f | sort`
+- Done: `find .workspace-fs/tasks/done -maxdepth 1 -type f | sort`
+
 ## Naming conventions
 
-- **to-be/** — The intended target state. Write the target spec, not the current as-is state.
-- **decisions/** — Records of technical choices and design decisions. Allows tracing “why we did it this way” later.
-- **docs/** — Local copies of external resources, saved in a format that is easy for an LLM to reference.
+- `tasks/` — operational status tracking (`active`/`backlog`/`blocked`/`done`) by directory only.
+- `decisions/` — decisions and rationale (why we did it this way).
+- `docs/` — local copies of external resources in a model-friendly format.
 
 ## docs/
 
-- [docs/elysiajs/llms-full.txt](docs/elysiajs/llms-full.txt) — ElysiaJS information used for API implementation
+- `docs/elysiajs/llms-full.txt` — ElysiaJS information used for API implementation

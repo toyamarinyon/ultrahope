@@ -44,7 +44,7 @@ Goal: unify `packages/core` and `packages/web`, export the API as OpenAPI, and h
    - Remove or shrink `packages/core`
 
 6. **Finish**
-   - Update docs (to-be/api.md, to-be/cli.md, etc.)
+- Update docs (decisions + task notes + operational docs)
    - Prepare a breaking-change note if needed
    - E2E verification (CLI -> API)
 
@@ -64,6 +64,7 @@ Goal: unify `packages/core` and `packages/web`, export the API as OpenAPI, and h
 - Git policy: commit generated spec (later consider .gitignore after Turborepo migration)
 - Client generator: openapi-ts.dev (openapi-typescript + openapi-fetch)
 - Compatibility: no compatibility window (safe to migrate all at once)
+- Decision record: `./../decisions/core-web-unify-openapi.md`
 
 ## Target structure (draft)
 

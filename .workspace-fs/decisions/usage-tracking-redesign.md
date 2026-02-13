@@ -13,7 +13,7 @@ The `freePlanDailyUsage` table tracks API usage per user per day. The `increment
 - `packages/web/src/lib/llm/index.ts` - calls `incrementDailyUsage()` in `after()` hook
 - `packages/cli/src/lib/vcs-message-generator.ts` - calls API 4 times in parallel with different models
 
-### Desired State (to-be)
+### Desired State
 
 Daily usage should be counted **per CLI command execution**, not per API request. Running `ultrahope jj describe` once should count as 1 usage, regardless of how many models are queried.
 

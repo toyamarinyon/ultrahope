@@ -4,6 +4,7 @@
 
 - Retire `packages/core` and move LLM logic into `packages/web`
 - Generate `openapi.json` via the Elysia OpenAPI plugin and use a generated client in the CLI
+- Execution plan: `../tasks/done/core-web-unify-openapi-plan.md`
 
 ## Why
 

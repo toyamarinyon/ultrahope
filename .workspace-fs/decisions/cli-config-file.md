@@ -122,6 +122,6 @@ Use a lightweight TOML parser. Options:
 
 Preference: `smol-toml` for bundle size (CLI is distributed on npm, smaller is better).
 
-## Impact on multi-model-generation.md
+## Impact on task records
 
-The "Default model set & User Configuration" section of the to-be spec described a web-based settings flow. This decision replaces that approach. The to-be spec should be updated to reflect the config file approach and the "Build settings UI for user model preferences" task in state.md should be replaced with config file implementation tasks.
+The "Default model set & User Configuration" plan assumed a web-based settings flow, but this approach was replaced with CLI-side config files. The current task records should reflect config-file implementation tasks, not a web settings UI.

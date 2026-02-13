@@ -36,7 +36,7 @@ export const ALLOWED_MODEL_IDS = ALLOWED_MODELS.map((m) => m.id);
 
 ### Why not in `packages/core`?
 
-`packages/core` does not exist (state.md lists it as done, but it was merged back into `packages/web` during the monolith migration). Creating a shared package just for a small constant is not justified today. If `packages/core` is reintroduced later, the allowlist can move there.
+`packages/core` no longer exists; it was merged back into `packages/web` during the monolith migration. Creating a shared package just for a small constant is not justified today. If `packages/core` is reintroduced later, the allowlist can move there.
 
 ### Why not in the CLI?
 
@@ -86,4 +86,4 @@ The existing `packages/web/app/models/page.tsx` currently hardcodes the model li
 
 - [cli-config-file.md](cli-config-file.md) — Config file approach for user model preferences
 - [billing-model-v2.md](billing-model-v2.md) — USD-based billing tied to per-request cost
-- [multi-model-generation.md](../to-be/multi-model-generation.md) — Multi-model generation spec
+- Multi-model generation design and implementation decisions are now reflected in task and decision notes.
