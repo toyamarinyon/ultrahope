@@ -40,6 +40,7 @@ export function getAuth() {
 			schema,
 		}),
 		basePath: "/api/auth",
+		baseURL: baseUrl,
 		socialProviders: {
 			github: {
 				clientId: process.env.GITHUB_CLIENT_ID ?? "",
