@@ -259,53 +259,106 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "error",
-                    "message",
-                    "count",
-                    "limit",
-                    "resetsAt",
-                    "plan",
-                    "actions",
-                    "hint"
-                  ],
-                  "properties": {
-                    "error": {
-                      "const": "daily_limit_exceeded",
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "count": {
-                      "type": "number"
-                    },
-                    "limit": {
-                      "type": "number"
-                    },
-                    "resetsAt": {
-                      "type": "string"
-                    },
-                    "plan": {
-                      "const": "free",
-                      "type": "string"
-                    },
-                    "actions": {
+                  "anyOf": [
+                    {
                       "type": "object",
                       "required": [
-                        "upgrade"
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "resetsAt",
+                        "plan",
+                        "actions",
+                        "hint"
                       ],
                       "properties": {
-                        "upgrade": {
+                        "error": {
+                          "const": "daily_limit_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "resetsAt": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "free",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "upgrade"
+                          ],
+                          "properties": {
+                            "upgrade": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
                           "type": "string"
                         }
                       }
                     },
-                    "hint": {
-                      "type": "string"
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "balance",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "insufficient_balance",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "balance": {
+                          "type": "number"
+                        },
+                        "plan": {
+                          "anyOf": [
+                            {
+                              "const": "free",
+                              "type": "string"
+                            },
+                            {
+                              "const": "pro",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "buyCredits"
+                          ],
+                          "properties": {
+                            "buyCredits": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               }
             }
