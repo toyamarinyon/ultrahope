@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
-import { createClient } from "@libsql/client";
+import { createClient as createLibSqlClient } from "@libsql/client";
+import { createClient } from "@tursodatabase/api";
 
 type CommandArgs = {
 	branchName: string;
@@ -27,6 +28,7 @@ function formatUsage(): never {
 
 Required env:
   TURSO_API_TOKEN          token for @tursodatabase/api
+  TURSO_ORG                Turso organization slug
   VERCEL_TOKEN             Vercel API token
   TURSO_DATABASE_URL       parent DB URL (fallback parent DB name)
   VERCEL_PROJECT_ID or VERCEL_PROJECT_NAME
@@ -171,6 +173,10 @@ function requireEnv(name: string): string {
 	return value;
 }
 
+function requireTursoOrg(): string {
+	return requireEnv("TURSO_ORG");
+}
+
 function getProjectIdentifier(args: CommandArgs): string {
 	const projectId = args.projectId ?? process.env.VERCEL_PROJECT_ID;
 	if (projectId) return projectId;
@@ -270,63 +276,32 @@ function normalizeForkUrl(
 async function loadTursoClient(
 	token: string,
 ): Promise<{ databases: TursoDatabasesClient }> {
-	const module = await import("@tursodatabase/api");
-	const candidateConstructors = [
-		module.TursoClient,
-		module.Client,
-		module.turso,
-		module.default,
-	].filter(Boolean) as Array<(options: Record<string, unknown>) => unknown>;
-
-	const optionsCandidates = [
-		{ token },
-		{ apiToken: token },
-		{ authToken: token },
-		{ token: token, apiToken: token },
-		{ authToken: token, token: token },
-	];
-
-	for (const candidate of candidateConstructors) {
-		if (typeof candidate !== "function") {
-			continue;
-		}
-
-		for (const options of optionsCandidates) {
-			try {
-				let created: unknown;
-				try {
-					created = new (
-						candidate as new (
-							opts: unknown,
-						) => { databases: TursoDatabasesClient }
-					)(options);
-				} catch {
-					created = (
-						candidate as (opts: unknown) => { databases: TursoDatabasesClient }
-					)(options);
-				}
-				if (created && (created as { databases?: unknown }).databases) {
-					const databases = (created as { databases: unknown }).databases;
-					if (
-						typeof (databases as TursoDatabasesClient)?.create === "function"
-					) {
-						return { databases: databases as TursoDatabasesClient };
-					}
-				}
-			} catch {}
-		}
+	let databases: unknown;
+	try {
+		const turso = createClient({
+			token,
+			org: requireTursoOrg(),
+		});
+		databases = turso.databases;
+	} catch (error) {
+		throw new Error(
+			`Unable to initialize Turso client from @tursodatabase/api: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
 	}
 
-	const candidateObject = [module, module.default].find(
-		(entry) =>
-			entry && typeof entry === "object" && typeof entry.databases === "object",
-	);
-
-	if (candidateObject) {
-		return { databases: candidateObject.databases as TursoDatabasesClient };
+	if (
+		!databases ||
+		typeof (databases as { create?: unknown }).create !== "function" ||
+		typeof (databases as { createToken?: unknown }).createToken !== "function"
+	) {
+		throw new Error(
+			"Unable to initialize Turso client from @tursodatabase/api: databases API not available.",
+		);
 	}
 
-	throw new Error("Unable to initialize Turso client from @tursodatabase/api.");
+	return { databases: databases as TursoDatabasesClient };
 }
 
 async function createFork(
@@ -371,7 +346,7 @@ async function setSequenceOffset(
 	token: string,
 	offset: number,
 ): Promise<void> {
-	const client = createClient({ url: databaseUrl, authToken: token });
+	const client = createLibSqlClient({ url: databaseUrl, authToken: token });
 	try {
 		const sql =
 			"INSERT INTO sqlite_sequence(name, seq) VALUES('user', ?) ON CONFLICT(name) DO UPDATE SET seq = seq + excluded.seq;";
