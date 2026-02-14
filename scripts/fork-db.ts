@@ -1,8 +1,9 @@
 /**
- * This script is the operational implementation for the mitigation documented in
- * `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`:
- * fork branch DBs, apply a randomized user sequence offset, and upsert Preview
- * environment variables to avoid `polar.external_id` collisions across branches.
+ * Helper script to quickly fork a Turso DB for a branch and wire branch preview env
+ * variables. The mitigation from
+ * `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`
+ * is specifically implemented via the `user` sequence offset step.
+ * See that investigation doc for the rationale behind the collision prevention.
  */
 import { randomInt } from "node:crypto";
 import { createClient as createLibSqlClient } from "@libsql/client";
@@ -223,6 +224,10 @@ function buildForkName(parentDbName: string, branchSafe: string): string {
 }
 
 function makeOffset(min: number, max: number): number {
+	// In the Polar collision scenario, forked DBs can inherit user IDs; a random
+	// offset keeps newly generated local user IDs away from existing ones.
+	// See `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`
+	// for the full rationale.
 	return randomInt(min, max + 1);
 }
 
@@ -312,6 +317,8 @@ async function setSequenceOffset(
 ): Promise<void> {
 	const client = createLibSqlClient({ url: databaseUrl, authToken: token });
 	try {
+		// Idempotent migration: for already-initialized clones this increments
+		// existing user sequence by the chosen offset; for new clones, it seeds it.
 		const sql =
 			"INSERT INTO sqlite_sequence(name, seq) VALUES('user', ?) ON CONFLICT(name) DO UPDATE SET seq = seq + excluded.seq;";
 		await client.execute({ sql, args: [offset] });
