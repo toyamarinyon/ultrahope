@@ -39,6 +39,123 @@ const MOCKING = process.env.MOCKING === "1";
 const SKIP_DAILY_LIMIT_CHECK =
 	process.env.NODE_ENV !== "production" &&
 	process.env.SKIP_DAILY_LIMIT_CHECK === "1";
+type CodeFenceCommitMessageSanitizer = {
+	push(chunk: string): string;
+	finish(): string;
+};
+
+function normalizeCommitMessage(text: string): string {
+	return text.replace(/\s+/g, " ").trim();
+}
+
+function trimCommitMessageWrappers(text: string): string {
+	const trimmed = text.trim();
+	if (
+		trimmed.startsWith("```") &&
+		trimmed.endsWith("```") &&
+		trimmed.length > 6
+	) {
+		return trimmed.slice(3, -3);
+	}
+
+	if (trimmed.startsWith("`") && trimmed.endsWith("`") && trimmed.length > 2) {
+		return trimmed.slice(1, -1);
+	}
+
+	return trimmed;
+}
+
+function createCodeFenceCommitMessageSanitizer(): CodeFenceCommitMessageSanitizer {
+	let inCodeFence = false;
+	let pendingLine = "";
+
+	const stripSingleLineCodeFence = (line: string): string | null => {
+		if (!line.startsWith("```")) return null;
+
+		const closingIndex = line.lastIndexOf("```");
+		if (closingIndex <= 2) return null;
+
+		return line.slice(3, closingIndex);
+	};
+
+	const processCompleteLine = (line: string): string | null => {
+		const inlineCommitMessage = stripSingleLineCodeFence(line);
+		if (inlineCommitMessage !== null) return inlineCommitMessage;
+
+		if (line.startsWith("```")) {
+			inCodeFence = !inCodeFence;
+			return null;
+		}
+
+		if (inCodeFence) return null;
+
+		return line;
+	};
+
+	const processPendingLineForStreaming = (): string | undefined => {
+		if (!pendingLine) return "";
+
+		const inlineCommitMessage = stripSingleLineCodeFence(pendingLine);
+		if (inlineCommitMessage !== null) {
+			pendingLine = "";
+			return inlineCommitMessage;
+		}
+
+		if (inCodeFence) return "";
+
+		if (pendingLine.startsWith("```")) return "";
+
+		const output = pendingLine;
+		pendingLine = "";
+		return output;
+	};
+
+	return {
+		push(chunk: string): string {
+			const text = pendingLine + chunk;
+			const lines = text.split("\n");
+			pendingLine = lines.pop() ?? "";
+
+			let sanitized = "";
+			for (const line of lines) {
+				const cleanedLine = processCompleteLine(line);
+				if (cleanedLine === null) continue;
+				sanitized += `${cleanedLine}\n`;
+			}
+
+			const pendingOutput = processPendingLineForStreaming();
+			if (pendingOutput === undefined) {
+				return sanitized;
+			}
+
+			pendingLine = "";
+			return sanitized + pendingOutput;
+		},
+
+		finish(): string {
+			if (pendingLine) {
+				const inlineCommitMessage = stripSingleLineCodeFence(pendingLine);
+				if (inlineCommitMessage !== null) {
+					pendingLine = "";
+					return inlineCommitMessage;
+				}
+
+				if (pendingLine.startsWith("```")) {
+					pendingLine = "";
+					return "";
+				}
+
+				if (!inCodeFence) {
+					const output = pendingLine;
+					pendingLine = "";
+					return output;
+				}
+			}
+
+			return "";
+		},
+	};
+}
 
 function formatVerboseError(error: unknown): Record<string, unknown> | unknown {
 	if (error instanceof Error) {
@@ -314,7 +431,9 @@ function createCommitMessageSSEStream({
 		async start(controller) {
 			try {
 				let rawCommitMessage = "";
+				let sanitizedCommitMessage = "";
 				let lastCommitMessage = "";
+				const sanitizer = createCodeFenceCommitMessageSanitizer();
 
 				if (VERBOSE) {
 					console.log(
@@ -328,7 +447,11 @@ function createCommitMessageSSEStream({
 						console.log("[VERBOSE:SSE] chunk received:", JSON.stringify(chunk));
 					}
 					rawCommitMessage += chunk;
-					const commitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
+					const sanitizedChunk = sanitizer.push(chunk);
+					sanitizedCommitMessage += sanitizedChunk;
+					const commitMessage = trimCommitMessageWrappers(
+						normalizeCommitMessage(sanitizedCommitMessage),
+					);
 					if (VERBOSE) {
 						console.log(chunk);
 						console.log(commitMessage);
@@ -346,7 +469,10 @@ function createCommitMessageSSEStream({
 					);
 				}
 
-				const finalCommitMessage = rawCommitMessage.replace(/\s+/g, " ").trim();
+				sanitizedCommitMessage += sanitizer.finish();
+				const finalCommitMessage = trimCommitMessageWrappers(
+					normalizeCommitMessage(sanitizedCommitMessage),
+				);
 				if (finalCommitMessage && finalCommitMessage !== lastCommitMessage) {
 					lastCommitMessage = finalCommitMessage;
 					controller.enqueue(
@@ -676,45 +802,45 @@ const apiRoutes = new Elysia()
 				return { error: "Unauthorized" };
 			}
 
-				try {
-					const billingInfo = await getUserBillingInfo(session.user.id);
-					const plan = billingInfo?.plan ?? "free";
+			try {
+				const billingInfo = await getUserBillingInfo(session.user.id);
+				const plan = billingInfo?.plan ?? "free";
 
-					if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
-						await assertDailyLimitNotExceeded(db, session.user.id);
-					} else if (MOCKING) {
-						console.log("[MOCKING] Daily limit check bypassed");
-					} else if (SKIP_DAILY_LIMIT_CHECK) {
-						console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
-					}
+				if (plan === "free" && !MOCKING && !SKIP_DAILY_LIMIT_CHECK) {
+					await assertDailyLimitNotExceeded(db, session.user.id);
+				} else if (MOCKING) {
+					console.log("[MOCKING] Daily limit check bypassed");
+				} else if (SKIP_DAILY_LIMIT_CHECK) {
+					console.log("[SKIP_DAILY_LIMIT_CHECK] Daily limit check bypassed");
+				}
 
-					if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
-						set.status = 402;
-						return {
-							error: "insufficient_balance" as const,
-							message: "Your usage credit has been exhausted.",
-							balance: billingInfo.balance,
-							plan: billingInfo.plan,
-							actions: {
-								buyCredits: `${baseUrl}/settings/billing#credits`,
-							},
-							hint: "Purchase additional credits to continue.",
-						};
-					}
+				if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
+					set.status = 402;
+					return {
+						error: "insufficient_balance" as const,
+						message: "Your usage credit has been exhausted.",
+						balance: billingInfo.balance,
+						plan: billingInfo.plan,
+						actions: {
+							buyCredits: `${baseUrl}/settings/billing#credits`,
+						},
+						hint: "Purchase additional credits to continue.",
+					};
+				}
 
-					await db
-						.insert(commandExecution)
-						.values({
-							cliSessionId: body.cliSessionId,
-							userId: session.user.id,
-							command: body.command,
-							args: JSON.stringify(body.args),
-							api: body.api,
-							requestPayload: body.requestPayload,
-							startedAt: new Date(),
-							finishedAt: null,
-						})
-						.onConflictDoNothing();
+				await db
+					.insert(commandExecution)
+					.values({
+						cliSessionId: body.cliSessionId,
+						userId: session.user.id,
+						command: body.command,
+						args: JSON.stringify(body.args),
+						api: body.api,
+						requestPayload: body.requestPayload,
+						startedAt: new Date(),
+						finishedAt: null,
+					})
+					.onConflictDoNothing();
 
 				return { commandExecutionId: body.commandExecutionId };
 			} catch (error) {
@@ -754,38 +880,38 @@ const apiRoutes = new Elysia()
 					models: t.Optional(t.Array(t.String())),
 				}),
 			}),
-				response: {
-					200: t.Object({
-						commandExecutionId: t.String(),
-					}),
-					401: t.Object({
-						error: t.String(),
-					}),
-					402: t.Union([
-						t.Object({
-							error: t.Literal("daily_limit_exceeded"),
-							message: t.String(),
-							count: t.Number(),
-							limit: t.Number(),
-							resetsAt: t.String(),
-							plan: t.Literal("free"),
-							actions: t.Object({
-								upgrade: t.String(),
-							}),
-							hint: t.String(),
+			response: {
+				200: t.Object({
+					commandExecutionId: t.String(),
+				}),
+				401: t.Object({
+					error: t.String(),
+				}),
+				402: t.Union([
+					t.Object({
+						error: t.Literal("daily_limit_exceeded"),
+						message: t.String(),
+						count: t.Number(),
+						limit: t.Number(),
+						resetsAt: t.String(),
+						plan: t.Literal("free"),
+						actions: t.Object({
+							upgrade: t.String(),
 						}),
-						t.Object({
-							error: t.Literal("insufficient_balance"),
-							message: t.String(),
-							balance: t.Number(),
-							plan: t.Union([t.Literal("free"), t.Literal("pro")]),
-							actions: t.Object({
-								buyCredits: t.String(),
-							}),
-							hint: t.String(),
+						hint: t.String(),
+					}),
+					t.Object({
+						error: t.Literal("insufficient_balance"),
+						message: t.String(),
+						balance: t.Number(),
+						plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+						actions: t.Object({
+							buyCredits: t.String(),
 						}),
-					]),
-				},
+						hint: t.String(),
+					}),
+				]),
+			},
 			detail: {
 				summary: "Create a command execution record",
 				tags: ["command_execution"],

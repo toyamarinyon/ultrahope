@@ -13,6 +13,7 @@ Output requirements:
   - scope: optional; infer from file paths or package/module name (e.g. core, cli, web)
   - subject: imperative mood, present tense, no trailing period, <= 72 characters
 - Do NOT include a body or additional lines. Output exactly one line.
+- Do NOT surround the commit message with backticks (single or triple).
 
 Quality rules:
 - Do not claim changes not supported by the diff. If intent is unclear, keep it neutral and factual.
