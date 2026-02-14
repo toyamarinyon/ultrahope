@@ -18,9 +18,9 @@ function parseArgs(): { target: Target; verbose: boolean } {
 	const target = positional[0] as Target | undefined;
 
 	if (!target || !VALID_TARGETS.includes(target)) {
-		console.error("Usage: pnpm -w exec tsx scripts/translate.ts <target> [-v]");
+		console.error("Usage: bun run scripts:run -- translate <target> [-v]");
 		console.error(
-			"       echo 'diff' | pnpm -w exec tsx scripts/translate.ts vcs-commit-message",
+			"       echo 'diff' | bun run scripts:run -- translate vcs-commit-message",
 		);
 		console.error(`Targets: ${VALID_TARGETS.join(", ")}`);
 		process.exit(1);

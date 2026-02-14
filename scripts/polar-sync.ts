@@ -6,16 +6,16 @@
  *
  * Usage:
  *   # Production (default)
- *   mise -E production exec -- pnpm tsx scripts/polar-sync.ts
+ *   mise -E production exec -- bun run scripts:run -- polar-sync
  *
  *   # Sandbox
- *   mise -E sandbox exec -- pnpm tsx scripts/polar-sync.ts --server sandbox
+ *   mise -E sandbox exec -- bun run scripts:run -- polar-sync --server sandbox --recreate --server sandbox
  *
  *   # Dry-run (show what would be done without prompting)
- *   pnpm tsx scripts/polar-sync.ts --dry-run
+ *   bun run scripts:run -- polar-sync --dry-run
  *
  *   # Skip confirmation prompt
- *   pnpm tsx scripts/polar-sync.ts --yes
+ *   bun run scripts:run -- polar-sync --yes
  *
  * Flags:
  *   --server <production|sandbox>  Target server (default: production)

@@ -11,11 +11,11 @@ run = "bun --cwd packages/web dev"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
-run = "mise -E sandbox exec -- bun scripts/polar-sync.ts --server sandbox --recreate"
+run = "mise -E sandbox exec -- bun run scripts:run -- polar-sync --server sandbox --recreate"
 
 [tasks."production:polar-sync"]
 description = "Sync Polar.sh configuration (production)"
-run = "mise -E production exec -- bun scripts/polar-sync.ts"
+run = "mise -E production exec -- bun run scripts:run -- polar-sync"
 
 [tasks."db:migrate"]
 description = "Run database migrations"
