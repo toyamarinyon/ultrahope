@@ -156,6 +156,16 @@ bun x vercel env run --cwd packages/web -- bun dev
 
 If test cleanup scripts remove users from DB but keep a shared Polar dataset, raw serial IDs can be reused and collide again. The seq offset approach prevents this by ensuring each fork uses a non-overlapping ID range.
 
+## Current status
+
+- The fork automation implementation is in place (`scripts/fork-db.ts`) and includes
+  - branch DB fork
+  - randomized `user` sequence offset
+  - preview-scoped Vercel env upsert
+  - usage guidance for `bun x vercel env pull --cwd packages/web ...`
+- This is sufficient for this task's objective.
+- End-to-end execution validation is deferred until next actual branch environment setup; no regressions are expected from current changes.
+
 ## Related decisions
 
 - `./.workspace-fs/decisions/authentication.md`
