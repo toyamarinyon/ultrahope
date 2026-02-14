@@ -10,6 +10,7 @@ mise trust
 bun i
 bun x vercel link --cwd packages/web --project ultrahope-web --yes
 sleep 20
+bun x vercel env pull --cwd packages/web
 bun x turbo link --scope toyamarinyon --yes
 bun scripts/randomize-port.ts
 '''

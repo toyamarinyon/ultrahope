@@ -34,6 +34,7 @@ const envVars: Record<string, string> = {
 	PORT: `${port}`,
 	NEXT_PUBLIC_PORT: `${port}`,
 	ULTRAHOPE_API_URL: `http://localhost:${port}`,
+	ULTRAHOPE_ENV: "sandbox"
 };
 
 if (miseContent.includes("[env]")) {
