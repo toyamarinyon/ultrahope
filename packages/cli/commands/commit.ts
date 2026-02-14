@@ -1,7 +1,4 @@
-import { execSync, spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { execSync } from "node:child_process";
 import {
 	abortReasonForError,
 	isCommandExecutionAbort,
@@ -21,7 +18,6 @@ import { formatTotalCost, ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface CommitOptions {
-	message: boolean;
 	interactive: boolean;
 	cliModels?: string[];
 }
@@ -61,7 +57,6 @@ function parseArgs(args: string[]): CommitOptions {
 	}
 
 	return {
-		message: args.includes("-m") || args.includes("--message"),
 		interactive: !args.includes("--no-interactive"),
 		cliModels,
 	};
@@ -76,36 +71,6 @@ function getStagedDiff(): string {
 		);
 		process.exit(1);
 	}
-}
-
-function openEditor(initialMessage: string): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const editor = process.env.GIT_EDITOR || process.env.EDITOR || "vi";
-		const tmpDir = mkdtempSync(join(tmpdir(), "ultrahope-"));
-		const tmpFile = join(tmpDir, "COMMIT_EDITMSG");
-
-		writeFileSync(tmpFile, initialMessage);
-
-		const child = spawn(editor, [tmpFile], {
-			stdio: "inherit",
-		});
-
-		child.on("close", (code) => {
-			if (code !== 0) {
-				unlinkSync(tmpFile);
-				reject(new Error(`Editor exited with code ${code}`));
-				return;
-			}
-			const message = readFileSync(tmpFile, "utf-8").trim();
-			unlinkSync(tmpFile);
-			resolve(message);
-		});
-
-		child.on("error", (err) => {
-			unlinkSync(tmpFile);
-			reject(err);
-		});
-	});
 }
 
 function commitWithMessage(message: string): void {
@@ -205,18 +170,7 @@ export async function commit(args: string[]) {
 		});
 		await recordSelection(first.value?.generationId);
 		const message = first.value?.content ?? "";
-
-		if (options.message) {
-			commitWithMessage(message);
-			return;
-		}
-
-		const editedMessage = await openEditor(message);
-		if (!editedMessage) {
-			console.error("Aborting commit due to empty message.");
-			process.exit(1);
-		}
-		commitWithMessage(editedMessage);
+		commitWithMessage(message);
 		return;
 	}
 
@@ -253,18 +207,8 @@ export async function commit(args: string[]) {
 					? ` (total: ${formatTotalCost(result.totalCost)})`
 					: "";
 			console.log(ui.success(`Message selected${costLabel}`));
-			if (options.message) {
-				console.log(`${ui.success("Running git commit")}\n`);
-				commitWithMessage(result.selected);
-			} else {
-				const editedMessage = await openEditor(result.selected);
-				if (!editedMessage) {
-					console.error("Aborting commit due to empty message.");
-					process.exit(1);
-				}
-				console.log(`${ui.success("Running git commit")}\n`);
-				commitWithMessage(editedMessage);
-			}
+			console.log(`${ui.success("Running git commit")}\n`);
+			commitWithMessage(result.selected);
 
 			if (result.quota) {
 				showQuotaInfo(result.quota);

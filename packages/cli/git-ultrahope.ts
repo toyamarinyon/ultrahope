@@ -26,14 +26,12 @@ Commands:
    commit      Generate commit message from staged changes
 
 Commit options:
-   -m, --message     Commit directly with generated message
-   --no-interactive  Single candidate, open in editor
+   --no-interactive  Single candidate, commit directly
    --models <list>   Comma-separated model list (overrides config)
 
 Examples:
    git ultrahope commit               # interactive selector (default)
-   git ultrahope commit -m            # select and commit directly
-   git ultrahope commit --no-interactive  # single candidate, open editor`);
+   git ultrahope commit --no-interactive  # single candidate, commit directly`);
 }
 
 main().catch((err) => {
