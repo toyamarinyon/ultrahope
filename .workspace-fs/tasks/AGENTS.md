@@ -8,6 +8,14 @@
   - `blocked`: waiting on dependencies or external constraints
   - `done`: completed and verified
 
+## Task lifecycle update rule
+
+- Always update the task file itself when work is performed against the task:
+  - Add execution notes, completed outcomes, and validation steps/results.
+  - Keep acceptance criteria up to date (checklist format is recommended).
+- When status changes, move the existing task file to the corresponding status directory **and keep the same file content versioned** (prefer updating then moving, rather than deleting and recreating as a new file).
+- `done` items should be completed artifacts with outcomes and links, not placeholders.
+
 ## Update contract
 
 - Active tasks should be actionable and include owner, expected completion date, and next action.
