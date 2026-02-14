@@ -46,7 +46,7 @@ export function MarketingHome() {
 
 						<div className="flex flex-wrap gap-4">
 							<Link
-								href="/login"
+								href="/signup"
 								className="inline-flex items-center justify-center px-6 py-3 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
 							>
 								Get Started

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
-import { signIn, useSession } from "@/lib/auth-client";
+import { signIn, signUp, useSession } from "@/lib/auth-client";
 
-export default function LoginPage() {
+export default function SignupPage() {
 	const { data: session, isPending } = useSession();
 	const router = useRouter();
+	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +31,12 @@ export default function LoginPage() {
 		event.preventDefault();
 		setError(null);
 
+		const trimmedName = name.trim();
+		if (!trimmedName) {
+			setError("Please enter your name.");
+			return;
+		}
+
 		const normalizedEmail = email.trim().toLowerCase();
 		if (!normalizedEmail || !normalizedEmail.includes("@")) {
 			setError("Please enter a valid email address.");
@@ -41,15 +48,21 @@ export default function LoginPage() {
 			return;
 		}
 
+		if (password.length < 8) {
+			setError("Password must be at least 8 characters.");
+			return;
+		}
+
 		setIsSubmitting(true);
 		try {
-			const result = await signIn.email({
+			const result = await signUp.email({
+				name: trimmedName,
 				email: normalizedEmail,
 				password,
 				callbackURL: "/",
 			});
 			if (result.error) {
-				setError(result.error.message || "Failed to sign in.");
+				setError(result.error.message || "Failed to create account.");
 				return;
 			}
 
@@ -75,7 +88,7 @@ export default function LoginPage() {
 		<main className="min-h-screen bg-canvas px-6 py-14 sm:px-8 sm:py-20">
 			<section className="mx-auto w-full max-w-xl">
 				<h1 className="text-2xl tracking-tight">Welcome to Ultrahope</h1>
-				<p className="mt-1 text-foreground-muted">Sign in to continue</p>
+				<p className="mt-1 text-foreground-muted">Create your account</p>
 
 				<button
 					type="button"
@@ -100,13 +113,32 @@ export default function LoginPage() {
 				<form onSubmit={handleSubmit} className="mt-9 space-y-6">
 					<div className="space-y-2">
 						<label
-							htmlFor="login-email"
+							htmlFor="signup-name"
+							className="block text-foreground-secondary"
+						>
+							Name
+						</label>
+						<input
+							id="signup-name"
+							type="text"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Your name"
+							autoComplete="name"
+							className="w-full rounded-md border border-border bg-canvas px-4 py-3 placeholder:text-foreground-muted"
+							disabled={isSubmitting}
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<label
+							htmlFor="signup-email"
 							className="block text-foreground-secondary"
 						>
 							Email address
 						</label>
 						<input
-							id="login-email"
+							id="signup-email"
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
@@ -119,23 +151,26 @@ export default function LoginPage() {
 
 					<div className="space-y-2">
 						<label
-							htmlFor="login-password"
+							htmlFor="signup-password"
 							className="block text-foreground-secondary"
 						>
 							Password
 						</label>
 						<input
-							id="login-password"
+							id="signup-password"
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							placeholder="Your password"
-							autoComplete="current-password"
+							autoComplete="new-password"
 							className="w-full rounded-md border border-border bg-canvas px-4 py-3 placeholder:text-foreground-muted"
 							disabled={isSubmitting}
 						/>
 					</div>
 
+					<p className="text-xs text-foreground-secondary">
+						Password must be at least 8 characters.
+					</p>
 					{error ? <p className="text-red-400">{error}</p> : null}
 
 					<button
@@ -148,17 +183,13 @@ export default function LoginPage() {
 				</form>
 
 				<p className="mt-10 text-center text-foreground-secondary">
-					Don&apos;t have an account?{" "}
-					<Link href="/signup" className="text-foreground hover:opacity-80">
-						Sign up
+					Already have an account?{" "}
+					<Link href="/login" className="text-foreground hover:opacity-80">
+						Sign in
 					</Link>
 				</p>
 
 				<div className="mt-7 text-center text-foreground-secondary">
-					<Link href="/forgot-password" className="hover:opacity-80">
-						Forgot password?
-					</Link>
-					<span className="mx-2">·</span>
 					<Link href="/privacy" className="hover:opacity-80">
 						Privacy Policy
 					</Link>
