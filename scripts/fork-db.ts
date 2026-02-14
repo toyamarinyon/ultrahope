@@ -1,3 +1,9 @@
+/**
+ * This script is the operational implementation for the mitigation documented in
+ * `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`:
+ * fork branch DBs, apply a randomized user sequence offset, and upsert Preview
+ * environment variables to avoid `polar.external_id` collisions across branches.
+ */
 import { randomInt } from "node:crypto";
 import { createClient as createLibSqlClient } from "@libsql/client";
 import {
