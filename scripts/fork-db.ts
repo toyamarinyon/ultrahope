@@ -1,6 +1,11 @@
 import { randomInt } from "node:crypto";
 import { createClient as createLibSqlClient } from "@libsql/client";
-import { createClient } from "@tursodatabase/api";
+import {
+	type CreatedDatabase,
+	createClient,
+	type DatabaseToken,
+} from "@tursodatabase/api";
+import { Vercel } from "@vercel/sdk";
 
 type CommandArgs = {
 	branchName: string;
@@ -13,8 +18,11 @@ type CommandArgs = {
 };
 
 type TursoDatabasesClient = {
-	create: (name: string, options: Record<string, unknown>) => Promise<unknown>;
-	createToken: (name: string) => Promise<unknown>;
+	create: (
+		name: string,
+		options: Record<string, unknown>,
+	) => Promise<CreatedDatabase>;
+	createToken: (name: string) => Promise<DatabaseToken>;
 };
 
 const DEFAULT_OFFSET_MIN = 1_000_000;
@@ -212,30 +220,6 @@ function makeOffset(min: number, max: number): number {
 	return randomInt(min, max + 1);
 }
 
-function extractToken(response: unknown): string {
-	if (typeof response === "string") {
-		return response;
-	}
-
-	if (response && typeof response === "object") {
-		const candidateKeys = [
-			"authToken",
-			"token",
-			"jwt",
-			"value",
-			"rawToken",
-		] as const;
-		for (const key of candidateKeys) {
-			const value = response[key as keyof typeof response];
-			if (typeof value === "string" && value.length > 0) {
-				return value;
-			}
-		}
-	}
-
-	throw new Error("Unable to extract token from createToken response.");
-}
-
 function normalizeForkUrl(
 	response: unknown,
 	parentUrl: string,
@@ -273,45 +257,16 @@ function normalizeForkUrl(
 	return `${parsed.protocol}//${forkName}.${fallbackHostSegment}${parsed.pathname}`;
 }
 
-async function loadTursoClient(
-	token: string,
-): Promise<{ databases: TursoDatabasesClient }> {
-	let databases: unknown;
-	try {
-		const turso = createClient({
-			token,
-			org: requireTursoOrg(),
-		});
-		databases = turso.databases;
-	} catch (error) {
-		throw new Error(
-			`Unable to initialize Turso client from @tursodatabase/api: ${
-				error instanceof Error ? error.message : String(error)
-			}`,
-		);
-	}
-
-	if (
-		!databases ||
-		typeof (databases as { create?: unknown }).create !== "function" ||
-		typeof (databases as { createToken?: unknown }).createToken !== "function"
-	) {
-		throw new Error(
-			"Unable to initialize Turso client from @tursodatabase/api: databases API not available.",
-		);
-	}
-
-	return { databases: databases as TursoDatabasesClient };
-}
+type CreateFork = {
+	response?: CreatedDatabase;
+	existed: boolean;
+};
 
 async function createFork(
 	databases: TursoDatabasesClient,
 	forkName: string,
 	parentDbName: string,
-): Promise<{
-	response: unknown;
-	existed: boolean;
-}> {
+): Promise<CreateFork> {
 	try {
 		const response = await databases.create(forkName, {
 			seed: {
@@ -337,8 +292,11 @@ async function createForkToken(
 	databases: TursoDatabasesClient,
 	forkName: string,
 ): Promise<string> {
-	const response = await databases.createToken(forkName);
-	return extractToken(response);
+	const tokenResponse = await databases.createToken(forkName);
+	if (typeof tokenResponse.jwt !== "string" || tokenResponse.jwt.length === 0) {
+		throw new Error("Unable to extract token from createToken response.");
+	}
+	return tokenResponse.jwt;
 }
 
 async function setSequenceOffset(
@@ -352,97 +310,8 @@ async function setSequenceOffset(
 			"INSERT INTO sqlite_sequence(name, seq) VALUES('user', ?) ON CONFLICT(name) DO UPDATE SET seq = seq + excluded.seq;";
 		await client.execute({ sql, args: [offset] });
 	} finally {
-		await client.close();
+		client.close();
 	}
-}
-
-async function loadVercelClient() {
-	const module = await import("@vercel/sdk");
-	const VercelCtor = module.Vercel ?? module.default?.Vercel;
-	if (typeof VercelCtor !== "function") {
-		throw new Error("Unable to load Vercel SDK constructor.");
-	}
-
-	const vercel = new VercelCtor({ bearerToken: process.env.VERCEL_TOKEN });
-	const createProjectEnv = vercel.projects?.createProjectEnv?.bind(
-		vercel.projects,
-	);
-	if (typeof createProjectEnv !== "function") {
-		throw new Error("Vercel SDK missing projects.createProjectEnv.");
-	}
-
-	return { createProjectEnv };
-}
-
-async function upsertProjectEnv(
-	createProjectEnv: (params: {
-		idOrName: string;
-		requestBody: {
-			key: string;
-			value: string;
-			type: "sensitive" | "system" | "encrypted" | "plain";
-			target: string[];
-			gitBranch: string;
-		};
-		upsert?: boolean;
-	}) => Promise<unknown>,
-	params: {
-		projectIdentifier: string;
-		key: string;
-		value: string;
-		branch: string;
-	},
-): Promise<void> {
-	const baseRequest = {
-		key: params.key,
-		value: params.value,
-		type: "sensitive" as const,
-		target: ["preview"],
-		gitBranch: params.branch,
-	};
-
-	const attempts: Array<() => Promise<unknown>> = [
-		() =>
-			createProjectEnv({
-				idOrName: params.projectIdentifier,
-				upsert: true,
-				requestBody: baseRequest,
-			}),
-		() =>
-			createProjectEnv({
-				idOrName: params.projectIdentifier,
-				requestBody: { ...baseRequest, upsert: true as unknown as boolean },
-			} as {
-				idOrName: string;
-				requestBody: {
-					key: string;
-					value: string;
-					type: "sensitive" | "system" | "encrypted" | "plain";
-					target: string[];
-					gitBranch: string;
-					upsert: boolean;
-				};
-			}),
-		() =>
-			createProjectEnv({
-				idOrName: params.projectIdentifier,
-				requestBody: baseRequest,
-			}),
-	];
-
-	let lastError: unknown;
-	for (const attempt of attempts) {
-		try {
-			await attempt();
-			return;
-		} catch (error) {
-			lastError = error;
-		}
-	}
-
-	throw lastError instanceof Error
-		? lastError
-		: new Error(`Failed to upsert Vercel env ${params.key}.`);
 }
 
 async function main() {
@@ -484,19 +353,18 @@ async function main() {
 	}
 
 	const tursoApiToken = requireEnv("TURSO_API_TOKEN");
-	requireEnv("VERCEL_TOKEN");
-	requireEnv("TURSO_DATABASE_URL");
+	const tursoDatabaseUrl = requireEnv("TURSO_DATABASE_URL");
+	const vercelToken = requireEnv("VERCEL_TOKEN");
 
 	console.log(`Creating Turso fork ${forkName} with parent ${parentDbName}...`);
-	let forkResult;
+	let forkResult: CreateFork;
 	let forkToken: string;
-	const tursoClient = await loadTursoClient(tursoApiToken);
+	const turso = createClient({
+		token: tursoApiToken,
+		org: requireTursoOrg(),
+	});
 	try {
-		forkResult = await createFork(
-			tursoClient.databases,
-			forkName,
-			parentDbName,
-		);
+		forkResult = await createFork(turso.databases, forkName, parentDbName);
 		if (forkResult.existed) {
 			console.log(`Info: fork already exists, reusing "${forkName}".`);
 		}
@@ -507,12 +375,12 @@ async function main() {
 
 	const forkUrl = normalizeForkUrl(
 		forkResult.response,
-		process.env.TURSO_DATABASE_URL!,
+		tursoDatabaseUrl,
 		forkName,
 	);
 
 	try {
-		forkToken = await createForkToken(tursoClient.databases, forkName);
+		forkToken = await createForkToken(turso.databases, forkName);
 		console.log("Fork token created.");
 	} catch (error) {
 		console.error("Error: fork was created, but token creation failed.");
@@ -535,18 +403,28 @@ async function main() {
 	}
 
 	try {
-		const { createProjectEnv } = await loadVercelClient();
-		await upsertProjectEnv(createProjectEnv, {
-			projectIdentifier,
-			key: "TURSO_DATABASE_URL",
-			value: forkUrl,
-			branch: args.branchName,
+		const vercel = new Vercel({ bearerToken: vercelToken });
+		await vercel.projects.createProjectEnv({
+			idOrName: projectIdentifier,
+			upsert: "true",
+			requestBody: {
+				key: "TURSO_DATABASE_URL",
+				value: forkUrl,
+				type: "sensitive",
+				target: ["preview"],
+				gitBranch: args.branchName,
+			},
 		});
-		await upsertProjectEnv(createProjectEnv, {
-			projectIdentifier,
-			key: "TURSO_AUTH_TOKEN",
-			value: forkToken,
-			branch: args.branchName,
+		await vercel.projects.createProjectEnv({
+			idOrName: projectIdentifier,
+			upsert: "true",
+			requestBody: {
+				key: "TURSO_AUTH_TOKEN",
+				value: forkToken,
+				type: "sensitive",
+				target: ["preview"],
+				gitBranch: args.branchName,
+			},
 		});
 	} catch (error) {
 		console.error("Error: SQL update succeeded, but Vercel env upsert failed.");
