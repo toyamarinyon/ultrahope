@@ -107,7 +107,7 @@ Current branch environment setup is manual and error-prone:
 3. Manually copy into `.mise.<env>.toml`
 4. Manually set Vercel preview environment variables via GUI
 
-実行手順: `bun scripts/fork-db.ts <branch-name>` で fork / シーケンスオフセット / Vercel preview env upsert を一括実施し、続けて `bun x vercel env pull --cwd packages/web --git-branch <branch-name> --environment preview` を実行。
+Execution steps: run `bun scripts/fork-db.ts <branch-name>` to fork the DB, apply sequence offset, and upsert Vercel preview env vars in one command, then run `bun x vercel env pull --cwd packages/web --git-branch <branch-name> --environment preview`.
 
 If the seq offset step is missed during this process, the Polar `external_id` collision will recur.
 
