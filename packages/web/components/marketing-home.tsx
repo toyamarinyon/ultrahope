@@ -9,14 +9,12 @@ export function MarketingHome() {
 				<div className="grid lg:grid-cols-2 gap-12 lg:gap-16 w-full py-16">
 					{/* Left: Branding */}
 					<div className="flex flex-col justify-center">
-						<h1 className="text-7xl lg:text-8xl font-black tracking-tighter mb-6">
-							ULTRAHOPE
-						</h1>
+						<h1 className="text-3xl tracking-tighter mb-6">Ultrahope</h1>
 						<p className="text-xl lg:text-2xl text-foreground-secondary leading-relaxed mb-4 max-w-lg">
-							LLM-powered development workflow assistant.
+							The decision pipe for AI-native software development.
 						</p>
 						<p className="text-lg text-foreground-muted mb-10">
-							A simple UNIX tool that works with pipes.
+							One command in. Proposals out. Human decision stays in the loop.
 						</p>
 
 						<div className="flex flex-wrap gap-4 mb-10">
@@ -69,7 +67,7 @@ export function MarketingHome() {
 							</div>
 						</div>
 						<p className="mt-4 text-sm text-foreground-muted text-center">
-							Switch tabs to preview common CLI flows
+							Inference runs in the background. Decisions stay in your flow.
 						</p>
 					</div>
 				</div>
@@ -80,22 +78,26 @@ export function MarketingHome() {
 				<h2 className="text-3xl font-bold tracking-tight mb-12">Features</h2>
 				<div className="grid md:grid-cols-3 gap-8">
 					<div>
-						<h3 className="text-lg font-semibold mb-2">Translate with AI</h3>
+						<h3 className="text-lg font-semibold mb-2">Adoptable proposals</h3>
 						<p className="text-foreground-secondary">
-							Translate text between languages with a single command.
+							Turn diffs into commit messages, PR title/body drafts, and intent
+							summaries.
 						</p>
 					</div>
 					<div>
-						<h3 className="text-lg font-semibold mb-2">UNIX-friendly</h3>
+						<h3 className="text-lg font-semibold mb-2">Human decision, fast</h3>
 						<p className="text-foreground-secondary">
-							Works with pipes. Combine with grep, sed, awk, and your favorite
-							tools.
+							Compare candidates, reroll, edit, and confirm without leaving your
+							terminal.
 						</p>
 					</div>
 					<div>
-						<h3 className="text-lg font-semibold mb-2">Git & Jujutsu</h3>
+						<h3 className="text-lg font-semibold mb-2">
+							UNIX + multi-agent ready
+						</h3>
 						<p className="text-foreground-secondary">
-							Generate commit messages from your staged changes.
+							Works with pipes, Git, and Jujutsu so you can keep your existing
+							workflow.
 						</p>
 					</div>
 				</div>
