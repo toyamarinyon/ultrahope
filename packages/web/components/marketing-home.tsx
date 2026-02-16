@@ -1,16 +1,105 @@
 import Link from "next/link";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
+const ARCANA_07_AIRY_GAP = 2;
+const ARCANA_07_ROTATE = 29.5;
+const ARCANA_07_RAY_COUNT = 15;
+const ARCANA_07_STROKE = 0.9;
+const SYMBOL_SCALE = 1.12;
+
+function polarPoint(radius: number, angleDeg: number, cx = 12, cy = 12) {
+	const rad = (angleDeg * Math.PI) / 180;
+
+	return {
+		x: cx + radius * Math.cos(rad),
+		y: cy + radius * Math.sin(rad),
+	};
+}
+
+function starPoints(
+	arms: number,
+	outer: number,
+	inner: number,
+	rotate: number,
+	cx = 12,
+	cy = 12,
+) {
+	const step = 360 / (arms * 2);
+	const points: string[] = [];
+
+	for (let i = 0; i < arms * 2; i += 1) {
+		const radius = i % 2 === 0 ? outer : inner;
+		const point = polarPoint(radius, rotate + i * step, cx, cy);
+		points.push(`${point.x.toFixed(3)},${point.y.toFixed(3)}`);
+	}
+
+	return points.join(" ");
+}
+
+function Arcana07AiryStar({ className }: { className: string }) {
+	const phase = 1;
+	const coreOuter = 4.95 + phase * 0.16;
+	const coreInner = 2.45 + phase * 0.08;
+	const innerRay = coreOuter + ARCANA_07_AIRY_GAP;
+	const outerRay = 10.2;
+	const step = 360 / ARCANA_07_RAY_COUNT;
+
+	return (
+		<svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+			<g
+				transform={`translate(12 12) scale(${SYMBOL_SCALE}) translate(-12 -12)`}
+			>
+				{Array.from({ length: ARCANA_07_RAY_COUNT }).map((_, index) => {
+					const start = polarPoint(innerRay, ARCANA_07_ROTATE + index * step);
+					const end = polarPoint(
+						(index + phase) % 3 === 0 ? outerRay - 1 : outerRay,
+						ARCANA_07_ROTATE + index * step,
+					);
+
+					return (
+						<line
+							// biome-ignore lint/suspicious/noArrayIndexKey: Decorative rays are fixed-length and order-stable, so index is a stable key.
+							key={index}
+							x1={start.x}
+							y1={start.y}
+							x2={end.x}
+							y2={end.y}
+							stroke="currentColor"
+							strokeWidth={ARCANA_07_STROKE * 0.9}
+							strokeLinecap="round"
+						/>
+					);
+				})}
+				<polygon
+					points={starPoints(4, coreOuter, coreInner, 45 + ARCANA_07_ROTATE)}
+					fill="currentColor"
+					stroke="currentColor"
+					strokeWidth="0.35"
+					strokeLinejoin="round"
+				/>
+			</g>
+		</svg>
+	);
+}
+
+function UltrahopeLogo() {
+	return (
+		<span className="inline-flex items-center gap-2">
+			<span className="inline-flex size-10 shrink-0 items-center justify-center text-foreground">
+				<Arcana07AiryStar className="w-9 h-9" />
+			</span>
+			<span className="text-2xl tracking-tighter leading-none">Ultrahope</span>
+		</span>
+	);
+}
+
 export function MarketingHome() {
 	return (
 		<main className="min-h-screen px-8">
 			<header>
 				<div className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-4">
-					<Link
-						href="/"
-						className="text-2xl tracking-tighter text-foreground no-underline"
-					>
-						Ultrahope
+					<Link href="/" className="text-foreground no-underline">
+						<UltrahopeLogo />
 					</Link>
 					<div className="flex items-center gap-3">
 						<Link
