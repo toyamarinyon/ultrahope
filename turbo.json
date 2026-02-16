@@ -12,10 +12,10 @@
 			"cache": false,
 			"persistent": true
 		},
-		"//#check": {},
+		"//#check:write": {},
 		"//#knip": {},
 		"ok": {
-			"dependsOn": ["//#check", "typecheck", "//#knip"],
+			"dependsOn": ["//#check:write", "typecheck", "//#knip"],
 			"cache": false
 		}
 	}
