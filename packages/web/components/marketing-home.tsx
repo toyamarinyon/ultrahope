@@ -161,7 +161,7 @@ export function MarketingHome() {
 					{/* Right: Interactive Terminal Demo */}
 					<div className="flex flex-col justify-center">
 						<div className="relative">
-							<div className="absolute -inset-6 rounded-[28px] bg-[radial-gradient(ellipse_at_top,_#2b261f,_transparent_60%)] opacity-70 blur-2xl" />
+							<div className="absolute -inset-6 rounded-[28px] bg-[radial-gradient(ellipse_at_top,#2b261f,transparent_60%)] opacity-70 blur-2xl" />
 							<div className="relative">
 								<TerminalTabsDemo />
 							</div>

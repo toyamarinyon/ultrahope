@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Ultrahope Arcana 07 Airy icon">
+  <rect x="0" y="0" width="24" height="24" rx="5" fill="#1a1814" />
+  <g transform="translate(12 12) scale(1.12) translate(-12 -12)" fill="#ece6d8" stroke="#ece6d8" stroke-linecap="round">
+    <line x1="18.188" y1="15.501" x2="20.878" y2="17.023" stroke-width="0.81" />
+    <line x1="16.229" y1="17.715" x2="18.067" y2="20.199" stroke-width="0.81" />
+    <line x1="13.539" y1="18.941" x2="13.991" y2="20.982" stroke-width="0.81" />
+    <line x1="10.582" y1="18.967" x2="9.966" y2="21.995" stroke-width="0.81" />
+    <line x1="7.871" y1="17.788" x2="6.077" y2="20.304" stroke-width="0.81" />
+    <line x1="5.874" y1="15.609" x2="4.073" y2="16.669" stroke-width="0.81" />
+    <line x1="4.936" y1="12.805" x2="1.866" y2="13.155" stroke-width="0.81" />
+    <line x1="5.219" y1="9.862" x2="2.272" y2="8.933" stroke-width="0.81" />
+    <line x1="6.675" y1="7.289" x2="5.11" y2="5.904" stroke-width="0.81" />
+    <line x1="9.052" y1="5.53" x2="7.77" y2="2.718" stroke-width="0.81" />
+    <line x1="11.938" y1="4.89" x2="11.911" y2="1.8" stroke-width="0.81" />
+    <line x1="14.835" y1="5.48" x2="15.668" y2="3.563" stroke-width="0.81" />
+    <line x1="17.242" y1="7.197" x2="19.52" y2="5.109" stroke-width="0.81" />
+    <line x1="18.743" y1="9.744" x2="21.673" y2="8.763" stroke-width="0.81" />
+    <line x1="19.077" y1="12.681" x2="21.158" y2="12.882" stroke-width="0.81" />
+    <polygon points="13.366,16.924 10.754,14.202 7.076,13.366 9.798,10.754 10.634,7.076 13.246,9.798 16.924,10.634 14.202,13.246" stroke-width="0.35" stroke-linejoin="round" />
+  </g>
+</svg>
