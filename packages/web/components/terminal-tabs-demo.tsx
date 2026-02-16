@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 
 type DemoTab = {
 	id: string;
@@ -67,8 +67,106 @@ type Phase =
 	| "selector"
 	| "selected";
 
+type DemoState = {
+	phase: Phase;
+	typedText: string;
+	spinnerFrame: number;
+	generatedCount: number;
+	selectedIndex: number;
+	slots: Slot[];
+};
+
+type DemoAction =
+	| { type: "RESET_FOR_TAB" }
+	| { type: "START_TYPING" }
+	| { type: "TICK_TYPE"; nextText: string }
+	| { type: "WAIT_FOR_ENTER" }
+	| { type: "START_ANALYZING" }
+	| { type: "START_GENERATING"; slotCount: number }
+	| { type: "TICK_SPINNER" }
+	| { type: "SLOT_READY"; index: number; content: string }
+	| { type: "SHOW_SELECTOR" }
+	| { type: "MOVE_SELECTION"; direction: -1 | 1; maxIndex: number }
+	| { type: "SET_SELECTION"; index: number }
+	| { type: "SELECT"; index?: number }
+	| { type: "REROLL"; slotCount: number };
+
 function createPendingSlots(count: number): Slot[] {
 	return Array.from({ length: count }, () => ({ status: "pending" as const }));
+}
+
+function createInitialDemoState(): DemoState {
+	return {
+		phase: "initial",
+		typedText: "",
+		spinnerFrame: 0,
+		generatedCount: 0,
+		selectedIndex: 0,
+		slots: [],
+	};
+}
+
+function demoReducer(state: DemoState, action: DemoAction): DemoState {
+	switch (action.type) {
+		case "RESET_FOR_TAB":
+			return createInitialDemoState();
+		case "START_TYPING":
+			return { ...state, phase: "typing" };
+		case "TICK_TYPE":
+			return { ...state, typedText: action.nextText };
+		case "WAIT_FOR_ENTER":
+			return { ...state, phase: "waitingEnter" };
+		case "START_ANALYZING":
+			return { ...state, phase: "analyzing" };
+		case "START_GENERATING":
+			return {
+				...state,
+				phase: "generating",
+				generatedCount: 0,
+				selectedIndex: 0,
+				slots: createPendingSlots(action.slotCount),
+			};
+		case "TICK_SPINNER":
+			return {
+				...state,
+				spinnerFrame: (state.spinnerFrame + 1) % SPINNER_FRAMES.length,
+			};
+		case "SLOT_READY": {
+			const nextSlots = [...state.slots];
+			nextSlots[action.index] = { status: "ready", content: action.content };
+			return {
+				...state,
+				slots: nextSlots,
+				generatedCount: Math.max(state.generatedCount, action.index + 1),
+			};
+		}
+		case "SHOW_SELECTOR":
+			return { ...state, phase: "selector" };
+		case "MOVE_SELECTION":
+			return {
+				...state,
+				selectedIndex: Math.max(
+					0,
+					Math.min(action.maxIndex, state.selectedIndex + action.direction),
+				),
+			};
+		case "SET_SELECTION":
+			return { ...state, selectedIndex: action.index };
+		case "SELECT":
+			return {
+				...state,
+				phase: "selected",
+				selectedIndex: action.index ?? state.selectedIndex,
+			};
+		case "REROLL":
+			return {
+				...state,
+				phase: "generating",
+				generatedCount: 0,
+				selectedIndex: 0,
+				slots: createPendingSlots(action.slotCount),
+			};
+	}
 }
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
@@ -84,129 +182,131 @@ export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
 		DEMO_TABS.find((tab) => tab.id === activeTab) ?? DEMO_TABS[0];
-	const [phase, setPhase] = useState<Phase>("initial");
-	const [typedText, setTypedText] = useState("");
-	const [spinnerFrame, setSpinnerFrame] = useState(0);
-	const [generatedCount, setGeneratedCount] = useState(0);
-	const [selectedIndex, setSelectedIndex] = useState(0);
-	const [slots, setSlots] = useState<Slot[]>([]);
+	const [state, dispatch] = useReducer(
+		demoReducer,
+		undefined,
+		createInitialDemoState,
+	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: activeDemo.id is intentionally used as a reset trigger when the active tab changes
 	useEffect(() => {
-		setPhase("initial");
-		setTypedText("");
-		setSpinnerFrame(0);
-		setGeneratedCount(0);
-		setSelectedIndex(0);
-		setSlots([]);
+		dispatch({ type: "RESET_FOR_TAB" });
 	}, [activeDemo.id]);
 
 	useEffect(() => {
-		if (phase !== "initial") return;
-		const timeout = setTimeout(() => setPhase("typing"), 500);
+		if (state.phase !== "initial") return;
+		const timeout = setTimeout(() => dispatch({ type: "START_TYPING" }), 500);
 		return () => clearTimeout(timeout);
-	}, [phase]);
+	}, [state.phase]);
 
 	useEffect(() => {
-		if (phase !== "typing") return;
-		if (typedText.length >= activeDemo.command.length) {
-			const timeout = setTimeout(() => setPhase("waitingEnter"), 480);
+		if (state.phase !== "typing") return;
+		if (state.typedText.length >= activeDemo.command.length) {
+			const timeout = setTimeout(
+				() => dispatch({ type: "WAIT_FOR_ENTER" }),
+				480,
+			);
 			return () => clearTimeout(timeout);
 		}
 		const timeout = setTimeout(
 			() => {
-				setTypedText(activeDemo.command.slice(0, typedText.length + 1));
+				dispatch({
+					type: "TICK_TYPE",
+					nextText: activeDemo.command.slice(0, state.typedText.length + 1),
+				});
 			},
 			28 + Math.random() * 24,
 		);
 		return () => clearTimeout(timeout);
-	}, [phase, typedText, activeDemo.command]);
+	}, [state.phase, state.typedText, activeDemo.command]);
 
 	useEffect(() => {
-		if (phase !== "analyzing") return;
+		if (state.phase !== "analyzing") return;
 		const timeout = setTimeout(() => {
-			setGeneratedCount(0);
-			setSelectedIndex(0);
-			setSlots(createPendingSlots(activeDemo.options.length));
-			setPhase("generating");
+			dispatch({
+				type: "START_GENERATING",
+				slotCount: activeDemo.options.length,
+			});
 		}, 680);
 		return () => clearTimeout(timeout);
-	}, [phase, activeDemo.options.length]);
+	}, [state.phase, activeDemo.options.length]);
 
 	useEffect(() => {
-		if (phase !== "generating") return;
+		if (state.phase !== "generating") return;
 		const interval = setInterval(() => {
-			setSpinnerFrame((current) => (current + 1) % SPINNER_FRAMES.length);
+			dispatch({ type: "TICK_SPINNER" });
 		}, 80);
 		return () => clearInterval(interval);
-	}, [phase]);
+	}, [state.phase]);
 
 	useEffect(() => {
-		if (phase !== "generating") return;
-		if (generatedCount >= activeDemo.options.length) {
-			const timeout = setTimeout(() => setPhase("selector"), 280);
+		if (state.phase !== "generating") return;
+		if (state.generatedCount >= activeDemo.options.length) {
+			const timeout = setTimeout(
+				() => dispatch({ type: "SHOW_SELECTOR" }),
+				280,
+			);
 			return () => clearTimeout(timeout);
 		}
 		const timeout = setTimeout(
 			() => {
-				setSlots((prev) => {
-					const next = [...prev];
-					next[generatedCount] = {
-						status: "ready",
-						content: activeDemo.options[generatedCount],
-					};
-					return next;
+				dispatch({
+					type: "SLOT_READY",
+					index: state.generatedCount,
+					content: activeDemo.options[state.generatedCount],
 				});
-				setGeneratedCount((count) => count + 1);
 			},
 			420 + Math.random() * 350,
 		);
 		return () => clearTimeout(timeout);
-	}, [phase, generatedCount, activeDemo.options]);
+	}, [state.phase, state.generatedCount, activeDemo.options]);
 
 	const reroll = useCallback(() => {
-		setPhase("generating");
-		setGeneratedCount(0);
-		setSelectedIndex(0);
-		setSlots(createPendingSlots(activeDemo.options.length));
+		dispatch({ type: "REROLL", slotCount: activeDemo.options.length });
 	}, [activeDemo.options.length]);
 
 	useEffect(() => {
 		if (
-			phase !== "waitingEnter" &&
-			phase !== "selector" &&
-			phase !== "selected"
+			state.phase !== "waitingEnter" &&
+			state.phase !== "selector" &&
+			state.phase !== "selected"
 		)
 			return;
 
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (phase === "waitingEnter" && event.key === "Enter") {
+			if (state.phase === "waitingEnter" && event.key === "Enter") {
 				if (isInteractiveKeyTarget(event.target)) {
 					return;
 				}
 				event.preventDefault();
-				setPhase("analyzing");
+				dispatch({ type: "START_ANALYZING" });
 				return;
 			}
 
-			if (phase === "selector" || phase === "selected") {
+			if (state.phase === "selector" || state.phase === "selected") {
 				if (event.key === "r") {
 					event.preventDefault();
 					reroll();
 					return;
 				}
-				if (phase === "selector") {
+				if (state.phase === "selector") {
 					if (event.key === "ArrowUp" || event.key === "k") {
 						event.preventDefault();
-						setSelectedIndex((index) => Math.max(0, index - 1));
+						dispatch({
+							type: "MOVE_SELECTION",
+							direction: -1,
+							maxIndex: activeDemo.options.length - 1,
+						});
 					} else if (event.key === "ArrowDown" || event.key === "j") {
 						event.preventDefault();
-						setSelectedIndex((index) =>
-							Math.min(activeDemo.options.length - 1, index + 1),
-						);
+						dispatch({
+							type: "MOVE_SELECTION",
+							direction: 1,
+							maxIndex: activeDemo.options.length - 1,
+						});
 					} else if (event.key === "Enter") {
 						event.preventDefault();
-						setPhase("selected");
+						dispatch({ type: "SELECT" });
 					}
 				}
 			}
@@ -216,13 +316,14 @@ export function TerminalTabsDemo() {
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
 		};
-	}, [phase, activeDemo.options.length, reroll]);
+	}, [state.phase, activeDemo.options.length, reroll]);
 
-	const readyCount = slots.filter((slot) => slot.status === "ready").length;
+	const readyCount = state.slots.filter(
+		(slot) => slot.status === "ready",
+	).length;
+	const selectedSlotAtIndex = state.slots[state.selectedIndex];
 	const selectedSlot =
-		slots[selectedIndex] && slots[selectedIndex].status === "ready"
-			? slots[selectedIndex]
-			: null;
+		selectedSlotAtIndex?.status === "ready" ? selectedSlotAtIndex : null;
 	const panelId = "terminal-demo-panel";
 	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
 
@@ -283,16 +384,16 @@ export function TerminalTabsDemo() {
 				<div className="flex items-start gap-2">
 					<span className="text-foreground shrink-0">$</span>
 					<code className="text-foreground whitespace-pre-wrap break-all">
-						{typedText}
+						{state.typedText}
 					</code>
-					{(phase === "initial" ||
-						phase === "typing" ||
-						phase === "waitingEnter") && (
+					{(state.phase === "initial" ||
+						state.phase === "typing" ||
+						state.phase === "waitingEnter") && (
 						<span className="flex items-center gap-2 animate-pulse">
 							<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
 							<span
 								className={`text-foreground-muted transition-opacity duration-400 ${
-									phase === "waitingEnter" ? "opacity-100" : "opacity-0"
+									state.phase === "waitingEnter" ? "opacity-100" : "opacity-0"
 								}`}
 							>
 								press enter to continue ↵
@@ -301,21 +402,21 @@ export function TerminalTabsDemo() {
 					)}
 				</div>
 
-				{(phase === "analyzing" ||
-					phase === "generating" ||
-					phase === "selector" ||
-					phase === "selected") && (
+				{(state.phase === "analyzing" ||
+					state.phase === "generating" ||
+					state.phase === "selector" ||
+					state.phase === "selected") && (
 					<p className="mt-3 text-green-400">{activeDemo.foundLine}</p>
 				)}
 
-				{phase === "generating" && (
+				{state.phase === "generating" && (
 					<p className="mt-2 text-yellow-400">
-						{SPINNER_FRAMES[spinnerFrame]} {activeDemo.runLine}... {readyCount}/
-						{activeDemo.options.length}
+						{SPINNER_FRAMES[state.spinnerFrame]} {activeDemo.runLine}...{" "}
+						{readyCount}/{activeDemo.options.length}
 					</p>
 				)}
 
-				{(phase === "selector" || phase === "selected") && (
+				{(state.phase === "selector" || state.phase === "selected") && (
 					<p className="mt-2">
 						<span className="text-cyan-400">?</span>
 						<span className="ml-2">
@@ -324,11 +425,11 @@ export function TerminalTabsDemo() {
 					</p>
 				)}
 
-				{(phase === "generating" ||
-					phase === "selector" ||
-					phase === "selected") && (
+				{(state.phase === "generating" ||
+					state.phase === "selector" ||
+					state.phase === "selected") && (
 					<div className="mt-3 space-y-2">
-						{slots.map((slot, index) => {
+						{state.slots.map((slot, index) => {
 							if (slot.status === "pending") {
 								return (
 									<div key={`pending-${String(index)}`} className="opacity-50">
@@ -337,16 +438,17 @@ export function TerminalTabsDemo() {
 								);
 							}
 
-							const isSelected = index === selectedIndex;
+							const isSelected = index === state.selectedIndex;
 							return (
 								<button
 									key={`ready-${slot.content}`}
 									type="button"
-									onMouseEnter={() => setSelectedIndex(index)}
+									onMouseEnter={() =>
+										dispatch({ type: "SET_SELECTION", index })
+									}
 									onClick={() => {
-										if (phase === "selector") {
-											setSelectedIndex(index);
-											setPhase("selected");
+										if (state.phase === "selector") {
+											dispatch({ type: "SELECT", index });
 										}
 									}}
 									className={`block w-full text-left ${
@@ -360,7 +462,7 @@ export function TerminalTabsDemo() {
 					</div>
 				)}
 
-				{phase === "selected" && (
+				{state.phase === "selected" && (
 					<div className="mt-4">
 						<p className="text-green-400">✔ Candidate selected</p>
 						<p className="text-green-400">{activeDemo.applyLine}</p>
