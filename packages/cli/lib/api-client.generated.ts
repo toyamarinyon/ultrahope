@@ -212,20 +212,32 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": {
-						/** @constant */
-						error: "daily_limit_exceeded";
-						message: string;
-						count: number;
-						limit: number;
-						resetsAt: string;
-						/** @constant */
-						plan: "free";
-						actions: {
-							upgrade: string;
-						};
-						hint: string;
-					};
+					"application/json":
+						| {
+								/** @constant */
+								error: "daily_limit_exceeded";
+								message: string;
+								count: number;
+								limit: number;
+								resetsAt: string;
+								/** @constant */
+								plan: "free";
+								actions: {
+									upgrade: string;
+								};
+								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "insufficient_balance";
+								message: string;
+								balance: number;
+								plan: "free" | "pro";
+								actions: {
+									buyCredits: string;
+								};
+								hint: string;
+						  };
 				};
 			};
 		};
