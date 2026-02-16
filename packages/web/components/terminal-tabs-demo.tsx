@@ -71,6 +71,15 @@ function createPendingSlots(count: number): Slot[] {
 	return Array.from({ length: count }, () => ({ status: "pending" as const }));
 }
 
+function isInteractiveKeyTarget(target: EventTarget | null): boolean {
+	if (!(target instanceof Element)) return false;
+	return Boolean(
+		target.closest(
+			'button, [role="button"], [role="tab"], a[href], input, textarea, select, summary, [contenteditable], [tabindex]:not([tabindex="-1"])',
+		),
+	);
+}
+
 export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
@@ -172,6 +181,9 @@ export function TerminalTabsDemo() {
 
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (phase === "waitingEnter" && event.key === "Enter") {
+				if (isInteractiveKeyTarget(event.target)) {
+					return;
+				}
 				event.preventDefault();
 				setPhase("analyzing");
 				return;
@@ -211,6 +223,8 @@ export function TerminalTabsDemo() {
 		slots[selectedIndex] && slots[selectedIndex].status === "ready"
 			? slots[selectedIndex]
 			: null;
+	const panelId = "terminal-demo-panel";
+	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
 
 	return (
 		<div className="rounded-xl border border-border-subtle bg-canvas-dark overflow-hidden font-mono">
@@ -225,14 +239,24 @@ export function TerminalTabsDemo() {
 				</span>
 			</div>
 
-			<div className="flex bg-surface/70">
+			<div
+				className="flex bg-surface/70"
+				role="tablist"
+				aria-label="Demo command scenarios"
+			>
 				{DEMO_TABS.map((tab) => {
 					const isActive = tab.id === activeDemo.id;
+					const tabId = `terminal-demo-tab-${tab.id}`;
 					return (
 						<button
 							key={tab.id}
 							type="button"
 							onClick={() => setActiveTab(tab.id)}
+							role="tab"
+							id={tabId}
+							aria-selected={isActive}
+							aria-controls={panelId}
+							tabIndex={isActive ? 0 : -1}
 							className={`px-3 py-2 text-xs border-r border-border-subtle ${
 								isActive
 									? "bg-canvas-dark text-foreground"
@@ -245,11 +269,17 @@ export function TerminalTabsDemo() {
 				})}
 				<div
 					aria-hidden="true"
+					role="presentation"
 					className="flex-1 border-b border-border-subtle"
 				/>
 			</div>
 
-			<div className="h-72 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed">
+			<div
+				id={panelId}
+				role="tabpanel"
+				aria-labelledby={activeTabId}
+				className="h-72 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
+			>
 				<div className="flex items-start gap-2">
 					<span className="text-foreground shrink-0">$</span>
 					<code className="text-foreground whitespace-pre-wrap break-all">
