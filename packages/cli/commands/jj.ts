@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from "node:child_process";
+import { execFileSync, execSync, spawnSync } from "node:child_process";
 import {
 	abortReasonForError,
 	isCommandExecutionAbort,
@@ -283,11 +283,47 @@ async function describe(args: string[]) {
 	await runInteractiveDescribe(options, models, createCandidates, context);
 }
 
+function setup() {
+	try {
+		const existing = execFileSync(
+			"jj",
+			["config", "get", "aliases.ultrahope"],
+			{ encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
+		).trim();
+		if (existing) {
+			console.log(ui.success("jj alias 'ultrahope' is already configured."));
+			console.log(ui.hint("  Run `jj ultrahope describe` to use it."));
+			return;
+		}
+	} catch {
+		// alias not set yet
+	}
+
+	execFileSync(
+		"jj",
+		[
+			"config",
+			"set",
+			"--user",
+			"aliases.ultrahope",
+			'["util", "exec", "--", "ultrahope", "jj"]',
+		],
+		{ stdio: "inherit" },
+	);
+	console.log(ui.success("Added jj alias 'ultrahope'."));
+	console.log(
+		ui.hint(
+			"  You can now run `jj ultrahope describe` instead of `ultrahope jj describe`.",
+		),
+	);
+}
+
 function printHelp() {
 	console.log(`Usage: ultrahope jj <command>
 
 Commands:
    describe    Generate commit description from changes
+   setup       Register 'ultrahope' as a jj alias
 
 Describe options:
    -r <revset>       Revision to describe (default: @)
@@ -296,7 +332,8 @@ Describe options:
 
 Examples:
    ultrahope jj describe              # interactive mode
-   ultrahope jj describe -r @-        # for parent revision`);
+   ultrahope jj describe -r @-        # for parent revision
+   ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
 }
 
 export async function jj(args: string[]) {
@@ -305,6 +342,9 @@ export async function jj(args: string[]) {
 	switch (command) {
 		case "describe":
 			await describe(rest);
+			break;
+		case "setup":
+			setup();
 			break;
 		case "--help":
 		case "-h":
