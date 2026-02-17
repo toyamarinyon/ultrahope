@@ -8,6 +8,7 @@
 		"postbuild": "bun run generate:openapi",
 		"generate:openapi": "tsx scripts/generate-openapi.ts",
 		"start": "next start",
+		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
