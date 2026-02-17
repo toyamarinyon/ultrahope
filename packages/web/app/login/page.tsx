@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { signIn, useSession } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+} from "@/lib/auth-error";
 
 export default function LoginPage() {
 	const { data: session, isPending } = useSession();
@@ -31,13 +35,13 @@ export default function LoginPage() {
 		setError(null);
 
 		const normalizedEmail = email.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
-			setError("Please enter a valid email address.");
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
+			setError("有効なメールアドレスを入力してください。");
 			return;
 		}
 
 		if (!password) {
-			setError("Please enter your password.");
+			setError("パスワードを入力してください。");
 			return;
 		}
 
@@ -49,13 +53,17 @@ export default function LoginPage() {
 				callbackURL: "/",
 			});
 			if (result.error) {
-				setError(result.error.message || "Failed to sign in.");
+				const mapped = mapAuthClientError(result.error, "login");
+				console.error("[auth][login] email sign-in failed", mapped.internal);
+				setError(mapped.userMessage);
 				return;
 			}
 
 			router.push("/");
-		} catch {
-			setError("Authentication failed. Please try again.");
+		} catch (error) {
+			const mapped = mapAuthClientError(error, "login");
+			console.error("[auth][login] email sign-in threw", mapped.internal);
+			setError(mapped.userMessage);
 		} finally {
 			setIsSubmitting(false);
 		}

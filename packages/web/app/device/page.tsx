@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { device, signIn, signUp, useSession } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+} from "@/lib/auth-error";
 
 type Status =
 	| "idle"
@@ -39,20 +43,20 @@ export default function DevicePage() {
 		setAuthError(null);
 
 		const normalizedEmail = authEmail.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
-			setAuthError("Please enter a valid email address.");
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
+			setAuthError("有効なメールアドレスを入力してください。");
 			return;
 		}
 		if (!authPassword) {
-			setAuthError("Please enter your password.");
+			setAuthError("パスワードを入力してください。");
 			return;
 		}
 		if (authMode === "signup" && authPassword.length < 8) {
-			setAuthError("Password must be at least 8 characters.");
+			setAuthError("パスワードは8文字以上で入力してください。");
 			return;
 		}
 		if (authMode === "signup" && !authName.trim()) {
-			setAuthError("Please enter your name.");
+			setAuthError("名前を入力してください。");
 			return;
 		}
 
@@ -65,7 +69,12 @@ export default function DevicePage() {
 					callbackURL: "/device",
 				});
 				if (result.error) {
-					setAuthError(result.error.message || "Failed to sign in.");
+					const mapped = mapAuthClientError(result.error, "device-signin");
+					console.error(
+						"[auth][device-signin] email sign-in failed",
+						mapped.internal,
+					);
+					setAuthError(mapped.userMessage);
 					return;
 				}
 			} else {
@@ -76,12 +85,20 @@ export default function DevicePage() {
 					callbackURL: "/device",
 				});
 				if (result.error) {
-					setAuthError(result.error.message || "Failed to create account.");
+					const mapped = mapAuthClientError(result.error, "device-signup");
+					console.error(
+						"[auth][device-signup] email sign-up failed",
+						mapped.internal,
+					);
+					setAuthError(mapped.userMessage);
 					return;
 				}
 			}
-		} catch {
-			setAuthError("Authentication failed. Please try again.");
+		} catch (error) {
+			const flow = authMode === "signin" ? "device-signin" : "device-signup";
+			const mapped = mapAuthClientError(error, flow);
+			console.error(`[auth][${flow}] email auth threw`, mapped.internal);
+			setAuthError(mapped.userMessage);
 		} finally {
 			setIsAuthSubmitting(false);
 		}

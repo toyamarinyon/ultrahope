@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { signIn, signUp, useSession } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+} from "@/lib/auth-error";
 
 export default function SignupPage() {
 	const { data: session, isPending } = useSession();
@@ -33,23 +37,23 @@ export default function SignupPage() {
 
 		const trimmedName = name.trim();
 		if (!trimmedName) {
-			setError("Please enter your name.");
+			setError("名前を入力してください。");
 			return;
 		}
 
 		const normalizedEmail = email.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
-			setError("Please enter a valid email address.");
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
+			setError("有効なメールアドレスを入力してください。");
 			return;
 		}
 
 		if (!password) {
-			setError("Please enter your password.");
+			setError("パスワードを入力してください。");
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters.");
+			setError("パスワードは8文字以上で入力してください。");
 			return;
 		}
 
@@ -62,13 +66,17 @@ export default function SignupPage() {
 				callbackURL: "/",
 			});
 			if (result.error) {
-				setError(result.error.message || "Failed to create account.");
+				const mapped = mapAuthClientError(result.error, "signup");
+				console.error("[auth][signup] email sign-up failed", mapped.internal);
+				setError(mapped.userMessage);
 				return;
 			}
 
 			router.push("/");
-		} catch {
-			setError("Authentication failed. Please try again.");
+		} catch (error) {
+			const mapped = mapAuthClientError(error, "signup");
+			console.error("[auth][signup] email sign-up threw", mapped.internal);
+			setError(mapped.userMessage);
 		} finally {
 			setIsSubmitting(false);
 		}
