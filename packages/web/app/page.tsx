@@ -1,8 +1,30 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { MarketingHome } from "@/components/marketing-home";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getAuth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+	title: "Ultrahope",
+	description:
+		"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+	alternates: {
+		canonical: "/",
+	},
+	openGraph: {
+		title: "Ultrahope",
+		description:
+			"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+		url: "/",
+	},
+	twitter: {
+		card: "summary",
+		title: "Ultrahope",
+		description:
+			"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+	},
+};
 
 export const dynamic = "force-dynamic";
 

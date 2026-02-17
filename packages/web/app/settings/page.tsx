@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BillingSettingsControls } from "@/components/billing-settings-controls";
@@ -12,6 +13,13 @@ import {
 	resolveCurrentPlan,
 } from "@/lib/billing";
 import { getUserBillingInfo } from "@/lib/llm";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata({
+	title: "Settings",
+	description: "Account and billing settings for signed-in Ultrahope users.",
+	path: "/settings",
+});
 
 export const dynamic = "force-dynamic";
 

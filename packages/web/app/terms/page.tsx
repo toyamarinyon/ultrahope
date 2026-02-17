@@ -5,8 +5,24 @@ import Link from "next/link";
 import Markdown from "react-markdown";
 
 export const metadata: Metadata = {
-	title: "Terms of Use | Ultrahope",
-	description: "Ultrahope Terms of Use",
+	title: "Terms of Use",
+	description:
+		"Review the Ultrahope terms governing CLI, API, billing, and service usage.",
+	alternates: {
+		canonical: "/terms",
+	},
+	openGraph: {
+		title: "Ultrahope Terms of Use",
+		description:
+			"Review the Ultrahope terms governing CLI, API, billing, and service usage.",
+		url: "/terms",
+	},
+	twitter: {
+		card: "summary",
+		title: "Ultrahope Terms of Use",
+		description:
+			"Review the Ultrahope terms governing CLI, API, billing, and service usage.",
+	},
 };
 
 export default function TermsPage() {

@@ -5,8 +5,24 @@ import Link from "next/link";
 import Markdown from "react-markdown";
 
 export const metadata: Metadata = {
-	title: "Privacy Policy | Ultrahope",
-	description: "Ultrahope Privacy Policy",
+	title: "Privacy Policy",
+	description:
+		"Read how Ultrahope collects, uses, and protects account and usage data.",
+	alternates: {
+		canonical: "/privacy",
+	},
+	openGraph: {
+		title: "Ultrahope Privacy Policy",
+		description:
+			"Read how Ultrahope collects, uses, and protects account and usage data.",
+		url: "/privacy",
+	},
+	twitter: {
+		card: "summary",
+		title: "Ultrahope Privacy Policy",
+		description:
+			"Read how Ultrahope collects, uses, and protects account and usage data.",
+	},
 };
 
 export default function PrivacyPage() {

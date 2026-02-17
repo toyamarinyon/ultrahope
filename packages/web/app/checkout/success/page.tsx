@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata({
+	title: "Checkout Success",
+	description: "Post-checkout confirmation page for Ultrahope subscriptions.",
+	path: "/checkout/success",
+});
 
 export default async function CheckoutSuccessPage({
 	searchParams,

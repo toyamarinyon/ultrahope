@@ -1,14 +1,25 @@
 import type { MetadataRoute } from "next";
+import { toAbsoluteCanonical } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
 	return {
 		rules: [
 			{
 				userAgent: "*",
-				disallow: ["/login", "/forgot-password", "/reset-password", "/api"],
-				allow: ["/", "/pricing", "/privacy", "/terms", "/home"],
+				disallow: [
+					"/api",
+					"/login",
+					"/signup",
+					"/forgot-password",
+					"/reset-password",
+					"/home",
+					"/settings",
+					"/device",
+					"/checkout",
+				],
+				allow: ["/", "/pricing", "/privacy", "/terms"],
 			},
 		],
-		sitemap: "https://ultrahope.dev/sitemap.xml",
+		sitemap: toAbsoluteCanonical("/sitemap.xml"),
 	};
 }

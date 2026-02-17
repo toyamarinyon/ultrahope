@@ -1,13 +1,15 @@
-function resolveBaseUrl(): string {
-	if (process.env.NEXT_PUBLIC_VERCEL_ENV === "production") {
-		return `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`;
+type BaseUrlEnv = Record<string, string | undefined>;
+
+export function resolveBaseUrl(env: BaseUrlEnv = process.env): string {
+	if (env.NEXT_PUBLIC_VERCEL_ENV === "production") {
+		return `https://${env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`;
 	}
 
-	if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-		return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+	if (env.NEXT_PUBLIC_VERCEL_URL) {
+		return `https://${env.NEXT_PUBLIC_VERCEL_URL}`;
 	}
 
-	const port = process.env.PORT ?? process.env.NEXT_PUBLIC_PORT ?? "3100";
+	const port = env.PORT ?? env.NEXT_PUBLIC_PORT ?? "3100";
 	return `http://localhost:${port}`;
 }
 

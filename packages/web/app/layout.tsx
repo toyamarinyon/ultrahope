@@ -1,9 +1,34 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import {
+	DEFAULT_DESCRIPTION,
+	DEFAULT_SITE_NAME,
+	resolveCanonicalOrigin,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
-	title: "Ultrahope",
-	description: "LLM-powered development workflow assistant",
+	metadataBase: new URL(resolveCanonicalOrigin()),
+	title: {
+		default: DEFAULT_SITE_NAME,
+		template: `%s | ${DEFAULT_SITE_NAME}`,
+	},
+	description: DEFAULT_DESCRIPTION,
+	alternates: {
+		canonical: "/",
+	},
+	openGraph: {
+		title: DEFAULT_SITE_NAME,
+		description: DEFAULT_DESCRIPTION,
+		url: "/",
+		siteName: DEFAULT_SITE_NAME,
+		locale: "en_US",
+		type: "website",
+	},
+	twitter: {
+		card: "summary",
+		title: DEFAULT_SITE_NAME,
+		description: DEFAULT_DESCRIPTION,
+	},
 };
 
 export default function RootLayout({
