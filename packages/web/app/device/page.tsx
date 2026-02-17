@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { device, signIn, signUp, useSession } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+} from "@/lib/auth-error";
 
 type Status =
 	| "idle"
@@ -39,7 +43,7 @@ export default function DevicePage() {
 		setAuthError(null);
 
 		const normalizedEmail = authEmail.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
 			setAuthError("Please enter a valid email address.");
 			return;
 		}
@@ -65,7 +69,12 @@ export default function DevicePage() {
 					callbackURL: "/device",
 				});
 				if (result.error) {
-					setAuthError(result.error.message || "Failed to sign in.");
+					const mapped = mapAuthClientError(result.error, "device-signin");
+					console.error(
+						"[auth][device-signin] email sign-in failed",
+						mapped.internal,
+					);
+					setAuthError(mapped.userMessage);
 					return;
 				}
 			} else {
@@ -76,12 +85,20 @@ export default function DevicePage() {
 					callbackURL: "/device",
 				});
 				if (result.error) {
-					setAuthError(result.error.message || "Failed to create account.");
+					const mapped = mapAuthClientError(result.error, "device-signup");
+					console.error(
+						"[auth][device-signup] email sign-up failed",
+						mapped.internal,
+					);
+					setAuthError(mapped.userMessage);
 					return;
 				}
 			}
-		} catch {
-			setAuthError("Authentication failed. Please try again.");
+		} catch (error) {
+			const flow = authMode === "signin" ? "device-signin" : "device-signup";
+			const mapped = mapAuthClientError(error, flow);
+			console.error(`[auth][${flow}] email auth threw`, mapped.internal);
+			setAuthError(mapped.userMessage);
 		} finally {
 			setIsAuthSubmitting(false);
 		}

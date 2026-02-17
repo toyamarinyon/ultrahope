@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { requestPasswordReset } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+	shouldTreatForgotPasswordRequestAsSuccess,
+} from "@/lib/auth-error";
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState("");
@@ -15,20 +20,37 @@ export default function ForgotPasswordPage() {
 		setError(null);
 
 		const normalizedEmail = email.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
 			setError("Please enter a valid email address.");
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
-			await requestPasswordReset({
+			const result = await requestPasswordReset({
 				email: normalizedEmail,
 				redirectTo: "/reset-password",
 			});
+			if (!shouldTreatForgotPasswordRequestAsSuccess(result)) {
+				const errorResult = result as { error?: unknown };
+				const mapped = mapAuthClientError(errorResult.error, "forgot-password");
+				console.error(
+					"[auth][forgot-password] request reset failed",
+					mapped.internal,
+				);
+				setError(mapped.userMessage);
+				return;
+			}
+			setSubmitted(true);
+		} catch (error) {
+			const mapped = mapAuthClientError(error, "forgot-password");
+			console.error(
+				"[auth][forgot-password] request reset threw",
+				mapped.internal,
+			);
+			setError(mapped.userMessage);
 		} finally {
 			setIsSubmitting(false);
-			setSubmitted(true);
 		}
 	};
 

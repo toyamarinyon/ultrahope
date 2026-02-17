@@ -8,6 +8,7 @@
 		"typecheck": {
 			"dependsOn": ["^build"]
 		},
+		"test": {},
 		"dev": {
 			"cache": false,
 			"persistent": true
@@ -15,7 +16,7 @@
 		"//#check:write": {},
 		"//#knip": {},
 		"ok": {
-			"dependsOn": ["//#check:write", "typecheck", "//#knip"],
+			"dependsOn": ["//#check:write", "typecheck", "test", "//#knip"],
 			"cache": false
 		}
 	}

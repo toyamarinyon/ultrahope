@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { signIn, signUp, useSession } from "@/lib/auth-client";
+import {
+	isLikelyInvalidEmailDomain,
+	mapAuthClientError,
+} from "@/lib/auth-error";
 
 export default function SignupPage() {
 	const { data: session, isPending } = useSession();
@@ -38,7 +42,7 @@ export default function SignupPage() {
 		}
 
 		const normalizedEmail = email.trim().toLowerCase();
-		if (!normalizedEmail || !normalizedEmail.includes("@")) {
+		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
 			setError("Please enter a valid email address.");
 			return;
 		}
@@ -62,13 +66,17 @@ export default function SignupPage() {
 				callbackURL: "/",
 			});
 			if (result.error) {
-				setError(result.error.message || "Failed to create account.");
+				const mapped = mapAuthClientError(result.error, "signup");
+				console.error("[auth][signup] email sign-up failed", mapped.internal);
+				setError(mapped.userMessage);
 				return;
 			}
 
 			router.push("/");
-		} catch {
-			setError("Authentication failed. Please try again.");
+		} catch (error) {
+			const mapped = mapAuthClientError(error, "signup");
+			console.error("[auth][signup] email sign-up threw", mapped.internal);
+			setError(mapped.userMessage);
 		} finally {
 			setIsSubmitting(false);
 		}

@@ -3,7 +3,7 @@ node = "latest"
 pnpm = "latest"
 
 [tasks.ok]
-description = "Run format, typecheck, and knip checks"
+description = "Run format, typecheck, tests, and knip checks"
 run = "bun run ok"
 
 [tasks."web:dev"]
