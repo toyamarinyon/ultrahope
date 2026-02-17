@@ -7,7 +7,8 @@
 			"ignore": ["lib/api-client.generated.ts"]
 		},
 		"packages/web": {
-			"ignore": ["src/db/schema.ts", "scripts/**"]
+			"ignore": ["src/db/schema.ts", "scripts/**"],
+			"entry": ["**/*.test.ts"]
 		}
 	}
 }
