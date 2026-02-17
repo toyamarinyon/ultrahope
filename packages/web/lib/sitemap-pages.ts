@@ -21,16 +21,6 @@ export const canonicalPublicPages = [
 		priority: 0.9,
 	},
 	{
-		path: "/login",
-		changeFrequency: "monthly",
-		priority: 0.8,
-	},
-	{
-		path: "/forgot-password",
-		changeFrequency: "monthly",
-		priority: 0.6,
-	},
-	{
 		path: "/terms",
 		changeFrequency: "yearly",
 		priority: 0.3,

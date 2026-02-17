@@ -1,8 +1,30 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getAuth, getPolarClient } from "@/lib/auth";
 import { CheckoutButton } from "./checkout-button";
 import { ResetTime } from "./reset-time";
+
+export const metadata: Metadata = {
+	title: "Pricing",
+	description:
+		"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+	alternates: {
+		canonical: "/pricing",
+	},
+	openGraph: {
+		title: "Ultrahope Pricing",
+		description:
+			"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+		url: "/pricing",
+	},
+	twitter: {
+		card: "summary",
+		title: "Ultrahope Pricing",
+		description:
+			"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+	},
+};
 
 export const dynamic = "force-dynamic";
 
