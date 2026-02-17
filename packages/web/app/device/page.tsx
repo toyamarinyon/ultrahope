@@ -44,19 +44,19 @@ export default function DevicePage() {
 
 		const normalizedEmail = authEmail.trim().toLowerCase();
 		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
-			setAuthError("有効なメールアドレスを入力してください。");
+			setAuthError("Please enter a valid email address.");
 			return;
 		}
 		if (!authPassword) {
-			setAuthError("パスワードを入力してください。");
+			setAuthError("Please enter your password.");
 			return;
 		}
 		if (authMode === "signup" && authPassword.length < 8) {
-			setAuthError("パスワードは8文字以上で入力してください。");
+			setAuthError("Password must be at least 8 characters.");
 			return;
 		}
 		if (authMode === "signup" && !authName.trim()) {
-			setAuthError("名前を入力してください。");
+			setAuthError("Please enter your name.");
 			return;
 		}
 

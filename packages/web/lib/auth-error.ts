@@ -11,10 +11,9 @@ type AuthErrorMappingResult = {
 	internal?: unknown;
 };
 
-const GENERIC_AUTH_ERROR =
-	"認証に失敗しました。時間をおいてもう一度お試しください。";
+const GENERIC_AUTH_ERROR = "Authentication failed. Please try again later.";
 const URL_FAILURE_ERROR =
-	"リクエストの処理に失敗しました。時間をおいて再試行してください。";
+	"Failed to process the request. Please try again later.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -100,16 +99,16 @@ function mapByKnownPatterns(
 	}
 
 	if (combined.includes("INVALID_EMAIL_OR_PASSWORD")) {
-		return "メールアドレスまたはパスワードが正しくありません。";
+		return "Invalid email or password.";
 	}
 	if (combined.includes("INVALID EMAIL OR PASSWORD")) {
-		return "メールアドレスまたはパスワードが正しくありません。";
+		return "Invalid email or password.";
 	}
 
 	if (
 		containsAny(combined, ["INVALID_EMAIL", "EMAIL_INVALID", "INVALID EMAIL"])
 	) {
-		return "有効なメールアドレスを入力してください。";
+		return "Please enter a valid email address.";
 	}
 
 	if (
@@ -120,15 +119,15 @@ function mapByKnownPatterns(
 		]) &&
 		(flow === "signup" || flow === "device-signup")
 	) {
-		return "このメールアドレスは既に登録されています。";
+		return "This email address is already registered.";
 	}
 
 	if (containsAny(combined, ["PASSWORD_TOO_SHORT", "PASSWORD TOO SHORT"])) {
-		return "パスワードは8文字以上で入力してください。";
+		return "Password must be at least 8 characters.";
 	}
 
 	if (containsAny(combined, ["INVALID_TOKEN", "INVALID TOKEN"])) {
-		return "リンクが無効または期限切れです。";
+		return "The link is invalid or has expired.";
 	}
 
 	return null;

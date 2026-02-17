@@ -37,23 +37,23 @@ export default function SignupPage() {
 
 		const trimmedName = name.trim();
 		if (!trimmedName) {
-			setError("名前を入力してください。");
+			setError("Please enter your name.");
 			return;
 		}
 
 		const normalizedEmail = email.trim().toLowerCase();
 		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
-			setError("有効なメールアドレスを入力してください。");
+			setError("Please enter a valid email address.");
 			return;
 		}
 
 		if (!password) {
-			setError("パスワードを入力してください。");
+			setError("Please enter your password.");
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("パスワードは8文字以上で入力してください。");
+			setError("Password must be at least 8 characters.");
 			return;
 		}
 

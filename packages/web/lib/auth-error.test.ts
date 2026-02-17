@@ -29,9 +29,7 @@ describe("mapAuthClientError", () => {
 			{ message: "INVALID_EMAIL_OR_PASSWORD" },
 			"login",
 		);
-		expect(result.userMessage).toBe(
-			"メールアドレスまたはパスワードが正しくありません。",
-		);
+		expect(result.userMessage).toBe("Invalid email or password.");
 	});
 
 	it("maps plain invalid email/password phrase to user message", () => {
@@ -39,9 +37,7 @@ describe("mapAuthClientError", () => {
 			{ message: "Invalid email or password" },
 			"login",
 		);
-		expect(result.userMessage).toBe(
-			"メールアドレスまたはパスワードが正しくありません。",
-		);
+		expect(result.userMessage).toBe("Invalid email or password.");
 	});
 
 	it("maps URL_INVALID to retry message", () => {
@@ -50,7 +46,7 @@ describe("mapAuthClientError", () => {
 			"forgot-password",
 		);
 		expect(result.userMessage).toBe(
-			"リクエストの処理に失敗しました。時間をおいて再試行してください。",
+			"Failed to process the request. Please try again later.",
 		);
 	});
 
@@ -63,7 +59,7 @@ describe("mapAuthClientError", () => {
 			"signup",
 		);
 		expect(result.userMessage).toBe(
-			"認証に失敗しました。時間をおいてもう一度お試しください。",
+			"Authentication failed. Please try again later.",
 		);
 	});
 
@@ -73,7 +69,7 @@ describe("mapAuthClientError", () => {
 			"signup",
 		);
 		expect(result.userMessage).toBe(
-			"認証に失敗しました。時間をおいてもう一度お試しください。",
+			"Authentication failed. Please try again later.",
 		);
 	});
 
@@ -82,7 +78,7 @@ describe("mapAuthClientError", () => {
 			{ message: "INVALID_TOKEN" },
 			"reset-password",
 		);
-		expect(result.userMessage).toBe("リンクが無効または期限切れです。");
+		expect(result.userMessage).toBe("The link is invalid or has expired.");
 	});
 });
 

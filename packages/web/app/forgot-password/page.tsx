@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
 
 		const normalizedEmail = email.trim().toLowerCase();
 		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
-			setError("有効なメールアドレスを入力してください。");
+			setError("Please enter a valid email address.");
 			return;
 		}
 

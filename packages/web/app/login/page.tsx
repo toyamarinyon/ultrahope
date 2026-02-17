@@ -36,12 +36,12 @@ export default function LoginPage() {
 
 		const normalizedEmail = email.trim().toLowerCase();
 		if (isLikelyInvalidEmailDomain(normalizedEmail)) {
-			setError("有効なメールアドレスを入力してください。");
+			setError("Please enter a valid email address.");
 			return;
 		}
 
 		if (!password) {
-			setError("パスワードを入力してください。");
+			setError("Please enter your password.");
 			return;
 		}
 
