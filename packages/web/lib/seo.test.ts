@@ -3,8 +3,9 @@ import { metadata as homepageMetadata } from "@/app/page";
 import { metadata as pricingMetadata } from "@/app/pricing/page";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { canonicalPublicPages } from "@/lib/sitemap-pages";
 import { resolveCanonicalOrigin, toAbsoluteCanonical } from "@/lib/seo";
+import { canonicalPublicPages } from "@/lib/sitemap-pages";
+
 const originalEnv = { ...process.env };
 
 afterEach(() => {
@@ -37,7 +38,7 @@ describe("resolveCanonicalOrigin", () => {
 	});
 
 	it("falls back to localhost when vercel env is not set", () => {
-		expect(resolveCanonicalOrigin({})).toBe("http://localhost:3100");
+		expect(resolveCanonicalOrigin({})).toBe("http://localhost:3000");
 	});
 });
 

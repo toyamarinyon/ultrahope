@@ -9,7 +9,7 @@ export function resolveBaseUrl(env: BaseUrlEnv = process.env): string {
 		return `https://${env.NEXT_PUBLIC_VERCEL_URL}`;
 	}
 
-	const port = env.PORT ?? env.NEXT_PUBLIC_PORT ?? "3100";
+	const port = env.PORT ?? env.NEXT_PUBLIC_PORT ?? "3000";
 	return `http://localhost:${port}`;
 }
 
