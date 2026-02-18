@@ -1,7 +1,5 @@
 import { streamText } from "ai";
 import { preprocessDiff } from "./diff";
-import { buildResponse, resolveModel, verboseLog } from "./llm-utils";
-import type { LanguageModel, LLMResponse } from "./types";
 
 const SYSTEM_PROMPT = `You are an expert software engineer that writes high-quality git commit messages.
 Given a unified diff, produce a single-line commit message.
@@ -29,9 +27,10 @@ let grokReasoningErrorWarned = false;
 // schema hasn't been updated yet, so the error still occurs through the gateway.
 function isKnownGrokReasoningError(
 	error: unknown,
-	model: LanguageModel,
+	model: CommitMessageModel,
 ): boolean {
-	if (!String(model).includes("grok")) return false;
+	const modelId = typeof model === "string" ? model : "mock";
+	if (!modelId.includes("grok")) return false;
 	if (
 		typeof error !== "object" ||
 		error === null ||
@@ -48,31 +47,32 @@ function isKnownGrokReasoningError(
 	);
 }
 
-export type GenerateCommitMessageOptions = {
-	model: LanguageModel;
+type CommitMessageModel = Parameters<typeof streamText>[0]["model"];
+
+export type CommitMessageRuntimeOptions = {
+	model: CommitMessageModel;
 	abortSignal?: AbortSignal;
 };
 
-export type GenerateCommitMessageStreamOptions = GenerateCommitMessageOptions;
+export type CommitMessageRuntimeStreamOptions = CommitMessageRuntimeOptions;
+
+export type CommitMessageRuntimeResult = {
+	text: string;
+	usage: {
+		inputTokens: number;
+		outputTokens: number;
+	};
+	providerMetadata: unknown;
+};
 
 export function generateCommitMessageStream(
 	diff: string,
-	options: GenerateCommitMessageStreamOptions,
+	options: CommitMessageRuntimeStreamOptions,
 ) {
 	const preprocessed = preprocessDiff(diff);
 
-	if (preprocessed.isStructured) {
-		verboseLog("Diff preprocessed with classification");
-		verboseLog(
-			"Primary files:",
-			preprocessed.classification?.primary.map((f) => f.path),
-		);
-	}
-
-	const resolved = resolveModel(options.model);
-
 	return streamText({
-		model: resolved,
+		model: options.model,
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
@@ -101,8 +101,8 @@ function normalizeCommitMessage(text: string): string {
 
 export async function generateCommitMessage(
 	diff: string,
-	options: GenerateCommitMessageOptions,
-): Promise<LLMResponse> {
+	options: CommitMessageRuntimeOptions,
+): Promise<CommitMessageRuntimeResult> {
 	const stream = generateCommitMessageStream(diff, options);
 	const outputText = await stream.text;
 	const commitMessage = normalizeCommitMessage(outputText);
@@ -116,15 +116,12 @@ export async function generateCommitMessage(
 		stream.providerMetadata,
 	]);
 
-	return buildResponse(
-		{
-			text: commitMessage,
-			usage: {
-				inputTokens: usage.inputTokens,
-				outputTokens: usage.outputTokens,
-			},
-			providerMetadata,
+	return {
+		text: commitMessage,
+		usage: {
+			inputTokens: usage.inputTokens ?? 0,
+			outputTokens: usage.outputTokens ?? 0,
 		},
-		options.model,
-	);
+		providerMetadata,
+	};
 }

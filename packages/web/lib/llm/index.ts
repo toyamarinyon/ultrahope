@@ -5,7 +5,7 @@ export { DailyLimitExceededError } from "@/lib/daily-limit";
 export {
 	generateCommitMessage,
 	generateCommitMessageStream,
-} from "./commit-message";
+} from "./commit-message.server";
 export { generatePrIntent } from "./pr-intent";
 export { generatePrTitleBody } from "./pr-title-body";
 export type { LLMResponse } from "./types";

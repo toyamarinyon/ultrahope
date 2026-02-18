@@ -1,172 +1,119 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { generateCommitMessage } from "@/lib/llm/commit-message";
+import {
+	type CandidateWithModel,
+	type CreateCandidates,
+	createTerminalSelectorController,
+	renderSelectorLines,
+	type SelectorResult,
+	type SelectorState,
+	type TerminalSelectorController,
+} from "@/lib/terminal-selector";
+import { createCandidatesFromEffectTasks } from "@/lib/terminal-selector-effect";
 
-type DemoTab = {
+const DEMO_GENERATION_MODE: "mock" = "mock";
+const DEMO_USE_MOCK = DEMO_GENERATION_MODE === "mock";
+
+interface DemoTab {
 	id: string;
 	label: string;
 	command: string;
+	diff: string;
+	fallbacks: string[];
 	foundLine: string;
 	runLine: string;
-	options: string[];
 	applyLine: string;
-};
+	models: string[];
+}
 
 const DEMO_TABS: DemoTab[] = [
 	{
 		id: "git-commit",
 		label: "git commit",
 		command: "git ultrahope commit",
-		foundLine: "✔ Found staged changes",
-		runLine: "Generating commit messages",
-		options: [
+		diff: `diff --git a/packages/cli/commands/commit.ts b/packages/cli/commands/commit.ts
+index 9c9e8f7..6d2f8a1 100644
+--- a/packages/cli/commands/commit.ts
++++ b/packages/cli/commands/commit.ts
+@@ -24,7 +24,7 @@
+   const args = parseArgs(process.argv);
+ -  await runCommitMessage("mistral/ministral-3b");
+ +  await runCommitMessage(["mistral/ministral-3b", "xai/grok-code-fast-1"]);
+ 
+ export async function runCommitMessage(models: string[]) {
+ `,
+		fallbacks: [
 			"feat(cli): improve commit message generation UX",
 			"refactor(cli): simplify commit message candidate flow",
 			"fix(cli): handle empty staged diff safely",
 		],
+		foundLine: "✔ Found staged changes",
+		runLine: "Generating commit messages",
 		applyLine: "✔ Running git commit",
+		models: ["mock-0", "mock-1", "mock-2"],
 	},
 	{
 		id: "jj-describe",
 		label: "jj describe",
 		command: "ultrahope jj describe",
-		foundLine: "✔ Found current revision diff",
-		runLine: "Generating description candidates",
-		options: [
+		diff: `diff --git a/packages/cli/commands/jj.ts b/packages/cli/commands/jj.ts
+index 4f8d4e1..7b3c8a2 100644
+--- a/packages/cli/commands/jj.ts
++++ b/packages/cli/commands/jj.ts
+@@ -12,7 +12,8 @@
+ export async function runJjDescribe(input: string) {
+ -  return generateCommitMessages(input, { command: "jj describe" });
+ +  const output = await formatDescribeInput(input);
+ +  return generateCommitMessages(output, { command: "jj describe" });
+ }`,
+		fallbacks: [
 			"feat(jj): improve describe prompt quality for revisions",
 			"refactor(jj): align describe output with commit style",
 			"fix(jj): preserve existing description when canceled",
 		],
+		foundLine: "✔ Found current revision diff",
+		runLine: "Generating description candidates",
 		applyLine: "✔ Running jj describe -r @",
+		models: ["mock-0", "mock-1", "mock-2"],
 	},
 	{
 		id: "unix-style",
 		label: "unix style",
 		command:
 			"git diff --staged | ultrahope translate --target vcs-commit-message",
-		foundLine: "✔ Reading input from stdin",
-		runLine: "Generating commit message translations",
-		options: [
+		diff: `diff --git a/packages/web/components/terminal-tabs-demo.tsx b/packages/web/components/terminal-tabs-demo.tsx
+index a1b2c3d..d4e5f6g 100644
+--- a/packages/web/components/terminal-tabs-demo.tsx
++++ b/packages/web/components/terminal-tabs-demo.tsx
+@@ -42,7 +42,8 @@
+ export default function TerminalDemo() {
+ -  const text = "feat: initial implementation";
+ +  const text = "feat: add commit message translation flow";
+ +  return text;
+ }`,
+		fallbacks: [
 			"feat(api): normalize commit message translation output",
 			"refactor(core): improve stdin to message conversion",
 			"fix(cli): support multiline diff translation input",
 		],
+		foundLine: "✔ Reading input from stdin",
+		runLine: "Generating commit message translations",
 		applyLine: "✔ Copying selected message to output",
+		models: ["mock-0", "mock-1", "mock-2"],
 	},
 ];
 
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
-type Slot = { status: "pending" } | { status: "ready"; content: string };
-type Phase =
+type DemoPhase =
 	| "initial"
 	| "typing"
 	| "waitingEnter"
-	| "analyzing"
-	| "generating"
 	| "selector"
 	| "selected";
 
-type DemoState = {
-	phase: Phase;
-	typedText: string;
-	spinnerFrame: number;
-	generatedCount: number;
-	selectedIndex: number;
-	slots: Slot[];
-};
-
-type DemoAction =
-	| { type: "RESET_FOR_TAB" }
-	| { type: "START_TYPING" }
-	| { type: "TICK_TYPE"; nextText: string }
-	| { type: "WAIT_FOR_ENTER" }
-	| { type: "START_ANALYZING" }
-	| { type: "START_GENERATING"; slotCount: number }
-	| { type: "TICK_SPINNER" }
-	| { type: "SLOT_READY"; index: number; content: string }
-	| { type: "SHOW_SELECTOR" }
-	| { type: "MOVE_SELECTION"; direction: -1 | 1; maxIndex: number }
-	| { type: "SET_SELECTION"; index: number }
-	| { type: "SELECT"; index?: number }
-	| { type: "REROLL"; slotCount: number };
-
-function createPendingSlots(count: number): Slot[] {
-	return Array.from({ length: count }, () => ({ status: "pending" as const }));
-}
-
-function createInitialDemoState(): DemoState {
-	return {
-		phase: "initial",
-		typedText: "",
-		spinnerFrame: 0,
-		generatedCount: 0,
-		selectedIndex: 0,
-		slots: [],
-	};
-}
-
-function demoReducer(state: DemoState, action: DemoAction): DemoState {
-	switch (action.type) {
-		case "RESET_FOR_TAB":
-			return createInitialDemoState();
-		case "START_TYPING":
-			return { ...state, phase: "typing" };
-		case "TICK_TYPE":
-			return { ...state, typedText: action.nextText };
-		case "WAIT_FOR_ENTER":
-			return { ...state, phase: "waitingEnter" };
-		case "START_ANALYZING":
-			return { ...state, phase: "analyzing" };
-		case "START_GENERATING":
-			return {
-				...state,
-				phase: "generating",
-				generatedCount: 0,
-				selectedIndex: 0,
-				slots: createPendingSlots(action.slotCount),
-			};
-		case "TICK_SPINNER":
-			return {
-				...state,
-				spinnerFrame: (state.spinnerFrame + 1) % SPINNER_FRAMES.length,
-			};
-		case "SLOT_READY": {
-			const nextSlots = [...state.slots];
-			nextSlots[action.index] = { status: "ready", content: action.content };
-			return {
-				...state,
-				slots: nextSlots,
-				generatedCount: Math.max(state.generatedCount, action.index + 1),
-			};
-		}
-		case "SHOW_SELECTOR":
-			return { ...state, phase: "selector" };
-		case "MOVE_SELECTION":
-			return {
-				...state,
-				selectedIndex: Math.max(
-					0,
-					Math.min(action.maxIndex, state.selectedIndex + action.direction),
-				),
-			};
-		case "SET_SELECTION":
-			return { ...state, selectedIndex: action.index };
-		case "SELECT":
-			return {
-				...state,
-				phase: "selected",
-				selectedIndex: action.index ?? state.selectedIndex,
-			};
-		case "REROLL":
-			return {
-				...state,
-				phase: "generating",
-				generatedCount: 0,
-				selectedIndex: 0,
-				slots: createPendingSlots(action.slotCount),
-			};
-	}
+function isMockModel(model: string): boolean {
+	return model === "mock" || model.startsWith("mock");
 }
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
@@ -178,146 +125,271 @@ function isInteractiveKeyTarget(target: EventTarget | null): boolean {
 	);
 }
 
+function createCandidatesFromDirectCore(options: {
+	diff: string;
+	models: string[];
+	fallbacks: string[];
+}): CreateCandidates {
+	return createCandidatesFromEffectTasks({
+		tasks: options.models.map((model, index) => ({
+			slotId: `slot-${index}`,
+			slotIndex: index,
+			model,
+			run: (signal) =>
+				activateCandidateTask(
+					model,
+					index,
+					{
+						diff: options.diff,
+						fallback: options.fallbacks[index],
+					},
+					signal,
+				),
+		})),
+	});
+}
+
+async function activateCandidateTask(
+	model: string,
+	index: number,
+	opts: { diff: string; fallback?: string },
+	signal: AbortSignal,
+): Promise<CandidateWithModel> {
+	const slotId = `slot-${index}`;
+	try {
+		if (DEMO_USE_MOCK || isMockModel(model)) {
+			return makeMockCandidate({
+				slotId,
+				slotIndex: index,
+				model,
+				fallback: opts.fallback,
+				signal,
+			});
+		}
+
+		if (signal.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+		const result = await generateCommitMessage(opts.diff, {
+			model,
+			abortSignal: signal,
+		});
+		if (signal.aborted) {
+			throw new DOMException("Operation cancelled", "AbortError");
+		}
+		const fallback = opts.fallback ?? "feat: update commit message";
+		const content = result.text || fallback;
+		return {
+			slotId,
+			content,
+			slotIndex: index,
+			model,
+		};
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") {
+			throw error;
+		}
+		return {
+			slotId,
+			content:
+				opts.fallback ??
+				"feat: generate a concise commit message for staged changes",
+			slotIndex: index,
+			model,
+		};
+	}
+}
+
+async function makeMockCandidate({
+	slotId,
+	slotIndex,
+	model,
+	fallback,
+	signal,
+}: {
+	slotId: string;
+	slotIndex: number;
+	model: string;
+	fallback?: string;
+	signal: AbortSignal;
+}): Promise<CandidateWithModel> {
+	const fallbackText =
+		fallback ?? "feat: generate a concise commit message for staged changes";
+	const delayMs = 120 + (slotIndex % 3) * 120;
+
+	if (signal.aborted) {
+		throw new DOMException("Operation cancelled", "AbortError");
+	}
+
+	await new Promise<void>((resolve, reject) => {
+		const timer = setTimeout(resolve, delayMs + Math.floor(Math.random() * 80));
+		signal.addEventListener(
+			"abort",
+			() => {
+				clearTimeout(timer);
+				reject(new DOMException("Operation cancelled", "AbortError"));
+			},
+			{ once: true },
+		);
+	});
+
+	if (signal.aborted) {
+		throw new DOMException("Operation cancelled", "AbortError");
+	}
+
+	return {
+		slotId,
+		slotIndex,
+		model,
+		content: fallbackText,
+		cost: 0,
+		generationId: `${model}-${slotId}`,
+	};
+}
+
 export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
 		DEMO_TABS.find((tab) => tab.id === activeTab) ?? DEMO_TABS[0];
-	const [state, dispatch] = useReducer(
-		demoReducer,
-		undefined,
-		createInitialDemoState,
+	const [phase, setPhase] = useState<DemoPhase>("initial");
+	const [typedText, setTypedText] = useState("");
+	const [selectorState, setSelectorState] = useState<SelectorState | null>(
+		null,
+	);
+	const [selectedResult, setSelectedResult] = useState<SelectorResult | null>(
+		null,
+	);
+	const [selectorTick, setSelectorTick] = useState(0);
+	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
+
+	const destroySelector = useCallback(() => {
+		selectorControllerRef.current?.destroy();
+		selectorControllerRef.current = null;
+		setSelectorState(null);
+		setSelectedResult(null);
+	}, []);
+
+	const startSelector = useCallback(() => {
+		destroySelector();
+		const candidates = createCandidatesFromDirectCore({
+			diff: activeDemo.diff,
+			models: activeDemo.models,
+			fallbacks: activeDemo.fallbacks,
+		});
+
+		const controller = createTerminalSelectorController({
+			maxSlots: Math.max(1, activeDemo.fallbacks.length),
+			models: activeDemo.models,
+			createCandidates: candidates,
+			onState: setSelectorState,
+		});
+
+		selectorControllerRef.current = controller;
+		setSelectorTick(0);
+		setSelectedResult(null);
+		setPhase("selector");
+		controller.start();
+	}, [activeDemo, destroySelector]);
+
+	useEffect(() => {
+		if (activeTab) {
+			setPhase("initial");
+			setTypedText("");
+			destroySelector();
+		}
+	}, [activeTab, destroySelector]);
+
+	useEffect(() => {
+		return () => {
+			destroySelector();
+		};
+	}, [destroySelector]);
+
+	useEffect(() => {
+		if (phase !== "initial") return;
+		const timer = setTimeout(() => setPhase("typing"), 220);
+		return () => clearTimeout(timer);
+	}, [phase]);
+
+	useEffect(() => {
+		if (phase !== "typing") return;
+		if (typedText.length >= activeDemo.command.length) {
+			const timer = setTimeout(() => setPhase("waitingEnter"), 180);
+			return () => clearTimeout(timer);
+		}
+
+		const timer = setTimeout(() => {
+			setTypedText(activeDemo.command.slice(0, typedText.length + 1));
+		}, 18);
+		return () => clearTimeout(timer);
+	}, [phase, typedText, activeDemo.command]);
+
+	useEffect(() => {
+		if (!selectorState?.isGenerating) return;
+		const timer = setInterval(() => {
+			setSelectorTick((value) => value + 1);
+		}, 80);
+		return () => clearInterval(timer);
+	}, [selectorState?.isGenerating]);
+
+	const onResult = useCallback(
+		(result: SelectorResult) => {
+			if (result.action === "confirm") {
+				setSelectedResult(result);
+				setPhase("selected");
+				return;
+			}
+			if (result.action === "reroll") {
+				startSelector();
+				return;
+			}
+			if (result.action === "abort") {
+				setPhase("waitingEnter");
+			}
+		},
+		[startSelector],
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: activeDemo.id is intentionally used as a reset trigger when the active tab changes
-	useEffect(() => {
-		dispatch({ type: "RESET_FOR_TAB" });
-	}, [activeDemo.id]);
-
-	useEffect(() => {
-		if (state.phase !== "initial") return;
-		const timeout = setTimeout(() => dispatch({ type: "START_TYPING" }), 220);
-		return () => clearTimeout(timeout);
-	}, [state.phase]);
-
-	useEffect(() => {
-		if (state.phase !== "typing") return;
-		if (state.typedText.length >= activeDemo.command.length) {
-			const timeout = setTimeout(
-				() => dispatch({ type: "WAIT_FOR_ENTER" }),
-				180,
-			);
-			return () => clearTimeout(timeout);
-		}
-		const timeout = setTimeout(() => {
-			dispatch({
-				type: "TICK_TYPE",
-				nextText: activeDemo.command.slice(0, state.typedText.length + 1),
-			});
-		}, 18);
-		return () => clearTimeout(timeout);
-	}, [state.phase, state.typedText, activeDemo.command]);
-
-	useEffect(() => {
-		if (state.phase !== "analyzing") return;
-		const timeout = setTimeout(() => {
-			dispatch({
-				type: "START_GENERATING",
-				slotCount: activeDemo.options.length,
-			});
-		}, 320);
-		return () => clearTimeout(timeout);
-	}, [state.phase, activeDemo.options.length]);
-
-	useEffect(() => {
-		if (state.phase !== "generating") return;
-		const interval = setInterval(() => {
-			dispatch({ type: "TICK_SPINNER" });
-		}, 80);
-		return () => clearInterval(interval);
-	}, [state.phase]);
-
-	useEffect(() => {
-		if (state.phase !== "generating") return;
-		if (state.generatedCount >= activeDemo.options.length) {
-			const timeout = setTimeout(
-				() => dispatch({ type: "SHOW_SELECTOR" }),
-				120,
-			);
-			return () => clearTimeout(timeout);
-		}
-		const timeout = setTimeout(() => {
-			dispatch({
-				type: "SLOT_READY",
-				index: state.generatedCount,
-				content: activeDemo.options[state.generatedCount],
-			});
-		}, 180);
-		return () => clearTimeout(timeout);
-	}, [state.phase, state.generatedCount, activeDemo.options]);
-
-	const reroll = useCallback(() => {
-		dispatch({ type: "REROLL", slotCount: activeDemo.options.length });
-	}, [activeDemo.options.length]);
-
-	useEffect(() => {
-		if (
-			state.phase !== "waitingEnter" &&
-			state.phase !== "selector" &&
-			state.phase !== "selected"
-		)
-			return;
-
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (state.phase === "waitingEnter" && event.key === "Enter") {
-				if (isInteractiveKeyTarget(event.target)) {
-					return;
-				}
+	const onKeyDown = useCallback(
+		(event: KeyboardEvent) => {
+			if (
+				phase === "waitingEnter" &&
+				event.key === "Enter" &&
+				!isInteractiveKeyTarget(event.target)
+			) {
 				event.preventDefault();
-				dispatch({ type: "START_ANALYZING" });
+				startSelector();
 				return;
 			}
 
-			if (state.phase === "selector" || state.phase === "selected") {
-				if (event.key === "r") {
-					event.preventDefault();
-					reroll();
-					return;
-				}
-				if (state.phase === "selector") {
-					if (event.key === "ArrowUp" || event.key === "k") {
-						event.preventDefault();
-						dispatch({
-							type: "MOVE_SELECTION",
-							direction: -1,
-							maxIndex: activeDemo.options.length - 1,
-						});
-					} else if (event.key === "ArrowDown" || event.key === "j") {
-						event.preventDefault();
-						dispatch({
-							type: "MOVE_SELECTION",
-							direction: 1,
-							maxIndex: activeDemo.options.length - 1,
-						});
-					} else if (event.key === "Enter") {
-						event.preventDefault();
-						dispatch({ type: "SELECT" });
-					}
-				}
-			}
-		};
+			if (phase !== "selector" && phase !== "selected") return;
+			if (isInteractiveKeyTarget(event.target)) return;
 
+			const result = selectorControllerRef.current?.handleKey({
+				key: event.key,
+				ctrlKey: event.ctrlKey,
+			});
+			if (!result) return;
+			event.preventDefault();
+			onResult(result);
+		},
+		[phase, onResult, startSelector],
+	);
+
+	useEffect(() => {
 		window.addEventListener("keydown", onKeyDown);
-		return () => {
-			window.removeEventListener("keydown", onKeyDown);
-		};
-	}, [state.phase, activeDemo.options.length, reroll]);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [onKeyDown]);
 
-	const readyCount = state.slots.filter(
-		(slot) => slot.status === "ready",
-	).length;
-	const selectedSlotAtIndex = state.slots[state.selectedIndex];
-	const selectedSlot =
-		selectedSlotAtIndex?.status === "ready" ? selectedSlotAtIndex : null;
+	const renderedSelectorLines =
+		selectorState !== null
+			? renderSelectorLines(selectorState, selectorTick * 80, {
+					runningLabel: `${activeDemo.runLine}...`,
+					hasReadyHint:
+						"Select a candidate (↑↓ navigate, enter confirm, r reroll)",
+					noReadyHint: "q quit",
+				})
+			: [];
 	const panelId = "terminal-demo-panel";
 	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
 
@@ -378,90 +450,35 @@ export function TerminalTabsDemo() {
 				<div className="flex items-start gap-2">
 					<span className="text-foreground shrink-0">$</span>
 					<code className="text-foreground whitespace-pre-wrap break-all">
-						{state.typedText}
+						{typedText}
 					</code>
-					{(state.phase === "initial" ||
-						state.phase === "typing" ||
-						state.phase === "waitingEnter") && (
+					{(phase === "initial" ||
+						phase === "typing" ||
+						phase === "waitingEnter") && (
 						<span className="flex items-center gap-2 animate-pulse">
 							<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
-							<span
-								className={`text-foreground-muted transition-opacity duration-400 ${
-									state.phase === "waitingEnter" ? "opacity-100" : "opacity-0"
-								}`}
-							>
+							<span className="text-foreground-muted">
 								Press enter to review proposals ↵
 							</span>
 						</span>
 					)}
 				</div>
 
-				{(state.phase === "analyzing" ||
-					state.phase === "generating" ||
-					state.phase === "selector" ||
-					state.phase === "selected") && (
-					<p className="mt-3 text-green-400">{activeDemo.foundLine}</p>
-				)}
-
-				{state.phase === "generating" && (
-					<p className="mt-2 text-yellow-400">
-						{SPINNER_FRAMES[state.spinnerFrame]} {activeDemo.runLine}...{" "}
-						{readyCount}/{activeDemo.options.length}
-					</p>
-				)}
-
-				{(state.phase === "selector" || state.phase === "selected") && (
-					<p className="mt-2">
-						<span className="text-cyan-400">?</span>
-						<span className="ml-2">
-							Select a candidate (↑↓ navigate, enter confirm, r reroll)
-						</span>
-					</p>
-				)}
-
-				{(state.phase === "generating" ||
-					state.phase === "selector" ||
-					state.phase === "selected") && (
-					<div className="mt-3 space-y-2">
-						{state.slots.map((slot, index) => {
-							if (slot.status === "pending") {
-								return (
-									<div key={`pending-${String(index)}`} className="opacity-50">
-										○ Generating...
-									</div>
-								);
-							}
-
-							const isSelected = index === state.selectedIndex;
-							return (
-								<button
-									key={`ready-${slot.content}`}
-									type="button"
-									onMouseEnter={() =>
-										dispatch({ type: "SET_SELECTION", index })
-									}
-									onClick={() => {
-										if (state.phase === "selector") {
-											dispatch({ type: "SELECT", index });
-										}
-									}}
-									className={`block w-full text-left ${
-										isSelected ? "text-foreground" : "text-foreground-muted"
-									}`}
-								>
-									{isSelected ? "●" : "○"} {slot.content}
-								</button>
-							);
-						})}
+				{(phase === "selector" || phase === "selected") && selectorState && (
+					<div className="mt-2 text-sm">
+						<p className="text-green-400">{activeDemo.foundLine}</p>
+						<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
+							{renderedSelectorLines.join("\n")}
+						</pre>
 					</div>
 				)}
 
-				{state.phase === "selected" && (
+				{phase === "selected" && selectedResult?.selected && (
 					<div className="mt-4">
 						<p className="text-green-400">✔ Candidate selected</p>
 						<p className="text-green-400">{activeDemo.applyLine}</p>
 						<p className="mt-1 text-foreground-muted">
-							{selectedSlot?.content}
+							{selectedResult.selected}
 						</p>
 						<p className="mt-2 animate-pulse text-foreground-muted">
 							press r to reroll

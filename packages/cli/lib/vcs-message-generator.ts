@@ -1,3 +1,7 @@
+import type {
+	CandidateWithModel,
+	CreateCandidates,
+} from "../../shared/terminal-selector-contract";
 import {
 	type CommitMessageStreamEvent,
 	createApiClient,
@@ -7,7 +11,6 @@ import {
 } from "./api-client";
 import { getToken } from "./auth";
 import { log } from "./logger";
-import type { CandidateWithModel } from "./selector";
 
 export const DEFAULT_MODELS = [
 	// "mistral/ministral-3b",
@@ -34,6 +37,16 @@ const isInvalidCliSessionIdError = (error: unknown) =>
 
 const delay = (ms: number) =>
 	new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+export function createCandidatesFromApi(
+	options: Omit<GeneratorOptions, "signal">,
+): CreateCandidates {
+	return (signal) =>
+		generateCommitMessages({
+			...options,
+			signal,
+		});
+}
 
 const createAbortPromise = (signal?: AbortSignal) =>
 	signal

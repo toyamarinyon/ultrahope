@@ -12,37 +12,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
+import type {
+	CandidateWithModel as SharedCandidateWithModel,
+	QuotaInfo as SharedQuotaInfo,
+	SelectorResult as SharedSelectorResult,
+} from "../../shared/terminal-selector-contract";
 import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
 import { ui } from "./ui";
 
-export interface SelectorResult {
-	action: "confirm" | "abort" | "reroll";
-	selected?: string;
-	selectedIndex?: number;
-	selectedCandidate?: CandidateWithModel;
-	totalCost?: number;
-	quota?: QuotaInfo;
-	error?: unknown;
-}
-
-export interface QuotaInfo {
-	remaining: number;
-	limit: number;
-	resetsAt: string;
-}
-
-export interface CandidateWithModel {
-	content: string;
-	slotId: string;
-	model?: string;
-	cost?: number;
-	generationId?: string;
-	quota?: QuotaInfo;
-	isPartial?: boolean;
-	slotIndex?: number;
-}
+export type CandidateWithModel = SharedCandidateWithModel;
+export type QuotaInfo = SharedQuotaInfo;
+export type SelectorResult = SharedSelectorResult;
 
 type Slot =
 	| { status: "pending"; slotId: string; model?: string }
