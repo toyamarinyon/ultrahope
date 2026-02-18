@@ -20,7 +20,7 @@ export function resolveBaseUrl(env: BaseUrlEnv = process.env): string {
 			nextPublicVercelEnv: env.NEXT_PUBLIC_VERCEL_ENV,
 			nextPublicVercelProjectProductionUrl:
 				env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL,
-			port: env.PORT ?? env.NEXT_PUBLIC_PORT ?? "3000",
+			port: env.NEXT_PUBLIC_PORT ?? "3000",
 			result,
 		});
 		return result;
@@ -32,7 +32,7 @@ export function resolveBaseUrl(env: BaseUrlEnv = process.env): string {
 			source: "preview",
 			nextPublicVercelEnv: env.NEXT_PUBLIC_VERCEL_ENV,
 			nextPublicVercelUrl: env.NEXT_PUBLIC_VERCEL_URL,
-			port: env.PORT ?? env.NEXT_PUBLIC_PORT ?? "3000",
+			port: env.NEXT_PUBLIC_PORT ?? "3000",
 			result,
 		});
 		return result;
@@ -50,4 +50,10 @@ export function resolveBaseUrl(env: BaseUrlEnv = process.env): string {
 	return result;
 }
 
-export const baseUrl = resolveBaseUrl();
+export const baseUrl = resolveBaseUrl({
+	NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
+	NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL:
+		process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL,
+	NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
+	NEXT_PUBLIC_PORT: process.env.NEXT_PUBLIC_PORT,
+});
