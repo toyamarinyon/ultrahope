@@ -5,5 +5,5 @@
 Do not modify `src/lib/api-client.generated.ts` directly. To regenerate it, run:
 
 ```bash
-pnpm -C packages/cli generate:client
+bun --cwd packages/cli generate:client
 ```
