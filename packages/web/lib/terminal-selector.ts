@@ -1,6 +1,5 @@
 import type {
 	CandidateWithModel,
-	CreateCandidates,
 	QuotaInfo,
 	SelectorResult,
 	SelectorSlot,
@@ -220,7 +219,11 @@ function resolveSlotByCandidate(
 	slots: SelectorSlot[],
 	candidate: CandidateWithModel,
 ): number {
-	const bySlotId = slots.findIndex((slot) => slot.slotId === candidate.slotId);
+	const bySlotId = slots.findIndex((slot) => {
+		const slotId =
+			slot.status === "ready" ? slot.candidate.slotId : slot.slotId;
+		return slotId === candidate.slotId;
+	});
 	if (bySlotId >= 0) {
 		return bySlotId;
 	}
@@ -313,16 +316,21 @@ export function createTerminalSelectorController(
 
 			const current = draft.slots[targetIndex];
 			const isPending = current.status === "pending";
+			const currentSlotId =
+				current.status === "ready" ? current.candidate.slotId : current.slotId;
+			if (!currentSlotId) {
+				return;
+			}
 			if (hasContent(candidate.content)) {
 				draft.slots[targetIndex] = {
 					status: "ready",
 					candidate: {
 						...candidate,
-						slotId: current.slotId,
+						slotId: currentSlotId,
 					},
 				};
 			} else if (current.status === "ready") {
-				if (candidate.slotId !== current.candidate.slotId) {
+				if (candidate.slotId !== currentSlotId) {
 					return;
 				}
 				draft.slots[targetIndex] = {
@@ -330,7 +338,7 @@ export function createTerminalSelectorController(
 					candidate: {
 						...current.candidate,
 						...candidate,
-						slotId: current.slotId,
+						slotId: currentSlotId,
 					},
 				};
 			}
@@ -421,7 +429,7 @@ export function createTerminalSelectorController(
 		});
 	};
 
-	const abort = () => {
+	const abort = (): SelectorResult => {
 		abortGeneration();
 		state = {
 			slots: createInitialSlots(options.maxSlots, options.models),
@@ -437,7 +445,7 @@ export function createTerminalSelectorController(
 		};
 	};
 
-	const reroll = () => {
+	const reroll = (): SelectorResult | null => {
 		if (!hasReadySlot(state.slots)) {
 			return null;
 		}
@@ -445,7 +453,7 @@ export function createTerminalSelectorController(
 		return { action: "reroll" };
 	};
 
-	const confirm = () => {
+	const confirm = (): SelectorResult | null => {
 		const selectedCandidate = getSelectedCandidate(
 			state.slots,
 			state.selectedIndex,
@@ -491,7 +499,10 @@ export function createTerminalSelectorController(
 		});
 	};
 
-	const handleKey = (input: { key: string; ctrlKey?: boolean }) => {
+	const handleKey = (input: {
+		key: string;
+		ctrlKey?: boolean;
+	}): SelectorResult | null => {
 		const key = input.key;
 
 		if (

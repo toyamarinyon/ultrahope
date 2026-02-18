@@ -45,6 +45,7 @@ const runTaskWithEffect = (
 	const taskResult = Effect.runPromise(
 		Effect.tryPromise({
 			try: () => task.run(signal),
+			catch: (error) => error,
 		}),
 	);
 
