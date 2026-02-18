@@ -195,7 +195,7 @@ export function TerminalTabsDemo() {
 
 	useEffect(() => {
 		if (state.phase !== "initial") return;
-		const timeout = setTimeout(() => dispatch({ type: "START_TYPING" }), 500);
+		const timeout = setTimeout(() => dispatch({ type: "START_TYPING" }), 220);
 		return () => clearTimeout(timeout);
 	}, [state.phase]);
 
@@ -204,19 +204,16 @@ export function TerminalTabsDemo() {
 		if (state.typedText.length >= activeDemo.command.length) {
 			const timeout = setTimeout(
 				() => dispatch({ type: "WAIT_FOR_ENTER" }),
-				480,
+				180,
 			);
 			return () => clearTimeout(timeout);
 		}
-		const timeout = setTimeout(
-			() => {
-				dispatch({
-					type: "TICK_TYPE",
-					nextText: activeDemo.command.slice(0, state.typedText.length + 1),
-				});
-			},
-			28 + Math.random() * 24,
-		);
+		const timeout = setTimeout(() => {
+			dispatch({
+				type: "TICK_TYPE",
+				nextText: activeDemo.command.slice(0, state.typedText.length + 1),
+			});
+		}, 18);
 		return () => clearTimeout(timeout);
 	}, [state.phase, state.typedText, activeDemo.command]);
 
@@ -227,7 +224,7 @@ export function TerminalTabsDemo() {
 				type: "START_GENERATING",
 				slotCount: activeDemo.options.length,
 			});
-		}, 680);
+		}, 320);
 		return () => clearTimeout(timeout);
 	}, [state.phase, activeDemo.options.length]);
 
@@ -244,20 +241,17 @@ export function TerminalTabsDemo() {
 		if (state.generatedCount >= activeDemo.options.length) {
 			const timeout = setTimeout(
 				() => dispatch({ type: "SHOW_SELECTOR" }),
-				280,
+				120,
 			);
 			return () => clearTimeout(timeout);
 		}
-		const timeout = setTimeout(
-			() => {
-				dispatch({
-					type: "SLOT_READY",
-					index: state.generatedCount,
-					content: activeDemo.options[state.generatedCount],
-				});
-			},
-			420 + Math.random() * 350,
-		);
+		const timeout = setTimeout(() => {
+			dispatch({
+				type: "SLOT_READY",
+				index: state.generatedCount,
+				content: activeDemo.options[state.generatedCount],
+			});
+		}, 180);
 		return () => clearTimeout(timeout);
 	}, [state.phase, state.generatedCount, activeDemo.options]);
 
@@ -396,7 +390,7 @@ export function TerminalTabsDemo() {
 									state.phase === "waitingEnter" ? "opacity-100" : "opacity-0"
 								}`}
 							>
-								press enter to continue ↵
+								Press enter to review proposals ↵
 							</span>
 						</span>
 					)}

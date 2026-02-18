@@ -1,5 +1,5 @@
-import { headers } from "next/headers";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BillingSettingsControls } from "@/components/billing-settings-controls";

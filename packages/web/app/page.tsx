@@ -8,21 +8,21 @@ import { getAuth } from "@/lib/auth";
 export const metadata: Metadata = {
 	title: "Ultrahope",
 	description:
-		"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+		"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
 	alternates: {
 		canonical: "/",
 	},
 	openGraph: {
 		title: "Ultrahope",
 		description:
-			"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+			"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
 		url: "/",
 	},
 	twitter: {
 		card: "summary",
 		title: "Ultrahope",
 		description:
-			"Ultrahope helps you weave LLM assistance into a UNIX-friendly development workflow.",
+			"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
 	},
 };
 

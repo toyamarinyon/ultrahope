@@ -56,10 +56,10 @@ export function MarketingHome() {
 					{/* Left: Branding */}
 					<div className="flex flex-col justify-center">
 						<h1 className="text-3xl lg:text-5xl tracking-tighter mb-6 max-w-2xl">
-							The decision pipe for AI-native software development.
+							Fast, multi-candidate AI commit messages.
 						</h1>
 						<p className="text-lg lg:text-xl text-foreground-secondary leading-relaxed mb-10 max-w-xl">
-							One command in. Proposals out. Human decision stays in the loop.
+							AI proposes. You compare. You decide.
 						</p>
 
 						<div className="flex flex-wrap gap-4">
@@ -87,7 +87,7 @@ export function MarketingHome() {
 							</div>
 						</div>
 						<p className="mt-4 text-sm text-foreground-muted text-center">
-							Inference runs in the background. Decisions stay in your flow.
+							Try it. Press enter to review proposals.
 						</p>
 					</div>
 				</div>
@@ -98,29 +98,37 @@ export function MarketingHome() {
 				<h2 className="text-3xl font-bold tracking-tight mb-12">Features</h2>
 				<div className="grid md:grid-cols-3 gap-8">
 					<div>
-						<h3 className="text-lg font-semibold mb-2">Adoptable proposals</h3>
+						<h3 className="text-lg font-semibold mb-2">Fast by design</h3>
 						<p className="text-foreground-secondary">
-							Turn diffs into commit messages, PR title/body drafts, and intent
-							summaries.
-						</p>
-					</div>
-					<div>
-						<h3 className="text-lg font-semibold mb-2">Human decision, fast</h3>
-						<p className="text-foreground-secondary">
-							Compare candidates, reroll, edit, and confirm without leaving your
-							terminal.
+							Parallel models. Low-latency generation.
 						</p>
 					</div>
 					<div>
 						<h3 className="text-lg font-semibold mb-2">
-							UNIX + multi-agent ready
+							Compare, don't prompt
 						</h3>
 						<p className="text-foreground-secondary">
-							Works with pipes, Git, and Jujutsu so you can keep your existing
-							workflow.
+							Multiple candidates, instant reroll, and edit before confirm.
+						</p>
+					</div>
+					<div>
+						<h3 className="text-lg font-semibold mb-2">Terminal-native</h3>
+						<p className="text-foreground-secondary">
+							Git. Jujutsu. Pipes. No context switch.
 						</p>
 					</div>
 				</div>
+			</section>
+
+			{/* Why */}
+			<section className="py-24 border-t border-border-subtle">
+				<h2 className="text-3xl font-bold tracking-tight mb-6">
+					Why Ultrahope
+				</h2>
+				<p className="text-lg text-foreground-secondary max-w-3xl leading-relaxed">
+					I wanted fast AI commit messages I could compare in my terminal. So I
+					built this. I use it every day.
+				</p>
 			</section>
 
 			{/* Install */}

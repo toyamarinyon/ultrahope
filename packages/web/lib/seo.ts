@@ -5,7 +5,7 @@ type CanonicalEnv = Record<string, string | undefined>;
 
 export const DEFAULT_SITE_NAME = "Ultrahope";
 export const DEFAULT_DESCRIPTION =
-	"The decision pipe for AI-native software development. One command in. Proposals out. Human decision stays in the loop.";
+	"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.";
 
 export function resolveCanonicalOrigin(
 	env: CanonicalEnv = process.env,
