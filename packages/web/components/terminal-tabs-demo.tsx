@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import jjDescribeStreamCapture from "@/lib/demo/jj-describe-stream.capture.json";
 import {
 	type CandidateWithModel,
 	type CreateCandidates,
@@ -18,6 +19,15 @@ import {
 	type TerminalSelectorController,
 } from "@/lib/util/terminal-selector";
 import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
+import {
+	createCandidatesFromReplayRun,
+	extractReplayModels,
+	pickLatestReplayRun,
+} from "@/lib/util/terminal-selector-replay";
+import type {
+	TerminalStreamReplayCapture,
+	TerminalStreamReplayRun,
+} from "../../shared/terminal-stream-replay";
 
 interface DemoTab {
 	id: string;
@@ -29,7 +39,20 @@ interface DemoTab {
 	runLine: string;
 	applyLine: string;
 	models: string[];
+	replayRun?: TerminalStreamReplayRun | null;
 }
+
+const JJ_DESCRIBE_CAPTURE =
+	jjDescribeStreamCapture as TerminalStreamReplayCapture;
+// Refresh fixture with: ultrahope jj describe --capture-stream packages/web/lib/demo/jj-describe-stream.capture.json
+const JJ_DESCRIBE_REPLAY_RUN = pickLatestReplayRun(JJ_DESCRIBE_CAPTURE);
+const JJ_DESCRIBE_REPLAY_MODELS = JJ_DESCRIBE_REPLAY_RUN
+	? extractReplayModels(JJ_DESCRIBE_REPLAY_RUN)
+	: [];
+const JJ_DESCRIBE_MODELS =
+	JJ_DESCRIBE_REPLAY_MODELS.length > 0
+		? JJ_DESCRIBE_REPLAY_MODELS
+		: ["mock-0", "mock-1", "mock-2"];
 
 const DEMO_TABS: DemoTab[] = [
 	{
@@ -79,7 +102,8 @@ index 4f8d4e1..7b3c8a2 100644
 		foundLine: "✔ Found current revision diff",
 		runLine: "Generating description candidates",
 		applyLine: "✔ Running jj describe -r @",
-		models: ["mock-0", "mock-1", "mock-2"],
+		models: JJ_DESCRIBE_MODELS,
+		replayRun: JJ_DESCRIBE_REPLAY_RUN,
 	},
 	{
 		id: "unix-style",
@@ -303,6 +327,18 @@ async function makeMockCandidate({
 	};
 }
 
+function createCandidatesForDemo(tab: DemoTab): CreateCandidates {
+	if (tab.replayRun && tab.replayRun.events.length > 0) {
+		return createCandidatesFromReplayRun({ run: tab.replayRun });
+	}
+
+	return createCandidatesFromDirectCore({
+		diff: tab.diff,
+		models: tab.models,
+		fallbacks: tab.fallbacks,
+	});
+}
+
 export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
@@ -326,14 +362,10 @@ export function TerminalTabsDemo() {
 
 	const startSelector = useCallback(() => {
 		destroySelector();
-		const candidates = createCandidatesFromDirectCore({
-			diff: activeDemo.diff,
-			models: activeDemo.models,
-			fallbacks: activeDemo.fallbacks,
-		});
+		const candidates = createCandidatesForDemo(activeDemo);
 
 		const controller = createTerminalSelectorController({
-			maxSlots: Math.max(1, activeDemo.fallbacks.length),
+			maxSlots: Math.max(1, activeDemo.models.length),
 			models: activeDemo.models,
 			createCandidates: candidates,
 			onState: setSelectorState,

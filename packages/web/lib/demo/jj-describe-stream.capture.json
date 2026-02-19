@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "source": "ultrahope-jj-describe",
+  "capturedAt": "2026-02-19T09:56:30.055Z",
+  "runs": [
+    {
+      "id": "run-1",
+      "command": "ultrahope jj describe",
+      "revision": "@",
+      "startedAt": "2026-02-19T09:56:15.895Z",
+      "events": [
+        {
+          "atMs": 1481,
+          "candidate": {
+            "content": "feat",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1482,
+          "candidate": {
+            "content": "feat(cl",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1482,
+          "candidate": {
+            "content": "feat(cli",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1482,
+          "candidate": {
+            "content": "feat(cli):",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream capture",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream capture functionality",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream capture functionality for",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream capture functionality for jj",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1483,
+          "candidate": {
+            "content": "feat(cli): add stream capture functionality for jj describe",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "isPartial": true,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 1588,
+          "candidate": {
+            "content": "feat(cli): add stream capture functionality for jj describe",
+            "slotId": "mistral/ministral-3b",
+            "model": "mistral/ministral-3b",
+            "cost": 0.00029908,
+            "generationId": "gen_01KHTN8BD8JYFT2ACGVQP5DBJD",
+            "isPartial": false,
+            "slotIndex": 0
+          }
+        },
+        {
+          "atMs": 3557,
+          "candidate": {
+            "content": "feat",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3565,
+          "candidate": {
+            "content": "feat(cli",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3566,
+          "candidate": {
+            "content": "feat(cli):",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3566,
+          "candidate": {
+            "content": "feat(cli): add",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3566,
+          "candidate": {
+            "content": "feat(cli): add stream",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3566,
+          "candidate": {
+            "content": "feat(cli): add stream capture",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3567,
+          "candidate": {
+            "content": "feat(cli): add stream capture and",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3567,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3567,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay for",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3577,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay for jj",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3584,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay for jj describe",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3584,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay for jj describe demo",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "isPartial": true,
+            "slotIndex": 1
+          }
+        },
+        {
+          "atMs": 3657,
+          "candidate": {
+            "content": "feat(cli): add stream capture and replay for jj describe demo",
+            "slotId": "xai/grok-code-fast-1",
+            "model": "xai/grok-code-fast-1",
+            "cost": 0.00187884,
+            "generationId": "gen_01KHTN8B3WDFPSE5F6WS0MQY8M",
+            "isPartial": false,
+            "slotIndex": 1
+          }
+        }
+      ],
+      "endedAt": "2026-02-19T09:56:19.552Z"
+    }
+  ]
+}

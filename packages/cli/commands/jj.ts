@@ -14,6 +14,7 @@ import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
+import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { formatTotalCost, ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
@@ -21,6 +22,7 @@ interface DescribeOptions {
 	revision: string;
 	interactive: boolean;
 	cliModels?: string[];
+	captureStreamPath?: string;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
@@ -52,6 +54,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let interactive = true;
 	let cliModels: string[] | undefined;
+	let captureStreamPath: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -66,10 +69,17 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 				process.exit(1);
 			}
 			cliModels = parseModelsArg(value);
+		} else if (arg === "--capture-stream") {
+			const value = args[++i];
+			if (!value) {
+				console.error("Error: --capture-stream requires a file path");
+				process.exit(1);
+			}
+			captureStreamPath = value;
 		}
 	}
 
-	return { revision, interactive, cliModels };
+	return { revision, interactive, cliModels, captureStreamPath };
 }
 
 function getJjDiff(revision: string): string {
@@ -171,16 +181,26 @@ function createCandidateFactory(
 	diff: string,
 	models: string[],
 	context: CommandExecutionContext,
+	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
 ) {
-	return (signal: AbortSignal) =>
-		generateCommitMessages({
-			diff,
-			models,
-			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
-			cliSessionId: context.cliSessionId,
-			commandExecutionPromise: context.commandExecutionPromise,
-			useStream: true,
-		});
+	return async function* (signal: AbortSignal) {
+		const runId = captureRecorder.startRun();
+		try {
+			for await (const candidate of generateCommitMessages({
+				diff,
+				models,
+				signal: mergeAbortSignals(signal, context.commandExecutionSignal),
+				cliSessionId: context.cliSessionId,
+				commandExecutionPromise: context.commandExecutionPromise,
+				useStream: true,
+			})) {
+				captureRecorder.recordCandidate(runId, candidate);
+				yield candidate;
+			}
+		} finally {
+			captureRecorder.finishRun(runId);
+		}
+	};
 }
 
 async function runNonInteractiveDescribe(
@@ -271,16 +291,33 @@ async function describe(args: string[]) {
 	const models = resolveModels(options.cliModels);
 	const diff = getJjDiff(options.revision);
 	assertDiffAvailable(options.revision, diff);
+	const captureRecorder = createStreamCaptureRecorder({
+		path: options.captureStreamPath,
+		command: "ultrahope jj describe",
+		revision: options.revision,
+	});
 
-	const context = await initCommandExecutionContext(args, models, diff);
-	const createCandidates = createCandidateFactory(diff, models, context);
+	try {
+		const context = await initCommandExecutionContext(args, models, diff);
+		const createCandidates = createCandidateFactory(
+			diff,
+			models,
+			context,
+			captureRecorder,
+		);
 
-	if (!options.interactive) {
-		await runNonInteractiveDescribe(options.revision, models, diff, context);
-		return;
+		if (!options.interactive) {
+			await runNonInteractiveDescribe(options.revision, models, diff, context);
+			return;
+		}
+
+		await runInteractiveDescribe(options, models, createCandidates, context);
+	} finally {
+		const capturePath = captureRecorder.flush();
+		if (capturePath) {
+			console.log(ui.hint(`Captured stream replay to ${capturePath}`));
+		}
 	}
-
-	await runInteractiveDescribe(options, models, createCandidates, context);
 }
 
 function setup() {
@@ -329,10 +366,12 @@ Describe options:
    -r <revset>       Revision to describe (default: @)
    --no-interactive  Single candidate, no selection
    --models <list>   Comma-separated model list (overrides config)
+   --capture-stream <path>  Save candidate stream as replay JSON
 
 Examples:
    ultrahope jj describe              # interactive mode
    ultrahope jj describe -r @-        # for parent revision
+   ultrahope jj describe --capture-stream packages/web/lib/demo/jj-describe-stream.capture.json
    ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
 }
 
