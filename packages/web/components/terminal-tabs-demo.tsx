@@ -7,7 +7,9 @@ import {
 	useRef,
 	useState,
 } from "react";
+import gitCommitStreamCapture from "@/lib/demo/git-commit-stream.capture.json";
 import jjDescribeStreamCapture from "@/lib/demo/jj-describe-stream.capture.json";
+import unixStyleStreamCapture from "@/lib/demo/unix-style-stream.capture.json";
 import {
 	type CandidateWithModel,
 	type CreateCandidates,
@@ -43,20 +45,34 @@ interface DemoTab {
 	replayGeneration?: TerminalStreamReplayGeneration | null;
 }
 
-const JJ_DESCRIBE_CAPTURE =
-	jjDescribeStreamCapture as TerminalStreamReplayCapture;
+const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
+
+function resolveReplay(capture: TerminalStreamReplayCapture): {
+	generation: TerminalStreamReplayGeneration | null;
+	models: string[];
+} {
+	const run = pickLatestReplayRun(capture);
+	const generation = run ? pickLatestReplayGeneration(run) : null;
+	const models = generation ? extractReplayModels(generation) : [];
+
+	return {
+		generation,
+		models: models.length > 0 ? models : DEFAULT_REPLAY_MODELS,
+	};
+}
+
+const GIT_COMMIT_REPLAY = resolveReplay(
+	gitCommitStreamCapture as TerminalStreamReplayCapture,
+);
+// Refresh fixture with: git ultrahope commit --capture-stream packages/web/lib/demo/git-commit-stream.capture.json
+const JJ_DESCRIBE_REPLAY = resolveReplay(
+	jjDescribeStreamCapture as TerminalStreamReplayCapture,
+);
 // Refresh fixture with: ultrahope jj describe --capture-stream packages/web/lib/demo/jj-describe-stream.capture.json
-const JJ_DESCRIBE_REPLAY_RUN = pickLatestReplayRun(JJ_DESCRIBE_CAPTURE);
-const JJ_DESCRIBE_REPLAY_GENERATION = JJ_DESCRIBE_REPLAY_RUN
-	? pickLatestReplayGeneration(JJ_DESCRIBE_REPLAY_RUN)
-	: null;
-const JJ_DESCRIBE_REPLAY_MODELS = JJ_DESCRIBE_REPLAY_GENERATION
-	? extractReplayModels(JJ_DESCRIBE_REPLAY_GENERATION)
-	: [];
-const JJ_DESCRIBE_MODELS =
-	JJ_DESCRIBE_REPLAY_MODELS.length > 0
-		? JJ_DESCRIBE_REPLAY_MODELS
-		: ["mock-0", "mock-1", "mock-2"];
+const UNIX_STYLE_REPLAY = resolveReplay(
+	unixStyleStreamCapture as TerminalStreamReplayCapture,
+);
+// Refresh fixture with: git diff --staged | ultrahope translate --target vcs-commit-message --capture-stream packages/web/lib/demo/unix-style-stream.capture.json
 
 const DEMO_TABS: DemoTab[] = [
 	{
@@ -82,7 +98,8 @@ index 9c9e8f7..6d2f8a1 100644
 		foundLine: "✔ Found staged changes",
 		runLine: "Generating commit messages",
 		applyLine: "✔ Running git commit",
-		models: ["mock-0", "mock-1", "mock-2"],
+		models: GIT_COMMIT_REPLAY.models,
+		replayGeneration: GIT_COMMIT_REPLAY.generation,
 	},
 	{
 		id: "jj-describe",
@@ -106,8 +123,8 @@ index 4f8d4e1..7b3c8a2 100644
 		foundLine: "✔ Found current revision diff",
 		runLine: "Generating description candidates",
 		applyLine: "✔ Running jj describe -r @",
-		models: JJ_DESCRIBE_MODELS,
-		replayGeneration: JJ_DESCRIBE_REPLAY_GENERATION,
+		models: JJ_DESCRIBE_REPLAY.models,
+		replayGeneration: JJ_DESCRIBE_REPLAY.generation,
 	},
 	{
 		id: "unix-style",
@@ -132,7 +149,8 @@ index a1b2c3d..d4e5f6g 100644
 		foundLine: "✔ Reading input from stdin",
 		runLine: "Generating commit message translations",
 		applyLine: "✔ Copying selected message to output",
-		models: ["mock-0", "mock-1", "mock-2"],
+		models: UNIX_STYLE_REPLAY.models,
+		replayGeneration: UNIX_STYLE_REPLAY.generation,
 	},
 ];
 
