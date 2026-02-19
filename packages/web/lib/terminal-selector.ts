@@ -1,7 +1,6 @@
 import { raceAsyncIterators } from "../../shared/async-race";
 import type {
 	CandidateWithModel,
-	QuotaInfo,
 	SelectorResult,
 	SelectorSlot,
 	SelectorState,
@@ -27,7 +26,6 @@ export type {
 	GenerateCommitMessageGenerationInput,
 	GenerationScheduler,
 	GenerationSchedulerAction,
-	QuotaInfo,
 	SelectorResult,
 	SelectorSlot,
 	SelectorState,

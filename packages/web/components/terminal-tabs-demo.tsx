@@ -19,9 +19,6 @@ import {
 } from "@/lib/terminal-selector";
 import { createCandidatesFromTasks } from "@/lib/terminal-selector-effect";
 
-const DEMO_GENERATION_MODE: "mock" = "mock";
-const DEMO_USE_MOCK = DEMO_GENERATION_MODE === "mock";
-
 interface DemoTab {
 	id: string;
 	label: string;
@@ -128,8 +125,10 @@ function useTypingAnimation(
 	const [typedText, setTypedText] = useState("");
 
 	useEffect(() => {
-		setTypedText("");
-	}, [command]);
+		if (enabled) {
+			setTypedText("");
+		}
+	}, [enabled]);
 
 	useEffect(() => {
 		if (!enabled) return;
@@ -149,34 +148,49 @@ function renderSelectorLinesWithSpinner(
 	lines: string[],
 	showSpinner: boolean,
 ): ReactNode[] {
-	return lines.map((line, index) => {
-		if (!showSpinner || index !== 0) {
-			return (
-				<span key={index}>
+	const nodes: ReactNode[] = [];
+	const lineCounts = new Map<string, number>();
+	let lineIndex = 0;
+
+	for (const line of lines) {
+		const count = (lineCounts.get(line) ?? 0) + 1;
+		lineCounts.set(line, count);
+		const key = `${line}-${count}`;
+
+		if (!showSpinner || lineIndex !== 0) {
+			nodes.push(
+				<span key={key}>
 					{line}
 					{"\n"}
-				</span>
+				</span>,
 			);
+			lineIndex += 1;
+			continue;
 		}
 
 		const firstCharacter = line.slice(0, 1);
 		if (!SPINNER_FRAME_SET.has(firstCharacter)) {
-			return (
-				<span key={index}>
+			nodes.push(
+				<span key={key}>
 					{line}
 					{"\n"}
-				</span>
+				</span>,
 			);
+			lineIndex += 1;
+			continue;
 		}
 
-		return (
-			<span key={index}>
+		nodes.push(
+			<span key={key}>
 				<span className="inline-block animate-spin">{firstCharacter}</span>
 				{line.slice(1)}
 				{"\n"}
-			</span>
+			</span>,
 		);
-	});
+		lineIndex += 1;
+	}
+
+	return nodes;
 }
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
