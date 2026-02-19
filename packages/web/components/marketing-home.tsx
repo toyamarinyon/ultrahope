@@ -5,26 +5,28 @@ import { TerminalTabsDemo } from "./terminal-tabs-demo";
 function UltrahopeLogo() {
 	return (
 		<span className="inline-flex items-center gap-2">
-			<span className="inline-flex size-10 shrink-0 items-center justify-center text-foreground">
-				<Logo className="w-9 h-9" />
+			<span className="inline-flex size-8 shrink-0 items-center justify-center text-foreground sm:size-10">
+				<Logo className="h-7 w-7 sm:h-9 sm:w-9" />
 			</span>
-			<span className="text-2xl tracking-tighter leading-none">Ultrahope</span>
+			<span className="text-xl tracking-tighter leading-none sm:text-2xl">
+				Ultrahope
+			</span>
 		</span>
 	);
 }
 
 export function MarketingHome() {
 	return (
-		<main className="min-h-screen px-8">
+		<main className="min-h-screen px-4 sm:px-8">
 			<header>
 				<div className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-4">
 					<Link href="/" className="text-foreground no-underline">
 						<UltrahopeLogo />
 					</Link>
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-2 sm:gap-3">
 						<Link
 							href="https://github.com/toyamarinyon/ultrahope"
-							className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors"
+							className="inline-flex items-center justify-center gap-2 px-3 py-2.5 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors sm:px-4"
 						>
 							<svg
 								className="w-5 h-5"
@@ -42,7 +44,7 @@ export function MarketingHome() {
 						</Link>
 						<Link
 							href="/signup"
-							className="inline-flex items-center justify-center px-4 py-2.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
+							className="inline-flex items-center justify-center px-3 py-2.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity sm:px-4"
 						>
 							Get Started
 						</Link>
@@ -50,19 +52,18 @@ export function MarketingHome() {
 				</div>
 			</header>
 
-			{/* Hero - Two column layout */}
+			{/* Hero - Vertical layout */}
 			<section className="min-h-[calc(100vh-5rem)] flex items-center max-w-7xl mx-auto">
-				<div className="grid lg:grid-cols-2 gap-12 lg:gap-16 w-full py-16">
-					{/* Left: Branding */}
-					<div className="flex flex-col justify-center">
-						<h1 className="text-3xl lg:text-5xl tracking-tighter mb-6 max-w-2xl">
+				<div className="w-full py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
+					<div className="w-full max-w-4xl text-center">
+						<h1 className="mx-auto mb-5 max-w-[15ch] text-4xl font-medium leading-[1.1] tracking-[-0.025em] sm:text-5xl lg:text-[4.25rem]">
 							Fast, multi-candidate AI commit messages.
 						</h1>
-						<p className="text-lg lg:text-xl text-foreground-secondary leading-relaxed mb-10 max-w-xl">
+						<p className="mx-auto mb-10 max-w-[34ch] text-lg leading-relaxed text-foreground-secondary sm:text-xl lg:text-[1.55rem]">
 							AI proposes. You compare. You decide.
 						</p>
 
-						<div className="flex flex-wrap gap-4">
+						<div className="flex flex-wrap items-center justify-center gap-4">
 							<Link
 								href="/signup"
 								className="inline-flex items-center justify-center px-6 py-3 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
@@ -78,10 +79,9 @@ export function MarketingHome() {
 						</div>
 					</div>
 
-					{/* Right: Interactive Terminal Demo */}
-					<div className="flex flex-col justify-center">
+					<div className="w-full max-w-5xl">
 						<div className="relative">
-							<div className="absolute -inset-6 rounded-[28px] bg-[radial-gradient(ellipse_at_top,#2b261f,transparent_60%)] opacity-70 blur-2xl" />
+							<div className="absolute -inset-8 rounded-[32px] bg-[radial-gradient(ellipse_at_top,#2b261f,transparent_65%)] opacity-70 blur-2xl" />
 							<div className="relative">
 								<TerminalTabsDemo />
 							</div>
