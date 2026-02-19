@@ -15,20 +15,6 @@ export interface CandidateWithModel {
 	slotIndex?: number;
 }
 
-interface GenerateCommitMessageGenerationInput {
-	diff: string;
-	model: string;
-	signal: AbortSignal;
-	slotId: string;
-	slotIndex: number;
-}
-
-interface CommitMessageGenerationPort {
-	generateCandidate(
-		input: GenerateCommitMessageGenerationInput,
-	): Promise<CandidateWithModel>;
-}
-
 interface SelectorSlotPending {
 	status: "pending";
 	slotId: string;
@@ -96,14 +82,4 @@ export interface TerminalSelectorController {
 	}) => SelectorResult | null;
 	destroy: () => void;
 	subscribe: (listener: (state: SelectorState) => void) => () => void;
-}
-
-type GenerationSchedulerAction = "start" | "abort" | "reroll" | "confirm";
-
-interface GenerationScheduler {
-	start(): void;
-	abort(): SelectorResult;
-	reroll(): SelectorResult | null;
-	confirm(): SelectorResult | null;
-	onAction?(action: GenerationSchedulerAction): void;
 }
