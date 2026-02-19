@@ -1,5 +1,5 @@
-import { getPolarClient } from "@/lib/auth";
-import { baseUrl } from "@/lib/base-url";
+import { getPolarClient } from "@/lib/auth/auth";
+import { baseUrl } from "@/lib/util/base-url";
 
 export const MICRODOLLARS_PER_USD = 1_000_000;
 

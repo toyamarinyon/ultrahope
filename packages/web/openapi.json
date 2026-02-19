@@ -652,19 +652,32 @@
                         },
                         "actions": {
                           "type": "object",
+                          "required": [
+                            "buyCredits"
+                          ],
                           "properties": {
                             "buyCredits": {
-                              "type": "string"
-                            },
-                            "enableAutoRecharge": {
-                              "type": "string"
-                            },
-                            "upgrade": {
                               "type": "string"
                             }
                           }
                         },
                         "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "billing_unavailable",
+                          "type": "string"
+                        },
+                        "message": {
                           "type": "string"
                         }
                       }
@@ -1045,19 +1058,32 @@
                         },
                         "actions": {
                           "type": "object",
+                          "required": [
+                            "buyCredits"
+                          ],
                           "properties": {
                             "buyCredits": {
-                              "type": "string"
-                            },
-                            "enableAutoRecharge": {
-                              "type": "string"
-                            },
-                            "upgrade": {
                               "type": "string"
                             }
                           }
                         },
                         "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "billing_unavailable",
+                          "type": "string"
+                        },
+                        "message": {
                           "type": "string"
                         }
                       }
@@ -1356,19 +1382,32 @@
                         },
                         "actions": {
                           "type": "object",
+                          "required": [
+                            "buyCredits"
+                          ],
                           "properties": {
                             "buyCredits": {
-                              "type": "string"
-                            },
-                            "enableAutoRecharge": {
-                              "type": "string"
-                            },
-                            "upgrade": {
                               "type": "string"
                             }
                           }
                         },
                         "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "billing_unavailable",
+                          "type": "string"
+                        },
+                        "message": {
                           "type": "string"
                         }
                       }

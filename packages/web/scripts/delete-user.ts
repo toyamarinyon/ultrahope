@@ -3,7 +3,7 @@ import {
 	deleteUserByEmail,
 	type Mode,
 	requireAccountDeletionEnvVars,
-} from "../lib/account-deletion";
+} from "../lib/util/account-deletion";
 
 type ParsedArgs = {
 	email: string;

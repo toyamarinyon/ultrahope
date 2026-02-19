@@ -5,15 +5,15 @@ import { redirect } from "next/navigation";
 import { BillingSettingsControls } from "@/components/billing-settings-controls";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { DowngradePlanButton } from "@/components/downgrade-plan-button";
-import { getAuth } from "@/lib/auth";
-import { MICRODOLLARS_PER_USD } from "@/lib/auto-recharge";
+import { getAuth } from "@/lib/auth/auth";
+import { MICRODOLLARS_PER_USD } from "@/lib/billing/auto-recharge";
 import {
 	getActiveSubscriptions,
 	getBillingHistory,
 	resolveCurrentPlan,
-} from "@/lib/billing";
+} from "@/lib/billing/billing";
 import { getUserBillingInfo } from "@/lib/llm";
-import { buildNoIndexMetadata } from "@/lib/seo";
+import { buildNoIndexMetadata } from "@/lib/util/seo";
 
 export const metadata: Metadata = buildNoIndexMetadata({
 	title: "Settings",

@@ -1,7 +1,7 @@
 import { polarClient } from "@polar-sh/better-auth";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import { baseUrl } from "./base-url";
+import { baseUrl } from "@/lib/util/base-url";
 
 const authClient = createAuthClient({
 	baseURL: baseUrl,

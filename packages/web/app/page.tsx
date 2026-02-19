@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { MarketingHome } from "@/components/marketing-home";
 import { SignOutButton } from "@/components/sign-out-button";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth/auth";
 
 export const metadata: Metadata = {
 	title: "Ultrahope",

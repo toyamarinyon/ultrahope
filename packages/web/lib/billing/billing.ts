@@ -1,4 +1,4 @@
-import { getPolarClient } from "@/lib/auth";
+import { getPolarClient } from "@/lib/auth/auth";
 
 export type UserPlan = "free" | "pro";
 

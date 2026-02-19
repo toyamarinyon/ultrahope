@@ -1,4 +1,4 @@
-import { raceAsyncIterators } from "../../shared/async-race";
+import { raceAsyncIterators } from "../../../shared/async-race";
 import type {
 	CandidateWithModel,
 	SelectorResult,
@@ -6,7 +6,7 @@ import type {
 	SelectorState,
 	TerminalSelectorController,
 	TerminalSelectorOptions,
-} from "../../shared/terminal-selector-contract";
+} from "../../../shared/terminal-selector-contract";
 import {
 	formatCost,
 	formatModelName,
@@ -17,7 +17,7 @@ import {
 	getTotalCost,
 	hasReadySlot,
 	selectNearestReady,
-} from "../../shared/terminal-selector-helpers";
+} from "../../../shared/terminal-selector-helpers";
 
 export type {
 	CandidateWithModel,
@@ -25,7 +25,7 @@ export type {
 	SelectorResult,
 	SelectorState,
 	TerminalSelectorController,
-} from "../../shared/terminal-selector-contract";
+} from "../../../shared/terminal-selector-contract";
 
 export const SPINNER_FRAMES = [
 	"⠋",

@@ -3,8 +3,8 @@ import { metadata as homepageMetadata } from "@/app/page";
 import { metadata as pricingMetadata } from "@/app/pricing/page";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { resolveCanonicalOrigin, toAbsoluteCanonical } from "@/lib/seo";
-import { canonicalPublicPages } from "@/lib/sitemap-pages";
+import { resolveCanonicalOrigin, toAbsoluteCanonical } from "@/lib/util/seo";
+import { canonicalPublicPages } from "@/lib/util/sitemap-pages";
 
 const originalEnv = { ...process.env };
 

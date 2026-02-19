@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { toNextJsHandler } from "better-auth/next-js";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth/auth";
 import type {
 	AuthExceptionLog,
 	AuthRequestLog,
 	AuthResponseLog,
-} from "@/lib/auth-log";
+} from "@/lib/auth/auth-log";
 
 function resolveAuthAction(request: Request): string {
 	const url = new URL(request.url);

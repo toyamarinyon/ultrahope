@@ -3,7 +3,7 @@ import {
 	isLikelyInvalidEmailDomain,
 	mapAuthClientError,
 	shouldTreatForgotPasswordRequestAsSuccess,
-} from "./auth-error";
+} from "./auth/auth-error";
 
 describe("isLikelyInvalidEmailDomain", () => {
 	it("accepts a valid email domain", () => {

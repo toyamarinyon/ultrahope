@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { getAuth, getPolarClient } from "@/lib/auth";
+import { getAuth, getPolarClient } from "@/lib/auth/auth";
 
 export async function POST() {
 	const auth = getAuth();

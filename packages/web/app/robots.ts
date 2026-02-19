@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { toAbsoluteCanonical } from "@/lib/seo";
+import { toAbsoluteCanonical } from "@/lib/util/seo";
 
 export default function robots(): MetadataRoute.Robots {
 	return {

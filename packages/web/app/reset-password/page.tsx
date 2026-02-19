@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useMemo, useState } from "react";
-import { resetPassword } from "@/lib/auth-client";
+import { resetPassword } from "@/lib/auth/auth-client";
 
 function ResetPasswordContent() {
 	const searchParams = useSearchParams();

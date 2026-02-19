@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { MarketingHome } from "@/components/marketing-home";
-import { buildNoIndexMetadata } from "@/lib/seo";
+import { buildNoIndexMetadata } from "@/lib/util/seo";
 
 export const metadata: Metadata = buildNoIndexMetadata({
 	title: "Home",

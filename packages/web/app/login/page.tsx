@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
-import { signIn, useSession } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth/auth-client";
 import {
 	isLikelyInvalidEmailDomain,
 	mapAuthClientError,
-} from "@/lib/auth-error";
+} from "@/lib/auth/auth-error";
 
 export default function LoginPage() {
 	const { data: session, isPending } = useSession();

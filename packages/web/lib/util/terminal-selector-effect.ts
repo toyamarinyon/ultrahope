@@ -1,8 +1,8 @@
-import { raceAsyncIterators } from "../../shared/async-race";
+import { raceAsyncIterators } from "../../../shared/async-race";
 import type {
 	CandidateWithModel,
 	CreateCandidates,
-} from "../../shared/terminal-selector-contract";
+} from "../../../shared/terminal-selector-contract";
 
 interface EffectCandidateTask {
 	slotId: string;

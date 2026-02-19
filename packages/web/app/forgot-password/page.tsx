@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
-import { requestPasswordReset } from "@/lib/auth-client";
+import { requestPasswordReset } from "@/lib/auth/auth-client";
 import {
 	isLikelyInvalidEmailDomain,
 	mapAuthClientError,
 	shouldTreatForgotPasswordRequestAsSuccess,
-} from "@/lib/auth-error";
+} from "@/lib/auth/auth-error";
 
 export default function ForgotPasswordPage() {
 	const [email, setEmail] = useState("");

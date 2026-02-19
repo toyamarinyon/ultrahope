@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { buildNoIndexMetadata } from "@/lib/seo";
+import { buildNoIndexMetadata } from "@/lib/util/seo";
 
 export const metadata: Metadata = buildNoIndexMetadata({
 	title: "Sign Up",

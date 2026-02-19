@@ -1,6 +1,6 @@
-import { getPolarClient } from "@/lib/auth";
+import { getPolarClient } from "@/lib/auth/auth";
 
-export { DailyLimitExceededError } from "@/lib/daily-limit";
+export { DailyLimitExceededError } from "@/lib/util/daily-limit";
 
 export {
 	generateCommitMessage,

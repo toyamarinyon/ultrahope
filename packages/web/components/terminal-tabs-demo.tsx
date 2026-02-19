@@ -16,8 +16,8 @@ import {
 	type SelectorState,
 	SPINNER_FRAMES,
 	type TerminalSelectorController,
-} from "@/lib/terminal-selector";
-import { createCandidatesFromTasks } from "@/lib/terminal-selector-effect";
+} from "@/lib/util/terminal-selector";
+import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
 
 interface DemoTab {
 	id: string;

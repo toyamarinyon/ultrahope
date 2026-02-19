@@ -9,7 +9,7 @@ import {
 	getDb,
 	session,
 	user,
-} from "../db";
+} from "../../db";
 
 export type Mode = "dry-run" | "execute";
 type ResultStatus = "success" | "failed" | "skipped";

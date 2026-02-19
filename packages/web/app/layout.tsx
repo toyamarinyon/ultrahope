@@ -4,7 +4,7 @@ import {
 	DEFAULT_DESCRIPTION,
 	DEFAULT_SITE_NAME,
 	resolveCanonicalOrigin,
-} from "@/lib/seo";
+} from "@/lib/util/seo";
 
 export const metadata: Metadata = {
 	metadataBase: new URL(resolveCanonicalOrigin()),

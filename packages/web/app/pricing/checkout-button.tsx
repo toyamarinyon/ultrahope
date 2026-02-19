@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { checkout } from "@/lib/auth-client";
+import { checkout } from "@/lib/auth/auth-client";
 
 type UpgradeInfo = {
 	subscriptionId: string;

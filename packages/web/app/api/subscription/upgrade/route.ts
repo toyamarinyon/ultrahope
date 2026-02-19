@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { getAuth, getPolarClient } from "@/lib/auth";
-import { baseUrl } from "@/lib/base-url";
+import { getAuth, getPolarClient } from "@/lib/auth/auth";
+import { baseUrl } from "@/lib/util/base-url";
 
 export async function POST(request: NextRequest) {
 	const auth = getAuth();

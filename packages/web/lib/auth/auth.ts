@@ -7,7 +7,7 @@ import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { Resend } from "resend";
 import { getDb } from "@/db";
 import * as schema from "@/db/schemas";
-import { baseUrl } from "./base-url";
+import { baseUrl } from "@/lib/util/base-url";
 
 let cachedAuth: ReturnType<typeof betterAuth> | null = null;
 let cachedPolarClient: Polar | null = null;

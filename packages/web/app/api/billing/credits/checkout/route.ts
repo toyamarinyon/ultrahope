@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth/auth";
 import {
 	AUTO_RECHARGE_AMOUNTS,
 	createCreditCheckout,
-} from "@/lib/auto-recharge";
+} from "@/lib/billing/auto-recharge";
 
 const BodySchema = z.object({
 	amount: z.enum(AUTO_RECHARGE_AMOUNTS.map(String) as ["10", "20"]),

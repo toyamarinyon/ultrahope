@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { ComponentPropsWithoutRef } from "react";
-import { signOut } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth/auth-client";
 
 type SignOutButtonProps = ComponentPropsWithoutRef<"button">;
 

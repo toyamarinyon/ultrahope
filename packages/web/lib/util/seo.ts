@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { resolveBaseUrl } from "./base-url";
+import { resolveBaseUrl } from "@/lib/util/base-url";
 
 type CanonicalEnv = Record<string, string | undefined>;
 

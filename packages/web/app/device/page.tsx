@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
-import { device, signIn, signUp, useSession } from "@/lib/auth-client";
+import { device, signIn, signUp, useSession } from "@/lib/auth/auth-client";
 import {
 	isLikelyInvalidEmailDomain,
 	mapAuthClientError,
-} from "@/lib/auth-error";
+} from "@/lib/auth/auth-error";
 
 type Status =
 	| "idle"

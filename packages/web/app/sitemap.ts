@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { toAbsoluteCanonical } from "@/lib/seo";
-import { canonicalPublicPages } from "@/lib/sitemap-pages";
+import { toAbsoluteCanonical } from "@/lib/util/seo";
+import { canonicalPublicPages } from "@/lib/util/sitemap-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
 	const lastModified = new Date();
