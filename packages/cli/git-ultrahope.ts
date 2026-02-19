@@ -28,9 +28,11 @@ Commands:
 Commit options:
    --no-interactive  Single candidate, commit directly
    --models <list>   Comma-separated model list (overrides config)
+   --capture-stream <path>  Save commit-message stream as replay JSON
 
 Examples:
    git ultrahope commit               # interactive selector (default)
+   git ultrahope commit --capture-stream /tmp/git-commit-stream.capture.json
    git ultrahope commit --no-interactive  # single candidate, commit directly`);
 }
 

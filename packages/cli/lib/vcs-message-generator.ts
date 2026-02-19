@@ -9,6 +9,7 @@ import {
 } from "./api-client";
 import { getToken } from "./auth";
 import { log } from "./logger";
+import type { StreamCaptureRecorder } from "./stream-capture";
 
 export const DEFAULT_MODELS = [
 	// "mistral/ministral-3b",
@@ -25,6 +26,7 @@ export interface GeneratorOptions {
 	cliSessionId?: string;
 	commandExecutionPromise?: Promise<unknown>;
 	useStream?: boolean;
+	streamCaptureRecorder?: StreamCaptureRecorder;
 }
 
 const isAbortError = (error: unknown) =>
@@ -46,6 +48,7 @@ export async function* generateCommitMessages(
 		cliSessionId,
 		commandExecutionPromise,
 		useStream = false,
+		streamCaptureRecorder,
 	} = options;
 
 	const resolvedCliSessionId = cliSessionId;
@@ -53,6 +56,10 @@ export async function* generateCommitMessages(
 		throw new Error("Missing cliSessionId for generate request.");
 	}
 	const requiredCliSessionId: string = resolvedCliSessionId;
+	const captureGenerationId = streamCaptureRecorder?.startGeneration({
+		cliSessionId: requiredCliSessionId,
+		models,
+	});
 
 	const token = await getToken();
 	if (!token) {
@@ -69,10 +76,18 @@ export async function* generateCommitMessages(
 	}): AsyncGenerator<CommitMessageStreamEvent> {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
+			const attemptNumber = attempt + 1;
 			try {
 				for await (const event of api.streamCommitMessage(payload, {
 					signal,
 				})) {
+					if (captureGenerationId != null) {
+						streamCaptureRecorder?.recordEvent(captureGenerationId, {
+							model: payload.model,
+							attempt: attemptNumber,
+							event,
+						});
+					}
 					log("generate", event);
 					yield event;
 				}
@@ -178,5 +193,9 @@ export async function* generateCommitMessages(
 			process.exit(1);
 		}
 		throw error;
+	} finally {
+		if (captureGenerationId != null) {
+			streamCaptureRecorder?.finishGeneration(captureGenerationId);
+		}
 	}
 }

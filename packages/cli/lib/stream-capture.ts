@@ -1,48 +1,78 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { CandidateWithModel } from "../../shared/terminal-selector-contract";
+import type { CommitMessageStreamEvent } from "./api-client";
 import type {
 	TerminalStreamReplayCapture,
+	TerminalStreamReplayGeneration,
 	TerminalStreamReplayRun,
 } from "../../shared/terminal-stream-replay";
 
 interface StreamCaptureOptions {
 	path?: string;
 	command: string;
-	revision: string;
+	args: string[];
+	apiPath: string;
 }
 
-interface ActiveRun {
-	run: TerminalStreamReplayRun;
+interface ActiveGeneration {
+	generation: TerminalStreamReplayGeneration;
 	startedAtMs: number;
 }
 
 export interface StreamCaptureRecorder {
 	readonly enabled: boolean;
-	startRun: () => number;
-	recordCandidate: (runId: number, candidate: CandidateWithModel) => void;
-	finishRun: (runId: number) => void;
+	startGeneration: (meta: {
+		cliSessionId: string;
+		models: string[];
+	}) => number;
+	recordEvent: (
+		generationId: number,
+		record: {
+			model: string;
+			attempt: number;
+			event: CommitMessageStreamEvent;
+		},
+	) => void;
+	finishGeneration: (generationId: number) => void;
 	flush: () => string | null;
 }
 
 const noopRecorder: StreamCaptureRecorder = {
 	enabled: false,
-	startRun: () => 0,
-	recordCandidate: () => {},
-	finishRun: () => {},
+	startGeneration: () => 0,
+	recordEvent: () => {},
+	finishGeneration: () => {},
 	flush: () => null,
 };
 
-function cloneCandidate(candidate: CandidateWithModel): CandidateWithModel {
+function sanitizeEvent(
+	event: CommitMessageStreamEvent,
+): CommitMessageStreamEvent {
+	if (event.type === "provider-metadata") {
+		return {
+			type: "provider-metadata",
+			providerMetadata: event.providerMetadata,
+		};
+	}
+	if (event.type === "usage") {
+		return {
+			type: "usage",
+			usage: {
+				inputTokens: event.usage.inputTokens,
+				outputTokens: event.usage.outputTokens,
+				totalTokens: event.usage.totalTokens,
+			},
+		};
+	}
+	if (event.type === "commit-message") {
+		return {
+			type: "commit-message",
+			commitMessage: event.commitMessage,
+		};
+	}
 	return {
-		content: candidate.content,
-		slotId: candidate.slotId,
-		model: candidate.model,
-		cost: candidate.cost,
-		generationId: candidate.generationId,
-		quota: candidate.quota,
-		isPartial: candidate.isPartial,
-		slotIndex: candidate.slotIndex,
+		type: "error",
+		message: event.message,
 	};
 }
 
@@ -53,9 +83,16 @@ function toSerializableCapture(
 		...capture,
 		runs: capture.runs.map((run) => ({
 			...run,
-			events: run.events.map((event) => ({
-				atMs: event.atMs,
-				candidate: cloneCandidate(event.candidate),
+			args: [...run.args],
+			generations: run.generations.map((generation) => ({
+				...generation,
+				models: [...generation.models],
+				events: generation.events.map((event) => ({
+					atMs: event.atMs,
+					model: event.model,
+					attempt: event.attempt,
+					event: sanitizeEvent(event.event),
+				})),
 			})),
 		})),
 	};
@@ -69,15 +106,26 @@ export function createStreamCaptureRecorder(
 	}
 
 	const outputPath = resolve(process.cwd(), options.path);
-	let runSequence = 0;
-	const activeRuns = new Map<number, ActiveRun>();
+	const runStartedAtMs = Date.now();
+	const run: TerminalStreamReplayRun = {
+		id: "run-1",
+		command: options.command,
+		args: options.args,
+		apiPath: options.apiPath,
+		startedAt: new Date(runStartedAtMs).toISOString(),
+		generations: [],
+	};
 
 	const capture: TerminalStreamReplayCapture = {
-		version: 1,
-		source: "ultrahope-jj-describe",
+		version: 2,
+		source: "ultrahope-commit-message-stream",
 		capturedAt: new Date().toISOString(),
-		runs: [],
+		runs: [run],
 	};
+
+	let generationSequence = 0;
+	let runFinished = false;
+	const activeGenerations = new Map<number, ActiveGeneration>();
 
 	const writeCapture = () => {
 		capture.capturedAt = new Date().toISOString();
@@ -89,48 +137,58 @@ export function createStreamCaptureRecorder(
 		);
 	};
 
+	const ensureRunFinished = () => {
+		if (runFinished) {
+			return;
+		}
+		runFinished = true;
+		run.endedAt = new Date().toISOString();
+	};
+
 	return {
 		enabled: true,
-		startRun: () => {
-			runSequence += 1;
+		startGeneration: ({ cliSessionId, models }) => {
+			generationSequence += 1;
 			const startedAtMs = Date.now();
-			const run: TerminalStreamReplayRun = {
-				id: `run-${runSequence}`,
-				command: options.command,
-				revision: options.revision,
+			const generation: TerminalStreamReplayGeneration = {
+				id: `generation-${generationSequence}`,
+				cliSessionId,
+				models: [...models],
 				startedAt: new Date(startedAtMs).toISOString(),
 				events: [],
 			};
-			capture.runs.push(run);
-			activeRuns.set(runSequence, { run, startedAtMs });
-			return runSequence;
+			run.generations.push(generation);
+			activeGenerations.set(generationSequence, { generation, startedAtMs });
+			return generationSequence;
 		},
-		recordCandidate: (runId, candidate) => {
-			const activeRun = activeRuns.get(runId);
-			if (!activeRun) {
+		recordEvent: (generationId, record) => {
+			const activeGeneration = activeGenerations.get(generationId);
+			if (!activeGeneration) {
 				return;
 			}
 
-			activeRun.run.events.push({
-				atMs: Math.max(0, Date.now() - activeRun.startedAtMs),
-				candidate: cloneCandidate(candidate),
+			activeGeneration.generation.events.push({
+				atMs: Math.max(0, Date.now() - activeGeneration.startedAtMs),
+				model: record.model,
+				attempt: record.attempt,
+				event: sanitizeEvent(record.event),
 			});
 		},
-		finishRun: (runId) => {
-			const activeRun = activeRuns.get(runId);
-			if (!activeRun) {
+		finishGeneration: (generationId) => {
+			const activeGeneration = activeGenerations.get(generationId);
+			if (!activeGeneration) {
 				return;
 			}
-
-			activeRun.run.endedAt = new Date().toISOString();
-			activeRuns.delete(runId);
+			activeGeneration.generation.endedAt = new Date().toISOString();
+			activeGenerations.delete(generationId);
 			writeCapture();
 		},
 		flush: () => {
-			for (const [runId, activeRun] of activeRuns) {
-				activeRun.run.endedAt = new Date().toISOString();
-				activeRuns.delete(runId);
+			for (const [generationId, activeGeneration] of activeGenerations) {
+				activeGeneration.generation.endedAt = new Date().toISOString();
+				activeGenerations.delete(generationId);
 			}
+			ensureRunFinished();
 			writeCapture();
 			return outputPath;
 		},

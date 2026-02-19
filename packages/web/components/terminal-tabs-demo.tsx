@@ -20,13 +20,14 @@ import {
 } from "@/lib/util/terminal-selector";
 import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
 import {
-	createCandidatesFromReplayRun,
+	createCandidatesFromReplayGeneration,
 	extractReplayModels,
+	pickLatestReplayGeneration,
 	pickLatestReplayRun,
 } from "@/lib/util/terminal-selector-replay";
 import type {
 	TerminalStreamReplayCapture,
-	TerminalStreamReplayRun,
+	TerminalStreamReplayGeneration,
 } from "../../shared/terminal-stream-replay";
 
 interface DemoTab {
@@ -39,15 +40,18 @@ interface DemoTab {
 	runLine: string;
 	applyLine: string;
 	models: string[];
-	replayRun?: TerminalStreamReplayRun | null;
+	replayGeneration?: TerminalStreamReplayGeneration | null;
 }
 
 const JJ_DESCRIBE_CAPTURE =
 	jjDescribeStreamCapture as TerminalStreamReplayCapture;
 // Refresh fixture with: ultrahope jj describe --capture-stream packages/web/lib/demo/jj-describe-stream.capture.json
 const JJ_DESCRIBE_REPLAY_RUN = pickLatestReplayRun(JJ_DESCRIBE_CAPTURE);
-const JJ_DESCRIBE_REPLAY_MODELS = JJ_DESCRIBE_REPLAY_RUN
-	? extractReplayModels(JJ_DESCRIBE_REPLAY_RUN)
+const JJ_DESCRIBE_REPLAY_GENERATION = JJ_DESCRIBE_REPLAY_RUN
+	? pickLatestReplayGeneration(JJ_DESCRIBE_REPLAY_RUN)
+	: null;
+const JJ_DESCRIBE_REPLAY_MODELS = JJ_DESCRIBE_REPLAY_GENERATION
+	? extractReplayModels(JJ_DESCRIBE_REPLAY_GENERATION)
 	: [];
 const JJ_DESCRIBE_MODELS =
 	JJ_DESCRIBE_REPLAY_MODELS.length > 0
@@ -103,7 +107,7 @@ index 4f8d4e1..7b3c8a2 100644
 		runLine: "Generating description candidates",
 		applyLine: "✔ Running jj describe -r @",
 		models: JJ_DESCRIBE_MODELS,
-		replayRun: JJ_DESCRIBE_REPLAY_RUN,
+		replayGeneration: JJ_DESCRIBE_REPLAY_GENERATION,
 	},
 	{
 		id: "unix-style",
@@ -328,8 +332,11 @@ async function makeMockCandidate({
 }
 
 function createCandidatesForDemo(tab: DemoTab): CreateCandidates {
-	if (tab.replayRun && tab.replayRun.events.length > 0) {
-		return createCandidatesFromReplayRun({ run: tab.replayRun });
+	if (tab.replayGeneration && tab.replayGeneration.events.length > 0) {
+		return createCandidatesFromReplayGeneration({
+			generation: tab.replayGeneration,
+			models: tab.models,
+		});
 	}
 
 	return createCandidatesFromDirectCore({

@@ -183,24 +183,16 @@ function createCandidateFactory(
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
 ) {
-	return async function* (signal: AbortSignal) {
-		const runId = captureRecorder.startRun();
-		try {
-			for await (const candidate of generateCommitMessages({
-				diff,
-				models,
-				signal: mergeAbortSignals(signal, context.commandExecutionSignal),
-				cliSessionId: context.cliSessionId,
-				commandExecutionPromise: context.commandExecutionPromise,
-				useStream: true,
-			})) {
-				captureRecorder.recordCandidate(runId, candidate);
-				yield candidate;
-			}
-		} finally {
-			captureRecorder.finishRun(runId);
-		}
-	};
+	return (signal: AbortSignal) =>
+		generateCommitMessages({
+			diff,
+			models,
+			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
+			cliSessionId: context.cliSessionId,
+			commandExecutionPromise: context.commandExecutionPromise,
+			useStream: true,
+			streamCaptureRecorder: captureRecorder,
+		});
 }
 
 async function runNonInteractiveDescribe(
@@ -208,6 +200,7 @@ async function runNonInteractiveDescribe(
 	models: string[],
 	diff: string,
 	context: CommandExecutionContext,
+	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
 ): Promise<void> {
 	const gen = generateCommitMessages({
 		diff,
@@ -216,6 +209,7 @@ async function runNonInteractiveDescribe(
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
 		useStream: true,
+		streamCaptureRecorder: captureRecorder,
 	});
 	const first = await gen.next().catch((error) => {
 		if (error instanceof InvalidModelError) {
@@ -294,7 +288,8 @@ async function describe(args: string[]) {
 	const captureRecorder = createStreamCaptureRecorder({
 		path: options.captureStreamPath,
 		command: "ultrahope jj describe",
-		revision: options.revision,
+		args: ["describe", ...args],
+		apiPath: "/v1/commit-message/stream",
 	});
 
 	try {
@@ -307,7 +302,13 @@ async function describe(args: string[]) {
 		);
 
 		if (!options.interactive) {
-			await runNonInteractiveDescribe(options.revision, models, diff, context);
+			await runNonInteractiveDescribe(
+				options.revision,
+				models,
+				diff,
+				context,
+				captureRecorder,
+			);
 			return;
 		}
 

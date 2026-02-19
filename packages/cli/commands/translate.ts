@@ -16,6 +16,7 @@ import {
 } from "../lib/command-execution";
 import { parseModelsArg, resolveModels } from "../lib/config";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
+import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { stdin } from "../lib/stdin";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
@@ -37,6 +38,7 @@ interface TranslateOptions {
 	target: Target;
 	interactive: boolean;
 	cliModels?: string[];
+	captureStreamPath?: string;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
@@ -58,6 +60,16 @@ export async function translate(args: string[]) {
 		process.exit(1);
 	}
 
+	if (
+		options.captureStreamPath &&
+		options.target !== "vcs-commit-message"
+	) {
+		console.error(
+			"Error: --capture-stream is only supported with --target vcs-commit-message.",
+		);
+		process.exit(1);
+	}
+
 	if (options.target === "vcs-commit-message") {
 		await handleVcsCommitMessage(input, options, args);
 		return;
@@ -71,114 +83,129 @@ async function handleVcsCommitMessage(
 	options: TranslateOptions,
 	args: string[],
 ): Promise<void> {
+	const captureRecorder = createStreamCaptureRecorder({
+		path: options.captureStreamPath,
+		command: "ultrahope translate",
+		args,
+		apiPath: "/v1/commit-message/stream",
+	});
 	const models = resolveModels(options.cliModels);
 
-	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
-	const api = createApiClient(token);
-	const {
-		commandExecutionPromise: promise,
-		abortController,
-		cliSessionId: id,
-	} = startCommandExecution({
-		api,
-		command: "translate",
-		args,
-		apiPath: TARGET_TO_API_PATH[options.target],
-		requestPayload:
-			models.length === 1
-				? { input, target: "vcs-commit-message", model: models[0] }
-				: { input, target: "vcs-commit-message", models },
-	});
-
-	const cliSessionId: string | undefined = id;
-	const commandExecutionSignal: AbortSignal | undefined =
-		abortController.signal;
-	const commandExecutionPromise: Promise<unknown> | undefined = promise;
-	const apiClient: ReturnType<typeof createApiClient> | null = api;
-
-	commandExecutionPromise.catch(async (error) => {
-		abortController.abort(abortReasonForError(error));
-		await handleCommandExecutionError(error, {
-			progress: { ready: 0, total: models.length },
-		});
-	});
-
-	const recordSelection = async (generationId?: string) => {
-		if (!generationId || !apiClient) return;
-		try {
-			await apiClient.recordGenerationScore({
-				generationId,
-				value: 1,
-			});
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			if (message.includes("Generation not found")) {
-				return;
-			}
-			console.error(`Warning: Failed to record selection. ${message}`);
-		}
-	};
-
-	const createCandidates = (signal: AbortSignal) =>
-		generateCommitMessages({
-			diff: input,
-			models,
-			signal: mergeAbortSignals(signal, commandExecutionSignal),
-			cliSessionId,
-			commandExecutionPromise,
-		});
-
-	if (!options.interactive) {
-		const gen = generateCommitMessages({
-			diff: input,
-			models: models.slice(0, 1),
-			signal: commandExecutionSignal,
-			cliSessionId,
-			commandExecutionPromise,
-		});
-		const first = await gen.next().catch((error) => {
-			if (error instanceof InvalidModelError) {
-				exitWithInvalidModelError(error);
-			}
-			throw error;
-		});
-		await recordSelection(first.value?.generationId);
-		console.log(first.value?.content ?? "");
-		return;
-	}
-
-	while (true) {
-		const result = await selectCandidate({
-			createCandidates,
-			maxSlots: models.length,
-			abortSignal: commandExecutionSignal,
-			models,
-		});
-
-		if (result.action === "abort") {
-			if (result.error instanceof InvalidModelError) {
-				exitWithInvalidModelError(result.error);
-			}
-			if (isCommandExecutionAbort(commandExecutionSignal)) {
-				return;
-			}
-			console.error("Aborted.");
+	try {
+		const token = await getToken();
+		if (!token) {
+			console.error("Error: Not authenticated. Run `ultrahope login` first.");
 			process.exit(1);
 		}
 
-		if (result.action === "reroll") {
-			continue;
+		const api = createApiClient(token);
+		const {
+			commandExecutionPromise: promise,
+			abortController,
+			cliSessionId: id,
+		} = startCommandExecution({
+			api,
+			command: "translate",
+			args,
+			apiPath: TARGET_TO_API_PATH[options.target],
+			requestPayload:
+				models.length === 1
+					? { input, target: "vcs-commit-message", model: models[0] }
+					: { input, target: "vcs-commit-message", models },
+		});
+
+		const cliSessionId: string | undefined = id;
+		const commandExecutionSignal: AbortSignal | undefined =
+			abortController.signal;
+		const commandExecutionPromise: Promise<unknown> | undefined = promise;
+		const apiClient: ReturnType<typeof createApiClient> | null = api;
+
+		commandExecutionPromise.catch(async (error) => {
+			abortController.abort(abortReasonForError(error));
+			await handleCommandExecutionError(error, {
+				progress: { ready: 0, total: models.length },
+			});
+		});
+
+		const recordSelection = async (generationId?: string) => {
+			if (!generationId || !apiClient) return;
+			try {
+				await apiClient.recordGenerationScore({
+					generationId,
+					value: 1,
+				});
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				if (message.includes("Generation not found")) {
+					return;
+				}
+				console.error(`Warning: Failed to record selection. ${message}`);
+			}
+		};
+
+		const createCandidates = (signal: AbortSignal) =>
+			generateCommitMessages({
+				diff: input,
+				models,
+				signal: mergeAbortSignals(signal, commandExecutionSignal),
+				cliSessionId,
+				commandExecutionPromise,
+				streamCaptureRecorder: captureRecorder,
+			});
+
+		if (!options.interactive) {
+			const gen = generateCommitMessages({
+				diff: input,
+				models: models.slice(0, 1),
+				signal: commandExecutionSignal,
+				cliSessionId,
+				commandExecutionPromise,
+				streamCaptureRecorder: captureRecorder,
+			});
+			const first = await gen.next().catch((error) => {
+				if (error instanceof InvalidModelError) {
+					exitWithInvalidModelError(error);
+				}
+				throw error;
+			});
+			await recordSelection(first.value?.generationId);
+			console.log(first.value?.content ?? "");
+			return;
 		}
 
-		if (result.action === "confirm" && result.selected) {
-			await recordSelection(result.selectedCandidate?.generationId);
-			console.log(result.selected);
-			return;
+		while (true) {
+			const result = await selectCandidate({
+				createCandidates,
+				maxSlots: models.length,
+				abortSignal: commandExecutionSignal,
+				models,
+			});
+
+			if (result.action === "abort") {
+				if (result.error instanceof InvalidModelError) {
+					exitWithInvalidModelError(result.error);
+				}
+				if (isCommandExecutionAbort(commandExecutionSignal)) {
+					return;
+				}
+				console.error("Aborted.");
+				process.exit(1);
+			}
+
+			if (result.action === "reroll") {
+				continue;
+			}
+
+			if (result.action === "confirm" && result.selected) {
+				await recordSelection(result.selectedCandidate?.generationId);
+				console.log(result.selected);
+				return;
+			}
+		}
+	} finally {
+		const capturePath = captureRecorder.flush();
+		if (capturePath) {
+			console.log(`Captured stream replay to ${capturePath}`);
 		}
 	}
 }
@@ -391,6 +418,7 @@ function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
 	let interactive = true;
 	let cliModels: string[] | undefined;
+	let captureStreamPath: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -414,6 +442,13 @@ function parseArgs(args: string[]): TranslateOptions {
 		} else if (arg === "--model") {
 			console.error("Error: --model is no longer supported. Use --models.");
 			process.exit(1);
+		} else if (arg === "--capture-stream") {
+			const value = args[++i];
+			if (!value) {
+				console.error("Error: --capture-stream requires a file path");
+				process.exit(1);
+			}
+			captureStreamPath = value;
 		}
 	}
 
@@ -425,5 +460,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, cliModels };
+	return { target, interactive, cliModels, captureStreamPath };
 }
