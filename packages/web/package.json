@@ -12,7 +12,6 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"effect": "^3.16.3",
 		"@ai-sdk/openai": "3.0.25",
 		"@elysiajs/openapi": "^1.4.14",
 		"@libsql/client": "0.17.0",

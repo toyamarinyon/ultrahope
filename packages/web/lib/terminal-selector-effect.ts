@@ -1,4 +1,3 @@
-import { Effect } from "effect";
 import type {
 	CandidateWithModel,
 	CreateCandidates,
@@ -37,39 +36,27 @@ function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
 }
 
-const runTaskWithEffect = (
+const runTask = (
 	task: EffectCandidateTask,
 	index: number,
 	signal: AbortSignal,
 ): Promise<TaskResult> => {
-	const taskResult = Effect.runPromise(
-		Effect.tryPromise({
-			try: () => task.run(signal),
-			catch: (error) => error,
-		}),
-	);
-
-	return taskResult
-		.then(
-			(candidate): CandidateResult => ({
-				kind: "candidate",
-				index,
-				candidate,
-			}),
-		)
-		.catch((error) => {
+	return task
+		.run(signal)
+		.then((candidate) => ({
+			kind: "candidate" as const,
+			index,
+			candidate,
+		}))
+		.catch((error): TaskResult => {
 			if (isAbortError(error) || signal.aborted) {
 				return { kind: "abort" };
 			}
-			return {
-				kind: "error",
-				index,
-				error,
-			};
+			return { kind: "error", index, error };
 		});
 };
 
-export function createCandidatesFromEffectTasks(
+export function createCandidatesFromTasks(
 	options: CreateCandidatesFromTasksOptions,
 ): CreateCandidates {
 	const { tasks } = options;
@@ -83,7 +70,7 @@ export function createCandidatesFromEffectTasks(
 
 				const pending = new Map<number, Promise<TaskResult>>();
 				for (let index = 0; index < tasks.length; index++) {
-					pending.set(index, runTaskWithEffect(tasks[index], index, signal));
+					pending.set(index, runTask(tasks[index], index, signal));
 				}
 
 				const abortPromise = new Promise<{ kind: "abort" }>((resolve) => {

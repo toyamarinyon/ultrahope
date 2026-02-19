@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateCommitMessage } from "@/lib/llm/commit-message";
 import {
 	type CandidateWithModel,
 	type CreateCandidates,
@@ -11,7 +10,7 @@ import {
 	type SelectorState,
 	type TerminalSelectorController,
 } from "@/lib/terminal-selector";
-import { createCandidatesFromEffectTasks } from "@/lib/terminal-selector-effect";
+import { createCandidatesFromTasks } from "@/lib/terminal-selector-effect";
 
 const DEMO_GENERATION_MODE: "mock" = "mock";
 const DEMO_USE_MOCK = DEMO_GENERATION_MODE === "mock";
@@ -112,10 +111,6 @@ type DemoPhase =
 	| "selector"
 	| "selected";
 
-function isMockModel(model: string): boolean {
-	return model === "mock" || model.startsWith("mock");
-}
-
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof Element)) return false;
 	return Boolean(
@@ -130,7 +125,7 @@ function createCandidatesFromDirectCore(options: {
 	models: string[];
 	fallbacks: string[];
 }): CreateCandidates {
-	return createCandidatesFromEffectTasks({
+	return createCandidatesFromTasks({
 		tasks: options.models.map((model, index) => ({
 			slotId: `slot-${index}`,
 			slotIndex: index,
@@ -157,34 +152,13 @@ async function activateCandidateTask(
 ): Promise<CandidateWithModel> {
 	const slotId = `slot-${index}`;
 	try {
-		if (DEMO_USE_MOCK || isMockModel(model)) {
-			return makeMockCandidate({
-				slotId,
-				slotIndex: index,
-				model,
-				fallback: opts.fallback,
-				signal,
-			});
-		}
-
-		if (signal.aborted) {
-			throw new DOMException("Operation cancelled", "AbortError");
-		}
-		const result = await generateCommitMessage(opts.diff, {
-			model,
-			abortSignal: signal,
-		});
-		if (signal.aborted) {
-			throw new DOMException("Operation cancelled", "AbortError");
-		}
-		const fallback = opts.fallback ?? "feat: update commit message";
-		const content = result.text || fallback;
-		return {
+		return makeMockCandidate({
 			slotId,
-			content,
 			slotIndex: index,
 			model,
-		};
+			fallback: opts.fallback,
+			signal,
+		});
 	} catch (error) {
 		if (error instanceof DOMException && error.name === "AbortError") {
 			throw error;
