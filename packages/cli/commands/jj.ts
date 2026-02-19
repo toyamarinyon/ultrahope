@@ -372,7 +372,7 @@ Describe options:
 Examples:
    ultrahope jj describe              # interactive mode
    ultrahope jj describe -r @-        # for parent revision
-   ultrahope jj describe --capture-stream packages/web/lib/demo/jj-describe-stream.capture.json
+   ultrahope jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
    ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
 }
 

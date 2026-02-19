@@ -1,7 +1,7 @@
 {
   "version": 2,
   "source": "ultrahope-commit-message-stream",
-  "capturedAt": "2026-02-19T13:18:45.809Z",
+  "capturedAt": "2026-02-19T10:48:24.805Z",
   "runs": [
     {
       "id": "run-1",
@@ -9,22 +9,22 @@
       "args": [
         "describe",
         "--capture-stream",
-        "packages/web/lib/demo/jj-describe-stream.capture.json"
+        "packages/web/lib/demo/commit-message-stream.capture.json"
       ],
       "apiPath": "/v1/commit-message/stream",
-      "startedAt": "2026-02-19T13:18:31.678Z",
+      "startedAt": "2026-02-19T10:48:08.747Z",
       "generations": [
         {
           "id": "generation-1",
-          "cliSessionId": "0a8dbefb-c562-455c-abd8-d0dfd83e6f18",
+          "cliSessionId": "085529e4-5125-4333-9126-25d23be702b7",
           "models": [
             "mistral/ministral-3b",
             "xai/grok-code-fast-1"
           ],
-          "startedAt": "2026-02-19T13:18:31.716Z",
+          "startedAt": "2026-02-19T10:48:08.778Z",
           "events": [
             {
-              "atMs": 3151,
+              "atMs": 1531,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
@@ -33,7 +33,7 @@
               }
             },
             {
-              "atMs": 3151,
+              "atMs": 1531,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
@@ -42,7 +42,7 @@
               }
             },
             {
-              "atMs": 3151,
+              "atMs": 1532,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
@@ -51,7 +51,7 @@
               }
             },
             {
-              "atMs": 3152,
+              "atMs": 1536,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
@@ -60,82 +60,100 @@
               }
             },
             {
-              "atMs": 3158,
+              "atMs": 1536,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate"
+                "commitMessage": "feat(cli): add"
               }
             },
             {
-              "atMs": 3158,
+              "atMs": 1536,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit"
+                "commitMessage": "feat(cli): add stream"
               }
             },
             {
-              "atMs": 3158,
+              "atMs": 1537,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit message"
+                "commitMessage": "feat(cli): add stream capture"
               }
             },
             {
-              "atMs": 3168,
+              "atMs": 1545,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit message generation"
+                "commitMessage": "feat(cli): add stream capture functionality"
               }
             },
             {
-              "atMs": 3168,
+              "atMs": 1545,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit message generation into"
+                "commitMessage": "feat(cli): add stream capture functionality for"
               }
             },
             {
-              "atMs": 3177,
+              "atMs": 1545,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit message generation into shared"
+                "commitMessage": "feat(cli): add stream capture functionality for commit"
               }
             },
             {
-              "atMs": 3177,
+              "atMs": 1546,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "feat(cli): consolidate commit message generation into shared stream"
+                "commitMessage": "feat(cli): add stream capture functionality for commit and"
               }
             },
             {
-              "atMs": 3313,
+              "atMs": 1557,
+              "model": "mistral/ministral-3b",
+              "attempt": 1,
+              "event": {
+                "type": "commit-message",
+                "commitMessage": "feat(cli): add stream capture functionality for commit and translate"
+              }
+            },
+            {
+              "atMs": 1557,
+              "model": "mistral/ministral-3b",
+              "attempt": 1,
+              "event": {
+                "type": "commit-message",
+                "commitMessage": "feat(cli): add stream capture functionality for commit and translate commands"
+              }
+            },
+            {
+              "atMs": 1659,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
                 "type": "usage",
                 "usage": {
-                  "inputTokens": 4089,
-                  "outputTokens": 12
+                  "inputTokens": 16941,
+                  "outputTokens": 14
                 }
               }
             },
             {
-              "atMs": 3313,
+              "atMs": 1660,
               "model": "mistral/ministral-3b",
               "attempt": 1,
               "event": {
@@ -159,8 +177,8 @@
                           "providerApiModelId": "ministral-3b-latest",
                           "credentialType": "system",
                           "success": true,
-                          "startTime": 1092631.829308,
-                          "endTime": 1092879.977008,
+                          "startTime": 195701.115036,
+                          "endTime": 196235.728126,
                           "statusCode": 200
                         }
                       ],
@@ -178,8 +196,8 @@
                               "providerApiModelId": "ministral-3b-latest",
                               "credentialType": "system",
                               "success": true,
-                              "startTime": 1092631.829308,
-                              "endTime": 1092879.977008,
+                              "startTime": 195701.115036,
+                              "endTime": 196235.728126,
                               "statusCode": 200
                             }
                           ]
@@ -187,127 +205,127 @@
                       ],
                       "totalProviderAttemptCount": 1
                     },
-                    "cost": "0.00016404",
-                    "marketCost": "0.00016404",
-                    "generationId": "gen_01KHV0TRENRK5AQ3H7J80DDGR0",
+                    "cost": "0.0006782",
+                    "marketCost": "0.0006782",
+                    "generationId": "gen_01KHTR7B501HPH59ME8T631P6K",
                     "billableWebSearchCalls": 0
                   }
                 }
               }
             },
             {
-              "atMs": 7440,
+              "atMs": 7770,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "ref"
+                "commitMessage": "feat"
               }
             },
             {
-              "atMs": 7452,
+              "atMs": 7782,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor"
+                "commitMessage": "feat(cli"
               }
             },
             {
-              "atMs": 7452,
+              "atMs": 7782,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web"
+                "commitMessage": "feat(cli):"
               }
             },
             {
-              "atMs": 7452,
+              "atMs": 7782,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web):"
+                "commitMessage": "feat(cli): add"
               }
             },
             {
-              "atMs": 7453,
+              "atMs": 7782,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate"
+                "commitMessage": "feat(cli): add stream"
               }
             },
             {
-              "atMs": 7453,
+              "atMs": 7796,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo"
+                "commitMessage": "feat(cli): add stream capture"
               }
             },
             {
-              "atMs": 7453,
+              "atMs": 7806,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo stream"
+                "commitMessage": "feat(cli): add stream capture support"
               }
             },
             {
-              "atMs": 7453,
+              "atMs": 7807,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo stream captures"
+                "commitMessage": "feat(cli): add stream capture support for"
               }
             },
             {
-              "atMs": 7453,
+              "atMs": 7807,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo stream captures into"
+                "commitMessage": "feat(cli): add stream capture support for commit"
               }
             },
             {
-              "atMs": 7471,
+              "atMs": 7807,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo stream captures into shared"
+                "commitMessage": "feat(cli): add stream capture support for commit message"
               }
             },
             {
-              "atMs": 7475,
+              "atMs": 7807,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "commit-message",
-                "commitMessage": "refactor(web): consolidate demo stream captures into shared file"
+                "commitMessage": "feat(cli): add stream capture support for commit message generation"
               }
             },
             {
-              "atMs": 7548,
+              "atMs": 7980,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
                 "type": "usage",
                 "usage": {
-                  "inputTokens": 3781,
-                  "outputTokens": 322
+                  "inputTokens": 15677,
+                  "outputTokens": 763
                 }
               }
             },
             {
-              "atMs": 7548,
+              "atMs": 7980,
               "model": "xai/grok-code-fast-1",
               "attempt": 1,
               "event": {
@@ -331,8 +349,8 @@
                           "providerApiModelId": "grok-code-fast-1",
                           "credentialType": "system",
                           "success": true,
-                          "startTime": 2736436.184032,
-                          "endTime": 2739178.389992,
+                          "startTime": 2367505.999517,
+                          "endTime": 2367891.070578,
                           "statusCode": 200
                         }
                       ],
@@ -350,8 +368,8 @@
                               "providerApiModelId": "grok-code-fast-1",
                               "credentialType": "system",
                               "success": true,
-                              "startTime": 2736436.184032,
-                              "endTime": 2739178.389992,
+                              "startTime": 2367505.999517,
+                              "endTime": 2367891.070578,
                               "statusCode": 200
                             }
                           ]
@@ -359,19 +377,19 @@
                       ],
                       "totalProviderAttemptCount": 1
                     },
-                    "cost": "0.00120464",
-                    "marketCost": "0.00120464",
-                    "generationId": "gen_01KHV0TRF6MEKXR3NB84NGR6NZ",
+                    "cost": "0.00424534",
+                    "marketCost": "0.00424534",
+                    "generationId": "gen_01KHTR7B29S4BAAH099TQP8KA7",
                     "billableWebSearchCalls": 0
                   }
                 }
               }
             }
           ],
-          "endedAt": "2026-02-19T13:18:39.265Z"
+          "endedAt": "2026-02-19T10:48:16.759Z"
         }
       ],
-      "endedAt": "2026-02-19T13:18:45.809Z"
+      "endedAt": "2026-02-19T10:48:24.805Z"
     }
   ]
 }
