@@ -6,7 +6,7 @@
  * - .agents/skills/checking-auth-health/SKILL.md (consumer)
  */
 
-export type AuthLogBase = {
+type AuthLogBase = {
 	tag: "auth";
 	correlationId: string;
 	method: "GET" | "POST";
@@ -31,5 +31,3 @@ export type AuthExceptionLog = AuthLogBase & {
 	error: string;
 	duration: number;
 };
-
-export type AuthLog = AuthRequestLog | AuthResponseLog | AuthExceptionLog;

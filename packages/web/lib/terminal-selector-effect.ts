@@ -4,7 +4,7 @@ import type {
 	CreateCandidates,
 } from "../../shared/terminal-selector-contract";
 
-export interface EffectCandidateTask {
+interface EffectCandidateTask {
 	slotId: string;
 	slotIndex: number;
 	model?: string;

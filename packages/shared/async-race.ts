@@ -1,9 +1,6 @@
-export type RaceErrorAction = "continue" | "throw";
+type RaceErrorAction = "continue" | "throw";
 
-export type RaceErrorPolicy = (
-	index: number,
-	error: unknown,
-) => RaceErrorAction;
+type RaceErrorPolicy = (index: number, error: unknown) => RaceErrorAction;
 
 export interface RaceOptions<T> {
 	iterators: AsyncIterator<T>[];

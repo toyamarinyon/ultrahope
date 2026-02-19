@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { Output, streamText } from "ai";
 import { preprocessDiff } from "./diff";
 
 const SYSTEM_PROMPT = `You are an expert software engineer that writes high-quality git commit messages.
@@ -76,6 +76,7 @@ export function generateCommitMessageStream(
 		system: SYSTEM_PROMPT,
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
+		output: Output.text(),
 		onError({ error }) {
 			if (isKnownGrokReasoningError(error, options.model)) {
 				if (!grokReasoningErrorWarned) {

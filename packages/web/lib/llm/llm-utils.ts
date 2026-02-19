@@ -40,9 +40,3 @@ export function buildResponse(
 		gatewayPayload,
 	};
 }
-
-export function verboseLog(...args: unknown[]) {
-	if (VERBOSE) {
-		console.log("[VERBOSE]", ...args);
-	}
-}

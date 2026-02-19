@@ -21,16 +21,10 @@ import {
 
 export type {
 	CandidateWithModel,
-	CommitMessageGenerationPort,
 	CreateCandidates,
-	GenerateCommitMessageGenerationInput,
-	GenerationScheduler,
-	GenerationSchedulerAction,
 	SelectorResult,
-	SelectorSlot,
 	SelectorState,
 	TerminalSelectorController,
-	TerminalSelectorOptions,
 } from "../../shared/terminal-selector-contract";
 
 export const SPINNER_FRAMES = [
@@ -56,7 +50,7 @@ function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
 }
 
-export function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
+function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
 	if (slot.status === "pending") {
 		const line = `${selected ? "●" : "○"} Generating...`;
 		const meta = slot.model ? `   ${formatModelName(slot.model)}` : "";

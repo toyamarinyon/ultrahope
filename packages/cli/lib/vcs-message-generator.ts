@@ -1,8 +1,5 @@
 import { raceAsyncIterators } from "../../shared/async-race";
-import type {
-	CandidateWithModel,
-	CreateCandidates,
-} from "../../shared/terminal-selector-contract";
+import type { CandidateWithModel } from "../../shared/terminal-selector-contract";
 import {
 	type CommitMessageStreamEvent,
 	createApiClient,
@@ -38,16 +35,6 @@ const isInvalidCliSessionIdError = (error: unknown) =>
 
 const delay = (ms: number) =>
 	new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-export function createCandidatesFromApi(
-	options: Omit<GeneratorOptions, "signal">,
-): CreateCandidates {
-	return (signal) =>
-		generateCommitMessages({
-			...options,
-			signal,
-		});
-}
 
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
