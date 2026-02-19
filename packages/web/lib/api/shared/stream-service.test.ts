@@ -36,4 +36,20 @@ describe("stream-service", () => {
 			`data: ${JSON.stringify({ type: "commit-message", commitMessage: "done" })}\n\n`,
 		);
 	});
+
+	it("formats SSE events with atMs", () => {
+		const payload = formatSseEvent({
+			atMs: 123,
+			type: "commit-message",
+			commitMessage: "done",
+		});
+		const encoded = new TextDecoder().decode(payload);
+		expect(encoded).toBe(
+			`data: ${JSON.stringify({
+				atMs: 123,
+				type: "commit-message",
+				commitMessage: "done",
+			})}\n\n`,
+		);
+	});
 });

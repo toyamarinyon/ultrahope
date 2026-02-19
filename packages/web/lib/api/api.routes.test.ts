@@ -289,6 +289,10 @@ describe("API route contracts", () => {
 			.map((entry) => entry.trim())
 			.filter(Boolean)
 			.map((entry) => JSON.parse(entry.replace(/^data:\s*/, "")));
+		for (const event of events) {
+			expect(event.atMs).toBeTypeOf("number");
+			expect(event.atMs).toBeGreaterThanOrEqual(0);
+		}
 
 		expect(events.map((event) => event.type)).toEqual([
 			"commit-message",

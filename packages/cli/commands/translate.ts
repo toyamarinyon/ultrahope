@@ -16,8 +16,8 @@ import {
 } from "../lib/command-execution";
 import { parseModelsArg, resolveModels } from "../lib/config";
 import { type CandidateWithModel, selectCandidate } from "../lib/selector";
-import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { stdin } from "../lib/stdin";
+import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
@@ -60,10 +60,7 @@ export async function translate(args: string[]) {
 		process.exit(1);
 	}
 
-	if (
-		options.captureStreamPath &&
-		options.target !== "vcs-commit-message"
-	) {
+	if (options.captureStreamPath && options.target !== "vcs-commit-message") {
 		console.error(
 			"Error: --capture-stream is only supported with --target vcs-commit-message.",
 		);

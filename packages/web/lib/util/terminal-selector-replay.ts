@@ -8,6 +8,8 @@ import type {
 	TerminalStreamReplayRun,
 } from "../../../shared/terminal-stream-replay";
 
+const MIN_REPLAY_EVENT_DELAY_MS = 10;
+
 function waitForDelay(ms: number, signal: AbortSignal): Promise<void> {
 	if (ms <= 0) {
 		return Promise.resolve();
@@ -93,7 +95,10 @@ export function createCandidatesFromReplayGeneration(options: {
 				let previousAtMs = 0;
 				for (let index = 0; index < generation.events.length; index++) {
 					const event = generation.events[index];
-					const delayMs = Math.max(0, event.atMs - previousAtMs);
+					const delayMs = Math.max(
+						MIN_REPLAY_EVENT_DELAY_MS,
+						Math.max(0, event.atMs - previousAtMs),
+					);
 					previousAtMs = event.atMs;
 					await waitForDelay(delayMs, signal);
 					if (event.event.type !== "commit-message") {

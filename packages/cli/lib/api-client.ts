@@ -124,8 +124,9 @@ interface TokenResponse {
 }
 
 export type CommitMessageStreamEvent =
-	| { type: "commit-message"; commitMessage: string }
+	| ({ atMs?: number } & { type: "commit-message"; commitMessage: string })
 	| {
+			atMs?: number;
 			type: "usage";
 			usage: {
 				inputTokens: number;
@@ -133,8 +134,12 @@ export type CommitMessageStreamEvent =
 				totalTokens?: number;
 			};
 	  }
-	| { type: "provider-metadata"; providerMetadata: unknown }
-	| { type: "error"; message: string };
+	| {
+			atMs?: number;
+			type: "provider-metadata";
+			providerMetadata: unknown;
+	  }
+	| ({ atMs?: number } & { type: "error"; message: string });
 
 export function extractGatewayMetadata(providerMetadata: unknown): {
 	generationId?: string;

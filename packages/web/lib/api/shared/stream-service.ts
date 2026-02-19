@@ -1,13 +1,18 @@
 import type { ProviderMetadata } from "ai";
 
 export type CommitMessageStreamEvent =
-	| { type: "commit-message"; commitMessage: string }
-	| { type: "usage"; usage: { inputTokens: number; outputTokens: number } }
+	| ({ atMs?: number } & { type: "commit-message"; commitMessage: string })
 	| {
+			atMs?: number;
+			type: "usage";
+			usage: { inputTokens: number; outputTokens: number };
+	  }
+	| {
+			atMs?: number;
 			type: "provider-metadata";
 			providerMetadata: ProviderMetadata | undefined;
 	  }
-	| { type: "error"; message: string };
+	| ({ atMs?: number } & { type: "error"; message: string });
 
 const encoder = new TextEncoder();
 

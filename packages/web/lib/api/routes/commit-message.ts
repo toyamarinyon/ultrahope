@@ -1,3 +1,4 @@
+import type { ProviderMetadata } from "ai";
 import { Elysia } from "elysia";
 import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
@@ -44,6 +45,18 @@ type CommitMessageRouteContext = {
 	request: Request;
 	db?: Db;
 };
+
+type CommitMessageStreamEventPayload =
+	| ({ atMs?: number } & { type: "commit-message"; commitMessage: string })
+	| ({ atMs?: number } & {
+			type: "usage";
+			usage: { inputTokens: number; outputTokens: number };
+	  })
+	| ({ atMs?: number } & {
+			type: "provider-metadata";
+			providerMetadata: ProviderMetadata | undefined;
+	  })
+	| ({ atMs?: number } & { type: "error"; message: string });
 
 export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia()
@@ -198,12 +211,21 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					abortSignal: generationSignal,
 				});
 				const sanitizer = createCommitMessageSanitizer();
+				const streamStartedAtMs = Date.now();
 				let sanitizedCommitMessage = "";
 				let lastCommitMessage = "";
 				let finalCommitMessage = "";
-
 				const customStream = new ReadableStream<Uint8Array>({
 					async start(controller) {
+						const emitEvent = (event: CommitMessageStreamEventPayload) => {
+							controller.enqueue(
+								formatSseEvent({
+									...event,
+									atMs: Date.now() - streamStartedAtMs,
+								}),
+							);
+						};
+
 						try {
 							for await (const chunk of stream.textStream) {
 								const sanitizedChunk = sanitizer.push(chunk);
@@ -211,11 +233,11 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 								const commitMessage = trimCommitMessageWrappers(
 									normalizeCommitMessage(sanitizedCommitMessage),
 								);
-								if (!commitMessage) continue;
+								if (!commitMessage) {
+									continue;
+								}
 								lastCommitMessage = commitMessage;
-								controller.enqueue(
-									formatSseEvent({ type: "commit-message", commitMessage }),
-								);
+								emitEvent({ type: "commit-message", commitMessage });
 							}
 
 							sanitizedCommitMessage += sanitizer.finish();
@@ -227,12 +249,10 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 								finalCommitMessage !== lastCommitMessage
 							) {
 								lastCommitMessage = finalCommitMessage;
-								controller.enqueue(
-									formatSseEvent({
-										type: "commit-message",
-										commitMessage: finalCommitMessage,
-									}),
-								);
+								emitEvent({
+									type: "commit-message",
+									commitMessage: finalCommitMessage,
+								});
 							}
 
 							const finalized = await finalizeStreamingGeneration(
@@ -253,24 +273,17 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 									getPolarClient: deps.getPolarClient,
 								},
 							);
-							controller.enqueue(
-								formatSseEvent({ type: "usage", usage: finalized.usage }),
-							);
-							controller.enqueue(
-								formatSseEvent({
-									type: "provider-metadata",
-									providerMetadata: finalized.providerMetadata,
-								}),
-							);
+							emitEvent({ type: "usage", usage: finalized.usage });
+							emitEvent({
+								type: "provider-metadata",
+								providerMetadata: finalized.providerMetadata,
+							});
 							controller.close();
 						} catch (error) {
-							controller.enqueue(
-								formatSseEvent({
-									type: "error",
-									message:
-										error instanceof Error ? error.message : String(error),
-								}),
-							);
+							emitEvent({
+								type: "error",
+								message: error instanceof Error ? error.message : String(error),
+							});
 							controller.close();
 						}
 					},

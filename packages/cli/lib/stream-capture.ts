@@ -1,11 +1,11 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { CommitMessageStreamEvent } from "./api-client";
 import type {
 	TerminalStreamReplayCapture,
 	TerminalStreamReplayGeneration,
 	TerminalStreamReplayRun,
 } from "../../shared/terminal-stream-replay";
+import type { CommitMessageStreamEvent } from "./api-client";
 
 interface StreamCaptureOptions {
 	path?: string;
@@ -21,10 +21,7 @@ interface ActiveGeneration {
 
 export interface StreamCaptureRecorder {
 	readonly enabled: boolean;
-	startGeneration: (meta: {
-		cliSessionId: string;
-		models: string[];
-	}) => number;
+	startGeneration: (meta: { cliSessionId: string; models: string[] }) => number;
 	recordEvent: (
 		generationId: number,
 		record: {
@@ -167,8 +164,14 @@ export function createStreamCaptureRecorder(
 				return;
 			}
 
+			const eventAtMs =
+				typeof record.event.atMs === "number" &&
+				Number.isFinite(record.event.atMs)
+					? record.event.atMs
+					: Date.now() - activeGeneration.startedAtMs;
+
 			activeGeneration.generation.events.push({
-				atMs: Math.max(0, Date.now() - activeGeneration.startedAtMs),
+				atMs: Math.max(0, Math.round(eventAtMs)),
 				model: record.model,
 				attempt: record.attempt,
 				event: sanitizeEvent(record.event),

@@ -1,4 +1,4 @@
-export type TerminalStreamReplaySseEvent =
+type TerminalStreamReplaySseEvent =
 	| { type: "commit-message"; commitMessage: string }
 	| {
 			type: "usage";
