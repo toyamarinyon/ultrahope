@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
 import { invalidModelErrorBody, unauthorizedBody } from "../shared/errors";
 import { executeGeneration } from "../shared/generation-service";
@@ -9,14 +10,38 @@ import {
 	isModelAllowed,
 } from "../shared/validators";
 
+type ApiSession = {
+	user: {
+		id: number;
+	};
+};
+
+type PrRouteContext = {
+	body: {
+		cliSessionId: string;
+		input: string;
+		model: string;
+	};
+	session?: ApiSession;
+	set: {
+		status?: number | string;
+	};
+	request: Request;
+	db?: Db;
+};
+
 export function createPrRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia()
 		.post(
 			"/v1/pr-title-body",
-			async ({ body, session, set, request, db }: any) => {
+			async ({ body, session, set, request, db }: PrRouteContext) => {
 				if (!session) {
 					set.status = 401;
 					return unauthorizedBody;
+				}
+				if (!db) {
+					set.status = 500;
+					return { error: "Database unavailable" };
 				}
 				if (!isModelAllowed(body.model)) {
 					set.status = 400;
@@ -63,10 +88,14 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 		)
 		.post(
 			"/v1/pr-intent",
-			async ({ body, session, set, request, db }: any) => {
+			async ({ body, session, set, request, db }: PrRouteContext) => {
 				if (!session) {
 					set.status = 401;
 					return unauthorizedBody;
+				}
+				if (!db) {
+					set.status = 500;
+					return { error: "Database unavailable" };
 				}
 				if (!isModelAllowed(body.model)) {
 					set.status = 400;

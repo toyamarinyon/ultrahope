@@ -9,20 +9,20 @@ import {
 	type InsufficientBalanceBody,
 } from "./errors";
 
-export const MOCKING = process.env.MOCKING === "1";
-export const SKIP_DAILY_LIMIT_CHECK =
+const MOCKING = process.env.MOCKING === "1";
+const SKIP_DAILY_LIMIT_CHECK =
 	process.env.NODE_ENV !== "production" &&
 	process.env.SKIP_DAILY_LIMIT_CHECK === "1";
 
-export function isMockingEnabled(): boolean {
+function isMockingEnabled(): boolean {
 	return MOCKING;
 }
 
-export function isDailyLimitCheckBypassed(): boolean {
+function isDailyLimitCheckBypassed(): boolean {
 	return SKIP_DAILY_LIMIT_CHECK;
 }
 
-export function logUsageBypass(reason: "MOCKING" | "SKIP_DAILY_LIMIT_CHECK") {
+function logUsageBypass(reason: "MOCKING" | "SKIP_DAILY_LIMIT_CHECK") {
 	if (reason === "MOCKING") {
 		console.log("[MOCKING] Daily limit check bypassed");
 	}

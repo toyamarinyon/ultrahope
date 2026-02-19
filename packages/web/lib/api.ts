@@ -1,1 +1,1 @@
-export { app, createApiApp } from "./api/index";
+export { app } from "./api/index";

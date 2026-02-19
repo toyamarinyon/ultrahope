@@ -1,5 +1,5 @@
 import { openapi } from "@elysiajs/openapi";
-import { Elysia } from "elysia";
+import { type AnyElysia, Elysia } from "elysia";
 import {
 	type ApiDependencies,
 	createDefaultApiDependencies,
@@ -14,74 +14,56 @@ import { formatVerboseError } from "./shared/errors";
 const VERBOSE = process.env.VERBOSE === "1";
 
 function createAuthPlugin(deps: ApiDependencies) {
-	return new Elysia()
-		.derive(() => ({
-			db: deps.getDb(),
-		}))
-		.resolve(async ({ request: { headers } }) => {
-			const auth = deps.getAuth();
-			const session = await auth.api.getSession({ headers });
-			if (session === null) {
-				return { session: undefined };
-			}
-			return {
-				session: {
-					session,
-					user: {
-						...session.user,
-						id: Number.parseInt(session.user.id, 10),
+	return (app: AnyElysia) =>
+		app
+			.derive(() => ({
+				db: deps.getDb(),
+			}))
+			.resolve(async ({ request: { headers } }) => {
+				const auth = deps.getAuth();
+				const session = await auth.api.getSession({ headers });
+				if (session === null) {
+					return { session: undefined };
+				}
+				return {
+					session: {
+						session,
+						user: {
+							...session.user,
+							id: Number.parseInt(session.user.id, 10),
+						},
 					},
-				},
-			};
-		});
+				};
+			});
 }
 
 export function createApiApp(
 	deps: ApiDependencies = createDefaultApiDependencies(),
 ) {
-	const openApiPlugin = new Elysia({ prefix: "/api" }).use(
-		openapi({
-			path: "/openapi",
-			specPath: "/openapi/json",
-			documentation: {
-				info: {
-					title: "Ultrahope API",
-					version: deps.getPackageVersion(),
-				},
-				components: {
-					securitySchemes: {
-						bearerAuth: {
-							type: "http",
-							scheme: "bearer",
+	const openApiPlugin = createAuthPlugin(deps)(
+		new Elysia({ prefix: "/api" }).use(
+			openapi({
+				path: "/openapi",
+				specPath: "/openapi/json",
+				documentation: {
+					info: {
+						title: "Ultrahope API",
+						version: deps.getPackageVersion(),
+					},
+					components: {
+						securitySchemes: {
+							bearerAuth: {
+								type: "http",
+								scheme: "bearer",
+							},
 						},
 					},
 				},
-			},
-		}),
+			}),
+		),
 	);
 
 	return openApiPlugin
-		.derive(() => ({
-			db: deps.getDb(),
-		}))
-		.resolve(async ({ request: { headers } }) => {
-			const auth = deps.getAuth();
-			const session = await auth.api.getSession({ headers });
-			if (session === null) {
-				return {
-					session: undefined,
-				};
-			}
-			return {
-				session: {
-					session,
-					user: {
-						...session.user,
-						id: Number.parseInt(session.user.id, 10),
-					},
-				},
-			};
-		})
 		.onError(({ code, error, request, set, body, params, query }) => {
 			if (!VERBOSE) return;
 			if (set.status !== 422 && code !== "VALIDATION") return;
@@ -105,4 +87,3 @@ export function createApiApp(
 }
 
 export const app = createApiApp();
-export default app;

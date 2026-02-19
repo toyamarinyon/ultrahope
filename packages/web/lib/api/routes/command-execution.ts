@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
 import { unauthorizedBody } from "../shared/errors";
 import {
@@ -10,13 +11,45 @@ import {
 	CommandExecutionResponseSchemas,
 } from "../shared/validators";
 
+type ApiSession = {
+	user: {
+		id: number;
+	};
+};
+
+type CommandExecutionRouteContext = {
+	body: {
+		commandExecutionId: string;
+		cliSessionId: string;
+		command: string;
+		args: string[];
+		api: string;
+		requestPayload: {
+			input: string;
+			target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
+			model?: string;
+			models?: string[];
+		};
+	};
+	session?: ApiSession;
+	db?: Db;
+	request: Request;
+	set: {
+		status?: number | string;
+	};
+};
+
 export function createCommandExecutionRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia().post(
 		"/v1/command_execution",
-		async ({ body, session, set, db }: any) => {
+		async ({ body, session, set, db }: CommandExecutionRouteContext) => {
 			if (!session) {
 				set.status = 401;
 				return unauthorizedBody;
+			}
+			if (!db) {
+				set.status = 500;
+				return { error: "Database unavailable" };
 			}
 
 			const generationAbortController = new AbortController();

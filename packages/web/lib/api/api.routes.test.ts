@@ -47,7 +47,7 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 				api: {
 					getSession: async () => ({ user: { id: "1001" } }),
 				},
-			}) as any,
+			}) as unknown as ReturnType<ApiDependencies["getAuth"]>,
 		getDb: () => ({}) as never,
 		getPolarClient: () => ({
 			events: {
@@ -124,7 +124,7 @@ function withAuth(unauthorized = false, session: unknown = null) {
 			getSession: async () =>
 				unauthorized ? null : (session ?? { user: { id: "1001" } }),
 		},
-	} as any;
+	} as unknown as ReturnType<ApiDependencies["getAuth"]>;
 }
 
 async function request(

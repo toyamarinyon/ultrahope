@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { buildStructuredPrompt } from "./prompt-builder";
-import type { ClassificationResult, ClassifiedFile } from "./types";
+import type { ClassifiedFile } from "./types";
 
 describe("prompt-builder", () => {
 	it("builds a prompt with primary and related sections", () => {

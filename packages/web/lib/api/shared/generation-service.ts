@@ -2,6 +2,7 @@ import type { LanguageModelUsage, ProviderMetadata } from "ai";
 import type { Db } from "@/db/client";
 import { buildResponse } from "@/lib/llm/llm-utils";
 import type { LLMResponse } from "@/lib/llm/types";
+import type { ApiDependencies } from "../dependencies";
 import {
 	createInsufficientBalanceBody,
 	type InsufficientBalanceBody,
@@ -15,6 +16,12 @@ export type GenerateContext = {
 	abortSignal: AbortSignal;
 	db: Db;
 };
+
+type PolarIngestPayload = Parameters<
+	ReturnType<ApiDependencies["getPolarClient"]>["events"]["ingest"]
+>[0];
+
+type PolarUsageEvent = PolarIngestPayload["events"][number];
 
 export type ExecuteGenerationResult =
 	| {
@@ -44,11 +51,7 @@ export type GenerationServiceDeps = {
 	storage: ApiStorage;
 	baseUrl: string;
 	microDollarsPerUsd: number;
-	getPolarClient: () => {
-		events: {
-			ingest: (...args: any[]) => Promise<unknown>;
-		};
-	};
+	getPolarClient: ApiDependencies["getPolarClient"];
 };
 
 type LLMGenerator = (abortSignal: AbortSignal) => Promise<LLMResponse>;
@@ -230,7 +233,7 @@ export async function finalizeStreamingGeneration(
 	};
 }
 
-export function ingestUsageEvent(args: {
+function ingestUsageEvent(args: {
 	getPolarClient: GenerationServiceDeps["getPolarClient"];
 	userId: number;
 	costInMicrodollars: number;
@@ -241,20 +244,20 @@ export function ingestUsageEvent(args: {
 	if (args.costInMicrodollars <= 0) return;
 
 	const polarClient = args.getPolarClient();
+	const eventPayload: PolarUsageEvent = {
+		name: "usage",
+		externalCustomerId: args.userId.toString(),
+		metadata: {
+			cost: args.costInMicrodollars,
+			model: args.model,
+			provider: args.vendor,
+			generationId: args.generationId,
+		},
+	};
+
 	polarClient.events
 		.ingest({
-			events: [
-				{
-					name: "usage",
-					externalCustomerId: args.userId.toString(),
-					metadata: {
-						cost: args.costInMicrodollars,
-						model: args.model,
-						provider: args.vendor,
-						generationId: args.generationId,
-					},
-				},
-			],
+			events: [eventPayload],
 		})
 		.catch((error) => {
 			console.error("[polar] Failed to ingest usage event:", error);

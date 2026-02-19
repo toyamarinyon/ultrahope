@@ -2,7 +2,7 @@ import { ALLOWED_MODEL_IDS } from "@/lib/llm/models";
 import type { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import type { InvalidModelBody } from "./validators";
 
-export type UnauthorizedBody = {
+type UnauthorizedBody = {
 	error: string;
 };
 

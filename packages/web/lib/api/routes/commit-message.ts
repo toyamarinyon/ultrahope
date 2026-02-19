@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
 import { invalidModelErrorBody, unauthorizedBody } from "../shared/errors";
 import {
@@ -24,14 +25,44 @@ import {
 	isModelAllowed,
 } from "../shared/validators";
 
+type ApiSession = {
+	user: {
+		id: number;
+	};
+};
+
+type CommitMessageRouteContext = {
+	body: {
+		cliSessionId: string;
+		input: string;
+		model: string;
+	};
+	session?: ApiSession;
+	set: {
+		status?: number | string;
+	};
+	request: Request;
+	db?: Db;
+};
+
 export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia()
 		.post(
 			"/v1/commit-message",
-			async ({ body, session, set, request, db }: any) => {
+			async ({
+				body,
+				session,
+				set,
+				request,
+				db,
+			}: CommitMessageRouteContext) => {
 				if (!session) {
 					set.status = 401;
 					return unauthorizedBody;
+				}
+				if (!db) {
+					set.status = 500;
+					return { error: "Database unavailable" };
 				}
 
 				if (!isModelAllowed(body.model)) {
@@ -81,10 +112,20 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 		)
 		.post(
 			"/v1/commit-message/stream",
-			async ({ body, session, set, request, db }: any) => {
+			async ({
+				body,
+				session,
+				set,
+				request,
+				db,
+			}: CommitMessageRouteContext) => {
 				if (!session) {
 					set.status = 401;
 					return unauthorizedBody;
+				}
+				if (!db) {
+					set.status = 500;
+					return { error: "Database unavailable" };
 				}
 
 				if (!isModelAllowed(body.model)) {

@@ -1,15 +1,38 @@
 import { Elysia, t } from "elysia";
+import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
 import { unauthorizedBody } from "../shared/errors";
 import { GenerationScoreBodySchema } from "../shared/validators";
 
+type ApiSession = {
+	user: {
+		id: number;
+	};
+};
+
+type GenerationScoreRouteContext = {
+	body: {
+		generationId: string;
+		value: number;
+	};
+	session?: ApiSession;
+	set: {
+		status?: number | string;
+	};
+	db?: Db;
+};
+
 export function createGenerationScoreRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia().post(
 		"/v1/generation_score",
-		async ({ body, session, set, db }: any) => {
+		async ({ body, session, set, db }: GenerationScoreRouteContext) => {
 			if (!session) {
 				set.status = 401;
 				return unauthorizedBody;
+			}
+			if (!db) {
+				set.status = 500;
+				return { error: "Database unavailable" };
 			}
 
 			const generationId =

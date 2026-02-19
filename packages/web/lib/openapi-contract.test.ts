@@ -48,12 +48,15 @@ describe("openapi contract", () => {
 					expectedRoute,
 					`missing route ${method.toUpperCase()} ${path}`,
 				).toBeDefined();
+				if (!expectedRoute) {
+					continue;
+				}
 				expect(
 					actualRoute,
 					`missing generated route ${method.toUpperCase()} ${path}`,
 				).toBeDefined();
 
-				const expectedCodes = extractResponseCodes(expectedRoute!).sort();
+				const expectedCodes = extractResponseCodes(expectedRoute).sort();
 				for (const status of expectedCodes) {
 					expect(
 						actualRoute?.responses?.[status],
