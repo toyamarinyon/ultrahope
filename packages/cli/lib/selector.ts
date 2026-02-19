@@ -13,10 +13,22 @@ import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
 import type {
+	SelectorSlot,
 	CandidateWithModel as SharedCandidateWithModel,
 	QuotaInfo as SharedQuotaInfo,
 	SelectorResult as SharedSelectorResult,
 } from "../../shared/terminal-selector-contract";
+import {
+	formatCost,
+	formatModelName,
+	formatTotalCostLabel,
+	getLatestQuota,
+	getReadyCount,
+	getSelectedCandidate,
+	getTotalCost,
+	hasReadySlot,
+	selectNearestReady,
+} from "../../shared/terminal-selector-helpers";
 import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
@@ -25,10 +37,6 @@ import { ui } from "./ui";
 export type CandidateWithModel = SharedCandidateWithModel;
 export type QuotaInfo = SharedQuotaInfo;
 export type SelectorResult = SharedSelectorResult;
-
-type Slot =
-	| { status: "pending"; slotId: string; model?: string }
-	| { status: "ready"; candidate: CandidateWithModel };
 
 interface SelectorOptions {
 	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
@@ -39,67 +47,7 @@ interface SelectorOptions {
 
 const TTY_PATH = "/dev/tty";
 
-function formatModelName(model: string): string {
-	const parts = model.split("/");
-	return parts.length > 1 ? parts[1] : model;
-}
-
-function formatCost(cost: number): string {
-	return `$${cost.toFixed(7).replace(/0+$/, "").replace(/\.$/, "")}`;
-}
-
-function getReadyCount(slots: Slot[]): number {
-	return slots.filter((s) => s.status === "ready").length;
-}
-
-function getTotalCost(slots: Slot[]): number {
-	return slots.reduce((sum, slot) => {
-		if (slot.status === "ready" && slot.candidate.cost != null) {
-			return sum + slot.candidate.cost;
-		}
-		return sum;
-	}, 0);
-}
-
-function getLatestQuota(slots: Slot[]): QuotaInfo | undefined {
-	for (const slot of slots) {
-		if (slot.status === "ready" && slot.candidate.quota) {
-			return slot.candidate.quota;
-		}
-	}
-	return undefined;
-}
-
-function hasReadySlot(slots: Slot[]): boolean {
-	return slots.some((s) => s.status === "ready");
-}
-
-function getSelectedCandidate(
-	slots: Slot[],
-	selectedIndex: number,
-): CandidateWithModel | undefined {
-	const slot = slots[selectedIndex];
-	return slot?.status === "ready" ? slot.candidate : undefined;
-}
-
-function selectNearestReady(
-	slots: Slot[],
-	startIndex: number,
-	direction: -1 | 1,
-): number {
-	for (
-		let i = startIndex + direction;
-		i >= 0 && i < slots.length;
-		i += direction
-	) {
-		if (slots[i]?.status === "ready") {
-			return i;
-		}
-	}
-	return startIndex;
-}
-
-function collapseToReady(slots: Slot[]): void {
+function collapseToReady(slots: SelectorSlot[]): void {
 	const readySlots = slots.filter((s) => s.status === "ready");
 	slots.length = 0;
 	for (const slot of readySlots) {
@@ -107,7 +55,7 @@ function collapseToReady(slots: Slot[]): void {
 	}
 }
 
-function formatSlot(slot: Slot, selected: boolean): string[] {
+function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
 	if (slot.status === "pending") {
 		const radio = "○";
 		const line = `${theme.dim}  ${radio}  Generating...${theme.reset}`;
@@ -115,6 +63,12 @@ function formatSlot(slot: Slot, selected: boolean): string[] {
 			? `${theme.dim}     ${formatModelName(slot.model)}${theme.reset}`
 			: "";
 		return meta ? [line, meta] : [line];
+	}
+
+	if (slot.status === "error") {
+		const radio = "○";
+		const line = `${theme.dim}  ${radio}  ${slot.content}${theme.reset}`;
+		return [line];
 	}
 
 	const candidate = slot.candidate;
@@ -142,14 +96,10 @@ function formatSlot(slot: Slot, selected: boolean): string[] {
 }
 
 interface RenderState {
-	slots: Slot[];
+	slots: SelectorSlot[];
 	selectedIndex: number;
 	isGenerating: boolean;
 	totalSlots: number;
-}
-
-function formatTotalCostLabel(cost: number): string {
-	return `$${cost.toFixed(6)}`;
 }
 
 function renderSelector(
@@ -205,7 +155,7 @@ function renderSelector(
 
 function renderError(
 	error: unknown,
-	slots: Slot[],
+	slots: SelectorSlot[],
 	totalSlots: number,
 	output: tty.WriteStream,
 ): void {
@@ -299,7 +249,7 @@ export async function selectCandidate(
 		process.exit(1);
 	}
 
-	const slots: Slot[] = Array.from({ length: maxSlots }, (_, i) => ({
+	const slots: SelectorSlot[] = Array.from({ length: maxSlots }, (_, i) => ({
 		status: "pending",
 		slotId: models?.[i] ?? `slot-${i}`,
 		model: models?.[i],
@@ -318,7 +268,7 @@ interface AsyncContext {
 }
 
 async function selectFromSlots(
-	initialSlots: Slot[],
+	initialSlots: SelectorSlot[],
 	asyncCtx: AsyncContext | null,
 	ttyIo: { input: tty.ReadStream; output: tty.WriteStream },
 ): Promise<SelectorResult> {
@@ -431,11 +381,14 @@ async function selectFromSlots(
 						const result = await nextCandidate(iterator);
 						if (result.done || cleanedUp) break;
 						const candidate = result.value;
-						const targetIndex = slots.findIndex((slot) =>
-							slot.status === "pending"
-								? slot.slotId === candidate.slotId
-								: slot.candidate.slotId === candidate.slotId,
-						);
+						const targetIndex = slots.findIndex((slot) => {
+							if (slot.status === "ready") {
+								return slot.candidate.slotId === candidate.slotId;
+							}
+							return (
+								slot.status === "pending" && slot.slotId === candidate.slotId
+							);
+						});
 
 						if (targetIndex >= 0 && targetIndex < slots.length) {
 							const isNewSlot = slots[targetIndex].status === "pending";

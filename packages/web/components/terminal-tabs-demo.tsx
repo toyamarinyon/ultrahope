@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import {
 	type CandidateWithModel,
 	type CreateCandidates,
@@ -8,6 +14,7 @@ import {
 	renderSelectorLines,
 	type SelectorResult,
 	type SelectorState,
+	SPINNER_FRAMES,
 	type TerminalSelectorController,
 } from "@/lib/terminal-selector";
 import { createCandidatesFromTasks } from "@/lib/terminal-selector-effect";
@@ -110,6 +117,67 @@ type DemoPhase =
 	| "waitingEnter"
 	| "selector"
 	| "selected";
+
+const SPINNER_FRAME_SET = new Set(SPINNER_FRAMES);
+
+function useTypingAnimation(
+	command: string,
+	enabled: boolean,
+	speedMs = 18,
+): string {
+	const [typedText, setTypedText] = useState("");
+
+	useEffect(() => {
+		setTypedText("");
+	}, [command]);
+
+	useEffect(() => {
+		if (!enabled) return;
+		if (typedText.length >= command.length) {
+			return;
+		}
+		const timer = setTimeout(() => {
+			setTypedText(command.slice(0, typedText.length + 1));
+		}, speedMs);
+		return () => clearTimeout(timer);
+	}, [typedText, command, enabled, speedMs]);
+
+	return typedText;
+}
+
+function renderSelectorLinesWithSpinner(
+	lines: string[],
+	showSpinner: boolean,
+): ReactNode[] {
+	return lines.map((line, index) => {
+		if (!showSpinner || index !== 0) {
+			return (
+				<span key={index}>
+					{line}
+					{"\n"}
+				</span>
+			);
+		}
+
+		const firstCharacter = line.slice(0, 1);
+		if (!SPINNER_FRAME_SET.has(firstCharacter)) {
+			return (
+				<span key={index}>
+					{line}
+					{"\n"}
+				</span>
+			);
+		}
+
+		return (
+			<span key={index}>
+				<span className="inline-block animate-spin">{firstCharacter}</span>
+				{line.slice(1)}
+				{"\n"}
+			</span>
+		);
+	});
+}
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof Element)) return false;
@@ -226,14 +294,13 @@ export function TerminalTabsDemo() {
 	const activeDemo =
 		DEMO_TABS.find((tab) => tab.id === activeTab) ?? DEMO_TABS[0];
 	const [phase, setPhase] = useState<DemoPhase>("initial");
-	const [typedText, setTypedText] = useState("");
+	const typedText = useTypingAnimation(activeDemo.command, phase === "typing");
 	const [selectorState, setSelectorState] = useState<SelectorState | null>(
 		null,
 	);
 	const [selectedResult, setSelectedResult] = useState<SelectorResult | null>(
 		null,
 	);
-	const [selectorTick, setSelectorTick] = useState(0);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
 
 	const destroySelector = useCallback(() => {
@@ -259,7 +326,6 @@ export function TerminalTabsDemo() {
 		});
 
 		selectorControllerRef.current = controller;
-		setSelectorTick(0);
 		setSelectedResult(null);
 		setPhase("selector");
 		controller.start();
@@ -268,7 +334,6 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (activeTab) {
 			setPhase("initial");
-			setTypedText("");
 			destroySelector();
 		}
 	}, [activeTab, destroySelector]);
@@ -291,20 +356,7 @@ export function TerminalTabsDemo() {
 			const timer = setTimeout(() => setPhase("waitingEnter"), 180);
 			return () => clearTimeout(timer);
 		}
-
-		const timer = setTimeout(() => {
-			setTypedText(activeDemo.command.slice(0, typedText.length + 1));
-		}, 18);
-		return () => clearTimeout(timer);
 	}, [phase, typedText, activeDemo.command]);
-
-	useEffect(() => {
-		if (!selectorState?.isGenerating) return;
-		const timer = setInterval(() => {
-			setSelectorTick((value) => value + 1);
-		}, 80);
-		return () => clearInterval(timer);
-	}, [selectorState?.isGenerating]);
 
 	const onResult = useCallback(
 		(result: SelectorResult) => {
@@ -357,7 +409,7 @@ export function TerminalTabsDemo() {
 
 	const renderedSelectorLines =
 		selectorState !== null
-			? renderSelectorLines(selectorState, selectorTick * 80, {
+			? renderSelectorLines(selectorState, 0, {
 					runningLabel: `${activeDemo.runLine}...`,
 					hasReadyHint:
 						"Select a candidate (↑↓ navigate, enter confirm, r reroll)",
@@ -442,7 +494,10 @@ export function TerminalTabsDemo() {
 					<div className="mt-2 text-sm">
 						<p className="text-green-400">{activeDemo.foundLine}</p>
 						<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
-							{renderedSelectorLines.join("\n")}
+							{renderSelectorLinesWithSpinner(
+								renderedSelectorLines,
+								selectorState.isGenerating,
+							)}
 						</pre>
 					</div>
 				)}

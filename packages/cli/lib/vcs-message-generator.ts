@@ -1,3 +1,4 @@
+import { raceAsyncIterators } from "../../shared/async-race";
 import type {
 	CandidateWithModel,
 	CreateCandidates,
@@ -47,17 +48,6 @@ export function createCandidatesFromApi(
 			signal,
 		});
 }
-
-const createAbortPromise = (signal?: AbortSignal) =>
-	signal
-		? new Promise<null>((resolve) => {
-				if (signal.aborted) {
-					resolve(null);
-					return;
-				}
-				signal.addEventListener("abort", () => resolve(null), { once: true });
-			})
-		: null;
 
 export async function* generateCommitMessages(
 	options: GeneratorOptions,
@@ -174,62 +164,23 @@ export async function* generateCommitMessages(
 		}
 	}
 
-	type PendingNext = {
-		iterator: AsyncIterator<CandidateWithModel>;
-		promise: Promise<{
-			result: IteratorResult<CandidateWithModel>;
-			index: number;
-		}>;
-		index: number;
-	};
-
-	const iterators = models.map((model, index) => ({
-		iterator: generateForModel(model, index)[Symbol.asyncIterator](),
-		index,
-	}));
-
-	const pending = new Map<number, PendingNext>();
-
-	const startNext = (it: {
-		iterator: AsyncIterator<CandidateWithModel>;
-		index: number;
-	}) => {
-		const promise = it.iterator.next().then((result) => ({
-			result,
-			index: it.index,
-		}));
-		pending.set(it.index, {
-			iterator: it.iterator,
-			promise,
-			index: it.index,
-		});
-	};
-
-	for (const it of iterators) {
-		startNext(it);
-	}
-
-	const abortPromise = createAbortPromise(signal);
+	const iterators = models.map((model, index) =>
+		generateForModel(model, index)[Symbol.asyncIterator](),
+	);
 
 	try {
-		while (pending.size > 0) {
-			if (signal?.aborted) break;
-			const next = Promise.race(
-				Array.from(pending.values()).map((p) => p.promise),
-			);
-			const winner = abortPromise
-				? await Promise.race([next, abortPromise])
-				: await next;
-			if (!winner || signal?.aborted) break;
-			const { result, index } = winner;
-			const entry = pending.get(index);
-			if (!entry) continue;
-			if (result.done) {
-				pending.delete(index);
-			} else {
-				yield result.value;
-				startNext({ iterator: entry.iterator, index });
-			}
+		for await (const { result } of raceAsyncIterators({
+			iterators,
+			signal,
+			onError(index, error) {
+				if (isAbortError(error) || signal?.aborted) {
+					return "continue";
+				}
+				void index;
+				return "throw";
+			},
+		})) {
+			yield result.value;
 		}
 	} catch (error) {
 		if (error instanceof InvalidModelError) {

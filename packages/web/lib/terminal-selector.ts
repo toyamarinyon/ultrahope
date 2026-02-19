@@ -1,3 +1,4 @@
+import { raceAsyncIterators } from "../../shared/async-race";
 import type {
 	CandidateWithModel,
 	QuotaInfo,
@@ -7,6 +8,17 @@ import type {
 	TerminalSelectorController,
 	TerminalSelectorOptions,
 } from "../../shared/terminal-selector-contract";
+import {
+	formatCost,
+	formatModelName,
+	formatTotalCostLabel,
+	getLatestQuota,
+	getReadyCount,
+	getSelectedCandidate,
+	getTotalCost,
+	hasReadySlot,
+	selectNearestReady,
+} from "../../shared/terminal-selector-helpers";
 
 export type {
 	CandidateWithModel,
@@ -44,62 +56,6 @@ export interface RenderSelectorLinesOptions {
 
 function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
-}
-
-export function formatModelName(model: string): string {
-	const parts = model.split("/");
-	return parts.length > 1 ? parts[1] : model;
-}
-
-function formatCost(cost: number): string {
-	return `$${cost.toFixed(7).replace(/0+$/, "").replace(/\.$/, "")}`;
-}
-
-function formatTotalCostLabel(cost: number): string {
-	return `$${cost.toFixed(6)}`;
-}
-
-export function getReadyCount(slots: SelectorSlot[]): number {
-	return slots.filter((slot) => slot.status === "ready").length;
-}
-
-export function getTotalCost(slots: SelectorSlot[]): number {
-	return slots.reduce((sum, slot) => {
-		if (slot.status === "ready" && slot.candidate.cost != null) {
-			return sum + slot.candidate.cost;
-		}
-		return sum;
-	}, 0);
-}
-
-export function getLatestQuota(slots: SelectorSlot[]): QuotaInfo | undefined {
-	for (const slot of slots) {
-		if (slot.status === "ready" && slot.candidate.quota) {
-			return slot.candidate.quota;
-		}
-	}
-	return undefined;
-}
-
-export function hasReadySlot(slots: SelectorSlot[]): boolean {
-	return getReadyCount(slots) > 0;
-}
-
-export function selectNearestReady(
-	slots: SelectorSlot[],
-	startIndex: number,
-	direction: -1 | 1,
-): number {
-	for (
-		let i = startIndex + direction;
-		i >= 0 && i < slots.length;
-		i += direction
-	) {
-		if (slots[i]?.status === "ready") {
-			return i;
-		}
-	}
-	return startIndex;
 }
 
 export function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
@@ -187,14 +143,6 @@ function createInitialSlots(
 		slotId: `slot-${index}`,
 		model: models?.[index],
 	}));
-}
-
-function getSelectedCandidate(
-	slots: SelectorSlot[],
-	selectedIndex: number,
-): CandidateWithModel | undefined {
-	const slot = slots[selectedIndex];
-	return slot?.status === "ready" ? slot.candidate : undefined;
 }
 
 function normalizeState(state: SelectorState) {
@@ -359,40 +307,15 @@ export function createTerminalSelectorController(
 			generationController?.signal ?? new AbortController().signal,
 		);
 		const iterator = candidatesIterable[Symbol.asyncIterator]();
-		let iteratorDone = false;
 		const signal = generationController?.signal;
-		const abortPromise = new Promise<{
-			kind: "aborted";
-		}>((resolve) => {
-			if (!signal) {
-				resolve({ kind: "aborted" });
-				return;
-			}
-			signal.addEventListener("abort", () => resolve({ kind: "aborted" }), {
-				once: true,
-			});
-		});
 
 		try {
-			while (!iteratorDone && generationRun === runId) {
-				const winner = await Promise.race([
-					iterator
-						.next()
-						.then((result) => ({ kind: "candidate", result }) as const),
-					abortPromise.then((value) => value),
-				]);
-
-				if (winner.kind === "aborted") {
-					break;
-				}
-				if (signal?.aborted) {
-					break;
-				}
-
-				const result = winner.result;
-				if (result.done) {
-					iteratorDone = true;
-					break;
+			for await (const { result } of raceAsyncIterators({
+				iterators: [iterator],
+				signal,
+			})) {
+				if (generationRun !== runId) {
+					return;
 				}
 				applyCandidate(result.value, runId);
 			}

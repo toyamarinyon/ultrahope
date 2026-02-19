@@ -1,3 +1,4 @@
+import { raceAsyncIterators } from "../../shared/async-race";
 import type {
 	CandidateWithModel,
 	CreateCandidates,
@@ -36,6 +37,34 @@ function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
 }
 
+const createTaskIterator = (
+	task: EffectCandidateTask,
+	index: number,
+	signal: AbortSignal,
+): AsyncIterator<TaskResult> => {
+	let done = false;
+
+	return {
+		next: async () => {
+			if (done) {
+				return {
+					done: true,
+					value: undefined,
+				};
+			}
+			done = true;
+			return {
+				done: false,
+				value: await runTask(task, index, signal),
+			};
+		},
+		return: async () => {
+			done = true;
+			return { done: true, value: undefined };
+		},
+	};
+};
+
 const runTask = (
 	task: EffectCandidateTask,
 	index: number,
@@ -68,52 +97,22 @@ export function createCandidatesFromTasks(
 					return;
 				}
 
-				const pending = new Map<number, Promise<TaskResult>>();
-				for (let index = 0; index < tasks.length; index++) {
-					pending.set(index, runTask(tasks[index], index, signal));
-				}
+				const iterators = tasks.map((task, index) =>
+					createTaskIterator(task, index, signal),
+				);
 
-				const abortPromise = new Promise<{ kind: "abort" }>((resolve) => {
-					if (signal.aborted) {
-						resolve({ kind: "abort" });
+				for await (const { result } of raceAsyncIterators({
+					iterators,
+					signal,
+				})) {
+					const winner = result.value;
+					if (winner.kind === "abort") {
 						return;
 					}
-					signal.addEventListener(
-						"abort",
-						() => {
-							resolve({ kind: "abort" });
-						},
-						{ once: true },
-					);
-				});
-
-				try {
-					while (pending.size > 0) {
-						const winner = await Promise.race([
-							...pending.values(),
-							abortPromise,
-						]);
-
-						if (winner.kind === "abort") {
-							return;
-						}
-
-						if ((winner as ErrorResult).kind === "error") {
-							pending.delete((winner as ErrorResult).index);
-							continue;
-						}
-
-						const { index, candidate } = winner as CandidateResult;
-						pending.delete(index);
-						if (signal.aborted) {
-							return;
-						}
-						yield candidate;
+					if (winner.kind === "error") {
+						continue;
 					}
-				} finally {
-					for (const item of pending.values()) {
-						item.catch(() => undefined);
-					}
+					yield winner.candidate;
 				}
 			},
 		};
