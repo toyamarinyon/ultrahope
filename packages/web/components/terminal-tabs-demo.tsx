@@ -417,10 +417,12 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (phase !== "typing") return;
 		if (typedText.length >= activeDemo.command.length) {
-			const timer = setTimeout(() => setPhase("waitingEnter"), 180);
+			const timer = setTimeout(() => {
+				startSelector();
+			}, 1000);
 			return () => clearTimeout(timer);
 		}
-	}, [phase, typedText, activeDemo.command]);
+	}, [activeDemo.command, phase, startSelector, typedText]);
 
 	const onResult = useCallback(
 		(result: SelectorResult) => {
@@ -555,9 +557,6 @@ export function TerminalTabsDemo() {
 						phase === "waitingEnter") && (
 						<span className="flex items-center gap-2 animate-pulse">
 							<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
-							<span className="text-foreground-muted">
-								Press enter to review proposals ↵
-							</span>
 						</span>
 					)}
 				</div>
