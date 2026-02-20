@@ -23,6 +23,7 @@ interface DescribeOptions {
 	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
+	hint?: string;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
@@ -50,11 +51,19 @@ interface CommandExecutionContext {
 	cliSessionId?: string;
 }
 
+function normalizeHint(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	return trimmed.length > 1024 ? trimmed.slice(0, 1024) : trimmed;
+}
+
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let interactive = true;
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
+	let hint: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -76,10 +85,17 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 				process.exit(1);
 			}
 			captureStreamPath = value;
+		} else if (arg === "--hint") {
+			const value = args[++i];
+			if (!value) {
+				console.error("Error: --hint requires a text value.");
+				process.exit(1);
+			}
+			hint = normalizeHint(value);
 		}
 	}
 
-	return { revision, interactive, cliModels, captureStreamPath };
+	return { revision, interactive, cliModels, captureStreamPath, hint };
 }
 
 function getJjDiff(revision: string): string {
@@ -122,6 +138,7 @@ async function initCommandExecutionContext(
 	args: string[],
 	models: string[],
 	diff: string,
+	hint?: string,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
 	if (!token) {
@@ -140,6 +157,7 @@ async function initCommandExecutionContext(
 				input: diff,
 				target: "vcs-commit-message",
 				models,
+				...(hint ? { hint } : {}),
 			},
 		});
 
@@ -182,11 +200,13 @@ function createCandidateFactory(
 	models: string[],
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
+	hint?: string,
 ) {
 	return (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models,
+			hint,
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -201,10 +221,12 @@ async function runNonInteractiveDescribe(
 	diff: string,
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
+	hint?: string,
 ): Promise<void> {
 	const gen = generateCommitMessages({
 		diff,
 		models: models.slice(0, 1),
+		hint,
 		signal: context.commandExecutionSignal,
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
@@ -293,12 +315,18 @@ async function describe(args: string[]) {
 	});
 
 	try {
-		const context = await initCommandExecutionContext(args, models, diff);
+		const context = await initCommandExecutionContext(
+			args,
+			models,
+			diff,
+			options.hint,
+		);
 		const createCandidates = createCandidateFactory(
 			diff,
 			models,
 			context,
 			captureRecorder,
+			options.hint,
 		);
 
 		if (!options.interactive) {
@@ -308,6 +336,7 @@ async function describe(args: string[]) {
 				diff,
 				context,
 				captureRecorder,
+				options.hint,
 			);
 			return;
 		}
@@ -366,12 +395,14 @@ Commands:
 Describe options:
    -r <revset>       Revision to describe (default: @)
    --no-interactive  Single candidate, no selection
+   --hint <text>     Additional context to guide message generation
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save candidate stream as replay JSON
 
 Examples:
    ultrahope jj describe              # interactive mode
    ultrahope jj describe -r @-        # for parent revision
+   ultrahope jj describe --hint "GHSA-gq3j-xvxp-8hrf: override reason"
    ultrahope jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
    ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
 }

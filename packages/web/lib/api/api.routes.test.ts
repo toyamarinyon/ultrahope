@@ -212,7 +212,11 @@ describe("API route contracts", () => {
 			command: "git status",
 			args: ["--short"],
 			api: "cli",
-			requestPayload: { input: "a", target: "vcs-commit-message" },
+			requestPayload: {
+				input: "a",
+				target: "vcs-commit-message",
+				hint: "Security advisory context",
+			},
 		});
 		const body = await response.json();
 
@@ -255,20 +259,39 @@ describe("API route contracts", () => {
 	});
 
 	it("returns commit message generation success", async () => {
-		const app = createApiApp(createDeps());
+		let receivedHint: string | undefined;
+		const app = createApiApp(
+			createDeps({
+				generateCommitMessage: async (_input, options) => {
+					receivedHint = options.hint;
+					return {
+						output: "feat: commit",
+						content: "feat: commit",
+						vendor: "vendor-a",
+						model: "model-a",
+						inputTokens: 5,
+						outputTokens: 3,
+						generationId: "gen-1",
+					};
+				},
+			}),
+		);
 		const response = await request(app, "/api/v1/commit-message", {
 			cliSessionId: "cli-1",
 			input: "diff",
 			model: "mistral/ministral-3b",
+			hint: "Security advisory context",
 		});
 		const body = await response.json();
 
 		expect(response.status).toBe(200);
 		expect(body.quota.remaining).toBe(3);
 		expect(body.output).toBe("feat: commit");
+		expect(receivedHint).toBe("Security advisory context");
 	});
 
 	it("streams commit message with usage and provider-metadata order", async () => {
+		let receivedHint: string | undefined;
 		const app = createApiApp(
 			createDeps({
 				getUserBillingInfo: async () => ({
@@ -276,12 +299,28 @@ describe("API route contracts", () => {
 					balance: 10,
 					meterId: "meter",
 				}),
+				generateCommitMessageStream: (_input, options) => {
+					receivedHint = options.hint;
+					const textStream = {
+						[Symbol.asyncIterator]: async function* () {
+							yield "```feat: done```";
+						},
+					};
+					return {
+						textStream,
+						totalUsage: Promise.resolve({ inputTokens: 3, outputTokens: 7 }),
+						providerMetadata: Promise.resolve({
+							model: "model-a",
+						}),
+					};
+				},
 			}),
 		);
 		const response = await request(app, "/api/v1/commit-message/stream", {
 			cliSessionId: "cli-1",
 			input: "diff",
 			model: "mistral/ministral-3b",
+			hint: "Security advisory context",
 		});
 		const text = await response.text();
 		const events = text
@@ -302,6 +341,7 @@ describe("API route contracts", () => {
 		expect(events[0].commitMessage).toBe("feat: done");
 		expect(events[1].usage.inputTokens).toBe(3);
 		expect(events[2].providerMetadata.model).toBe("model-a");
+		expect(receivedHint).toBe("Security advisory context");
 	});
 
 	it("returns 401 for unauthenticated pr route", async () => {

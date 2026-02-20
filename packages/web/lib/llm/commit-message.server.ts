@@ -30,6 +30,7 @@ export function generateCommitMessageStream(
 	return generateCommitMessageStreamCore(diff, {
 		model: resolvedModel,
 		abortSignal: options.abortSignal,
+		hint: options.hint,
 	});
 }
 
@@ -43,6 +44,7 @@ export async function generateCommitMessage(
 		{
 			model: resolvedModel,
 			abortSignal: options.abortSignal,
+			hint: options.hint,
 		},
 	);
 

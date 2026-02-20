@@ -22,6 +22,14 @@ interface CommitOptions {
 	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
+	hint?: string;
+}
+
+function normalizeHint(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	return trimmed.length > 1024 ? trimmed.slice(0, 1024) : trimmed;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
@@ -45,6 +53,7 @@ function showQuotaInfo(quota: QuotaInfo): void {
 function parseArgs(args: string[]): CommitOptions {
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
+	let hint: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -64,6 +73,14 @@ function parseArgs(args: string[]): CommitOptions {
 			}
 			captureStreamPath = value;
 			i++;
+		} else if (arg === "--hint") {
+			const value = args[i + 1];
+			if (!value) {
+				console.error("Error: --hint requires a text value.");
+				process.exit(1);
+			}
+			hint = normalizeHint(value);
+			i++;
 		}
 	}
 
@@ -71,6 +88,7 @@ function parseArgs(args: string[]): CommitOptions {
 		interactive: !args.includes("--no-interactive"),
 		cliModels,
 		captureStreamPath,
+		hint,
 	};
 }
 
@@ -131,7 +149,8 @@ export async function commit(args: string[]) {
 			requestPayload: {
 				input: diff,
 				target: "vcs-commit-message",
-				models,
+				model: models[0],
+				...(options.hint ? { hint: options.hint } : {}),
 			},
 		});
 
@@ -168,6 +187,7 @@ export async function commit(args: string[]) {
 			generateCommitMessages({
 				diff,
 				models,
+				hint: options.hint,
 				signal: mergeAbortSignals(signal, commandExecutionSignal),
 				cliSessionId,
 				commandExecutionPromise,
@@ -178,6 +198,7 @@ export async function commit(args: string[]) {
 			const gen = generateCommitMessages({
 				diff,
 				models: models.slice(0, 1),
+				hint: options.hint,
 				signal: commandExecutionSignal,
 				cliSessionId,
 				commandExecutionPromise,

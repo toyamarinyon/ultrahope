@@ -29,6 +29,7 @@ type CommandExecutionRouteContext = {
 			target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 			model?: string;
 			models?: string[];
+			hint?: string;
 		};
 	};
 	session?: ApiSession;

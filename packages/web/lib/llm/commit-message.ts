@@ -18,6 +18,11 @@ Quality rules:
 - If the diff is mostly formatting, use type "style" and describe what was formatted.
 `;
 
+function buildSystemPrompt(hint?: string): string {
+	if (!hint) return SYSTEM_PROMPT;
+	return `${SYSTEM_PROMPT}\n\nHint: ${hint}`;
+}
+
 let grokReasoningErrorWarned = false;
 
 // Grok models emit `response.reasoning_text.delta` SSE events that the AI SDK's
@@ -52,6 +57,7 @@ type CommitMessageModel = Parameters<typeof streamText>[0]["model"];
 export type CommitMessageRuntimeOptions = {
 	model: CommitMessageModel;
 	abortSignal?: AbortSignal;
+	hint?: string;
 };
 
 export type CommitMessageRuntimeStreamOptions = CommitMessageRuntimeOptions;
@@ -73,7 +79,7 @@ export function generateCommitMessageStream(
 
 	return streamText({
 		model: options.model,
-		system: SYSTEM_PROMPT,
+		system: buildSystemPrompt(options.hint),
 		prompt: preprocessed.prompt,
 		abortSignal: options.abortSignal,
 		output: Output.text(),
