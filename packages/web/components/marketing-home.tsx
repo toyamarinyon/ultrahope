@@ -42,27 +42,27 @@ export function MarketingHome() {
 							Fast AI commit messages
 							<br /> you can compare
 						</h1>
-						<div className="flex justify-between">
+						<div className="max-w-3xl">
 							<div className="text-lg">
 								<p>Turn diffs into multiple proposals in your terminal.</p>
 								<p>Reroll, edit, and confirm — without breaking your flow.</p>
 							</div>
-							<div className="flex flex-col items-start gap-2">
+							<div className="mt-6 flex flex-col items-start gap-3 sm:mt-7">
 								<Link
 									href="/signup"
 									className="inline-flex items-center justify-center px-3 py-1.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
 								>
 									Get Started for Free →
 								</Link>
-								<div className="text-sm text-foreground-muted">
-									Open source ·{" "}
+								<p className="text-sm text-foreground-muted">
+									Or,{" "}
 									<Link
 										href="https://github.com/toyamarinyon/ultrahope"
-										className="text-foreground hover:opacity-90"
+										className="text-inherit hover:opacity-80 underline underline-offset-2 decoration-current transition-opacity"
 									>
-										View on GitHub
+										view on GitHub.
 									</Link>
-								</div>
+								</p>
 								{/*<Link
 												href="/pricing"
 												className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors"
