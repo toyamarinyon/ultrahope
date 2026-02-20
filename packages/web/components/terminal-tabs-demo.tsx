@@ -535,6 +535,10 @@ export function TerminalTabsDemo() {
 
 	const onKeyDown = useCallback(
 		(event: KeyboardEvent) => {
+			if (event.metaKey || event.ctrlKey) {
+				return;
+			}
+
 			if (
 				phase === "waitingEnter" &&
 				event.key === "Enter" &&
