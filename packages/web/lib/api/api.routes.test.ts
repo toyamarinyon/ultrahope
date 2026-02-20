@@ -87,7 +87,9 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 				providerMetadata: Promise.resolve({
 					model: "model-a",
 				}),
-			};
+			} as unknown as ReturnType<
+				ApiDependencies["generateCommitMessageStream"]
+			>;
 		},
 		generatePrTitleBody: async () => ({
 			output: "feat: title",
@@ -312,7 +314,9 @@ describe("API route contracts", () => {
 						providerMetadata: Promise.resolve({
 							model: "model-a",
 						}),
-					};
+					} as unknown as ReturnType<
+						ApiDependencies["generateCommitMessageStream"]
+					>;
 				},
 			}),
 		);
