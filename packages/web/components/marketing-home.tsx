@@ -8,7 +8,7 @@ function UltrahopeLogo() {
 			<span className="inline-flex size-8 shrink-0 items-center justify-center text-foreground sm:size-10">
 				<Logo className="h-7 w-7 sm:h-9 sm:w-9" />
 			</span>
-			<span className="text-xl tracking-tighter leading-none sm:text-2xl">
+			<span className="text-xl tracking-tighter leading-none sm:text-2xl font-logo">
 				Ultrahope
 			</span>
 		</span>

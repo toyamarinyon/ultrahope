@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import { Baskervville, Geist } from "next/font/google";
+import localFont from "next/font/local";
 import {
 	DEFAULT_DESCRIPTION,
 	DEFAULT_SITE_NAME,
 	resolveCanonicalOrigin,
 } from "@/lib/util/seo";
+import "./globals.css";
 
 const geist = Geist({
 	subsets: ["latin"],
 });
 const baskerville = Baskervville({
 	subsets: ["latin"],
+});
+const satoshi = localFont({
+	src: "./fonts/Satoshi-Variable.woff2",
+	display: "swap",
+	variable: "--font-satoshi",
 });
 
 export const metadata: Metadata = {
@@ -45,7 +51,10 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" className={`${geist.className} ${baskerville.className}`}>
+		<html
+			lang="en"
+			className={`${geist.className} ${baskerville.className} ${satoshi.variable}`}
+		>
 			<head></head>
 			<body className="font-sans">{children}</body>
 		</html>

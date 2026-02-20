@@ -31,6 +31,7 @@
 	--font-mono:
 		"JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
 		monospace;
+	--font-logo: var(--font-satoshi);
 
 	/* Font sizes with custom line-heights */
 	--text-xs: 0.75rem;
