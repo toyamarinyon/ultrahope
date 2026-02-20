@@ -39,16 +39,16 @@ git diff main | ultrahope translate --target pr-intent
 git diff --staged | ultrahope translate --target vcs-commit-message --models mistral/ministral-3b,xai/grok-code-fast-1
 ```
 
-### Hint context for commit/message generation
+### Guide context for commit/message generation
 
-`git ultrahope commit` と `ultrahope jj describe` では `--hint <text>` を使って、差分だけでは分からない生成意図を補足できます。
+`git ultrahope commit` と `ultrahope jj describe` では `--guide <text>` を使って、差分だけでは分からない生成意図を補足できます。
 
 ```bash
 # git commit の生成補足
-git add -A && git ultrahope commit --hint "GHSA-gq3j-xvxp-8hrf: override reason"
+git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 
 # jj describe の生成補足
-jj ultrahope describe --hint "GHSA-gq3j-xvxp-8hrf: override reason"
+jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 ```
 
 #### Targets

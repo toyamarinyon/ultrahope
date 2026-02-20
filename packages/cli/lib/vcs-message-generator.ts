@@ -22,7 +22,7 @@ export const DEFAULT_MODELS = [
 export interface GeneratorOptions {
 	diff: string;
 	models: string[];
-	hint?: string;
+	guide?: string;
 	signal?: AbortSignal;
 	cliSessionId?: string;
 	commandExecutionPromise?: Promise<unknown>;
@@ -74,7 +74,7 @@ export async function* generateCommitMessages(
 		cliSessionId: string;
 		input: string;
 		model: string;
-		hint?: string;
+		guide?: string;
 	}): AsyncGenerator<CommitMessageStreamEvent> {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -130,7 +130,7 @@ export async function* generateCommitMessages(
 				cliSessionId: requiredCliSessionId,
 				input: diff,
 				model,
-				hint: options.hint,
+				guide: options.guide,
 			})) {
 				if (event.type === "commit-message") {
 					lastCommitMessage = event.commitMessage;

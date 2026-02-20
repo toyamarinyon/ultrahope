@@ -37,7 +37,7 @@ type CommitMessageRouteContext = {
 		cliSessionId: string;
 		input: string;
 		model: string;
-		hint?: string;
+		guide?: string;
 	};
 	session?: ApiSession;
 	set: {
@@ -98,7 +98,7 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 						deps.generateCommitMessage(body.input, {
 							model: body.model,
 							abortSignal,
-							hint: body.hint,
+							guide: body.guide,
 						}),
 					deps,
 				);
@@ -211,7 +211,7 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				const stream = deps.generateCommitMessageStream(body.input, {
 					model: body.model,
 					abortSignal: generationSignal,
-					hint: body.hint,
+					guide: body.guide,
 				});
 				const sanitizer = createCommitMessageSanitizer();
 				const streamStartedAtMs = Date.now();

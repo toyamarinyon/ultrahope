@@ -22,10 +22,10 @@ interface CommitOptions {
 	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
-	hint?: string;
+	guide?: string;
 }
 
-function normalizeHint(value: string | undefined): string | undefined {
+function normalizeGuide(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim();
 	if (!trimmed) return undefined;
@@ -53,7 +53,7 @@ function showQuotaInfo(quota: QuotaInfo): void {
 function parseArgs(args: string[]): CommitOptions {
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
-	let hint: string | undefined;
+	let guide: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -73,13 +73,13 @@ function parseArgs(args: string[]): CommitOptions {
 			}
 			captureStreamPath = value;
 			i++;
-		} else if (arg === "--hint") {
+		} else if (arg === "--guide") {
 			const value = args[i + 1];
 			if (!value) {
-				console.error("Error: --hint requires a text value.");
+				console.error("Error: --guide requires a text value.");
 				process.exit(1);
 			}
-			hint = normalizeHint(value);
+			guide = normalizeGuide(value);
 			i++;
 		}
 	}
@@ -88,7 +88,7 @@ function parseArgs(args: string[]): CommitOptions {
 		interactive: !args.includes("--no-interactive"),
 		cliModels,
 		captureStreamPath,
-		hint,
+		guide,
 	};
 }
 
@@ -150,7 +150,7 @@ export async function commit(args: string[]) {
 				input: diff,
 				target: "vcs-commit-message",
 				model: models[0],
-				...(options.hint ? { hint: options.hint } : {}),
+				...(options.guide ? { guide: options.guide } : {}),
 			},
 		});
 
@@ -187,7 +187,7 @@ export async function commit(args: string[]) {
 			generateCommitMessages({
 				diff,
 				models,
-				hint: options.hint,
+				guide: options.guide,
 				signal: mergeAbortSignals(signal, commandExecutionSignal),
 				cliSessionId,
 				commandExecutionPromise,
@@ -198,7 +198,7 @@ export async function commit(args: string[]) {
 			const gen = generateCommitMessages({
 				diff,
 				models: models.slice(0, 1),
-				hint: options.hint,
+				guide: options.guide,
 				signal: commandExecutionSignal,
 				cliSessionId,
 				commandExecutionPromise,

@@ -151,7 +151,7 @@ export interface operations {
 						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 						model?: string;
 						models?: string[];
-						hint?: string;
+						guide?: string;
 					};
 				};
 				"application/x-www-form-urlencoded": {
@@ -166,7 +166,7 @@ export interface operations {
 						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 						model?: string;
 						models?: string[];
-						hint?: string;
+						guide?: string;
 					};
 				};
 				"multipart/form-data": {
@@ -181,7 +181,7 @@ export interface operations {
 						target: "vcs-commit-message" | "pr-title-body" | "pr-intent";
 						model?: string;
 						models?: string[];
-						hint?: string;
+						guide?: string;
 					};
 				};
 			};
@@ -258,19 +258,19 @@ export interface operations {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 			};
 		};
@@ -378,19 +378,19 @@ export interface operations {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 			};
 		};
@@ -409,19 +409,19 @@ export interface operations {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 			};
 		};
@@ -529,19 +529,19 @@ export interface operations {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
 					input: string;
 					model: string;
-					hint?: string;
+					guide?: string;
 				};
 			};
 		};

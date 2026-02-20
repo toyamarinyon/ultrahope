@@ -215,7 +215,7 @@ describe("API route contracts", () => {
 			requestPayload: {
 				input: "a",
 				target: "vcs-commit-message",
-				hint: "Security advisory context",
+				guide: "Security advisory context",
 			},
 		});
 		const body = await response.json();
@@ -259,11 +259,11 @@ describe("API route contracts", () => {
 	});
 
 	it("returns commit message generation success", async () => {
-		let receivedHint: string | undefined;
+		let receivedGuide: string | undefined;
 		const app = createApiApp(
 			createDeps({
 				generateCommitMessage: async (_input, options) => {
-					receivedHint = options.hint;
+					receivedGuide = options.guide;
 					return {
 						output: "feat: commit",
 						content: "feat: commit",
@@ -280,18 +280,18 @@ describe("API route contracts", () => {
 			cliSessionId: "cli-1",
 			input: "diff",
 			model: "mistral/ministral-3b",
-			hint: "Security advisory context",
+			guide: "Security advisory context",
 		});
 		const body = await response.json();
 
 		expect(response.status).toBe(200);
 		expect(body.quota.remaining).toBe(3);
 		expect(body.output).toBe("feat: commit");
-		expect(receivedHint).toBe("Security advisory context");
+		expect(receivedGuide).toBe("Security advisory context");
 	});
 
 	it("streams commit message with usage and provider-metadata order", async () => {
-		let receivedHint: string | undefined;
+		let receivedGuide: string | undefined;
 		const app = createApiApp(
 			createDeps({
 				getUserBillingInfo: async () => ({
@@ -300,7 +300,7 @@ describe("API route contracts", () => {
 					meterId: "meter",
 				}),
 				generateCommitMessageStream: (_input, options) => {
-					receivedHint = options.hint;
+					receivedGuide = options.guide;
 					const textStream = {
 						[Symbol.asyncIterator]: async function* () {
 							yield "```feat: done```";
@@ -320,7 +320,7 @@ describe("API route contracts", () => {
 			cliSessionId: "cli-1",
 			input: "diff",
 			model: "mistral/ministral-3b",
-			hint: "Security advisory context",
+			guide: "Security advisory context",
 		});
 		const text = await response.text();
 		const events = text
@@ -341,7 +341,7 @@ describe("API route contracts", () => {
 		expect(events[0].commitMessage).toBe("feat: done");
 		expect(events[1].usage.inputTokens).toBe(3);
 		expect(events[2].providerMetadata.model).toBe("model-a");
-		expect(receivedHint).toBe("Security advisory context");
+		expect(receivedGuide).toBe("Security advisory context");
 	});
 
 	it("returns 401 for unauthenticated pr route", async () => {

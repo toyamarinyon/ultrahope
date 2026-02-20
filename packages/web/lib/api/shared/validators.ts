@@ -11,7 +11,7 @@ export const GenerateBodySchema = t.Object({
 	cliSessionId: t.String(),
 	input: t.String(),
 	model: t.String(),
-	hint: t.Optional(t.String()),
+	guide: t.Optional(t.String()),
 });
 
 export const CommandExecutionBodySchema = t.Object({
@@ -29,7 +29,7 @@ export const CommandExecutionBodySchema = t.Object({
 		]),
 		model: t.Optional(t.String()),
 		models: t.Optional(t.Array(t.String())),
-		hint: t.Optional(t.String()),
+		guide: t.Optional(t.String()),
 	}),
 });
 

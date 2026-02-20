@@ -23,7 +23,7 @@ interface DescribeOptions {
 	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
-	hint?: string;
+	guide?: string;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
@@ -51,7 +51,7 @@ interface CommandExecutionContext {
 	cliSessionId?: string;
 }
 
-function normalizeHint(value: string | undefined): string | undefined {
+function normalizeGuide(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const trimmed = value.trim();
 	if (!trimmed) return undefined;
@@ -63,7 +63,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	let interactive = true;
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
-	let hint: string | undefined;
+	let guide: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -85,17 +85,17 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 				process.exit(1);
 			}
 			captureStreamPath = value;
-		} else if (arg === "--hint") {
+		} else if (arg === "--guide") {
 			const value = args[++i];
 			if (!value) {
-				console.error("Error: --hint requires a text value.");
+				console.error("Error: --guide requires a text value.");
 				process.exit(1);
 			}
-			hint = normalizeHint(value);
+			guide = normalizeGuide(value);
 		}
 	}
 
-	return { revision, interactive, cliModels, captureStreamPath, hint };
+	return { revision, interactive, cliModels, captureStreamPath, guide };
 }
 
 function getJjDiff(revision: string): string {
@@ -138,7 +138,7 @@ async function initCommandExecutionContext(
 	args: string[],
 	models: string[],
 	diff: string,
-	hint?: string,
+	guide?: string,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
 	if (!token) {
@@ -157,7 +157,7 @@ async function initCommandExecutionContext(
 				input: diff,
 				target: "vcs-commit-message",
 				models,
-				...(hint ? { hint } : {}),
+				...(guide ? { guide } : {}),
 			},
 		});
 
@@ -200,13 +200,13 @@ function createCandidateFactory(
 	models: string[],
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
-	hint?: string,
+	guide?: string,
 ) {
 	return (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models,
-			hint,
+			guide,
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -221,12 +221,12 @@ async function runNonInteractiveDescribe(
 	diff: string,
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
-	hint?: string,
+	guide?: string,
 ): Promise<void> {
 	const gen = generateCommitMessages({
 		diff,
 		models: models.slice(0, 1),
-		hint,
+		guide,
 		signal: context.commandExecutionSignal,
 		cliSessionId: context.cliSessionId,
 		commandExecutionPromise: context.commandExecutionPromise,
@@ -319,14 +319,14 @@ async function describe(args: string[]) {
 			args,
 			models,
 			diff,
-			options.hint,
+			options.guide,
 		);
 		const createCandidates = createCandidateFactory(
 			diff,
 			models,
 			context,
 			captureRecorder,
-			options.hint,
+			options.guide,
 		);
 
 		if (!options.interactive) {
@@ -336,7 +336,7 @@ async function describe(args: string[]) {
 				diff,
 				context,
 				captureRecorder,
-				options.hint,
+				options.guide,
 			);
 			return;
 		}
@@ -395,14 +395,14 @@ Commands:
 Describe options:
    -r <revset>       Revision to describe (default: @)
    --no-interactive  Single candidate, no selection
-   --hint <text>     Additional context to guide message generation
+   --guide <text>     Additional context to guide message generation
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save candidate stream as replay JSON
 
 Examples:
    ultrahope jj describe              # interactive mode
    ultrahope jj describe -r @-        # for parent revision
-   ultrahope jj describe --hint "GHSA-gq3j-xvxp-8hrf: override reason"
+   ultrahope jj describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
    ultrahope jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
    ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
 }
