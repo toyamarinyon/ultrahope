@@ -18,10 +18,6 @@ import {
 	SPINNER_FRAMES,
 	type TerminalSelectorController,
 } from "@/lib/util/terminal-selector";
-import {
-	formatCost,
-	formatModelName,
-} from "../../shared/terminal-selector-helpers";
 import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
 import {
 	createCandidatesFromReplayGeneration,
@@ -29,6 +25,10 @@ import {
 	pickLatestReplayGeneration,
 	pickLatestReplayRun,
 } from "@/lib/util/terminal-selector-replay";
+import {
+	formatCost,
+	formatModelName,
+} from "../../shared/terminal-selector-helpers";
 import type {
 	TerminalStreamReplayCapture,
 	TerminalStreamReplayGeneration,
@@ -48,6 +48,7 @@ interface DemoTab {
 }
 
 const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
+const INSTALL_COMMAND = "npm i -g ultrahope";
 
 function resolveReplay(capture: TerminalStreamReplayCapture): {
 	generation: TerminalStreamReplayGeneration | null;
@@ -402,7 +403,11 @@ export function TerminalTabsDemo() {
 		null,
 	);
 	const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
+	const [installCopied, setInstallCopied] = useState(false);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
+	const installCopyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	const destroySelector = useCallback(() => {
 		selectorControllerRef.current?.destroy();
@@ -425,6 +430,7 @@ export function TerminalTabsDemo() {
 		selectorControllerRef.current = controller;
 		setSelectedResult(null);
 		setSpinnerFrameIndex(0);
+		setInstallCopied(false);
 		setPhase("selector");
 		controller.start();
 	}, [activeDemo, destroySelector]);
@@ -441,6 +447,29 @@ export function TerminalTabsDemo() {
 			destroySelector();
 		};
 	}, [destroySelector]);
+
+	const copyInstallCommand = useCallback(async () => {
+		try {
+			await navigator.clipboard.writeText(INSTALL_COMMAND);
+			if (installCopyTimeoutRef.current) {
+				clearTimeout(installCopyTimeoutRef.current);
+			}
+			setInstallCopied(true);
+			installCopyTimeoutRef.current = setTimeout(() => {
+				setInstallCopied(false);
+			}, 1200);
+		} catch {
+			// Ignore clipboard failures and keep rendering unchanged.
+		}
+	}, []);
+
+	useEffect(() => {
+		return () => {
+			if (installCopyTimeoutRef.current) {
+				clearTimeout(installCopyTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		if (phase !== "initial") return;
@@ -476,10 +505,13 @@ export function TerminalTabsDemo() {
 		[startSelector],
 	);
 
-	const handleCandidateHover = useCallback((index: number) => {
-		if (phase !== "selector") return;
-		selectorControllerRef.current?.setSelection(index);
-	}, [phase]);
+	const handleCandidateHover = useCallback(
+		(index: number) => {
+			if (phase !== "selector") return;
+			selectorControllerRef.current?.setSelection(index);
+		},
+		[phase],
+	);
 
 	const handleCandidateClick = useCallback(
 		(index: number) => {
@@ -604,7 +636,7 @@ export function TerminalTabsDemo() {
 				id={panelId}
 				role="tabpanel"
 				aria-labelledby={activeTabId}
-				className="h-100 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
+				className="h-120 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
 			>
 				<div className="flex items-start gap-2">
 					<span className="text-foreground shrink-0">$</span>
@@ -636,9 +668,7 @@ export function TerminalTabsDemo() {
 								const isInteractive = phase === "selector" && isReady;
 								const lines = renderSlotLines(slot, isSelected);
 								const slotKey =
-									slot.status === "ready"
-										? slot.candidate.slotId
-										: slot.slotId;
+									slot.status === "ready" ? slot.candidate.slotId : slot.slotId;
 
 								if (!isInteractive) {
 									return (
@@ -688,9 +718,30 @@ export function TerminalTabsDemo() {
 						<p className="mt-1 text-foreground-muted">
 							{selectedResult.selected}
 						</p>
-						<p className="mt-2 animate-pulse text-foreground-muted">
-							press r to reroll
-						</p>
+						{selectedResult.selectedCandidate?.cost != null && (
+							<p className="text-foreground-muted/80">
+								Cost: {formatCost(selectedResult.selectedCandidate.cost)}
+							</p>
+						)}
+						<p className="mt-4">Would you try on your terminal?</p>
+						<div className="mt-2 inline-flex w-full items-center gap-2 rounded bg-surface/70 px-2 py-1.5">
+							<span className="text-foreground">$</span>
+							<code className="flex-1 text-foreground">{INSTALL_COMMAND}</code>
+							<button
+								type="button"
+								onClick={copyInstallCommand}
+								className="rounded border border-border-subtle px-2 py-0.5 text-foreground-muted transition hover:border-foreground-muted hover:text-foreground"
+								aria-label="Copy install command"
+								title="Copy install command"
+							>
+								📋
+							</button>
+						</div>
+						{installCopied && (
+							<p className="mt-1 text-xs text-foreground-muted">
+								Copied to clipboard
+							</p>
+						)}
 					</div>
 				)}
 			</div>

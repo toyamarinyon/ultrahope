@@ -10,6 +10,30 @@ import type {
 
 const MIN_REPLAY_EVENT_DELAY_MS = 10;
 
+type UnknownRecord = Record<string, unknown>;
+
+function extractModelCostFromProviderMetadata(
+  providerMetadata: unknown,
+): number | undefined {
+  if (providerMetadata == null || typeof providerMetadata !== "object") {
+    return undefined;
+  }
+  const { gateway } = providerMetadata as UnknownRecord;
+  if (gateway == null || typeof gateway !== "object") {
+    return undefined;
+  }
+  const gatewayRecord = gateway as UnknownRecord;
+  const rawCost = gatewayRecord.marketCost ?? gatewayRecord.cost;
+  if (typeof rawCost === "number") {
+    return Number.isFinite(rawCost) ? rawCost : undefined;
+  }
+  if (typeof rawCost === "string") {
+    const parsed = Number.parseFloat(rawCost);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
 function waitForDelay(ms: number, signal: AbortSignal): Promise<void> {
 	if (ms <= 0) {
 		return Promise.resolve();
@@ -88,6 +112,17 @@ export function createCandidatesFromReplayGeneration(options: {
 	const { generation, models } = options;
 	const modelSlotIndexes = mapModelSlotIndexes(models);
 	const lastIndexes = getLastCommitMessageEventIndexes(generation);
+	const modelCosts = new Map<string, number>();
+	for (const event of generation.events) {
+		if (event.event.type !== "provider-metadata") {
+			continue;
+		}
+		const cost = extractModelCostFromProviderMetadata(
+			event.event.providerMetadata,
+		);
+		if (cost == null) continue;
+		modelCosts.set(event.model, cost);
+	}
 
 	return (signal: AbortSignal) => {
 		return {
@@ -105,15 +140,16 @@ export function createCandidatesFromReplayGeneration(options: {
 						continue;
 					}
 
-					const candidate: CandidateWithModel = {
-						content: event.event.commitMessage,
-						slotId: event.model,
-						model: event.model,
-						slotIndex: modelSlotIndexes.get(event.model),
-						isPartial: lastIndexes.get(event.model) !== index,
-					};
-					yield candidate;
-				}
+						const candidate: CandidateWithModel = {
+							content: event.event.commitMessage,
+							slotId: event.model,
+							model: event.model,
+							slotIndex: modelSlotIndexes.get(event.model),
+							cost: modelCosts.get(event.model),
+							isPartial: lastIndexes.get(event.model) !== index,
+						};
+						yield candidate;
+					}
 			},
 		};
 	};
