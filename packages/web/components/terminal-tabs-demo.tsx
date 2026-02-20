@@ -18,6 +18,10 @@ import {
 	SPINNER_FRAMES,
 	type TerminalSelectorController,
 } from "@/lib/util/terminal-selector";
+import {
+	formatCost,
+	formatModelName,
+} from "../../shared/terminal-selector-helpers";
 import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
 import {
 	createCandidatesFromReplayGeneration,
@@ -228,6 +232,36 @@ function renderSelectorLinesWithSpinner(
 	}
 
 	return nodes;
+}
+
+function renderSlotLines(
+	slot: SelectorState["slots"][number],
+	isSelected: boolean,
+): string[] {
+	const radio = isSelected ? "●" : "○";
+
+	if (slot.status === "pending") {
+		const line = `${radio} Generating...`;
+		const meta = slot.model ? `   ${formatModelName(slot.model)}` : "";
+		return meta ? [line, meta] : [line];
+	}
+
+	if (slot.status === "error") {
+		const line = `${radio} ${slot.content}`;
+		return [line];
+	}
+
+	const title = slot.candidate.content.split("\n")[0]?.trim() || "";
+	const modelInfo = slot.candidate.model
+		? slot.candidate.cost != null
+			? `${formatModelName(slot.candidate.model)} ${formatCost(slot.candidate.cost)}`
+			: formatModelName(slot.candidate.model)
+		: "";
+	const lines = [`${radio} ${title}`];
+	if (modelInfo) {
+		lines.push(`   ${modelInfo}`);
+	}
+	return lines;
 }
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
@@ -442,6 +476,23 @@ export function TerminalTabsDemo() {
 		[startSelector],
 	);
 
+	const handleCandidateHover = useCallback((index: number) => {
+		if (phase !== "selector") return;
+		selectorControllerRef.current?.setSelection(index);
+	}, [phase]);
+
+	const handleCandidateClick = useCallback(
+		(index: number) => {
+			if (phase !== "selector") return;
+			selectorControllerRef.current?.setSelection(index);
+			const result = selectorControllerRef.current?.confirm();
+			if (result?.action === "confirm") {
+				onResult(result);
+			}
+		},
+		[onResult, phase],
+	);
+
 	useEffect(() => {
 		if (!selectorState?.isGenerating) return;
 		const timer = setInterval(() => {
@@ -486,9 +537,17 @@ export function TerminalTabsDemo() {
 			? renderSelectorLines(selectorState, 0, {
 					runningLabel: `${activeDemo.runLine}...`,
 					hasReadyHint:
-						"Select a candidate (↑↓ navigate, enter confirm, r reroll)",
+						"Select a candidate (↑↓ navigate, enter/click confirm, r reroll)",
 					noReadyHint: "q quit",
 				})
+			: [];
+	const renderedSelectorHeaderLines =
+		selectorState !== null
+			? renderSelectorLinesWithSpinner(
+					renderedSelectorLines,
+					selectorState.isGenerating,
+					SPINNER_FRAMES[spinnerFrameIndex],
+				)
 			: [];
 	const panelId = "terminal-demo-panel";
 	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
@@ -564,13 +623,61 @@ export function TerminalTabsDemo() {
 				{(phase === "selector" || phase === "selected") && selectorState && (
 					<div className="mt-2 text-sm">
 						<p className="text-green-400">{activeDemo.foundLine}</p>
-						<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
-							{renderSelectorLinesWithSpinner(
-								renderedSelectorLines,
-								selectorState.isGenerating,
-								SPINNER_FRAMES[spinnerFrameIndex],
-							)}
-						</pre>
+						{renderedSelectorHeaderLines.length > 0 && (
+							<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
+								{renderedSelectorHeaderLines[0]}
+								{renderedSelectorHeaderLines[1]}
+							</pre>
+						)}
+						<div className="mt-2 space-y-1">
+							{selectorState.slots.map((slot, index) => {
+								const isSelected = index === selectorState.selectedIndex;
+								const isReady = slot.status === "ready";
+								const isInteractive = phase === "selector" && isReady;
+								const lines = renderSlotLines(slot, isSelected);
+								const slotKey =
+									slot.status === "ready"
+										? slot.candidate.slotId
+										: slot.slotId;
+
+								if (!isInteractive) {
+									return (
+										<div
+											key={slotKey ?? `slot-${index}`}
+											className="rounded px-2 py-1 text-left font-mono text-foreground-muted/60"
+										>
+											<span className="block">{lines[0]}</span>
+											{lines[1] && (
+												<span className="mt-0.5 block pl-3 text-foreground-muted/80">
+													{lines[1]}
+												</span>
+											)}
+										</div>
+									);
+								}
+
+								return (
+									<button
+										key={slotKey ?? `slot-${index}`}
+										type="button"
+										onMouseEnter={() => handleCandidateHover(index)}
+										onClick={() => handleCandidateClick(index)}
+										className={`w-full rounded px-2 py-1 text-left font-mono ${
+											isSelected
+												? "bg-surface-hover text-foreground"
+												: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
+										}`}
+									>
+										<span className="block">{lines[0]}</span>
+										{lines[1] && (
+											<span className="mt-0.5 block pl-3 text-foreground-muted">
+												{lines[1]}
+											</span>
+										)}
+									</button>
+								);
+							})}
+						</div>
 					</div>
 				)}
 
