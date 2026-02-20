@@ -77,7 +77,7 @@ index 9c9e8f7..6d2f8a1 100644
    const args = parseArgs(process.argv);
  -  await runCommitMessage("mistral/ministral-3b");
  +  await runCommitMessage(["mistral/ministral-3b", "xai/grok-code-fast-1"]);
- 
+
  export async function runCommitMessage(models: string[]) {
  `,
 		fallbacks: [
@@ -532,7 +532,7 @@ export function TerminalTabsDemo() {
 				id={panelId}
 				role="tabpanel"
 				aria-labelledby={activeTabId}
-				className="h-72 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
+				className="h-100 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
 			>
 				<div className="flex items-start gap-2">
 					<span className="text-foreground shrink-0">$</span>

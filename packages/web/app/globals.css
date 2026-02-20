@@ -25,7 +25,9 @@
 
 	/* Typography: Satoshi */
 	--font-sans:
-		"Satoshi", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+		"Geist", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+	--font-serif:
+		"Baskervville", serif;
 	--font-mono:
 		"JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
 		monospace;

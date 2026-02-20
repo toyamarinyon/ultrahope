@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Baskervville, Geist } from "next/font/google";
 import {
 	DEFAULT_DESCRIPTION,
 	DEFAULT_SITE_NAME,
 	resolveCanonicalOrigin,
 } from "@/lib/util/seo";
+
+const geist = Geist({
+	subsets: ["latin"],
+});
+const baskerville = Baskervville({
+	subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
 	metadataBase: new URL(resolveCanonicalOrigin()),
@@ -37,15 +45,9 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en">
-			<head>
-				<link rel="preconnect" href="https://api.fontshare.com" />
-				<link
-					href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap"
-					rel="stylesheet"
-				/>
-			</head>
-			<body>{children}</body>
+		<html lang="en" className={`${geist.className} ${baskerville.className}`}>
+			<head></head>
+			<body className="font-sans">{children}</body>
 		</html>
 	);
 }

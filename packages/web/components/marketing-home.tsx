@@ -55,33 +55,40 @@ export function MarketingHome() {
 			{/* Hero - Vertical layout */}
 			<section className="min-h-[calc(100vh-5rem)] flex items-center max-w-7xl mx-auto">
 				<div className="w-full py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
-					<div className="w-full max-w-4xl text-center">
-						<h1 className="mx-auto mb-5 max-w-[15ch] text-4xl font-medium leading-[1.1] tracking-[-0.025em] sm:text-5xl lg:text-[4.25rem]">
-							Fast, multi-candidate AI commit messages.
+					<div className="w-full max-w-4xl">
+						<h1 className="mx-auto mb-5 text-4xl font-medium font-serif">
+							Fast AI commit messages
+							<br /> you can compare
 						</h1>
-						<p className="mx-auto mb-10 max-w-[34ch] text-lg leading-relaxed text-foreground-secondary sm:text-xl lg:text-[1.55rem]">
-							AI proposes. You compare. You decide.
-						</p>
-
-						<div className="flex flex-wrap items-center justify-center gap-4">
-							<Link
-								href="/signup"
-								className="inline-flex items-center justify-center px-6 py-3 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
-							>
-								Get Started
-							</Link>
-							<Link
-								href="/pricing"
-								className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors"
-							>
-								Pricing
-							</Link>
+						<div className="flex justify-between">
+							<div className="text-lg">
+								<p>Turn diffs into multiple proposals in your terminal.</p>
+								<p>Reroll, edit, and confirm — without breaking your flow.</p>
+							</div>
+							<div className="flex flex-wrap items-center justify-center gap-4">
+								<Link
+									href="/signup"
+									className="inline-flex items-center justify-center px-3 py-1.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
+								>
+									Get Started for Free
+								</Link>
+								{/*<Link
+														href="/pricing"
+														className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors"
+													>
+														Pricing
+													</Link>*/}
+							</div>
 						</div>
+
+						{/*<p className="mx-auto mb-10 max-w-[34ch] text-lg leading-relaxed text-foreground-secondary sm:text-xl lg:text-[1.55rem]">
+							AI proposes. You compare. You decide.
+						</p>*/}
 					</div>
 
 					<div className="w-full max-w-5xl">
 						<div className="relative">
-							<div className="absolute -inset-8 rounded-[32px] bg-[radial-gradient(ellipse_at_top,#2b261f,transparent_65%)] opacity-70 blur-2xl" />
+							<div className="absolute -inset-8 rounded-4xl bg-[radial-gradient(ellipse_at_top,#2b261f,transparent_65%)] opacity-70 blur-2xl" />
 							<div className="relative">
 								<TerminalTabsDemo />
 							</div>
