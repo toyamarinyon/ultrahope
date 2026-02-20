@@ -183,6 +183,7 @@ function useTypingAnimation(
 function renderSelectorLinesWithSpinner(
 	lines: string[],
 	showSpinner: boolean,
+	spinnerCharacter: string,
 ): ReactNode[] {
 	const nodes: ReactNode[] = [];
 	const lineCounts = new Map<string, number>();
@@ -218,7 +219,7 @@ function renderSelectorLinesWithSpinner(
 
 		nodes.push(
 			<span key={key}>
-				<span className="inline-block animate-spin">{firstCharacter}</span>
+				{spinnerCharacter}
 				{line.slice(1)}
 				{"\n"}
 			</span>,
@@ -366,6 +367,7 @@ export function TerminalTabsDemo() {
 	const [selectedResult, setSelectedResult] = useState<SelectorResult | null>(
 		null,
 	);
+	const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
 
 	const destroySelector = useCallback(() => {
@@ -388,6 +390,7 @@ export function TerminalTabsDemo() {
 
 		selectorControllerRef.current = controller;
 		setSelectedResult(null);
+		setSpinnerFrameIndex(0);
 		setPhase("selector");
 		controller.start();
 	}, [activeDemo, destroySelector]);
@@ -436,6 +439,14 @@ export function TerminalTabsDemo() {
 		},
 		[startSelector],
 	);
+
+	useEffect(() => {
+		if (!selectorState?.isGenerating) return;
+		const timer = setInterval(() => {
+			setSpinnerFrameIndex((index) => (index + 1) % SPINNER_FRAMES.length);
+		}, 80);
+		return () => clearInterval(timer);
+	}, [selectorState?.isGenerating]);
 
 	const onKeyDown = useCallback(
 		(event: KeyboardEvent) => {
@@ -558,6 +569,7 @@ export function TerminalTabsDemo() {
 							{renderSelectorLinesWithSpinner(
 								renderedSelectorLines,
 								selectorState.isGenerating,
+								SPINNER_FRAMES[spinnerFrameIndex],
 							)}
 						</pre>
 					</div>
