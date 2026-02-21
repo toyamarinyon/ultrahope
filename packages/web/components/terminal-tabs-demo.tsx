@@ -471,6 +471,10 @@ export function TerminalTabsDemo() {
 		};
 	}, []);
 
+	const handleReplay = useCallback(() => {
+		setPhase("initial");
+	}, []);
+
 	useEffect(() => {
 		if (phase !== "initial") return;
 		const timer = setTimeout(() => setPhase("typing"), 220);
@@ -589,17 +593,18 @@ export function TerminalTabsDemo() {
 	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
 
 	return (
-		<div className="rounded-xl border border-border-subtle bg-canvas-dark overflow-hidden font-mono">
-			<div className="flex items-center justify-between border-b border-border-subtle bg-surface px-3 py-2">
-				<div className="flex items-center gap-2">
-					<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/60" />
-					<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/40" />
-					<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/30" />
+		<div className="space-y-3">
+			<div className="rounded-xl border border-border-subtle bg-canvas-dark overflow-hidden font-mono">
+				<div className="flex items-center justify-between border-b border-border-subtle bg-surface px-3 py-2">
+					<div className="flex items-center gap-2">
+						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/60" />
+						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/40" />
+						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/30" />
+					</div>
+					<span className="text-[11px] text-foreground-secondary">
+						ultrahope demo
+					</span>
 				</div>
-				<span className="text-[11px] text-foreground-secondary">
-					ultrahope demo
-				</span>
-			</div>
 
 			<div
 				className="flex bg-surface/70"
@@ -727,28 +732,36 @@ export function TerminalTabsDemo() {
 								Cost: {formatCost(selectedResult.selectedCandidate.cost)}
 							</p>
 						)}
-						<p className="mt-4">Would you try on your terminal?</p>
-						<div className="mt-2 inline-flex w-full items-center gap-2 rounded bg-surface/70 px-2 py-1.5">
-							<span className="text-foreground">$</span>
-							<code className="flex-1 text-foreground">{INSTALL_COMMAND}</code>
-							<button
-								type="button"
-								onClick={copyInstallCommand}
-								className="rounded border border-border-subtle px-2 py-0.5 text-foreground-muted transition hover:border-foreground-muted hover:text-foreground"
-								aria-label="Copy install command"
-								title="Copy install command"
-							>
-								📋
-							</button>
-						</div>
-						{installCopied && (
-							<p className="mt-1 text-xs text-foreground-muted">
-								Copied to clipboard
-							</p>
-						)}
+						<button
+							type="button"
+							onClick={handleReplay}
+							className="mt-4 inline-flex rounded border border-border-subtle bg-surface/70 px-3 py-1.5 text-foreground transition hover:border-foreground-muted hover:text-foreground"
+						>
+							Replay from start
+						</button>
 					</div>
 				)}
 			</div>
 		</div>
+
+		<div className="mt-3">
+			<div className="inline-flex w-full items-center gap-2 rounded bg-surface/70 px-2 py-1.5">
+				<span className="text-foreground">$</span>
+				<code className="flex-1 text-foreground">{INSTALL_COMMAND}</code>
+				<button
+					type="button"
+					onClick={copyInstallCommand}
+					className="rounded border border-border-subtle px-2 py-0.5 text-foreground-muted transition hover:border-foreground-muted hover:text-foreground"
+					aria-label="Copy install command"
+					title="Copy install command"
+				>
+					📋
+				</button>
+			</div>
+			{installCopied && (
+				<p className="mt-1 text-xs text-foreground-muted">Copied to clipboard</p>
+			)}
+		</div>
+	</div>
 	);
 }
