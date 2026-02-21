@@ -577,144 +577,145 @@ export function TerminalTabsDemo() {
 					</span>
 				</div>
 
-			<div
-				className="flex bg-surface/70"
-				role="tablist"
-				aria-label="Demo command scenarios"
-			>
-				{DEMO_TABS.map((tab) => {
-					const isActive = tab.id === activeDemo.id;
-					const tabId = `terminal-demo-tab-${tab.id}`;
-					return (
-						<button
-							key={tab.id}
-							type="button"
-							onClick={() => setActiveTab(tab.id)}
-							role="tab"
-							id={tabId}
-							aria-selected={isActive}
-							aria-controls={panelId}
-							tabIndex={isActive ? 0 : -1}
-							className={`px-3 py-2 text-xs border-r border-border-subtle ${
-								isActive
-									? "bg-canvas-dark text-foreground"
-									: "border-b border-border-subtle text-foreground-muted hover:text-foreground-secondary"
-							}`}
-						>
-							{tab.label}
-						</button>
-					);
-				})}
 				<div
-					aria-hidden="true"
-					role="presentation"
-					className="flex-1 border-b border-border-subtle"
-				/>
-			</div>
-
-			<div
-				id={panelId}
-				role="tabpanel"
-				aria-labelledby={activeTabId}
-				className="h-120 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
-			>
-				<div className="flex items-start gap-2">
-					<span className="text-foreground shrink-0">$</span>
-					<code className="text-foreground whitespace-pre-wrap break-all">
-						{typedText}
-					</code>
-					{(phase === "initial" ||
-						phase === "typing" ||
-						phase === "waitingEnter") && (
-						<span className="flex items-center gap-2 animate-pulse">
-							<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
-						</span>
-					)}
+					className="flex bg-surface/70"
+					role="tablist"
+					aria-label="Demo command scenarios"
+				>
+					{DEMO_TABS.map((tab) => {
+						const isActive = tab.id === activeDemo.id;
+						const tabId = `terminal-demo-tab-${tab.id}`;
+						return (
+							<button
+								key={tab.id}
+								type="button"
+								onClick={() => setActiveTab(tab.id)}
+								role="tab"
+								id={tabId}
+								aria-selected={isActive}
+								aria-controls={panelId}
+								tabIndex={isActive ? 0 : -1}
+								className={`px-3 py-2 text-xs border-r border-border-subtle ${
+									isActive
+										? "bg-canvas-dark text-foreground"
+										: "border-b border-border-subtle text-foreground-muted hover:text-foreground-secondary"
+								}`}
+							>
+								{tab.label}
+							</button>
+						);
+					})}
+					<div
+						aria-hidden="true"
+						role="presentation"
+						className="flex-1 border-b border-border-subtle"
+					/>
 				</div>
 
-				{(phase === "selector" || phase === "selected") && selectorState && (
-					<div className="mt-2 text-sm">
-						<p className="text-green-400">{activeDemo.foundLine}</p>
-						{renderedSelectorHeaderLines.length > 0 && (
-							<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
-								{renderedSelectorHeaderLines[0]}
-								{renderedSelectorHeaderLines[1]}
-							</pre>
+				<div
+					id={panelId}
+					role="tabpanel"
+					aria-labelledby={activeTabId}
+					className="h-120 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
+				>
+					<div className="flex items-start gap-2">
+						<span className="text-foreground shrink-0">$</span>
+						<code className="text-foreground whitespace-pre-wrap break-all">
+							{typedText}
+						</code>
+						{(phase === "initial" ||
+							phase === "typing" ||
+							phase === "waitingEnter") && (
+							<span className="flex items-center gap-2 animate-pulse">
+								<span className="mt-0.5 h-4 w-2 bg-foreground/90" />
+							</span>
 						)}
-						<div className="mt-2 space-y-1">
-							{selectorState.slots.map((slot, index) => {
-								const isSelected = index === selectorState.selectedIndex;
-								const isReady = slot.status === "ready";
-								const isInteractive = phase === "selector" && isReady;
-								const lines = renderSlotLines(slot, isSelected);
-								const slotKey =
-									slot.status === "ready" ? slot.candidate.slotId : slot.slotId;
+					</div>
 
-								if (!isInteractive) {
+					{(phase === "selector" || phase === "selected") && selectorState && (
+						<div className="mt-2 text-sm">
+							<p className="text-green-400">{activeDemo.foundLine}</p>
+							{renderedSelectorHeaderLines.length > 0 && (
+								<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
+									{renderedSelectorHeaderLines[0]}
+									{renderedSelectorHeaderLines[1]}
+								</pre>
+							)}
+							<div className="mt-2 space-y-1">
+								{selectorState.slots.map((slot, index) => {
+									const isSelected = index === selectorState.selectedIndex;
+									const isReady = slot.status === "ready";
+									const isInteractive = phase === "selector" && isReady;
+									const lines = renderSlotLines(slot, isSelected);
+									const slotKey =
+										slot.status === "ready"
+											? slot.candidate.slotId
+											: slot.slotId;
+
+									if (!isInteractive) {
+										return (
+											<div
+												key={slotKey ?? `slot-${index}`}
+												className="rounded px-2 py-1 text-left font-mono text-foreground-muted/60"
+											>
+												<span className="block">{lines[0]}</span>
+												{lines[1] && (
+													<span className="mt-0.5 block pl-3 text-foreground-muted/80">
+														{lines[1]}
+													</span>
+												)}
+											</div>
+										);
+									}
+
 									return (
-										<div
+										<button
 											key={slotKey ?? `slot-${index}`}
-											className="rounded px-2 py-1 text-left font-mono text-foreground-muted/60"
+											type="button"
+											onMouseEnter={() => handleCandidateHover(index)}
+											onClick={() => handleCandidateClick(index)}
+											className={`w-full rounded px-2 py-1 text-left font-mono ${
+												isSelected
+													? "bg-surface-hover text-foreground"
+													: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
+											}`}
 										>
 											<span className="block">{lines[0]}</span>
 											{lines[1] && (
-												<span className="mt-0.5 block pl-3 text-foreground-muted/80">
+												<span className="mt-0.5 block pl-3 text-foreground-muted">
 													{lines[1]}
 												</span>
 											)}
-										</div>
+										</button>
 									);
-								}
-
-								return (
-									<button
-										key={slotKey ?? `slot-${index}`}
-										type="button"
-										onMouseEnter={() => handleCandidateHover(index)}
-										onClick={() => handleCandidateClick(index)}
-										className={`w-full rounded px-2 py-1 text-left font-mono ${
-											isSelected
-												? "bg-surface-hover text-foreground"
-												: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
-										}`}
-									>
-										<span className="block">{lines[0]}</span>
-										{lines[1] && (
-											<span className="mt-0.5 block pl-3 text-foreground-muted">
-												{lines[1]}
-											</span>
-										)}
-									</button>
-								);
-							})}
+								})}
+							</div>
 						</div>
-					</div>
-				)}
+					)}
 
-				{phase === "selected" && selectedResult?.selected && (
-					<div className="mt-4">
-						<p className="text-green-400">✔ Candidate selected</p>
-						<p className="text-green-400">{activeDemo.applyLine}</p>
-						<p className="mt-1 text-foreground-muted">
-							{selectedResult.selected}
-						</p>
-						{selectedResult.selectedCandidate?.cost != null && (
-							<p className="text-foreground-muted/80">
-								Cost: {formatCost(selectedResult.selectedCandidate.cost)}
+					{phase === "selected" && selectedResult?.selected && (
+						<div className="mt-4">
+							<p className="text-green-400">✔ Candidate selected</p>
+							<p className="text-green-400">{activeDemo.applyLine}</p>
+							<p className="mt-1 text-foreground-muted">
+								{selectedResult.selected}
 							</p>
-						)}
-						<button
-							type="button"
-							onClick={handleReplay}
-							className="mt-4 inline-flex rounded border border-border-subtle bg-surface/70 px-3 py-1.5 text-foreground transition hover:border-foreground-muted hover:text-foreground"
-						>
-							Replay from start
-						</button>
-					</div>
-				)}
+							{selectedResult.selectedCandidate?.cost != null && (
+								<p className="text-foreground-muted/80">
+									Cost: {formatCost(selectedResult.selectedCandidate.cost)}
+								</p>
+							)}
+							<button
+								type="button"
+								onClick={handleReplay}
+								className="mt-4 inline-flex rounded border border-border-subtle bg-surface/70 px-3 py-1.5 text-foreground transition hover:border-foreground-muted hover:text-foreground"
+							>
+								Replay from start
+							</button>
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
-
-	</div>
 	);
 }

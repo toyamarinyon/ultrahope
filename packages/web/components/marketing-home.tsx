@@ -69,14 +69,14 @@ export function MarketingHome() {
 								</Link>
 								<p className="text-sm text-foreground-muted">
 									Or,{" "}
-										<Link
-											href="https://github.com/toyamarinyon/ultrahope"
-											className="text-inherit hover:opacity-80 underline underline-offset-2 decoration-current transition-opacity"
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											view on GitHub.
-										</Link>
+									<Link
+										href="https://github.com/toyamarinyon/ultrahope"
+										className="text-inherit hover:opacity-80 underline underline-offset-2 decoration-current transition-opacity"
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										view on GitHub.
+									</Link>
 								</p>
 								{/*<Link
 												href="/pricing"
