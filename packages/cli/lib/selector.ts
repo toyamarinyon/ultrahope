@@ -106,6 +106,7 @@ function renderSelector(
 	state: RenderState,
 	nowMs: number,
 	renderer: ReturnType<typeof createRenderer>,
+	editedSelections?: Map<string, string>,
 ): void {
 	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
@@ -130,22 +131,38 @@ function renderSelector(
 		lines.push(ui.success(label));
 	}
 
+	const selectedSlot = slots[selectedIndex];
+	const isEditedSelection =
+		selectedSlot?.status === "ready" &&
+		editedSelections?.has(selectedSlot.candidate.slotId) === true;
+
 	const hasReady = readyCount > 0;
 	if (hasReady) {
-		const hint = ui.hint("↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit");
-		lines.push(ui.prompt(`Select a commit message ${hint}`));
+		if (isEditedSelection) {
+			lines.push(ui.success("Select a commit message"));
+		} else {
+			const hint = ui.hint("↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit");
+			lines.push(ui.prompt(`Select a commit message ${hint}`));
+		}
 	} else {
 		lines.push(ui.hint("  q quit"));
 	}
 
 	lines.push("");
-
 	for (let i = 0; i < slots.length; i++) {
 		const slotLines = formatSlot(slots[i], i === selectedIndex);
 		for (const line of slotLines) {
 			lines.push(line);
 		}
 		if (slotLines.length > 0) {
+			lines.push("");
+		}
+	}
+	if (selectedSlot?.status === "ready") {
+		const edited = editedSelections?.get(selectedSlot.candidate.slotId);
+		if (edited) {
+			const editedSummary = edited.split("\n")[0]?.slice(0, 120);
+			lines.push(ui.success(`Edited: ${editedSummary}`));
 			lines.push("");
 		}
 	}
@@ -204,6 +221,45 @@ function openEditor(content: string): Promise<string> {
 	});
 }
 
+function transformSelectionByProcess(content: string): Promise<string> {
+	const command = process.env.ULTRAHOPE_EDIT_TRANSFORM;
+	if (!command) {
+		return Promise.resolve(content);
+	}
+
+	return new Promise((resolve, reject) => {
+		const child = spawn(command, { shell: true, stdio: ["pipe", "pipe", "pipe"] });
+		let stdout = "";
+		let stderr = "";
+
+		child.stdout?.on("data", (chunk) => {
+			stdout += chunk.toString();
+		});
+		child.stderr?.on("data", (chunk) => {
+			stderr += chunk.toString();
+		});
+
+		child.on("close", (code) => {
+			if (code !== 0) {
+				reject(
+					new Error(
+						stderr.trim() || `Transform process exited with code ${String(code)}`,
+					),
+				);
+				return;
+			}
+			resolve(stdout.trim());
+		});
+
+		child.on("error", (error) => {
+			reject(error);
+		});
+
+		child.stdin?.write(content);
+		child.stdin?.end();
+	});
+}
+
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
@@ -226,8 +282,12 @@ export async function selectCandidate(
 	let ttyOutput: tty.WriteStream | null = null;
 	try {
 		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
-		const inputFd = openSync(TTY_PATH, "r");
-		ttyInput = new tty.ReadStream(inputFd);
+		if (process.stdin.isTTY) {
+			ttyInput = process.stdin as tty.ReadStream;
+		} else {
+			const inputFd = openSync(TTY_PATH, "r");
+			ttyInput = new tty.ReadStream(inputFd);
+		}
 		// Use process.stdout if it's a TTY, otherwise open /dev/tty
 		// This works around a Bun bug with tty.WriteStream and kqueue
 		if (process.stdout.isTTY) {
@@ -281,6 +341,7 @@ async function selectFromSlots(
 		};
 
 		const slots = [...initialSlots];
+		const editedSelections = new Map<string, string>();
 		const state: RenderState = {
 			slots,
 			selectedIndex: 0,
@@ -303,9 +364,17 @@ async function selectFromSlots(
 		readline.emitKeypressEvents(ttyInput, rl);
 		ttyInput.setRawMode(true);
 
+		const setRawModeSafe = (enabled: boolean) => {
+			try {
+				ttyInput.setRawMode(enabled);
+			} catch {
+				// Ignore tty mode errors during shutdown.
+			}
+		};
+
 		const doRender = () => {
 			if (!cleanedUp) {
-				renderSelector(state, Date.now(), renderer);
+				renderSelector(state, Date.now(), renderer, editedSelections);
 			}
 		};
 
@@ -341,10 +410,20 @@ async function selectFromSlots(
 			if (clearOutput) {
 				renderer.clearAll();
 			}
-			ttyInput.setRawMode(false);
+			ttyInput.removeAllListeners("keypress");
+			setRawModeSafe(false);
 			rl.close();
-			ttyInput.destroy();
-			ttyOutput.destroy();
+			ttyInput.pause();
+			if (ttyInput !== process.stdin && !ttyInput.destroyed) {
+				ttyInput.destroy();
+			}
+			if (
+				ttyOutput !== process.stdout &&
+				ttyOutput !== process.stderr &&
+				!ttyOutput.destroyed
+			) {
+				ttyOutput.destroy();
+			}
 		};
 
 		const nextCandidate = async (
@@ -431,21 +510,22 @@ async function selectFromSlots(
 			})();
 		}
 
-		const confirmSelection = () => {
+		const confirmSelection = (clearOutput = true) => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
+			const selectedContent = editedSelections.get(candidate.slotId) ?? candidate.content;
 			cancelGeneration();
 			const totalCost = getTotalCost(slots);
 			const quota = getLatestQuota(slots);
 			resolveOnce({
 				action: "confirm",
-				selected: candidate.content,
+				selected: selectedContent,
 				selectedIndex: state.selectedIndex,
 				selectedCandidate: candidate,
 				totalCost: totalCost > 0 ? totalCost : undefined,
 				quota,
 			});
-			cleanup();
+			cleanup(clearOutput);
 		};
 
 		const rerollSelection = () => {
@@ -464,21 +544,24 @@ async function selectFromSlots(
 		const editSelection = async () => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
-			renderer.flush();
-			ttyInput.setRawMode(false);
-			let edited: string | null = null;
+			stopRenderLoop();
+			cancelGeneration();
+			if (state.isGenerating) {
+				state.isGenerating = false;
+			}
+			let edited = candidate.content;
 			try {
-				const result = await openEditor(candidate.content);
-				edited = result ? result : null;
-			} catch {}
-			ttyInput.setRawMode(true);
-			renderer.reset();
-			updateState(() => {
-				if (!edited) return;
-				slots[state.selectedIndex] = {
-					status: "ready",
-					candidate: { ...candidate, content: edited },
-				};
+				edited = await transformSelectionByProcess(candidate.content);
+			} catch {
+				// Keep existing content on transform failure.
+			}
+			editedSelections.set(candidate.slotId, edited);
+			doRender();
+			renderer.flush();
+			setImmediate(() => {
+				if (!cleanedUp) {
+					confirmSelection(false);
+				}
 			});
 		};
 
