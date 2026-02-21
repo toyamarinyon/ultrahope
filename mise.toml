@@ -40,5 +40,5 @@ run = "bun scripts/delete-user.ts --email {{arg(name='email')}} --execute --conf
 [tasks.format]
 description = "Run biome check on jj working copy changed files"
 run = '''
-jj diff --summary | awk '$1 != "D" {print $2}' | grep -E '\.(ts|tsx|js|jsx|json|css)$' | xargs bunx biome check
+jj diff --summary | awk '$1 != "D" {print $2}' | grep -E '\.(ts|tsx|js|jsx|json|css)$' | xargs bunx biome check --write
 '''
