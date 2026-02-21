@@ -5,7 +5,7 @@ import {
 	mkdtempSync,
 	openSync,
 	readFileSync,
-	unlinkSync,
+	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -196,28 +196,44 @@ function openEditor(content: string): Promise<string> {
 		const editor = process.env.GIT_EDITOR || process.env.EDITOR || "vi";
 		const tmpDir = mkdtempSync(join(tmpdir(), "ultrahope-"));
 		const tmpFile = join(tmpDir, "EDIT_MESSAGE");
+		let cleanupDone = false;
 
-		writeFileSync(tmpFile, content);
-
-		const child = spawn(editor, [tmpFile], { stdio: "inherit" });
-
-		child.on("close", (code) => {
-			if (code !== 0) {
-				unlinkSync(tmpFile);
-				reject(new Error(`Editor exited with code ${code}`));
-				return;
-			}
-			const result = readFileSync(tmpFile, "utf-8").trim();
-			unlinkSync(tmpFile);
-			resolve(result);
-		});
-
-		child.on("error", (err) => {
+		const cleanupTempArtifacts = () => {
+			if (cleanupDone) return;
+			cleanupDone = true;
 			try {
-				unlinkSync(tmpFile);
+				rmSync(tmpDir, { recursive: true, force: true });
 			} catch {}
+		};
+
+		try {
+			writeFileSync(tmpFile, content);
+
+			const child = spawn(editor, [tmpFile], { stdio: "inherit" });
+
+			child.on("close", (code) => {
+				try {
+					if (code !== 0) {
+						reject(new Error(`Editor exited with code ${code}`));
+						return;
+					}
+					const result = readFileSync(tmpFile, "utf-8").trim();
+					resolve(result);
+				} catch (err) {
+					reject(err);
+				} finally {
+					cleanupTempArtifacts();
+				}
+			});
+
+			child.on("error", (err) => {
+				cleanupTempArtifacts();
+				reject(err);
+			});
+		} catch (err) {
+			cleanupTempArtifacts();
 			reject(err);
-		});
+		}
 	});
 }
 
