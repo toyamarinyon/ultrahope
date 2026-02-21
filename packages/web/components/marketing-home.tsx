@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { MarketingInstallGuide } from "./marketing-install-guide";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
 function UltrahopeLogo() {
@@ -98,9 +99,7 @@ export function MarketingHome() {
 								<TerminalTabsDemo />
 							</div>
 						</div>
-						<p className="mt-4 text-sm text-foreground-muted text-center">
-							Try it. Press enter to review proposals.
-						</p>
+						<MarketingInstallGuide />
 					</div>
 				</div>
 			</section>

@@ -48,7 +48,6 @@ interface DemoTab {
 }
 
 const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
-const INSTALL_COMMAND = "npm i -g ultrahope";
 
 function resolveReplay(capture: TerminalStreamReplayCapture): {
 	generation: TerminalStreamReplayGeneration | null;
@@ -403,11 +402,7 @@ export function TerminalTabsDemo() {
 		null,
 	);
 	const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
-	const [installCopied, setInstallCopied] = useState(false);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
-	const installCopyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
 
 	const destroySelector = useCallback(() => {
 		selectorControllerRef.current?.destroy();
@@ -430,7 +425,6 @@ export function TerminalTabsDemo() {
 		selectorControllerRef.current = controller;
 		setSelectedResult(null);
 		setSpinnerFrameIndex(0);
-		setInstallCopied(false);
 		setPhase("selector");
 		controller.start();
 	}, [activeDemo, destroySelector]);
@@ -447,29 +441,6 @@ export function TerminalTabsDemo() {
 			destroySelector();
 		};
 	}, [destroySelector]);
-
-	const copyInstallCommand = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(INSTALL_COMMAND);
-			if (installCopyTimeoutRef.current) {
-				clearTimeout(installCopyTimeoutRef.current);
-			}
-			setInstallCopied(true);
-			installCopyTimeoutRef.current = setTimeout(() => {
-				setInstallCopied(false);
-			}, 1200);
-		} catch {
-			// Ignore clipboard failures and keep rendering unchanged.
-		}
-	}, []);
-
-	useEffect(() => {
-		return () => {
-			if (installCopyTimeoutRef.current) {
-				clearTimeout(installCopyTimeoutRef.current);
-			}
-		};
-	}, []);
 
 	const handleReplay = useCallback(() => {
 		setPhase("initial");
@@ -744,24 +715,6 @@ export function TerminalTabsDemo() {
 			</div>
 		</div>
 
-		<div className="mt-3">
-			<div className="inline-flex w-full items-center gap-2 rounded bg-surface/70 px-2 py-1.5">
-				<span className="text-foreground">$</span>
-				<code className="flex-1 text-foreground">{INSTALL_COMMAND}</code>
-				<button
-					type="button"
-					onClick={copyInstallCommand}
-					className="rounded border border-border-subtle px-2 py-0.5 text-foreground-muted transition hover:border-foreground-muted hover:text-foreground"
-					aria-label="Copy install command"
-					title="Copy install command"
-				>
-					📋
-				</button>
-			</div>
-			{installCopied && (
-				<p className="mt-1 text-xs text-foreground-muted">Copied to clipboard</p>
-			)}
-		</div>
 	</div>
 	);
 }
