@@ -221,45 +221,6 @@ function openEditor(content: string): Promise<string> {
 	});
 }
 
-function transformSelectionByProcess(content: string): Promise<string> {
-	const command = process.env.ULTRAHOPE_EDIT_TRANSFORM;
-	if (!command) {
-		return Promise.resolve(content);
-	}
-
-	return new Promise((resolve, reject) => {
-		const child = spawn(command, { shell: true, stdio: ["pipe", "pipe", "pipe"] });
-		let stdout = "";
-		let stderr = "";
-
-		child.stdout?.on("data", (chunk) => {
-			stdout += chunk.toString();
-		});
-		child.stderr?.on("data", (chunk) => {
-			stderr += chunk.toString();
-		});
-
-		child.on("close", (code) => {
-			if (code !== 0) {
-				reject(
-					new Error(
-						stderr.trim() || `Transform process exited with code ${String(code)}`,
-					),
-				);
-				return;
-			}
-			resolve(stdout.trim());
-		});
-
-		child.on("error", (error) => {
-			reject(error);
-		});
-
-		child.stdin?.write(content);
-		child.stdin?.end();
-	});
-}
-
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
@@ -549,12 +510,19 @@ async function selectFromSlots(
 			if (state.isGenerating) {
 				state.isGenerating = false;
 			}
+
+			ttyInput.removeListener("keypress", handleKeypress);
+			rl.pause();
+			setRawModeSafe(false);
+
 			let edited = candidate.content;
 			try {
-				edited = await transformSelectionByProcess(candidate.content);
+				const result = await openEditor(candidate.content);
+				edited = result || candidate.content;
 			} catch {
-				// Keep existing content on transform failure.
+				// Keep existing content when editor exits non-zero.
 			}
+
 			editedSelections.set(candidate.slotId, edited);
 			doRender();
 			renderer.flush();
