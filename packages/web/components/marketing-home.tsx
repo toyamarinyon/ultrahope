@@ -25,8 +25,20 @@ export function MarketingHome() {
 					</Link>
 					<div className="flex items-center gap-2 sm:gap-3">
 						<Link
+							href="/pricing"
+							className="inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium text-foreground no-underline hover:opacity-80 sm:px-4"
+						>
+							Pricing
+						</Link>
+						<Link
+							href="/login"
+							className="inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium text-foreground no-underline hover:opacity-80 sm:px-4"
+						>
+							Sign in
+						</Link>
+						<Link
 							href="/signup"
-							className="inline-flex items-center justify-center px-3 py-2.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity sm:px-4"
+							className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
 						>
 							Get Started
 						</Link>
