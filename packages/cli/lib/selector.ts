@@ -390,16 +390,25 @@ async function selectFromSlots(
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,
 		): Promise<IteratorResult<CandidateWithModel>> => {
+			if (!asyncCtx?.abortController) {
+				return iterator.next();
+			}
+			const signal = asyncCtx.abortController.signal;
+			if (signal.aborted) {
+				return { done: true, value: undefined };
+			}
+
+			let cleanup = () => {};
 			const abortPromise = new Promise<IteratorResult<CandidateWithModel>>(
 				(resolve) => {
-					asyncCtx?.abortController.signal.addEventListener(
-						"abort",
-						() => resolve({ done: true, value: undefined }),
-						{ once: true },
-					);
+					const onAbort = () => resolve({ done: true, value: undefined });
+					signal.addEventListener("abort", onAbort);
+					cleanup = () => signal.removeEventListener("abort", onAbort);
 				},
 			);
-			return Promise.race([iterator.next(), abortPromise]);
+			return Promise.race([iterator.next(), abortPromise]).finally(() => {
+				cleanup();
+			});
 		};
 
 		const finalizeGeneration = () => {
@@ -474,7 +483,8 @@ async function selectFromSlots(
 		const confirmSelection = (clearOutput = true) => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
-			const selectedContent = editedSelections.get(candidate.slotId) ?? candidate.content;
+			const selectedContent =
+				editedSelections.get(candidate.slotId) ?? candidate.content;
 			cancelGeneration();
 			const totalCost = getTotalCost(slots);
 			const quota = getLatestQuota(slots);
