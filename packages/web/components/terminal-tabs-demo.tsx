@@ -696,7 +696,14 @@ export function TerminalTabsDemo() {
 													: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
 											}`}
 										>
-											<span className="block">{lines[0]}</span>
+											<span className="flex items-start justify-between gap-3">
+												<span className="block">{lines[0]}</span>
+												{isSelected && (
+													<span className="shrink-0 text-[11px] text-foreground-muted/80">
+														Enter to confirm / Click to confirm
+													</span>
+												)}
+											</span>
 											{lines[1] && (
 												<span className="mt-0.5 block pl-3 text-foreground-muted">
 													{lines[1]}
