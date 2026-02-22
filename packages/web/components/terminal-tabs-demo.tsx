@@ -239,6 +239,14 @@ function renderSlotLines(
 	isSelected: boolean,
 ): string[] {
 	const radio = isSelected ? "●" : "○";
+	const formatDuration = (ms: number): string => {
+		const safeMs = Math.max(0, Math.round(ms));
+		if (safeMs < 1000) {
+			return `${safeMs}ms`;
+		}
+		const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
+		return `${seconds}s`;
+	};
 
 	if (slot.status === "pending") {
 		const line = `${radio} Generating...`;
@@ -252,10 +260,17 @@ function renderSlotLines(
 	}
 
 	const title = slot.candidate.content.split("\n")[0]?.trim() || "";
+	const formattedModel = slot.candidate.model
+		? formatModelName(slot.candidate.model)
+		: "";
+	const formattedDuration =
+		slot.candidate.generationMs == null
+			? ""
+			: ` ${formatDuration(slot.candidate.generationMs)}`;
 	const modelInfo = slot.candidate.model
 		? slot.candidate.cost != null
-			? `${formatModelName(slot.candidate.model)} ${formatCost(slot.candidate.cost)}`
-			: formatModelName(slot.candidate.model)
+			? `${formattedModel} ${formatCost(slot.candidate.cost)}${formattedDuration}`
+			: `${formattedModel}${formattedDuration}`
 		: "";
 	const lines = [`${radio} ${title}`];
 	if (modelInfo) {
@@ -370,6 +385,7 @@ async function makeMockCandidate({
 		model,
 		content: fallbackText,
 		cost: 0,
+		generationMs: delayMs,
 		generationId: `${model}-${slotId}`,
 	};
 }
