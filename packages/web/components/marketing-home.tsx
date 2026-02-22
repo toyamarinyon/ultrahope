@@ -37,12 +37,14 @@ export function MarketingHome() {
 						>
 							Sign in
 						</Link>
-						<Link
-							href="/signup"
-							className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
-						>
-							Get Started
-						</Link>
+						<span className="inline-flex p-1">
+							<Link
+								href="/signup"
+								className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
+							>
+								Get Started
+							</Link>
+						</span>
 					</div>
 				</div>
 			</header>
