@@ -9,6 +9,7 @@ export interface CandidateWithModel {
 	slotId: string;
 	model?: string;
 	cost?: number;
+	generationMs?: number;
 	generationId?: string;
 	quota?: QuotaInfo;
 	isPartial?: boolean;

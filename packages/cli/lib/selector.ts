@@ -74,10 +74,24 @@ function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
 	const candidate = slot.candidate;
 	const title = candidate.content.split("\n")[0]?.trim() || "";
 
+	const formatDuration = (ms: number): string => {
+		const safeMs = Math.max(0, Math.round(ms));
+		if (safeMs < 1000) {
+			return `${safeMs}ms`;
+		}
+		const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
+		return `${seconds}s`;
+	};
+
+	const formattedModel = candidate.model ? formatModelName(candidate.model) : "";
+	const formattedDuration =
+		candidate.generationMs == null
+			? ""
+			: ` ${formatDuration(candidate.generationMs)}`;
 	const modelInfo = candidate.model
 		? candidate.cost
-			? `${formatModelName(candidate.model)} ${formatCost(candidate.cost)}`
-			: formatModelName(candidate.model)
+			? `${formattedModel} ${formatCost(candidate.cost)}${formattedDuration}`
+			: `${formattedModel}${formattedDuration}`
 		: "";
 
 	if (selected) {
