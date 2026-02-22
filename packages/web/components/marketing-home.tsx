@@ -67,7 +67,7 @@ export function MarketingHome() {
 								>
 									Get Started for Free →
 								</Link>
-								<p className="text-sm text-foreground-muted">
+								<p className="pl-1 text-sm text-foreground-muted">
 									Or,{" "}
 									<Link
 										href="https://github.com/toyamarinyon/ultrahope"

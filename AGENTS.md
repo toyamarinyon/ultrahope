@@ -30,7 +30,7 @@ The three most important items are below. For everything else, see [./.workspace
 
 ## File Change Workflow
 
-After creating or modifying files, run `mise run format` and fix any reported errors until the check passes cleanly.
+After creating or modifying files, run `mise run format` and resolve any reported issues until the check passes cleanly.
 
 <!-- opensrc:start -->
 

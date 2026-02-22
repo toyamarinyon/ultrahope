@@ -38,7 +38,7 @@ description = "Execute account deletion workflow by email"
 run = "bun scripts/delete-user.ts --email {{arg(name='email')}} --execute --confirm {{arg(name='confirm')}}"
 
 [tasks.format]
-description = "Run biome check on jj working copy changed files"
+description = "Run biome check on git changed files"
 run = '''
-jj diff --summary | awk '$1 != "D" {print $2}' | grep -E '\.(ts|tsx|js|jsx|json|css)$' | xargs bunx biome check --write
+{ git diff --name-only --diff-filter=ACMRTUXB HEAD; git ls-files --others --exclude-standard; } | grep -E '\.(ts|tsx|js|jsx|json|css)$' | sort -u | xargs -r bunx biome check --write
 '''
