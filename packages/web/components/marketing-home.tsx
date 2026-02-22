@@ -146,12 +146,6 @@ export function MarketingHome() {
 
 			{/* Install */}
 			<section className="py-24 border-t border-border-subtle">
-				<h2 className="text-3xl font-bold tracking-tight mb-8">
-					Get started in seconds
-				</h2>
-				<pre className="text-lg">
-					<code>npm install -g @ultrahope/cli</code>
-				</pre>
 				<div className="mt-6 text-sm text-foreground-secondary">
 					<Link href="/privacy" className="hover:opacity-80">
 						Privacy Policy
