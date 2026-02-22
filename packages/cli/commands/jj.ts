@@ -15,7 +15,7 @@ import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
-import { formatTotalCost, ui } from "../lib/ui";
+import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface DescribeOptions {
@@ -284,11 +284,6 @@ async function runInteractiveDescribe(
 				context.apiClient,
 				result.selectedCandidate?.generationId,
 			);
-			const costLabel =
-				result.totalCost != null
-					? ` (total: ${formatTotalCost(result.totalCost)})`
-					: "";
-			console.log(ui.success(`Message selected${costLabel}`));
 			console.log(
 				`${ui.success(`Running jj describe -r ${options.revision}`)}\n`,
 			);
