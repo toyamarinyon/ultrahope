@@ -466,14 +466,14 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (canAutoRun) return;
 		const enableAutoRun = () => setCanAutoRun(true);
+		const listenerOptions = { passive: true, once: true };
 		const timer = setTimeout(enableAutoRun, 5000);
-		window.addEventListener("scroll", enableAutoRun, {
-			passive: true,
-			once: true,
-		});
+		window.addEventListener("scroll", enableAutoRun, listenerOptions);
+		window.addEventListener("mousemove", enableAutoRun, listenerOptions);
 		return () => {
 			clearTimeout(timer);
 			window.removeEventListener("scroll", enableAutoRun);
+			window.removeEventListener("mousemove", enableAutoRun);
 		};
 	}, [canAutoRun]);
 
