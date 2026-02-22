@@ -50,10 +50,10 @@ export function MarketingHome() {
 			</header>
 
 			{/* Hero - Vertical layout */}
-			<section className="min-h-[calc(100vh-5rem)] flex items-center max-w-7xl mx-auto">
-				<div className="w-full py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
+			<section>
+				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
 					<div className="w-full max-w-4xl">
-						<h1 className="mx-auto mb-5 text-4xl font-medium font-serif">
+						<h1 className="mb-5 text-4xl font-medium font-serif">
 							Fast AI commit messages
 							<br /> you can compare
 						</h1>
@@ -102,6 +102,43 @@ export function MarketingHome() {
 							</div>
 						</div>
 						<MarketingInstallGuide />
+					</div>
+				</div>
+			</section>
+
+			<section>
+				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
+					<div className="w-full max-w-3xl">
+						<h1 className="mb-4 text-3xl font-medium font-serif">
+							Coding agents are incredibly capable.
+							<br />
+							But not every task needs that level of intelligence.
+						</h1>
+						<p className="mb-8 text-lg">
+							Some workflows are narrow and well-defined. They don’t require a
+							general-purpose agent.
+						</p>
+						<div className="bg-slate-50/5 w-full h-100 flex items-center justify-center">
+							Placeholder
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section>
+				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
+					<div className="w-full max-w-3xl">
+						<h1 className="mb-4 text-3xl font-medium font-serif">
+							Smaller models are faster and more economical.
+							<br />
+							That makes parallel generation practical. You can choose the best.
+						</h1>
+						<p className="mb-8 text-lg">
+							You don’t have to worry about token cost every time you reroll.{" "}
+						</p>
+						<div className="bg-slate-50/5 w-full h-100 flex items-center justify-center">
+							Placeholder
+						</div>
 					</div>
 				</div>
 			</section>
