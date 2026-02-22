@@ -48,7 +48,6 @@ interface DemoTab {
 }
 
 const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
-const INSTALL_COMMAND = "npm i -g ultrahope";
 
 function resolveReplay(capture: TerminalStreamReplayCapture): {
 	generation: TerminalStreamReplayGeneration | null;
@@ -394,6 +393,7 @@ export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
 		DEMO_TABS.find((tab) => tab.id === activeTab) ?? DEMO_TABS[0];
+	const [canAutoRun, setCanAutoRun] = useState(false);
 	const [phase, setPhase] = useState<DemoPhase>("initial");
 	const typedText = useTypingAnimation(activeDemo.command, phase === "typing");
 	const [selectorState, setSelectorState] = useState<SelectorState | null>(
@@ -403,11 +403,7 @@ export function TerminalTabsDemo() {
 		null,
 	);
 	const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
-	const [installCopied, setInstallCopied] = useState(false);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
-	const installCopyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
 
 	const destroySelector = useCallback(() => {
 		selectorControllerRef.current?.destroy();
@@ -430,7 +426,6 @@ export function TerminalTabsDemo() {
 		selectorControllerRef.current = controller;
 		setSelectedResult(null);
 		setSpinnerFrameIndex(0);
-		setInstallCopied(false);
 		setPhase("selector");
 		controller.start();
 	}, [activeDemo, destroySelector]);
@@ -448,32 +443,23 @@ export function TerminalTabsDemo() {
 		};
 	}, [destroySelector]);
 
-	const copyInstallCommand = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(INSTALL_COMMAND);
-			if (installCopyTimeoutRef.current) {
-				clearTimeout(installCopyTimeoutRef.current);
-			}
-			setInstallCopied(true);
-			installCopyTimeoutRef.current = setTimeout(() => {
-				setInstallCopied(false);
-			}, 1200);
-		} catch {
-			// Ignore clipboard failures and keep rendering unchanged.
-		}
-	}, []);
-
-	useEffect(() => {
-		return () => {
-			if (installCopyTimeoutRef.current) {
-				clearTimeout(installCopyTimeoutRef.current);
-			}
-		};
-	}, []);
-
 	const handleReplay = useCallback(() => {
 		setPhase("initial");
 	}, []);
+
+	useEffect(() => {
+		if (canAutoRun) return;
+		const enableAutoRun = () => setCanAutoRun(true);
+		const timer = setTimeout(enableAutoRun, 5000);
+		window.addEventListener("scroll", enableAutoRun, {
+			passive: true,
+			once: true,
+		});
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener("scroll", enableAutoRun);
+		};
+	}, [canAutoRun]);
 
 	useEffect(() => {
 		if (phase !== "initial") return;
@@ -484,12 +470,13 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (phase !== "typing") return;
 		if (typedText.length >= activeDemo.command.length) {
+			if (!canAutoRun) return;
 			const timer = setTimeout(() => {
 				startSelector();
 			}, 1000);
 			return () => clearTimeout(timer);
 		}
-	}, [activeDemo.command, phase, startSelector, typedText]);
+	}, [activeDemo.command, canAutoRun, phase, startSelector, typedText]);
 
 	const onResult = useCallback(
 		(result: SelectorResult) => {
@@ -709,7 +696,14 @@ export function TerminalTabsDemo() {
 													: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
 											}`}
 										>
-											<span className="block">{lines[0]}</span>
+											<span className="flex items-start justify-between gap-3">
+												<span className="block">{lines[0]}</span>
+												{isSelected && (
+													<span className="shrink-0 text-[11px] text-foreground-muted/80">
+														Enter to confirm / Click to confirm
+													</span>
+												)}
+											</span>
 											{lines[1] && (
 												<span className="mt-0.5 block pl-3 text-foreground-muted">
 													{lines[1]}
@@ -744,27 +738,6 @@ export function TerminalTabsDemo() {
 						</div>
 					)}
 				</div>
-			</div>
-
-			<div className="mt-3">
-				<div className="inline-flex w-full items-center gap-2 rounded bg-surface/70 px-2 py-1.5">
-					<span className="text-foreground">$</span>
-					<code className="flex-1 text-foreground">{INSTALL_COMMAND}</code>
-					<button
-						type="button"
-						onClick={copyInstallCommand}
-						className="rounded border border-border-subtle px-2 py-0.5 text-foreground-muted transition hover:border-foreground-muted hover:text-foreground"
-						aria-label="Copy install command"
-						title="Copy install command"
-					>
-						📋
-					</button>
-				</div>
-				{installCopied && (
-					<p className="mt-1 text-xs text-foreground-muted">
-						Copied to clipboard
-					</p>
-				)}
 			</div>
 		</div>
 	);

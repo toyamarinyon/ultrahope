@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { MarketingInstallGuide } from "./marketing-install-guide";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
 function UltrahopeLogo() {
@@ -36,12 +37,14 @@ export function MarketingHome() {
 						>
 							Sign in
 						</Link>
-						<Link
-							href="/signup"
-							className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
-						>
-							Get Started
-						</Link>
+						<span className="inline-flex p-1">
+							<Link
+								href="/signup"
+								className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
+							>
+								Get Started
+							</Link>
+						</span>
 					</div>
 				</div>
 			</header>
@@ -66,7 +69,7 @@ export function MarketingHome() {
 								>
 									Get Started for Free →
 								</Link>
-								<p className="text-sm text-foreground-muted">
+								<p className="pl-1 text-sm text-foreground-muted">
 									Or,{" "}
 									<Link
 										href="https://github.com/toyamarinyon/ultrahope"
@@ -98,9 +101,7 @@ export function MarketingHome() {
 								<TerminalTabsDemo />
 							</div>
 						</div>
-						<p className="mt-4 text-sm text-foreground-muted text-center">
-							Try it. Press enter to review proposals.
-						</p>
+						<MarketingInstallGuide />
 					</div>
 				</div>
 			</section>
@@ -145,12 +146,6 @@ export function MarketingHome() {
 
 			{/* Install */}
 			<section className="py-24 border-t border-border-subtle">
-				<h2 className="text-3xl font-bold tracking-tight mb-8">
-					Get started in seconds
-				</h2>
-				<pre className="text-lg">
-					<code>npm install -g @ultrahope/cli</code>
-				</pre>
 				<div className="mt-6 text-sm text-foreground-secondary">
 					<Link href="/privacy" className="hover:opacity-80">
 						Privacy Policy

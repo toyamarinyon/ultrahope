@@ -28,6 +28,10 @@ The three most important items are below. For everything else, see [./.workspace
 
     A document describing the intended target state for the API.
 
+## File Change Workflow
+
+After creating or modifying files, run `mise run format` and resolve any reported issues until the check passes cleanly.
+
 <!-- opensrc:start -->
 
 ## Source Code Reference
