@@ -393,6 +393,7 @@ export function TerminalTabsDemo() {
 	const [activeTab, setActiveTab] = useState(DEMO_TABS[0].id);
 	const activeDemo =
 		DEMO_TABS.find((tab) => tab.id === activeTab) ?? DEMO_TABS[0];
+	const [canAutoRun, setCanAutoRun] = useState(false);
 	const [phase, setPhase] = useState<DemoPhase>("initial");
 	const typedText = useTypingAnimation(activeDemo.command, phase === "typing");
 	const [selectorState, setSelectorState] = useState<SelectorState | null>(
@@ -447,6 +448,20 @@ export function TerminalTabsDemo() {
 	}, []);
 
 	useEffect(() => {
+		if (canAutoRun) return;
+		const enableAutoRun = () => setCanAutoRun(true);
+		const timer = setTimeout(enableAutoRun, 5000);
+		window.addEventListener("scroll", enableAutoRun, {
+			passive: true,
+			once: true,
+		});
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener("scroll", enableAutoRun);
+		};
+	}, [canAutoRun]);
+
+	useEffect(() => {
 		if (phase !== "initial") return;
 		const timer = setTimeout(() => setPhase("typing"), 220);
 		return () => clearTimeout(timer);
@@ -455,12 +470,13 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (phase !== "typing") return;
 		if (typedText.length >= activeDemo.command.length) {
+			if (!canAutoRun) return;
 			const timer = setTimeout(() => {
 				startSelector();
 			}, 1000);
 			return () => clearTimeout(timer);
 		}
-	}, [activeDemo.command, phase, startSelector, typedText]);
+	}, [activeDemo.command, canAutoRun, phase, startSelector, typedText]);
 
 	const onResult = useCallback(
 		(result: SelectorResult) => {
