@@ -214,58 +214,51 @@ export async function selectCandidate(
 		return { action: "abort" };
 	}
 
-	let abortSignalHandler: (() => void) | null = null;
 	if (abortSignal) {
-		abortSignalHandler = () => abortController.abort();
-		abortSignal.addEventListener("abort", abortSignalHandler, {
+		abortSignal.addEventListener("abort", () => abortController.abort(), {
 			once: true,
 		});
 	}
 
-	try {
-		const candidates = createCandidates(abortController.signal);
-		let ttyInput: tty.ReadStream | null = null;
-		let ttyOutput: tty.WriteStream | null = null;
-		try {
-			accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
-			const inputFd = openSync(TTY_PATH, "r");
-			ttyInput = new tty.ReadStream(inputFd);
-			// Use process.stdout if it's a TTY, otherwise open /dev/tty
-			// This works around a Bun bug with tty.WriteStream and kqueue
-			if (process.stdout.isTTY) {
-				ttyOutput = process.stdout as tty.WriteStream;
-			} else {
-				const outputFd = openSync(TTY_PATH, "w");
-				ttyOutput = new tty.WriteStream(outputFd);
-			}
-		} catch {
-			console.error(
-				"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
-			);
-			process.exit(1);
-		}
-		if (!ttyInput || !ttyOutput) {
-			console.error(
-				"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
-			);
-			process.exit(1);
-		}
+	const candidates = createCandidates(abortController.signal);
 
-		const slots: SelectorSlot[] = Array.from({ length: maxSlots }, (_, i) => ({
-			status: "pending",
-			slotId: models?.[i] ?? `slot-${i}`,
-			model: models?.[i],
-		}));
-		return await selectFromSlots(
-			slots,
-			{ candidates, abortController, abortSignal },
-			{ input: ttyInput, output: ttyOutput },
-		);
-	} finally {
-		if (abortSignal && abortSignalHandler) {
-			abortSignal.removeEventListener("abort", abortSignalHandler);
+	let ttyInput: tty.ReadStream | null = null;
+	let ttyOutput: tty.WriteStream | null = null;
+	try {
+		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
+		const inputFd = openSync(TTY_PATH, "r");
+		ttyInput = new tty.ReadStream(inputFd);
+		// Use process.stdout if it's a TTY, otherwise open /dev/tty
+		// This works around a Bun bug with tty.WriteStream and kqueue
+		if (process.stdout.isTTY) {
+			ttyOutput = process.stdout as tty.WriteStream;
+		} else {
+			const outputFd = openSync(TTY_PATH, "w");
+			ttyOutput = new tty.WriteStream(outputFd);
 		}
+	} catch {
+		console.error(
+			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+		);
+		process.exit(1);
 	}
+	if (!ttyInput || !ttyOutput) {
+		console.error(
+			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+		);
+		process.exit(1);
+	}
+
+	const slots: SelectorSlot[] = Array.from({ length: maxSlots }, (_, i) => ({
+		status: "pending",
+		slotId: models?.[i] ?? `slot-${i}`,
+		model: models?.[i],
+	}));
+	return selectFromSlots(
+		slots,
+		{ candidates, abortController, abortSignal },
+		{ input: ttyInput, output: ttyOutput },
+	);
 }
 
 interface AsyncContext {
@@ -281,7 +274,6 @@ async function selectFromSlots(
 ): Promise<SelectorResult> {
 	return new Promise((resolve) => {
 		let resolved = false;
-		let abortSignalHandler: (() => void) | null = null;
 		const resolveOnce = (result: SelectorResult) => {
 			if (resolved) return;
 			resolved = true;
@@ -348,9 +340,6 @@ async function selectFromSlots(
 			stopRenderLoop();
 			if (clearOutput) {
 				renderer.clearAll();
-			}
-			if (asyncCtx?.abortSignal && abortSignalHandler) {
-				asyncCtx.abortSignal.removeEventListener("abort", abortSignalHandler);
 			}
 			ttyInput.setRawMode(false);
 			rl.close();
@@ -562,8 +551,7 @@ async function selectFromSlots(
 			if (asyncCtx.abortSignal.aborted) {
 				abortSelection();
 			} else {
-				abortSignalHandler = () => abortSelection();
-				asyncCtx.abortSignal.addEventListener("abort", abortSignalHandler, {
+				asyncCtx.abortSignal.addEventListener("abort", abortSelection, {
 					once: true,
 				});
 			}
