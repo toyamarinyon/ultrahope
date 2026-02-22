@@ -327,18 +327,13 @@ async function selectFromSlots(
 		};
 		let renderInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
+		let isEditorOpen = false;
 
 		const ttyInput = ttyIo.input;
 		const ttyOutput = ttyIo.output;
 		const renderer = createRenderer(ttyOutput);
 
-		const rl = readline.createInterface({
-			input: ttyInput,
-			output: ttyOutput,
-			terminal: true,
-		});
-
-		readline.emitKeypressEvents(ttyInput, rl);
+		readline.emitKeypressEvents(ttyInput);
 		ttyInput.setRawMode(true);
 
 		const setRawModeSafe = (enabled: boolean) => {
@@ -350,7 +345,7 @@ async function selectFromSlots(
 		};
 
 		const doRender = () => {
-			if (!cleanedUp) {
+			if (!cleanedUp && !isEditorOpen) {
 				renderSelector(state, Date.now(), renderer, editedSelections);
 			}
 		};
@@ -389,7 +384,6 @@ async function selectFromSlots(
 			}
 			ttyInput.removeAllListeners("keypress");
 			setRawModeSafe(false);
-			rl.close();
 			ttyInput.pause();
 			if (ttyInput !== process.stdin && !ttyInput.destroyed) {
 				ttyInput.destroy();
@@ -533,13 +527,14 @@ async function selectFromSlots(
 			if (!candidate) return;
 			stopRenderLoop();
 			cancelGeneration();
+			isEditorOpen = true;
 			if (state.isGenerating) {
-				state.isGenerating = false;
+				finalizeGeneration();
 			}
 
 			ttyInput.removeListener("keypress", handleKeypress);
-			rl.pause();
 			setRawModeSafe(false);
+			ttyInput.pause();
 
 			let edited = candidate.content;
 			try {
@@ -547,9 +542,12 @@ async function selectFromSlots(
 				edited = result || candidate.content;
 			} catch {
 				// Keep existing content when editor exits non-zero.
+			} finally {
+				isEditorOpen = false;
 			}
 
 			editedSelections.set(candidate.slotId, edited);
+			renderer.reset();
 			doRender();
 			renderer.flush();
 			setImmediate(() => {
