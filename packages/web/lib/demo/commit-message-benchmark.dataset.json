@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-23T22:23:00.555Z",
+  "generatedAt": "2026-02-23T22:49:19.106Z",
   "provider": "vercel-ai-gateway",
   "models": [
     {
@@ -527,11 +527,11 @@
           "modelId": "xai/grok-code-fast-1",
           "tier": "small",
           "status": "success",
-          "message": "fix(dev-overlay): trim and hide empty error messages in dev overlay",
-          "latencyMs": 15523,
-          "costUsd": 0.00114608,
+          "message": "fix(dev-overlay): trim and hide empty error messages",
+          "latencyMs": 10761,
+          "costUsd": 0.00112214,
           "inputTokens": 3721,
-          "outputTokens": 314,
+          "outputTokens": 275,
           "humanReview": {
             "overallScore": 3,
             "notes": "Pending manual review.",
@@ -556,8 +556,8 @@
                     "providerApiModelId": "grok-code-fast-1",
                     "credentialType": "system",
                     "success": true,
-                    "startTime": 745857.614619,
-                    "endTime": 760982.753698,
+                    "startTime": 2871940.875852,
+                    "endTime": 2882163.090942,
                     "statusCode": 200
                   }
                 ],
@@ -573,9 +573,9 @@
                 ],
                 "totalProviderAttemptCount": 0
               },
-              "cost": "0.00114608",
-              "marketCost": "0.00114608",
-              "generationId": "gen_01KJ5JXJ4VE5T3X0HE2WECRC2Q",
+              "cost": "0.00112214",
+              "marketCost": "0.00112214",
+              "generationId": "gen_01KJ6B1Y8JSWJ50P84R7PYCH95",
               "billableWebSearchCalls": 0
             }
           }
@@ -1065,11 +1065,11 @@
           "modelId": "xai/grok-code-fast-1",
           "tier": "small",
           "status": "success",
-          "message": "feat(subagent): add support for resuming subagent sessions",
-          "latencyMs": 18618,
-          "costUsd": 0.00156464,
+          "message": "feat(agent): add support for resuming subagent sessions via session_id",
+          "latencyMs": 14501,
+          "costUsd": 0.00142364,
           "inputTokens": 4831,
-          "outputTokens": 422,
+          "outputTokens": 328,
           "humanReview": {
             "overallScore": 3,
             "notes": "Pending manual review.",
@@ -1094,8 +1094,8 @@
                     "providerApiModelId": "grok-code-fast-1",
                     "credentialType": "system",
                     "success": true,
-                    "startTime": 721969.34778,
-                    "endTime": 740220.833321,
+                    "startTime": 1122021.848144,
+                    "endTime": 1136150.532499,
                     "statusCode": 200
                   }
                 ],
@@ -1111,9 +1111,9 @@
                 ],
                 "totalProviderAttemptCount": 0
               },
-              "cost": "0.00156464",
-              "marketCost": "0.00156464",
-              "generationId": "gen_01KJ5JY19ZCQKTAF7R5H1NJBSD",
+              "cost": "0.00142364",
+              "marketCost": "0.00142364",
+              "generationId": "gen_01KJ6B28KFR7FS2BKYBPC3JERC",
               "billableWebSearchCalls": 0
             }
           }
@@ -1137,8 +1137,8 @@
         "tier": "small",
         "successCount": 2,
         "errorCount": 0,
-        "avgLatencyMs": 17070.5,
-        "avgCostUsd": 0.0013554,
+        "avgLatencyMs": 12631,
+        "avgCostUsd": 0.0012729,
         "avgScore": 3
       },
       {
