@@ -89,7 +89,7 @@ function formatCost(costUsd: number | null): string {
 	if (costUsd == null) {
 		return "n/a";
 	}
-	return `$${costUsd.toFixed(7).replace(/0+$/, "").replace(/\.$/, "")}`;
+	return `$${costUsd.toFixed(5)}`;
 }
 
 function formatLatency(latencyMs: number | null): string {
@@ -156,19 +156,16 @@ export function MarketingCommitMessageBenchmark() {
 	});
 
 	return (
-		<div className="p-4 sm:p-6">
+		<div className="sm:p-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<p className="text-xs uppercase tracking-[0.18em] text-foreground-muted">
-						Pre-generated benchmark
+						How much intelligence does this task actually need?
 					</p>
 					<h3 className="mt-1 text-xl font-semibold">
-						Small models vs frontier models on commit messages
+						We measured models across the spectrum on real commit diffs.
 					</h3>
 				</div>
-				<p className="text-xs text-foreground-muted">
-					Generated at {new Date(benchmarkDataset.generatedAt).toLocaleString()}
-				</p>
 			</div>
 
 			<div className="mt-4 lg:hidden">
@@ -245,7 +242,7 @@ export function MarketingCommitMessageBenchmark() {
 									<th className="px-3 py-2 font-medium">Model</th>
 									<th className="px-3 py-2 font-medium">Message</th>
 									<th className="px-3 py-2 font-medium">Latency</th>
-									<th className="px-3 py-2 font-medium">Cost</th>
+									<th className="px-3 py-2 text-right font-medium">Cost</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-border-subtle/60 bg-canvas-dark/30">
@@ -276,7 +273,7 @@ export function MarketingCommitMessageBenchmark() {
 											<td className="px-3 py-3 align-top text-foreground">
 												{formatLatency(result.latencyMs)}
 											</td>
-											<td className="px-3 py-3 align-top text-foreground">
+											<td className="px-3 py-3 align-top text-right tabular-nums text-foreground">
 												{formatCost(result.costUsd)}
 											</td>
 										</tr>

@@ -108,14 +108,14 @@ export function MarketingHome() {
 			</section>
 
 			<section>
-				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
+				<div className="flex flex-col items-center">
 					<div className="w-full max-w-3xl">
-						<h1 className="mb-4 text-3xl font-medium font-serif">
+						<h1 className="mb-2 text-3xl font-medium font-serif">
 							Coding agents are incredibly capable.
 							<br />
 							But not every task needs that level of intelligence.
 						</h1>
-						<p className="mb-8 text-lg">
+						<p className="mb-4 text-lg">
 							Some workflows are narrow and well-defined. They don’t require a
 							general-purpose agent.
 						</p>
