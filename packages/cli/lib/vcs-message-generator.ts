@@ -125,11 +125,13 @@ export async function* generateCommitMessages(
 		try {
 			if (signal?.aborted) return;
 			let lastCommitMessage = "";
-			let generationStartedAtMs = Date.now();
+			const generationStartedAtMs = Date.now();
 			let lastCommitMessageAtMs: number | undefined;
 			let providerMetadataAtMs: number | undefined;
 			let providerMetadata: unknown;
-			const parseEventAtMs = (event: CommitMessageStreamEvent): number | undefined => {
+			const parseEventAtMs = (
+				event: CommitMessageStreamEvent,
+			): number | undefined => {
 				if (typeof event.atMs !== "number" || !Number.isFinite(event.atMs)) {
 					return undefined;
 				}
@@ -147,7 +149,8 @@ export async function* generateCommitMessages(
 			})) {
 				if (event.type === "commit-message") {
 					lastCommitMessage = event.commitMessage;
-					lastCommitMessageAtMs = parseEventAtMs(event) ?? lastCommitMessageAtMs;
+					lastCommitMessageAtMs =
+						parseEventAtMs(event) ?? lastCommitMessageAtMs;
 					if (useStream) {
 						yield {
 							content: lastCommitMessage,
@@ -168,7 +171,7 @@ export async function* generateCommitMessages(
 				const { generationId, cost } = extractGatewayMetadata(providerMetadata);
 				const generationMs =
 					(providerMetadataAtMs ?? lastCommitMessageAtMs) != null
-						? providerMetadataAtMs ?? lastCommitMessageAtMs
+						? (providerMetadataAtMs ?? lastCommitMessageAtMs)
 						: Math.max(0, Date.now() - generationStartedAtMs);
 				yield {
 					content: lastCommitMessage,

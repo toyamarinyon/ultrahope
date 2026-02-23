@@ -83,7 +83,9 @@ function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
 		return `${seconds}s`;
 	};
 
-	const formattedModel = candidate.model ? formatModelName(candidate.model) : "";
+	const formattedModel = candidate.model
+		? formatModelName(candidate.model)
+		: "";
 	const formattedDuration =
 		candidate.generationMs == null
 			? ""

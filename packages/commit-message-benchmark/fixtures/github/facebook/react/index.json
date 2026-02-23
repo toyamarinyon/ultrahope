@@ -1,0 +1,10 @@
+[
+	{
+		"id": "react-0e72d281-flight-add-more-dos-mitigations-t",
+		"title": "[Flight] Add more DoS mitigations to Flight Reply, and harden Flight",
+		"sourceRepo": "facebook/react",
+		"sourceCommitUrl": "https://github.com/facebook/react/commit/0e72d2810a1c58cb816f5138829dbedaa545d6e2",
+		"diffFile": "0e72d2810a1c58cb816f5138829dbedaa545d6e2/diff.diff",
+		"metadataFile": "0e72d2810a1c58cb816f5138829dbedaa545d6e2/metadata.json"
+	}
+]

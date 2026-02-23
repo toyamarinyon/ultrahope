@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
 import { MarketingInstallGuide } from "./marketing-install-guide";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
@@ -118,9 +119,9 @@ export function MarketingHome() {
 							Some workflows are narrow and well-defined. They don’t require a
 							general-purpose agent.
 						</p>
-						<div className="bg-slate-50/5 w-full h-100 flex items-center justify-center">
-							Placeholder
-						</div>
+					</div>
+					<div className="w-full max-w-5xl">
+						<MarketingCommitMessageBenchmark />
 					</div>
 				</div>
 			</section>

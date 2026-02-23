@@ -1,0 +1,292 @@
+diff --git a/packages/next/src/next-devtools/dev-overlay/components/errors/error-message/error-message.tsx b/packages/next/src/next-devtools/dev-overlay/components/errors/error-message/error-message.tsx
+index f2b98e05cf4e1..92c20dcafeb1d 100644
+--- a/packages/next/src/next-devtools/dev-overlay/components/errors/error-message/error-message.tsx
++++ b/packages/next/src/next-devtools/dev-overlay/components/errors/error-message/error-message.tsx
+@@ -19,6 +19,10 @@ export function ErrorMessage({ errorMessage, errorType }: ErrorMessageProps) {
+     }
+   }, [errorMessage])
+ 
++  if (!errorMessage) {
++    return null
++  }
++
+   // The "Blocking Route" error message is specifically formatted to look nice
+   // in the overlay (rather than just passed through from the console), so we
+   // intentionally don't truncate it and rely on the scroll overflow instead.
+diff --git a/packages/next/src/next-devtools/dev-overlay/container/errors.tsx b/packages/next/src/next-devtools/dev-overlay/container/errors.tsx
+index 3768e40b061ee..7504d7ff28615 100644
+--- a/packages/next/src/next-devtools/dev-overlay/container/errors.tsx
++++ b/packages/next/src/next-devtools/dev-overlay/container/errors.tsx
+@@ -55,6 +55,11 @@ function GenericErrorDescription({ error }: { error: Error }) {
+     message = message.slice(envPrefix.length)
+   }
+ 
++  message = message.trim()
++  if (!message) {
++    return null
++  }
++
+   return (
+     <>
+       <HotlinkedText text={message} matcher={matchLinkType} />
+diff --git a/packages/next/src/next-devtools/dev-overlay/container/runtime-error/error-cause.tsx b/packages/next/src/next-devtools/dev-overlay/container/runtime-error/error-cause.tsx
+index 64c0ec6542e73..8169c24ca0e5d 100644
+--- a/packages/next/src/next-devtools/dev-overlay/container/runtime-error/error-cause.tsx
++++ b/packages/next/src/next-devtools/dev-overlay/container/runtime-error/error-cause.tsx
+@@ -11,6 +11,7 @@ type ErrorCauseProps = {
+ 
+ export function ErrorCause({ cause, dialogResizerRef }: ErrorCauseProps) {
+   const frames = React.use(cause.frames())
++  const trimmedMessage = cause.error.message.trim()
+ 
+   const firstFrame = useMemo(() => {
+     const index = frames.findIndex(
+@@ -29,7 +30,9 @@ export function ErrorCause({ cause, dialogResizerRef }: ErrorCauseProps) {
+           Caused by: {cause.error.name || 'Error'}
+         </span>
+       </div>
+-      <p className="error-cause-message">{cause.error.message}</p>
++      {trimmedMessage ? (
++        <p className="error-cause-message">{trimmedMessage}</p>
++      ) : null}
+ 
+       {firstFrame && (
+         <CodeFrame
+diff --git a/test/e2e/app-dir/instant-validation-causes/instant-validation-causes.test.ts b/test/e2e/app-dir/instant-validation-causes/instant-validation-causes.test.ts
+index 204bee76ef8c4..6cabdf194cd0e 100644
+--- a/test/e2e/app-dir/instant-validation-causes/instant-validation-causes.test.ts
++++ b/test/e2e/app-dir/instant-validation-causes/instant-validation-causes.test.ts
+@@ -96,7 +96,6 @@ describe('instant validation causes', () => {
+        "cause": [
+          {
+            "label": "Caused by: Instant Validation",
+-           "message": " ",
+            "source": "app/named-export/page.tsx (3:26) @ unstable_instant
+      > 3 | const unstable_instant = { prefetch: 'static' }
+          |                          ^",
+@@ -141,7 +140,6 @@ describe('instant validation causes', () => {
+        "cause": [
+          {
+            "label": "Caused by: Instant Validation",
+-           "message": " ",
+            "source": "app/aliased-export/page.tsx (3:17) @ unstable_instant
+      > 3 | const instant = { prefetch: 'static' }
+          |                 ^",
+@@ -186,7 +184,6 @@ describe('instant validation causes', () => {
+        "cause": [
+          {
+            "label": "Caused by: Instant Validation",
+-           "message": " ",
+            "source": "app/reexport/page.tsx (3:10) @ unstable_instant
+      > 3 | export { unstable_instant } from './config'
+          |          ^",
+@@ -234,7 +231,6 @@ describe('instant validation causes', () => {
+        "cause": [
+          {
+            "label": "Caused by: Instant Validation",
+-           "message": " ",
+            "source": "app/indirect-export/page.tsx (4:17) @ unstable_instant
+      > 4 | const instant = _instant
+          |                 ^",
+diff --git a/test/e2e/app-dir/instant-validation/instant-validation.test.ts b/test/e2e/app-dir/instant-validation/instant-validation.test.ts
+index 877649192a3ec..aab515d4d4d6d 100644
+--- a/test/e2e/app-dir/instant-validation/instant-validation.test.ts
++++ b/test/e2e/app-dir/instant-validation/instant-validation.test.ts
+@@ -189,7 +189,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/missing-suspense-around-runtime/page.tsx (3:33) @ unstable_instant
+        > 3 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -234,7 +233,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/missing-suspense-around-dynamic/page.tsx (3:33) @ unstable_instant
+        > 3 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -277,7 +275,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/runtime/missing-suspense-around-dynamic/page.tsx (4:33) @ unstable_instant
+        > 4 | export const unstable_instant = {
+            |                                 ^",
+@@ -322,7 +319,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/missing-suspense-around-dynamic-layout/layout.tsx (4:33) @ unstable_instant
+        > 4 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -367,7 +363,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/runtime/missing-suspense-around-dynamic-layout/layout.tsx (4:33) @ unstable_instant
+        > 4 | export const unstable_instant = {
+            |                                 ^",
+@@ -411,7 +406,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/missing-suspense-around-params/[param]/page.tsx (1:33) @ unstable_instant
+        > 1 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -465,7 +459,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/missing-suspense-around-search-params/page.tsx (1:33) @ unstable_instant
+        > 1 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -532,7 +525,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/suspense-too-high/page.tsx (3:33) @ unstable_instant
+        > 3 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -577,7 +569,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/runtime/suspense-too-high/page.tsx (4:33) @ unstable_instant
+        > 4 | export const unstable_instant = {
+            |                                 ^",
+@@ -707,7 +698,6 @@ describe('instant validation', () => {
+          "cause": [
+            {
+              "label": "Caused by: Instant Validation",
+-             "message": " ",
+              "source": "app/suspense-in-root/static/invalid-only-loading-around-dynamic/page.tsx (4:33) @ unstable_instant
+        > 4 | export const unstable_instant = { prefetch: 'static' }
+            |                                 ^",
+@@ -759,7 +749,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/blocking-layout/missing-suspense-around-dynamic/page.tsx (3:33) @ unstable_instant
+          > 3 | export const unstable_instant = { prefetch: 'static' }
+              |                                 ^",
+@@ -818,7 +807,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/invalid-blocking-inside-static/layout.tsx (1:33) @ unstable_instant
+          > 1 | export const unstable_instant = { prefetch: 'static' }
+              |                                 ^",
+@@ -863,7 +851,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/runtime/invalid-blocking-inside-runtime/layout.tsx (3:33) @ unstable_instant
+          > 3 | export const unstable_instant = {
+              |                                 ^",
+@@ -909,7 +896,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/missing-suspense-in-parallel-route/page.tsx (3:33) @ unstable_instant
+          > 3 | export const unstable_instant = { prefetch: 'static' }
+              |                                 ^",
+@@ -955,7 +941,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/missing-suspense-in-parallel-route/foo/page.tsx (1:33) @ unstable_instant
+          > 1 | export const unstable_instant = { prefetch: 'static' }
+              |                                 ^",
+@@ -1001,7 +986,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/missing-suspense-in-parallel-route/bar/page.tsx (1:33) @ unstable_instant
+          > 1 | export const unstable_instant = { prefetch: 'static' }
+              |                                 ^",
+@@ -1049,7 +1033,6 @@ describe('instant validation', () => {
+            "cause": [
+              {
+                "label": "Caused by: Instant Validation",
+-               "message": " ",
+                "source": "app/suspense-in-root/static/invalid-client-data-blocks-validation/page.tsx (1:33) @ unstable_instant
+          > 1 | export const unstable_instant = {
+              |                                 ^",
+diff --git a/test/lib/add-redbox-matchers.ts b/test/lib/add-redbox-matchers.ts
+index eb72703f1827e..700037007e7e9 100644
+--- a/test/lib/add-redbox-matchers.ts
++++ b/test/lib/add-redbox-matchers.ts
+@@ -75,7 +75,7 @@ interface ErrorSnapshotOptions {
+ 
+ interface SanitizedCauseEntry {
+   label: string | null
+-  message: string | null
++  message?: string
+   source: string | null
+   stack: string[]
+ }
+@@ -83,7 +83,7 @@ interface SanitizedCauseEntry {
+ export interface ErrorSnapshot {
+   environmentLabel: string | null
+   label: string | null
+-  description: string | null
++  description?: string
+   componentStack?: string
+   cause?: SanitizedCauseEntry[]
+   source: string | null
+@@ -239,11 +239,14 @@ async function createErrorSnapshot(
+   const snapshot: ErrorSnapshot = {
+     environmentLabel,
+     label: label ?? '<FIXME-excluded-label>',
+-    description: sanitizedDescription,
+     source: focusedSource,
+     stack: sanitizeStack(stack, next),
+   }
+ 
++  if (sanitizedDescription !== null) {
++    snapshot.description = sanitizedDescription
++  }
++
+   // Hydration diffs are only relevant to some specific errors
+   // so we hide them from the snapshots unless they are present.
+   if (componentStack !== null) {
+@@ -252,12 +255,17 @@ async function createErrorSnapshot(
+ 
+   // Error.cause chain is only relevant when present.
+   if (cause !== null) {
+-    snapshot.cause = cause.map((entry) => ({
+-      label: entry.label,
+-      message: entry.message,
+-      source: focusSource(entry.source, next),
+-      stack: sanitizeStack(entry.stack, next) ?? [],
+-    }))
++    snapshot.cause = cause.map((entry) => {
++      const causeEntry: SanitizedCauseEntry = {
++        label: entry.label,
++        source: focusSource(entry.source, next),
++        stack: sanitizeStack(entry.stack, next) ?? [],
++      }
++      if (entry.message !== null) {
++        causeEntry.message = entry.message
++      }
++      return causeEntry
++    })
+   }
+ 
+   return snapshot

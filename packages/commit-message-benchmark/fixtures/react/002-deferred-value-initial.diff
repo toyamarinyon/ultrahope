@@ -1,0 +1,19 @@
+diff --git a/packages/react/src/ReactHooks.js b/packages/react/src/ReactHooks.js
+index 68282a0..ec91ad4 100644
+--- a/packages/react/src/ReactHooks.js
++++ b/packages/react/src/ReactHooks.js
+@@ -210,6 +210,11 @@ export function useDeferredValue<T>(value: T): T {
+   return dispatcher.useDeferredValue(value);
+ }
+ 
++export function useDeferredValueWithInitialValue<T>(
++  value: T,
++  initialValue: T,
++): T {
++  const dispatcher = resolveDispatcher();
++  return dispatcher.useDeferredValue(value, initialValue);
++}
++
+ export function useTransition(): [boolean, (callback: () => void) => void] {
+   const dispatcher = resolveDispatcher();
+   return dispatcher.useTransition();
