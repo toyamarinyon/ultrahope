@@ -120,7 +120,7 @@ export function MarketingHome() {
 							general-purpose agent.
 						</p>
 					</div>
-					<div className="w-full max-w-5xl">
+					<div className="w-full max-w-6xl">
 						<MarketingCommitMessageBenchmark />
 					</div>
 				</div>

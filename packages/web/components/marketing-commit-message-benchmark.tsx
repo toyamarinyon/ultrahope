@@ -46,6 +46,45 @@ type BenchmarkDataset = {
 
 const benchmarkDataset = benchmarkDatasetJson as BenchmarkDataset;
 
+function countDiffStats(diff: string): {
+	additions: number;
+	deletions: number;
+} {
+	let additions = 0;
+	let deletions = 0;
+
+	for (const line of diff.split("\n")) {
+		if (line.startsWith("+++ ") || line.startsWith("--- ")) {
+			continue;
+		}
+		if (line.startsWith("+")) {
+			additions += 1;
+			continue;
+		}
+		if (line.startsWith("-")) {
+			deletions += 1;
+		}
+	}
+
+	return { additions, deletions };
+}
+
+function formatShortCommitHash(sourceCommitUrl: string): string {
+	const commitPathMatch = sourceCommitUrl.match(
+		/\/commit\/([0-9a-fA-F]{7,40})/,
+	);
+	if (commitPathMatch) {
+		return commitPathMatch[1].slice(0, 7);
+	}
+
+	const tailHashMatch = sourceCommitUrl.match(/([0-9a-fA-F]{7,40})\/?$/);
+	if (tailHashMatch) {
+		return tailHashMatch[1].slice(0, 7);
+	}
+
+	return "unknown";
+}
+
 function formatCost(costUsd: number | null): string {
 	if (costUsd == null) {
 		return "n/a";
@@ -57,38 +96,7 @@ function formatLatency(latencyMs: number | null): string {
 	if (latencyMs == null) {
 		return "n/a";
 	}
-	if (latencyMs < 1000) {
-		return `${Math.round(latencyMs)}ms`;
-	}
-	const seconds = (latencyMs / 1000)
-		.toFixed(2)
-		.replace(/0+$/, "")
-		.replace(/\.$/, "");
-	return `${seconds}s`;
-}
-
-function resolveSmallTopModelId(results: BenchmarkResult[]): string | null {
-	const smallResults = results.filter((result) => result.tier === "small");
-	if (smallResults.length === 0) {
-		return null;
-	}
-
-	const winner = smallResults.find(
-		(result) => result.status === "success" && result.humanReview.winnerFlag,
-	);
-	if (winner) {
-		return winner.modelId;
-	}
-
-	return [...smallResults].sort((a, b) => {
-		if (a.humanReview.overallScore !== b.humanReview.overallScore) {
-			return b.humanReview.overallScore - a.humanReview.overallScore;
-		}
-		if (a.status !== b.status) {
-			return a.status === "success" ? -1 : 1;
-		}
-		return a.modelId.localeCompare(b.modelId);
-	})[0]?.modelId;
+	return `${Math.round(latencyMs)}ms`;
 }
 
 function formatModelName(
@@ -108,6 +116,16 @@ export function MarketingCommitMessageBenchmark() {
 			new Map(benchmarkDataset.models.map((model) => [model.id, model.label])),
 		[],
 	);
+	const scenarioDiffStatsMap = useMemo(
+		() =>
+			new Map(
+				scenarios.map((scenario) => [
+					scenario.id,
+					countDiffStats(scenario.diff),
+				]),
+			),
+		[scenarios],
+	);
 
 	const activeScenario =
 		scenarios.find((scenario) => scenario.id === activeScenarioId) ??
@@ -121,11 +139,24 @@ export function MarketingCommitMessageBenchmark() {
 		);
 	}
 
-	const smallTopModelId = resolveSmallTopModelId(activeScenario.results);
-	const diffPreview = activeScenario.diff.split("\n").slice(0, 20).join("\n");
+	const orderedResults = [...activeScenario.results].sort((a, b) => {
+		if (a.tier !== b.tier) {
+			return a.tier === "frontier" ? -1 : 1;
+		}
+
+		if (a.tier === "small" && b.tier === "small") {
+			const aCost = a.costUsd ?? Number.POSITIVE_INFINITY;
+			const bCost = b.costUsd ?? Number.POSITIVE_INFINITY;
+			if (aCost !== bCost) {
+				return aCost - bCost;
+			}
+		}
+
+		return a.modelId.localeCompare(b.modelId);
+	});
 
 	return (
-		<div className="rounded-2xl border border-border-subtle bg-canvas-dark/60 p-4 sm:p-6">
+		<div className="p-4 sm:p-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<p className="text-xs uppercase tracking-[0.18em] text-foreground-muted">
@@ -140,127 +171,120 @@ export function MarketingCommitMessageBenchmark() {
 				</p>
 			</div>
 
-			<div
-				className="mt-4 flex flex-wrap gap-2"
-				role="tablist"
-				aria-label="Commit message benchmark scenarios"
-			>
-				{scenarios.map((scenario) => {
-					const isActive = scenario.id === activeScenario.id;
-					return (
-						<button
-							key={scenario.id}
-							type="button"
-							onClick={() => setActiveScenarioId(scenario.id)}
-							role="tab"
-							aria-selected={isActive}
-							className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-								isActive
-									? "border-foreground/50 bg-surface-hover text-foreground"
-									: "border-border-subtle text-foreground-muted hover:text-foreground"
-							}`}
-						>
-							{scenario.title}
-						</button>
-					);
-				})}
+			<div className="mt-4 lg:hidden">
+				<label
+					htmlFor="benchmark-scenario-select"
+					className="text-xs uppercase tracking-[0.14em] text-foreground-muted"
+				>
+					Sample
+				</label>
+				<select
+					id="benchmark-scenario-select"
+					value={activeScenario.id}
+					onChange={(event) => setActiveScenarioId(event.target.value)}
+					className="mt-2 w-full rounded-md bg-canvas-dark/70 px-3 py-2 text-sm text-foreground ring-1 ring-border-subtle/60 outline-none focus:ring-foreground/40"
+				>
+					{scenarios.map((scenario) => {
+						const stats = scenarioDiffStatsMap.get(scenario.id);
+						const shortCommitHash = formatShortCommitHash(
+							scenario.sourceCommitUrl,
+						);
+						return (
+							<option key={scenario.id} value={scenario.id}>
+								{scenario.sourceRepo}#{shortCommitHash} · +
+								{stats?.additions ?? 0} -{stats?.deletions ?? 0}
+							</option>
+						);
+					})}
+				</select>
 			</div>
 
 			<div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.45fr]">
-				<section className="rounded-xl border border-border-subtle bg-canvas-dark p-3">
-					<div className="flex items-center justify-between gap-2">
-						<p className="text-xs text-foreground-muted">Diff preview</p>
-						<a
-							href={activeScenario.sourceCommitUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-xs text-foreground-muted hover:text-foreground"
-						>
-							{activeScenario.sourceRepo}
-						</a>
+				<section className="hidden lg:block">
+					<p className="text-xs uppercase tracking-[0.14em] text-foreground-muted">
+						Samples
+					</p>
+					<div className="mt-3 flex flex-col gap-2 overflow-auto pr-1">
+						{scenarios.map((scenario) => {
+							const isActive = scenario.id === activeScenario.id;
+							const stats = scenarioDiffStatsMap.get(scenario.id);
+							const shortCommitHash = formatShortCommitHash(
+								scenario.sourceCommitUrl,
+							);
+							return (
+								<button
+									key={scenario.id}
+									type="button"
+									onClick={() => setActiveScenarioId(scenario.id)}
+									className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
+										isActive
+											? "border-foreground/60 bg-canvas-dark text-foreground"
+											: "border-border-subtle/70 text-foreground-muted hover:border-foreground/30 hover:text-foreground"
+									}`}
+								>
+									<div className="flex items-center justify-between gap-2">
+										<p className="text-xs text-foreground-muted">
+											{scenario.sourceRepo}#{shortCommitHash} · +
+											{stats?.additions ?? 0} -{stats?.deletions ?? 0}
+										</p>
+									</div>
+									<p className="mt-1 text-sm text-foreground">
+										{scenario.title}
+									</p>
+								</button>
+							);
+						})}
 					</div>
-					<pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap text-[11px] text-foreground-secondary">
-						{diffPreview}
-					</pre>
 				</section>
 
-				<section className="grid gap-3 sm:grid-cols-2">
-					{activeScenario.results.map((result) => {
-						const isSmallTop =
-							result.tier === "small" && result.modelId === smallTopModelId;
-
-						return (
-							<article
-								key={result.modelId}
-								className={`rounded-xl border p-3 ${
-									isSmallTop
-										? "border-amber-300/70 bg-amber-500/5"
-										: "border-border-subtle bg-canvas-dark"
-								}`}
-							>
-								<div className="flex items-start justify-between gap-2">
-									<div>
-										<p className="text-sm font-medium text-foreground">
-											{formatModelName(result.modelId, modelLabelMap)}
-										</p>
-										<p className="text-[11px] text-foreground-muted">
-											{result.modelId}
-										</p>
-									</div>
-									<div className="flex items-center gap-2">
-										<span
-											className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] ${
-												result.tier === "small"
-													? "bg-foreground/10 text-foreground-secondary"
-													: "bg-foreground/20 text-foreground"
-											}`}
-										>
-											{result.tier}
-										</span>
-										{isSmallTop && (
-											<span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-amber-200">
-												top small
-											</span>
-										)}
-									</div>
-								</div>
-
-								{result.status === "success" ? (
-									<p className="mt-3 rounded-md bg-surface/50 px-2 py-2 text-sm text-foreground">
-										{result.message}
-									</p>
-								) : (
-									<p className="mt-3 rounded-md bg-rose-500/10 px-2 py-2 text-sm text-rose-200">
-										Generation failed: {result.errorMessage ?? "unknown error"}
-									</p>
-								)}
-
-								<div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-									<div className="rounded-md border border-border-subtle px-2 py-1">
-										<p className="text-foreground-muted">Latency</p>
-										<p className="text-foreground">
-											{formatLatency(result.latencyMs)}
-										</p>
-									</div>
-									<div className="rounded-md border border-border-subtle px-2 py-1">
-										<p className="text-foreground-muted">Cost</p>
-										<p className="text-foreground">
-											{formatCost(result.costUsd)}
-										</p>
-									</div>
-									<div className="rounded-md border border-border-subtle px-2 py-1">
-										<p className="text-foreground-muted">Human score</p>
-										<p className="text-foreground">
-											{result.humanReview.overallScore}/5
-										</p>
-									</div>
-								</div>
-								<p className="mt-2 text-[11px] text-foreground-muted">
-									{result.humanReview.notes}
-								</p>
-							</article>
-						);
-					})}
+				<section className="lg:pl-2">
+					<div className="overflow-x-auto rounded-lg border border-border-subtle/70">
+						<table className="w-full min-w-190 border-collapse text-left text-sm">
+							<thead className="bg-canvas-dark/70 text-[11px] uppercase tracking-[0.12em] text-foreground-muted">
+								<tr>
+									<th className="px-3 py-2 font-medium">Model</th>
+									<th className="px-3 py-2 font-medium">Message</th>
+									<th className="px-3 py-2 font-medium">Latency</th>
+									<th className="px-3 py-2 font-medium">Cost</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y divide-border-subtle/60 bg-canvas-dark/30">
+								{orderedResults.map((result) => {
+									return (
+										<tr key={result.modelId}>
+											<td className="px-3 py-3 align-top">
+												<p className="font-medium text-foreground">
+													{formatModelName(result.modelId, modelLabelMap)}
+												</p>
+												<p className="text-[11px] text-foreground-muted">
+													{result.modelId}
+												</p>
+											</td>
+											<td className="px-3 py-3 align-top">
+												<p
+													className={
+														result.status === "success"
+															? "text-foreground"
+															: "text-rose-200"
+													}
+												>
+													{result.status === "success"
+														? result.message
+														: `Generation failed: ${result.errorMessage ?? "unknown error"}`}
+												</p>
+											</td>
+											<td className="px-3 py-3 align-top text-foreground">
+												{formatLatency(result.latencyMs)}
+											</td>
+											<td className="px-3 py-3 align-top text-foreground">
+												{formatCost(result.costUsd)}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
 				</section>
 			</div>
 
