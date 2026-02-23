@@ -11,6 +11,8 @@ type HumanReview = {
 	winnerFlag: boolean;
 };
 
+type BenchmarkSortMode = "latencyThenCost" | "costThenLatency";
+
 type BenchmarkResult = {
 	modelId: string;
 	tier: BenchmarkTier;
@@ -99,6 +101,14 @@ function formatLatency(latencyMs: number | null): string {
 	return `${Math.round(latencyMs)}ms`;
 }
 
+function safeMetric(value: number | null): number {
+	return value ?? Number.POSITIVE_INFINITY;
+}
+
+function isSuccessful(result: BenchmarkResult): boolean {
+	return result.status === "success";
+}
+
 function formatModelName(
 	modelId: string,
 	modelLabelMap: Map<string, string>,
@@ -110,6 +120,9 @@ export function MarketingCommitMessageBenchmark() {
 	const scenarios = benchmarkDataset.scenarios;
 	const [activeScenarioId, setActiveScenarioId] = useState(
 		scenarios[0]?.id ?? "",
+	);
+	const [sortMode, setSortMode] = useState<BenchmarkSortMode>(
+		"latencyThenCost",
 	);
 	const modelLabelMap = useMemo(
 		() =>
@@ -140,13 +153,34 @@ export function MarketingCommitMessageBenchmark() {
 	}
 
 	const orderedResults = [...activeScenario.results].sort((a, b) => {
-		if (a.tier !== b.tier) {
-			return a.tier === "frontier" ? -1 : 1;
+		const aSuccessful = isSuccessful(a);
+		const bSuccessful = isSuccessful(b);
+
+		if (aSuccessful !== bSuccessful) {
+			return aSuccessful ? -1 : 1;
 		}
 
-		if (a.tier === "small" && b.tier === "small") {
-			const aCost = a.costUsd ?? Number.POSITIVE_INFINITY;
-			const bCost = b.costUsd ?? Number.POSITIVE_INFINITY;
+		if (sortMode === "costThenLatency") {
+			const aCost = safeMetric(a.costUsd);
+			const bCost = safeMetric(b.costUsd);
+			if (aCost !== bCost) {
+				return aCost - bCost;
+			}
+
+			const aLatency = safeMetric(a.latencyMs);
+			const bLatency = safeMetric(b.latencyMs);
+			if (aLatency !== bLatency) {
+				return aLatency - bLatency;
+			}
+		} else {
+			const aLatency = safeMetric(a.latencyMs);
+			const bLatency = safeMetric(b.latencyMs);
+			if (aLatency !== bLatency) {
+				return aLatency - bLatency;
+			}
+
+			const aCost = safeMetric(a.costUsd);
+			const bCost = safeMetric(b.costUsd);
 			if (aCost !== bCost) {
 				return aCost - bCost;
 			}
@@ -157,7 +191,7 @@ export function MarketingCommitMessageBenchmark() {
 
 	return (
 		<div className="sm:p-6">
-			<div className="flex flex-wrap items-center justify-between gap-3">
+			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<p className="text-xs uppercase tracking-[0.18em] text-foreground-muted">
 						How much intelligence does this task actually need?
@@ -165,6 +199,25 @@ export function MarketingCommitMessageBenchmark() {
 					<h3 className="mt-1 text-xl font-semibold">
 						We measured models across the spectrum on real commit diffs.
 					</h3>
+				</div>
+				<div className="w-full sm:w-auto">
+					<label
+						htmlFor="benchmark-sort-select"
+						className="text-xs uppercase tracking-[0.14em] text-foreground-muted"
+					>
+						Sort by
+					</label>
+					<select
+						id="benchmark-sort-select"
+						value={sortMode}
+						onChange={(event) =>
+							setSortMode(event.target.value as BenchmarkSortMode)
+						}
+						className="mt-2 w-full sm:w-64 rounded-md bg-canvas-dark/70 px-3 py-2 text-sm text-foreground ring-1 ring-border-subtle/60 outline-none focus:ring-foreground/40"
+					>
+						<option value="latencyThenCost">Latency, then cost</option>
+						<option value="costThenLatency">Cost, then latency</option>
+					</select>
 				</div>
 			</div>
 
