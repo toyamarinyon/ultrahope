@@ -1,0 +1,50 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "rails",
+	"repo": "rails",
+	"sha": "12e24eaf2f0a9613e015653f013dd131317d9bf5",
+	"htmlUrl": "https://github.com/rails/rails/commit/12e24eaf2f0a9613e015653f013dd131317d9bf5",
+	"apiUrl": "https://api.github.com/repos/rails/rails/commits/12e24eaf2f0a9613e015653f013dd131317d9bf5",
+	"diffUrl": "https://github.com/rails/rails/commit/12e24eaf2f0a9613e015653f013dd131317d9bf5.diff",
+	"message": "Introduce `in_this_week?`, `in_this_month?`, and `in_this_year?` to Date/Time (#55770)\n\n* Introduce `this_week?`, `this_month?`, and `this_year?` methods to Date/Time\n\nSimilar to `today?`, `tomorrow?`, and `yesterday?`, these methods are useful to\nquery time instances against the current period.\n\n```ruby\nunless date.this_week?\n  link_to \"See week recap\", week_recap_path(date)\nend\n```\n\n* Better example\n\n---------\n\nCo-authored-by: David Heinemeier Hansson <david@hey.com>",
+	"authorName": "Matheus Richard",
+	"authorEmail": "matheusrichardt@gmail.com",
+	"authoredAt": "2026-02-18T13:10:35Z",
+	"committerName": "GitHub",
+	"committerEmail": "noreply@github.com",
+	"committedAt": "2026-02-18T13:10:35Z",
+	"parents": ["562f0ef2ce6c54662310f00f5bd1532859af8aba"],
+	"stats": {
+		"additions": 55,
+		"deletions": 0,
+		"total": 55
+	},
+	"files": [
+		{
+			"filename": "activesupport/CHANGELOG.md",
+			"status": "modified",
+			"additions": 13,
+			"deletions": 0,
+			"changes": 13,
+			"patch": "@@ -1,3 +1,16 @@\n+*   Introduce `this_week?`, `this_month?`, and `this_year?` methods to Date/Time\n+\n+    Similar to `today?`, `tomorrow?`, and `yesterday?`, these methods are useful to\n+    query time instances against the current period.\n+\n+    ```ruby\n+    unless post.created_at.this_week?\n+      link_to \"See week recap\", week_recap_path(date)\n+    end\n+    ```\n+\n+    *Matheus Richard*\n+\n *   Removed the deprecated `ActiveSupport::Multibyte::Chars` class.\n \n     As well as `String#mb_chars`"
+		},
+		{
+			"filename": "activesupport/lib/active_support/core_ext/date_and_time/calculations.rb",
+			"status": "modified",
+			"additions": 15,
+			"deletions": 0,
+			"changes": 15,
+			"patch": "@@ -63,6 +63,21 @@ def on_weekday?\n       !WEEKEND_DAYS.include?(wday)\n     end\n \n+    # Returns true if the date/time falls within the current week.\n+    def this_week?\n+      ::Date.current.all_week.include?(to_date)\n+    end\n+\n+    # Returns true if the date/time falls within the current month.\n+    def this_month?\n+      ::Date.current.all_month.include?(to_date)\n+    end\n+\n+    # Returns true if the date/time falls within the current year.\n+    def this_year?\n+      ::Date.current.all_year.include?(to_date)\n+    end\n+\n     # Returns true if the date/time falls before <tt>date_or_time</tt>.\n     def before?(date_or_time)\n       self < date_or_time"
+		},
+		{
+			"filename": "activesupport/test/core_ext/date_time_ext_test.rb",
+			"status": "modified",
+			"additions": 27,
+			"deletions": 0,
+			"changes": 27,
+			"patch": "@@ -358,6 +358,33 @@ def test_future_without_offset\n     end\n   end\n \n+  def test_this_week\n+    Date.stub(:current, Date.new(2000, 1, 5)) do # Wed, 2000-01-05\n+      assert_equal false, Time.utc(2000, 1, 2, 23, 59, 59).this_week?\n+      assert_equal true,  Time.utc(2000, 1, 3, 0, 0, 0).this_week?\n+      assert_equal true,  Time.utc(2000, 1, 9, 23, 59, 59).this_week?\n+      assert_equal false, Time.utc(2000, 1, 10, 0, 0, 0).this_week?\n+    end\n+  end\n+\n+  def test_this_month\n+    Date.stub(:current, Date.new(2000, 1, 15)) do\n+      assert_equal false, Time.utc(1999, 12, 31, 23, 59, 59).this_month?\n+      assert_equal true,  Time.utc(2000, 1, 1, 0, 0, 0).this_month?\n+      assert_equal true,  Time.utc(2000, 1, 31, 23, 59, 59).this_month?\n+      assert_equal false, Time.utc(2000, 2, 1, 0, 0, 0).this_month?\n+    end\n+  end\n+\n+  def test_this_year\n+    Date.stub(:current, Date.new(2000, 6, 30)) do\n+      assert_equal false, Time.utc(1999, 12, 31, 23, 59, 59).this_year?\n+      assert_equal true,  Time.utc(2000, 1, 1, 0, 0, 0).this_year?\n+      assert_equal true,  Time.utc(2000, 12, 31, 23, 59, 59).this_year?\n+      assert_equal false, Time.utc(2001, 1, 1, 0, 0, 0).this_year?\n+    end\n+  end\n+\n   def test_current_returns_date_today_when_zone_is_not_set\n     with_env_tz \"US/Eastern\" do\n       Time.stub(:now, Time.local(1999, 12, 31, 23, 59, 59)) do"
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:01.024Z"
+}

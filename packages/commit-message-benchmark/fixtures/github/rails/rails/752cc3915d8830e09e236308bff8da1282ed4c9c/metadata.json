@@ -1,0 +1,34 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "rails",
+	"repo": "rails",
+	"sha": "752cc3915d8830e09e236308bff8da1282ed4c9c",
+	"htmlUrl": "https://github.com/rails/rails/commit/752cc3915d8830e09e236308bff8da1282ed4c9c",
+	"apiUrl": "https://api.github.com/repos/rails/rails/commits/752cc3915d8830e09e236308bff8da1282ed4c9c",
+	"diffUrl": "https://github.com/rails/rails/commit/752cc3915d8830e09e236308bff8da1282ed4c9c.diff",
+	"message": "Optimize calculating remote IP address\n\nCo-Authored-By: Jean Boussier <jean.boussier@gmail.com>",
+	"authorName": "fatkodima",
+	"authorEmail": "fatkodima123@gmail.com",
+	"authoredAt": "2026-02-14T20:23:48Z",
+	"committerName": "Jean Boussier",
+	"committerEmail": "jean.boussier@gmail.com",
+	"committedAt": "2026-02-18T07:55:55Z",
+	"parents": ["7b5d711cbc76b0e03290da95e15d32ed5ce9a190"],
+	"stats": {
+		"additions": 14,
+		"deletions": 4,
+		"total": 18
+	},
+	"files": [
+		{
+			"filename": "actionpack/lib/action_dispatch/middleware/remote_ip.rb",
+			"status": "modified",
+			"additions": 14,
+			"deletions": 4,
+			"changes": 18,
+			"patch": "@@ -163,10 +163,11 @@ def calculate_ip\n         #     - REMOTE_ADDR will be the IP that made the request to Rack\n         ips = forwarded_ips + client_ips\n         ips.compact!\n+        ips << remote_addr\n \n         # If every single IP option is in the trusted list, return the IP that's\n         # furthest away\n-        filter_proxies(ips + [remote_addr]).first || ips.last || remote_addr\n+        first_non_proxy(ips) || ips[-2] || ips.last\n       end\n \n       # Memoizes the value returned by #calculate_ip and returns it for\n@@ -194,9 +195,18 @@ def sanitize_ips(ips) # :doc:\n         ips\n       end\n \n-      def filter_proxies(ips) # :doc:\n-        ips.reject do |ip|\n-          @proxies.any? { |proxy| proxy === ip }\n+      def first_non_proxy(ips) # :doc:\n+        ips.find do |raw_ip|\n+          return unless raw_ip\n+\n+          ip = IPAddr.new(raw_ip)\n+          @proxies.none? do |proxy|\n+            if proxy.is_a?(IPAddr)\n+              proxy.include?(ip)\n+            else\n+              proxy === raw_ip\n+            end\n+          end\n         end\n       end\n     end"
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:15.243Z"
+}

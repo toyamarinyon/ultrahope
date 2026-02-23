@@ -447,13 +447,13 @@ describe("commit-message benchmark dataset helpers", () => {
 	});
 
 	it("rejects unknown model IDs", () => {
-		expect(() =>
-			parseGenerateCliArgs(["--model", "invalid-model-id"]),
-		).toThrow("Unknown model: invalid-model-id.");
+		expect(() => parseGenerateCliArgs(["--model", "invalid-model-id"])).toThrow(
+			"Unknown model: invalid-model-id.",
+		);
 
-		expect(() =>
-			parseGenerateCliArgs(["--model", ""]),
-		).toThrow("Missing value for --model.");
+		expect(() => parseGenerateCliArgs(["--model", ""])).toThrow(
+			"Missing value for --model.",
+		);
 	});
 
 	it("rejects invalid github repo input format", () => {

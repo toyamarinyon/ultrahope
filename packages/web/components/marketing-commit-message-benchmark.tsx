@@ -121,9 +121,8 @@ export function MarketingCommitMessageBenchmark() {
 	const [activeScenarioId, setActiveScenarioId] = useState(
 		scenarios[0]?.id ?? "",
 	);
-	const [sortMode, setSortMode] = useState<BenchmarkSortMode>(
-		"latencyThenCost",
-	);
+	const [sortMode, setSortMode] =
+		useState<BenchmarkSortMode>("latencyThenCost");
 	const modelLabelMap = useMemo(
 		() =>
 			new Map(benchmarkDataset.models.map((model) => [model.id, model.label])),

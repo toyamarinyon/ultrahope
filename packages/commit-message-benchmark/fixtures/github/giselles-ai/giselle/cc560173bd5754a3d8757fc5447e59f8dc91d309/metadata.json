@@ -1,0 +1,98 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "giselles-ai",
+	"repo": "giselle",
+	"sha": "cc560173bd5754a3d8757fc5447e59f8dc91d309",
+	"htmlUrl": "https://github.com/giselles-ai/giselle/commit/cc560173bd5754a3d8757fc5447e59f8dc91d309",
+	"apiUrl": "https://api.github.com/repos/giselles-ai/giselle/commits/cc560173bd5754a3d8757fc5447e59f8dc91d309",
+	"diffUrl": "https://github.com/giselles-ai/giselle/commit/cc560173bd5754a3d8757fc5447e59f8dc91d309.diff",
+	"message": "Refactor output format into OutputConfiguration discriminated union\n\nUse a nested discriminated union (outputConfiguration.outputFormat) instead\nof two independent fields to make illegal states unrepresentable. Rename\nOutputFormat to OutputConfiguration to match existing codebase patterns\nwhere the field name differs from the discriminator key (e.g. auth.type,\nstate.status).\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
+	"authorName": "Ryo Washizu",
+	"authorEmail": "wasizuryo@gmail.com",
+	"authoredAt": "2026-02-19T02:08:43Z",
+	"committerName": "Ryo Washizu",
+	"committerEmail": "wasizuryo@gmail.com",
+	"committedAt": "2026-02-19T02:08:43Z",
+	"parents": ["6037dcb10a2964e0445d5250b92c52832a0920ea"],
+	"stats": {
+		"additions": 103,
+		"deletions": 39,
+		"total": 142
+	},
+	"files": [
+		{
+			"filename": ".continuity/20260219-200700-feat__add-structured-output-schema.md",
+			"status": "added",
+			"additions": 60,
+			"deletions": 0,
+			"changes": 60,
+			"patch": "@@ -0,0 +1,60 @@\n+# Continuity ledger (per-branch)\n+\n+## Human intent (must not be overwritten)\n+\n+- Add structured output schema support to the protocol layer\n+- Use discriminated union pattern to make illegal states (e.g., `outputFormat: \"text\"` with a `structuredOutputSchema`) unrepresentable\n+- Follow existing codebase patterns (nested discriminated union as field value, not flat intersection)\n+\n+## Goal (incl. success criteria)\n+\n+- `OutputConfiguration` discriminated union in `structured-output.ts` ensures `structuredOutputSchema` only exists when `outputFormat: \"json\"`\n+- Field name `outputConfiguration` (not `outputFormat`) avoids `x.x` redundancy, matching existing patterns like `auth.type`, `state.status`\n+- All consumers updated, format/build/types/tidy/tests pass\n+\n+## Constraints/Assumptions\n+\n+- Follow existing discriminated union pattern: nested as field value, field name differs from discriminator key\n+- Keep `OutputConfiguration` in `structured-output.ts` (root-level shared schema, consistent with `connection.ts` pattern)\n+\n+## Key decisions\n+\n+- Renamed `OutputFormat` → `OutputConfiguration` (schema + type export)\n+- Field name: `outputConfiguration` (avoids `outputFormat.outputFormat` redundancy)\n+- Nested approach (not flat `z.intersection`/`extend`), consistent with all other discriminated unions in the codebase\n+\n+## State\n+\n+- All changes complete, all quality checks pass\n+\n+## Done\n+\n+- Defined `OutputConfiguration` discriminated union in `structured-output.ts`\n+- Updated `text-generation.ts` and `content-generation.ts` to use `outputConfiguration: OutputConfiguration`\n+- Updated `node-conversion.ts` to pass `outputConfiguration` as a single object (no manual spread)\n+- Updated `node-factories.ts` create functions\n+- Updated all test fixtures and assertions\n+- format, build-sdk, check-types, tidy, test all pass\n+\n+## Now\n+\n+- Complete\n+\n+## Next\n+\n+- Commit changes if requested\n+\n+## Open questions (UNCONFIRMED if needed)\n+\n+- None\n+\n+## Working set (files/ids/commands)\n+\n+- `packages/protocol/src/structured-output.ts`\n+- `packages/protocol/src/node/operations/text-generation.ts`\n+- `packages/protocol/src/node/operations/content-generation.ts`\n+- `packages/node-registry/src/node-conversion.ts`\n+- `packages/node-registry/src/node-factories.ts`\n+- `packages/node-registry/src/node-conversion.test.ts`\n+- `packages/node-registry/src/__fixtures__/node-conversion/nodes.ts`\n+- `packages/react/src/workspace/utils/is-supported-connection.test.ts`"
+		},
+		{
+			"filename": "packages/node-registry/src/__fixtures__/node-conversion/nodes.ts",
+			"status": "modified",
+			"additions": 7,
+			"deletions": 7,
+			"changes": 14,
+			"patch": "@@ -32,7 +32,7 @@ export const openAI_1 = {\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"京都市右京区太秦、太映通り商店街に「アララ」という洋食店はありますか？Webを検索し\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Yes/Noのみを出力してください。\"}]}]}',\n \t\ttools: { openaiWebSearch: { searchContextSize: \"medium\" } },\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -70,7 +70,7 @@ export const openAIWithGitHubTool = {\n \t\t\t\tauth: { type: \"secret\", secretId: \"scrt-TESTTESTTESTTEST\" },\n \t\t\t},\n \t\t},\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -102,7 +102,7 @@ export const openAIWithoutTools = {\n \t\t},\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}]}',\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -134,7 +134,7 @@ export const openAIWithEmptyTools = {\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Please tell me React.js\"}]}]}',\n \t\ttools: {},\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -163,7 +163,7 @@ export const anthropicClaudeSonnet = {\n \t\t},\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"前提条件\"},{\"type\":\"text\",\"text\":\"：\"},{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"Nは100〜250の整数\"},{\"type\":\"text\",\"text\":\"。\"}]},{\"type\":\"bulletList\",\"content\":[{\"type\":\"listItem\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"(a) \"},{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"9の倍数\"},{\"type\":\"text\",\"text\":\"。\"}]}]},{\"type\":\"listItem\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"(b) \"},{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"5の倍数\"},{\"type\":\"text\",\"text\":\"。\"}]}]},{\"type\":\"listItem\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"(c) \"},{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"7進表記で回文（3桁）\"},{\"type\":\"text\",\"text\":\"、すなわち \"},{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"N = 50a + 7b\"},{\"type\":\"text\",\"text\":\"（a∈{2,3,4}, b∈{0..6}）。\"}]}]}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"marks\":[{\"type\":\"bold\"}],\"text\":\"問\"},{\"type\":\"text\",\"text\":\"：Nを求めよ。\"}]},{\"type\":\"paragraph\"},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"You must outputs number only\"}]}]}',\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -192,7 +192,7 @@ export const anthropicClaudeOpus45 = {\n \t\t},\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Solve x^2 + 4x + 4 = 0.\"}]}]}',\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };\n \n@@ -227,6 +227,6 @@ export const googleGemini = {\n \t\t},\n \t\tprompt:\n \t\t\t'{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"京都市右京区太秦、太映通り商店街に「アララ」という洋食店はありますか？Webを検索し\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Yes/Noのみを出力してください。\"}]}]}',\n-\t\toutputFormat: \"text\",\n+\t\toutputConfiguration: { outputFormat: \"text\" },\n \t},\n };"
+		},
+		{
+			"filename": "packages/node-registry/src/node-conversion.test.ts",
+			"status": "modified",
+			"additions": 17,
+			"deletions": 17,
+			"changes": 34,
+			"patch": "@@ -43,7 +43,7 @@ function createOpenAITextNode(\n \t\t\t\t},\n \t\t\t},\n \t\t\tprompt: \"test\",\n-\t\t\toutputFormat: \"text\",\n+\t\t\toutputConfiguration: { outputFormat: \"text\" },\n \t\t},\n \t};\n }\n@@ -357,8 +357,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t\texpect(convertedBack.content.tools?.openaiWebSearch).toBeDefined();\n \t\t});\n@@ -377,8 +377,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t\texpect(convertedBack.content.tools?.github).toBeDefined();\n \t\t\texpect(convertedBack.content.tools?.github?.auth.type).toBe(\"secret\");\n@@ -406,8 +406,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t\texpect(convertedBack.content.tools).toBeUndefined();\n \t\t});\n@@ -426,8 +426,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t});\n \n@@ -445,8 +445,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t});\n \n@@ -464,8 +464,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t});\n \n@@ -485,8 +485,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t});\n \n@@ -505,8 +505,8 @@ describe(\"node-conversion\", () => {\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);\n \t\t\texpect(convertedBack.content.prompt).toBe(originalNode.content.prompt);\n-\t\t\texpect(convertedBack.content.outputFormat).toBe(\n-\t\t\t\toriginalNode.content.outputFormat,\n+\t\t\texpect(convertedBack.content.outputConfiguration).toEqual(\n+\t\t\t\toriginalNode.content.outputConfiguration,\n \t\t\t);\n \t\t\texpect(convertedBack.content.llm?.id).toBe(\"gpt-5.1-thinking\");\n \t\t});"
+		},
+		{
+			"filename": "packages/node-registry/src/node-conversion.ts",
+			"status": "modified",
+			"additions": 2,
+			"deletions": 4,
+			"changes": 6,
+			"patch": "@@ -200,8 +200,7 @@ export function convertTextGenerationToContentGeneration(\n \t\t\tlanguageModel,\n \t\t\ttools,\n \t\t\tprompt: textGenerationContent.prompt ?? \"\",\n-\t\t\toutputFormat: textGenerationContent.outputFormat,\n-\t\t\tstructuredOutputSchema: textGenerationContent.structuredOutputSchema,\n+\t\t\toutputConfiguration: textGenerationContent.outputConfiguration,\n \t\t},\n \t};\n }\n@@ -342,8 +341,7 @@ export function convertContentGenerationToTextGeneration(\n \t\t\tllm,\n \t\t\tprompt: contentGenerationContent.prompt,\n \t\t\ttools: toolsToInclude,\n-\t\t\toutputFormat: contentGenerationContent.outputFormat,\n-\t\t\tstructuredOutputSchema: contentGenerationContent.structuredOutputSchema,\n+\t\t\toutputConfiguration: contentGenerationContent.outputConfiguration,\n \t\t},\n \t};\n }"
+		},
+		{
+			"filename": "packages/node-registry/src/node-factories.ts",
+			"status": "modified",
+			"additions": 2,
+			"deletions": 2,
+			"changes": 4,
+			"patch": "@@ -194,7 +194,7 @@ const textGenerationFactoryImpl = {\n \t\t\tcontent: {\n \t\t\t\ttype: \"textGeneration\",\n \t\t\t\tllm,\n-\t\t\t\toutputFormat: \"text\",\n+\t\t\t\toutputConfiguration: { outputFormat: \"text\" },\n \t\t\t},\n \t\t\tinputs: [],\n \t\t\toutputs,\n@@ -832,7 +832,7 @@ const contentGenerationFactoryImpl = {\n \t\t\t\t\tconfiguration: languageModel.defaultConfiguration,\n \t\t\t\t},\n \t\t\t\ttools: [],\n-\t\t\t\toutputFormat: \"text\",\n+\t\t\t\toutputConfiguration: { outputFormat: \"text\" },\n \t\t\t},\n \t\t\tinputs: [],\n \t\t\toutputs,"
+		},
+		{
+			"filename": "packages/protocol/src/node/operations/content-generation.ts",
+			"status": "modified",
+			"additions": 2,
+			"deletions": 3,
+			"changes": 5,
+			"patch": "@@ -7,7 +7,7 @@ import {\n \ttype LanguageModelToolName,\n } from \"@giselles-ai/language-model-registry\";\n import * as z from \"zod/v4\";\n-import { StructuredOutputSchema } from \"../../structured-output\";\n+import { OutputConfiguration } from \"../../structured-output\";\n \n export const ContentGenerationContent = z.object({\n \ttype: z.literal(\"contentGeneration\"),\n@@ -26,8 +26,7 @@ export const ContentGenerationContent = z.object({\n \t\t}),\n \t),\n \tprompt: z.string(),\n-\toutputFormat: z.enum([\"text\", \"json\"]).default(\"text\"),\n-\tstructuredOutputSchema: StructuredOutputSchema.optional(),\n+\toutputConfiguration: OutputConfiguration,\n });\n \n export type ContentGenerationContent = z.infer<typeof ContentGenerationContent>;"
+		},
+		{
+			"filename": "packages/protocol/src/node/operations/text-generation.ts",
+			"status": "modified",
+			"additions": 2,
+			"deletions": 3,
+			"changes": 5,
+			"patch": "@@ -6,7 +6,7 @@ import {\n } from \"@giselles-ai/language-model\";\n import * as z from \"zod/v4\";\n import { SecretId } from \"../../secret\";\n-import { StructuredOutputSchema } from \"../../structured-output\";\n+import { OutputConfiguration } from \"../../structured-output\";\n \n export const AnthropicLanguageModelData = AnthropicLanguageModel.pick({\n \tprovider: true,\n@@ -122,8 +122,7 @@ export const TextGenerationContent = z.object({\n \tllm: TextGenerationLanguageModelData,\n \tprompt: z.string().optional(),\n \ttools: z.optional(ToolSet),\n-\toutputFormat: z.enum([\"text\", \"json\"]).default(\"text\"),\n-\tstructuredOutputSchema: StructuredOutputSchema.optional(),\n+\toutputConfiguration: OutputConfiguration,\n });\n export type TextGenerationContent = z.infer<typeof TextGenerationContent>;\n "
+		},
+		{
+			"filename": "packages/protocol/src/structured-output.ts",
+			"status": "modified",
+			"additions": 9,
+			"deletions": 1,
+			"changes": 10,
+			"patch": "@@ -62,5 +62,13 @@ export const StructuredOutputSchema = z.object({\n \tadditionalProperties: z.literal(false),\n \trequired: z.array(z.string()),\n });\n-\n export type StructuredOutputSchema = z.infer<typeof StructuredOutputSchema>;\n+\n+export const OutputConfiguration = z.discriminatedUnion(\"outputFormat\", [\n+\tz.object({ outputFormat: z.literal(\"text\") }),\n+\tz.object({\n+\t\toutputFormat: z.literal(\"json\"),\n+\t\tstructuredOutputSchema: StructuredOutputSchema,\n+\t}),\n+]);\n+export type OutputConfiguration = z.infer<typeof OutputConfiguration>;"
+		},
+		{
+			"filename": "packages/react/src/workspace/utils/is-supported-connection.test.ts",
+			"status": "modified",
+			"additions": 2,
+			"deletions": 2,
+			"changes": 4,
+			"patch": "@@ -42,7 +42,7 @@ describe(\"isSupportedConnection\", () => {\n \t\t\tcontent: {\n \t\t\t\ttype: \"textGeneration\",\n \t\t\t\tllm,\n-\t\t\t\toutputFormat: \"text\",\n+\t\t\t\toutputConfiguration: { outputFormat: \"text\" },\n \t\t\t},\n \t\t}) satisfies TextGenerationNode;\n \tconst createImageGenerationNode = (\n@@ -220,7 +220,7 @@ describe(\"isSupportedConnection\", () => {\n \t\t\t\tconfiguration: {},\n \t\t\t},\n \t\t\ttools: [],\n-\t\t\toutputFormat: \"text\",\n+\t\t\toutputConfiguration: { outputFormat: \"text\" },\n \t\t},\n \t});\n "
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:17.606Z"
+}

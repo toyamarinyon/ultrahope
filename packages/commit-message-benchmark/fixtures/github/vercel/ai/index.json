@@ -1,0 +1,18 @@
+[
+	{
+		"id": "ai-4c3a932a-fix-devtools-use-explicit-env-flag-f",
+		"title": "fix(devtools): use explicit env flag for dev mode detection (#12694)",
+		"sourceRepo": "vercel/ai",
+		"sourceCommitUrl": "https://github.com/vercel/ai/commit/4c3a932a54db2dbb1c35f419e04720db609ad858",
+		"diffFile": "4c3a932a54db2dbb1c35f419e04720db609ad858/diff.diff",
+		"metadataFile": "4c3a932a54db2dbb1c35f419e04720db609ad858/metadata.json"
+	},
+	{
+		"id": "ai-b094c074-fix-anthropic-allow-null-content-in-",
+		"title": "fix(anthropic): allow null content in compaction_delta streaming schema (#12471)",
+		"sourceRepo": "vercel/ai",
+		"sourceCommitUrl": "https://github.com/vercel/ai/commit/b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7",
+		"diffFile": "b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7/diff.diff",
+		"metadataFile": "b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7/metadata.json"
+	}
+]

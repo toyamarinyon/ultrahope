@@ -1,0 +1,79 @@
+diff --git a/.changeset/two-signs-try.md b/.changeset/two-signs-try.md
+new file mode 100644
+index 000000000000..50a95304a1d3
+--- /dev/null
++++ b/.changeset/two-signs-try.md
+@@ -0,0 +1,20 @@
++---
++"@biomejs/biome": patch
++---
++
++Added `graphql` to valid embedded graphql template tags inside JavaScript files, when the feature `javascript.experimentalEmbeddedSnippetsEnabled` is enabled. This allows proper support for graphql tags used in RelayJS.
++
++Now, code snippets like the following are correctly formatted and limited:
++
++```js
++import { graphql } from "react-relay";
++
++const query = graphql`
++  query {
++    user(id: 1) {
++      id
++      name
++    }
++  }
++`;
++```
+diff --git a/crates/biome_service/src/file_handlers/javascript.rs b/crates/biome_service/src/file_handlers/javascript.rs
+index 3ce05908a693..7e6c1321c020 100644
+--- a/crates/biome_service/src/file_handlers/javascript.rs
++++ b/crates/biome_service/src/file_handlers/javascript.rs
+@@ -694,9 +694,11 @@ fn is_styled_tag(tag: Option<&AnyJsExpression>) -> bool {
+ }
+ 
+ fn is_graphql_tag(tag: Option<&AnyJsExpression>, template: &JsTemplateExpression) -> bool {
+-    // gql``
++    // gql`` or graphql``
+     if let Some(AnyJsExpression::JsIdentifierExpression(ident)) = tag
+-        && ident.name().is_ok_and(|name| name.has_name("gql"))
++        && ident
++            .name()
++            .is_ok_and(|name| name.has_name("gql") || name.has_name("graphql"))
+     {
+         return true;
+     }
+diff --git a/crates/biome_service/src/workspace/server.tests.rs b/crates/biome_service/src/workspace/server.tests.rs
+index 2a609f6a04eb..a96dc11cfba5 100644
+--- a/crates/biome_service/src/workspace/server.tests.rs
++++ b/crates/biome_service/src/workspace/server.tests.rs
+@@ -570,7 +570,15 @@ const Bar = graphql(`
+        id: $peopleId){
+        totalCount
+        }}
+-`);"#;
++`);
++
++const Baz = graphql`
++  query PeopleCount {
++  people(
++       id: $peopleId){
++       totalCount
++       }}
++`;"#;
+ 
+     let fs = MemoryFileSystem::default();
+     fs.insert(Utf8PathBuf::from(FILE_PATH), FILE_CONTENT);
+@@ -628,5 +636,13 @@ const Bar = graphql(`
+     		}
+     	}
+     `);
++
++    const Baz = graphql`
++    	query PeopleCount {
++    		people(id: $peopleId) {
++    			totalCount
++    		}
++    	}
++    `;
+     ");
+ }

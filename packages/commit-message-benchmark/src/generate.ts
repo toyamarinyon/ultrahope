@@ -237,7 +237,8 @@ export function parseGenerateCliArgs(argv: string[]): BenchmarkGenerateArgs {
 		return { kind: "githubAll" };
 	}
 
-	const normalizedModelIds = modelIds.length > 0 ? [...new Set(modelIds)] : undefined;
+	const normalizedModelIds =
+		modelIds.length > 0 ? [...new Set(modelIds)] : undefined;
 	const fixtureSelection =
 		setName?.trim() === "github"
 			? { kind: "githubAll" }
@@ -473,9 +474,7 @@ async function run(args?: {
 		kind: "set",
 		setName: DEFAULT_FIXTURE_SET,
 	};
-	const requestedModelIds = args?.modelIds
-		? [...new Set(args.modelIds)]
-		: [];
+	const requestedModelIds = args?.modelIds ? [...new Set(args.modelIds)] : [];
 	const requestedModelSet = new Set(requestedModelIds);
 	const shouldFilterModels = requestedModelIds.length > 0;
 	if (shouldFilterModels) {
@@ -526,7 +525,8 @@ async function run(args?: {
 			items: BENCHMARK_MODELS,
 			concurrency: maxConcurrency,
 			mapper: async (model, modelIndex) => {
-				const shouldRegenerate = !shouldFilterModels || requestedModelSet.has(model.id);
+				const shouldRegenerate =
+					!shouldFilterModels || requestedModelSet.has(model.id);
 				console.log(
 					`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} started: ${model.id}`,
 				);
@@ -539,10 +539,7 @@ async function run(args?: {
 				) {
 					existingResult = existingScenario.resultByModelId.get(model.id);
 				}
-				if (
-					existingResult &&
-					!shouldRegenerate
-				) {
+				if (existingResult && !shouldRegenerate) {
 					const reusedResult = toReusedResult({
 						existingResult,
 						model,
