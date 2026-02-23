@@ -7,9 +7,12 @@ import {
 	reviewKey,
 } from "./dataset";
 import {
+	createExistingScenarioLookup,
 	parseGenerateCliArgs,
 	parseGitHubRepoInput,
+	shouldReuseExistingResult,
 	toErrorResult,
+	toReusedResult,
 } from "./generate";
 import { BENCHMARK_MODELS } from "./models";
 import type { BenchmarkDataset, BenchmarkScenario } from "./types";
@@ -236,6 +239,127 @@ describe("commit-message benchmark dataset helpers", () => {
 		expect(result.modelId).toBe(BENCHMARK_MODELS[1].id);
 		expect(result.errorMessage).toContain("simulated failure");
 		expect(result.message).toBe("");
+	});
+
+	it("creates a lookup for existing scenario/model results", () => {
+		const existing: BenchmarkDataset = {
+			generatedAt: new Date().toISOString(),
+			provider: "vercel-ai-gateway",
+			models: [BENCHMARK_MODELS[0]],
+			scenarios: [
+				{
+					id: "react-input-defaultchecked-fix",
+					title: "Fix defaultChecked sync",
+					sourceRepo: "facebook/react",
+					sourceCommitUrl: "https://github.com/facebook/react/commit/abc",
+					diff: "diff-v1",
+					results: [
+						{
+							modelId: BENCHMARK_MODELS[0].id,
+							tier: BENCHMARK_MODELS[0].tier,
+							status: "success",
+							message: "fix(web): sync defaultChecked in uncontrolled input",
+							latencyMs: 111,
+							costUsd: 0.00011,
+							inputTokens: 11,
+							outputTokens: 6,
+							humanReview: {
+								overallScore: 5,
+								notes: "Best candidate.",
+								winnerFlag: true,
+							},
+							providerMetadata: null,
+						},
+					],
+				},
+			],
+			aggregate: {
+				byModel: [],
+				smallTopModelId: null,
+				frontierTopModelId: null,
+			},
+		};
+
+		const lookup = createExistingScenarioLookup(existing);
+		const entry = lookup.get("react-input-defaultchecked-fix");
+		const result = entry?.resultByModelId.get(BENCHMARK_MODELS[0].id);
+
+		expect(entry?.diff).toBe("diff-v1");
+		expect(result?.message).toContain("sync defaultChecked");
+		expect(result?.humanReview.overallScore).toBe(5);
+	});
+
+	it("reuses an existing result and aligns it with current model metadata", () => {
+		const reused = toReusedResult({
+			existingResult: {
+				modelId: BENCHMARK_MODELS[0].id,
+				tier: "small",
+				status: "success",
+				message: "fix(core): stabilize parse flow",
+				latencyMs: 123,
+				costUsd: 0.000123,
+				inputTokens: 10,
+				outputTokens: 7,
+				humanReview: {
+					overallScore: 2,
+					notes: "old review",
+					winnerFlag: false,
+				},
+				providerMetadata: undefined,
+			},
+			model: BENCHMARK_MODELS[3],
+			preservedReview: {
+				overallScore: 5,
+				notes: "new review",
+				winnerFlag: true,
+			},
+		});
+
+		expect(reused.modelId).toBe(BENCHMARK_MODELS[3].id);
+		expect(reused.tier).toBe(BENCHMARK_MODELS[3].tier);
+		expect(reused.message).toBe("fix(core): stabilize parse flow");
+		expect(reused.humanReview.overallScore).toBe(5);
+		expect(reused.humanReview.notes).toBe("new review");
+		expect(reused.providerMetadata).toBeNull();
+	});
+
+	it("reuses only successful existing results", () => {
+		const success = shouldReuseExistingResult({
+			modelId: BENCHMARK_MODELS[0].id,
+			tier: BENCHMARK_MODELS[0].tier,
+			status: "success",
+			message: "fix(api): handle null body",
+			latencyMs: 1,
+			costUsd: 0.000001,
+			inputTokens: 1,
+			outputTokens: 1,
+			humanReview: {
+				overallScore: 3,
+				notes: "Pending manual review.",
+				winnerFlag: false,
+			},
+			providerMetadata: null,
+		});
+		const failure = shouldReuseExistingResult({
+			modelId: BENCHMARK_MODELS[0].id,
+			tier: BENCHMARK_MODELS[0].tier,
+			status: "error",
+			message: "",
+			latencyMs: 1,
+			costUsd: null,
+			inputTokens: 0,
+			outputTokens: 0,
+			humanReview: {
+				overallScore: 3,
+				notes: "Pending manual review.",
+				winnerFlag: false,
+			},
+			providerMetadata: null,
+			errorMessage: "unauthenticated",
+		});
+
+		expect(success).toBe(true);
+		expect(failure).toBe(false);
 	});
 
 	it("parses --set option for fixture selection", () => {

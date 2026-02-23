@@ -252,11 +252,42 @@ async function loadExistingDataset(): Promise<BenchmarkDataset | null> {
 		return JSON.parse(text) as BenchmarkDataset;
 	} catch (error) {
 		console.warn(
-			"[benchmark] Failed to parse existing dataset, continuing without review preservation:",
+			"[benchmark] Failed to parse existing dataset, continuing without result/review preservation:",
 			toErrorMessage(error),
 		);
 		return null;
 	}
+}
+
+export interface ExistingScenarioLookupEntry {
+	diff: string;
+	resultByModelId: Map<string, BenchmarkResult>;
+}
+
+export function createExistingScenarioLookup(
+	existing: BenchmarkDataset | null,
+): Map<string, ExistingScenarioLookupEntry> {
+	const lookup = new Map<string, ExistingScenarioLookupEntry>();
+	if (!existing) {
+		return lookup;
+	}
+
+	for (const scenario of existing.scenarios) {
+		const resultByModelId = new Map<string, BenchmarkResult>();
+		for (const result of scenario.results) {
+			resultByModelId.set(result.modelId, {
+				...result,
+				humanReview: resolveHumanReview(result.humanReview),
+				providerMetadata: result.providerMetadata ?? null,
+			});
+		}
+		lookup.set(scenario.id, {
+			diff: scenario.diff,
+			resultByModelId,
+		});
+	}
+
+	return lookup;
 }
 
 async function mapWithConcurrency<T, R>(args: {
@@ -304,6 +335,26 @@ export function toErrorResult(args: {
 		providerMetadata: args.providerMetadata ?? null,
 		errorMessage: toErrorMessage(args.error),
 	};
+}
+
+export function toReusedResult(args: {
+	existingResult: BenchmarkResult;
+	model: BenchmarkModelConfig;
+	preservedReview?: HumanReview;
+}): BenchmarkResult {
+	return {
+		...args.existingResult,
+		modelId: args.model.id,
+		tier: args.model.tier,
+		humanReview: resolveHumanReview(
+			args.preservedReview ?? args.existingResult.humanReview,
+		),
+		providerMetadata: args.existingResult.providerMetadata ?? null,
+	};
+}
+
+export function shouldReuseExistingResult(result: BenchmarkResult): boolean {
+	return result.status === "success";
 }
 
 async function generateResult(args: {
@@ -387,12 +438,19 @@ async function run(args?: {
 	console.log(`[benchmark] Fixture count: ${fixtureScenarios.length}`);
 
 	const reviewLookup = createHumanReviewLookup(existingDataset);
+	const existingScenarioLookup = createExistingScenarioLookup(existingDataset);
 
 	const scenarios = [];
 	for (const [fixtureIndex, fixtureScenario] of fixtureScenarios.entries()) {
 		console.log(
 			`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} started: ${fixtureScenario.id}`,
 		);
+		const existingScenario = existingScenarioLookup.get(fixtureScenario.id);
+		if (existingScenario && existingScenario.diff !== fixtureScenario.diff) {
+			console.log(
+				`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} existing results ignored: diff changed`,
+			);
+		}
 		const results = await mapWithConcurrency({
 			items: BENCHMARK_MODELS,
 			concurrency: maxConcurrency,
@@ -400,9 +458,31 @@ async function run(args?: {
 				console.log(
 					`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} started: ${model.id}`,
 				);
-				const preservedReview = reviewLookup.get(
-					reviewKey(fixtureScenario.id, model.id),
-				);
+				const lookupKey = reviewKey(fixtureScenario.id, model.id);
+				const preservedReview = reviewLookup.get(lookupKey);
+				let existingResult: BenchmarkResult | undefined;
+				if (
+					existingScenario &&
+					existingScenario.diff === fixtureScenario.diff
+				) {
+					existingResult = existingScenario.resultByModelId.get(model.id);
+				}
+				if (existingResult && shouldReuseExistingResult(existingResult)) {
+					const reusedResult = toReusedResult({
+						existingResult,
+						model,
+						preservedReview,
+					});
+					console.log(
+						`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} skipped: ${model.id} (status=${reusedResult.status}, source=existing-dataset)`,
+					);
+					return reusedResult;
+				}
+				if (existingResult && !shouldReuseExistingResult(existingResult)) {
+					console.log(
+						`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} regenerating: ${model.id} (existing-status=${existingResult.status})`,
+					);
+				}
 				const humanReview = resolveHumanReview(preservedReview);
 				const result = await generateResult({
 					diff: fixtureScenario.diff,

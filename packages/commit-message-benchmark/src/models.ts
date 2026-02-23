@@ -29,8 +29,18 @@ export const BENCHMARK_MODELS: BenchmarkModelConfig[] = [
 		label: "Claude Opus 4.5",
 	},
 	{
+		id: "anthropic/claude-sonnet-4.6",
+		tier: "frontier",
+		label: "Claude Sonnet 4.6",
+	},
+	{
 		id: "google/gemini-3-pro-preview",
 		tier: "frontier",
 		label: "Gemini 3 Pro",
+	},
+	{
+		id: "mistral/codestral",
+		tier: "small",
+		label: "Codestral",
 	},
 ];

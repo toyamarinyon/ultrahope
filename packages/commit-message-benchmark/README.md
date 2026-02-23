@@ -5,10 +5,11 @@ Offline-friendly benchmark dataset generator for the marketing comparison demo.
 ## What it does
 
 - Loads 3 fixed React diffs from `fixtures/react/`.
-- Runs commit-message generation across 6 configured models via AI Gateway.
+- Runs commit-message generation across 8 configured models via AI Gateway.
 - Writes dataset JSON to:
   - `packages/web/lib/demo/commit-message-benchmark.dataset.json`
 - Preserves existing `humanReview` fields on regeneration.
+- Reuses existing scenario/model results from the output dataset to avoid regenerating already-computed models.
 - Keeps per-model failures as `status: "error"` instead of aborting the entire run.
 
 ## Run
