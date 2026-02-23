@@ -34,7 +34,12 @@ const OUTPUT_DATASET_PATH = new URL(
 	import.meta.url,
 );
 const DEFAULT_MAX_CONCURRENCY = 3;
+const BENCHMARK_MODEL_IDS = new Set(BENCHMARK_MODELS.map((model) => model.id));
 
+export type BenchmarkGenerateArgs = {
+	fixtureSelection: FixtureSelection;
+	modelIds?: string[];
+};
 export type FixtureSelection =
 	| {
 			kind: "set";
@@ -146,16 +151,18 @@ function printHelpAndExit(code: number): never {
 		"  --repo <owner>/<repo> fixture set under fixtures/github/<owner>/<repo>",
 		"  --github-all           fixture sets under fixtures/github/<owner>/<repo>/*",
 		"  --github-repo <o/r>   alias of --repo",
+		`  --model <id>           regenerate only this model (comma-separated IDs supported)`,
 	];
 	const printer = code === 0 ? console.log : console.error;
 	printer(usage.join("\n"));
 	process.exit(code);
 }
 
-export function parseGenerateCliArgs(argv: string[]): FixtureSelection {
+export function parseGenerateCliArgs(argv: string[]): BenchmarkGenerateArgs {
 	let setName: string | undefined;
 	let githubRepo: string | undefined;
 	let githubAll = false;
+	let modelIds: string[] = [];
 
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
@@ -175,6 +182,28 @@ export function parseGenerateCliArgs(argv: string[]): FixtureSelection {
 				optionName: arg,
 			});
 			index += 1;
+			continue;
+		}
+		if (arg === "--model") {
+			const modelValue = readRequiredOptionValue({
+				argv,
+				index,
+				optionName: "--model",
+			});
+			index += 1;
+			const values = modelValue
+				.split(",")
+				.map((value) => value.trim())
+				.filter(Boolean);
+			if (values.length === 0) {
+				throw new Error("Missing value for --model.");
+			}
+			for (const modelId of values) {
+				if (!BENCHMARK_MODEL_IDS.has(modelId)) {
+					throw new Error(`Unknown model: ${modelId}.`);
+				}
+			}
+			modelIds = modelIds.concat(values);
 			continue;
 		}
 		if (arg === "--github-all") {
@@ -208,13 +237,35 @@ export function parseGenerateCliArgs(argv: string[]): FixtureSelection {
 		return { kind: "githubAll" };
 	}
 
-	if (setName?.trim() === "github") {
-		return { kind: "githubAll" };
+	const normalizedModelIds = modelIds.length > 0 ? [...new Set(modelIds)] : undefined;
+	const fixtureSelection =
+		setName?.trim() === "github"
+			? { kind: "githubAll" }
+			: setName
+				? { kind: "set", setName: setName.trim() }
+				: {
+						kind: "set",
+						setName: DEFAULT_FIXTURE_SET,
+					};
+
+	if (githubRepo) {
+		const namespace = parseGitHubRepoInput(githubRepo);
+		return {
+			fixtureSelection: { kind: "githubRepo", ...namespace },
+			...(normalizedModelIds ? { modelIds: normalizedModelIds } : {}),
+		};
+	}
+
+	if (githubAll) {
+		return {
+			fixtureSelection: { kind: "githubAll" },
+			...(normalizedModelIds ? { modelIds: normalizedModelIds } : {}),
+		};
 	}
 
 	return {
-		kind: "set",
-		setName: (setName ?? DEFAULT_FIXTURE_SET).trim(),
+		fixtureSelection,
+		...(normalizedModelIds ? { modelIds: normalizedModelIds } : {}),
 	};
 }
 
@@ -408,6 +459,7 @@ async function generateResult(args: {
 
 async function run(args?: {
 	fixtureSelection?: FixtureSelection;
+	modelIds?: string[];
 }): Promise<BenchmarkDataset> {
 	console.log("[benchmark] Started");
 
@@ -421,6 +473,20 @@ async function run(args?: {
 		kind: "set",
 		setName: DEFAULT_FIXTURE_SET,
 	};
+	const requestedModelIds = args?.modelIds
+		? [...new Set(args.modelIds)]
+		: [];
+	const requestedModelSet = new Set(requestedModelIds);
+	const shouldFilterModels = requestedModelIds.length > 0;
+	if (shouldFilterModels) {
+		const invalidModelIds = requestedModelIds.filter(
+			(modelId) => !BENCHMARK_MODEL_IDS.has(modelId),
+		);
+		if (invalidModelIds.length > 0) {
+			throw new Error(`Unknown model: ${invalidModelIds.join(", ")}.`);
+		}
+	}
+
 	console.log(
 		`[benchmark] Loading fixtures: selection=${formatFixtureSelection(fixtureSelection)}`,
 	);
@@ -430,6 +496,11 @@ async function run(args?: {
 		loadScenariosBySelection(fixtureSelection),
 		loadExistingDataset(),
 	]);
+	if (shouldFilterModels && existingDataset == null) {
+		throw new Error(
+			"Model filtering requires an existing dataset at web/lib/demo/commit-message-benchmark.dataset.json.",
+		);
+	}
 	if (fixtureScenarios.length === 0) {
 		throw new Error(
 			`No fixture scenarios found for '${formatFixtureSelection(fixtureSelection)}'.`,
@@ -455,6 +526,7 @@ async function run(args?: {
 			items: BENCHMARK_MODELS,
 			concurrency: maxConcurrency,
 			mapper: async (model, modelIndex) => {
+				const shouldRegenerate = !shouldFilterModels || requestedModelSet.has(model.id);
 				console.log(
 					`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} started: ${model.id}`,
 				);
@@ -467,7 +539,10 @@ async function run(args?: {
 				) {
 					existingResult = existingScenario.resultByModelId.get(model.id);
 				}
-				if (existingResult && shouldReuseExistingResult(existingResult)) {
+				if (
+					existingResult &&
+					!shouldRegenerate
+				) {
 					const reusedResult = toReusedResult({
 						existingResult,
 						model,
@@ -478,9 +553,13 @@ async function run(args?: {
 					);
 					return reusedResult;
 				}
-				if (existingResult && !shouldReuseExistingResult(existingResult)) {
+				if (existingResult && shouldRegenerate) {
 					console.log(
 						`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} regenerating: ${model.id} (existing-status=${existingResult.status})`,
+					);
+				} else if (!shouldRegenerate) {
+					console.log(
+						`[benchmark] Fixture ${fixtureIndex + 1}/${fixtureScenarios.length} model ${modelIndex + 1}/${BENCHMARK_MODELS.length} generating: ${model.id} (no existing result)`,
 					);
 				}
 				const humanReview = resolveHumanReview(preservedReview);
@@ -559,12 +638,13 @@ function logSummary(
 
 export async function generateBenchmarkDataset(args?: {
 	fixtureSelection?: FixtureSelection;
+	modelIds?: string[];
 }): Promise<BenchmarkDataset> {
 	const fixtureSelection = args?.fixtureSelection ?? {
 		kind: "set",
 		setName: DEFAULT_FIXTURE_SET,
 	};
-	const dataset = await run({ fixtureSelection });
+	const dataset = await run({ fixtureSelection, modelIds: args?.modelIds });
 	await writeDataset(dataset);
 	logSummary(dataset, fixtureSelection);
 	console.log("[benchmark] All done");
@@ -573,14 +653,17 @@ export async function generateBenchmarkDataset(args?: {
 
 if (import.meta.main) {
 	let fixtureSelection: FixtureSelection;
+	let modelIds: string[] | undefined;
 	try {
-		fixtureSelection = parseGenerateCliArgs(process.argv.slice(2));
+		const args = parseGenerateCliArgs(process.argv.slice(2));
+		fixtureSelection = args.fixtureSelection;
+		modelIds = args.modelIds;
 	} catch (error) {
 		console.error("[benchmark] Failed:", toErrorMessage(error));
 		process.exit(1);
 	}
 
-	generateBenchmarkDataset({ fixtureSelection }).catch((error) => {
+	generateBenchmarkDataset({ fixtureSelection, modelIds }).catch((error) => {
 		console.error("[benchmark] Failed:", toErrorMessage(error));
 		process.exit(1);
 	});

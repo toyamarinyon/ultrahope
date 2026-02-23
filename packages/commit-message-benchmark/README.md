@@ -23,6 +23,7 @@ Options:
 - `--set <name>` load fixtures from `fixtures/<name>/` (default: `react`)
 - `--repo <owner>/<repo>` load fixtures from `fixtures/github/<owner>/<repo>/`
 - `--github-all` load all fixtures under `fixtures/github/*/*/`
+- `--model <id>` regenerate only one model (example: `xai/grok-code-fast-1`)
 
 Examples:
 
@@ -32,6 +33,9 @@ bun --cwd packages/commit-message-benchmark run generate --repo vercel/next.js
 
 # Run all repositories under fixtures/github
 bun --cwd packages/commit-message-benchmark run generate --github-all
+
+# Rerun only the Grok model on github fixtures
+bun --cwd packages/commit-message-benchmark run generate --set github --model xai/grok-code-fast-1
 ```
 
 ## Add a scenario from a GitHub commit URL

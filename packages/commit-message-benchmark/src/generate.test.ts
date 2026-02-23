@@ -365,25 +365,31 @@ describe("commit-message benchmark dataset helpers", () => {
 	it("parses --set option for fixture selection", () => {
 		const parsed = parseGenerateCliArgs(["--set", "react"]);
 		expect(parsed).toEqual({
-			kind: "set",
-			setName: "react",
+			fixtureSelection: {
+				kind: "set",
+				setName: "react",
+			},
 		});
 	});
 
 	it("uses default fixture set when no option is provided", () => {
 		const parsed = parseGenerateCliArgs([]);
 		expect(parsed).toEqual({
-			kind: "set",
-			setName: "react",
+			fixtureSelection: {
+				kind: "set",
+				setName: "react",
+			},
 		});
 	});
 
 	it("parses --repo option for fixture selection", () => {
 		const parsed = parseGenerateCliArgs(["--repo", "Vercel/Next.js"]);
 		expect(parsed).toEqual({
-			kind: "githubRepo",
-			owner: "vercel",
-			repo: "next.js",
+			fixtureSelection: {
+				kind: "githubRepo",
+				owner: "vercel",
+				repo: "next.js",
+			},
 		});
 	});
 
@@ -396,14 +402,18 @@ describe("commit-message benchmark dataset helpers", () => {
 	it("parses --github-all option for fixture selection", () => {
 		const parsed = parseGenerateCliArgs(["--github-all"]);
 		expect(parsed).toEqual({
-			kind: "githubAll",
+			fixtureSelection: {
+				kind: "githubAll",
+			},
 		});
 	});
 
 	it("maps --set github to github-all selection", () => {
 		const parsed = parseGenerateCliArgs(["--set", "github"]);
 		expect(parsed).toEqual({
-			kind: "githubAll",
+			fixtureSelection: {
+				kind: "githubAll",
+			},
 		});
 	});
 
@@ -419,6 +429,31 @@ describe("commit-message benchmark dataset helpers", () => {
 			owner: "facebook",
 			repo: "react",
 		});
+	});
+
+	it("parses --model option for a single model rerun", () => {
+		const parsed = parseGenerateCliArgs([
+			"--set",
+			"github",
+			"--model",
+			"xai/grok-code-fast-1",
+		]);
+		expect(parsed).toEqual({
+			fixtureSelection: {
+				kind: "githubAll",
+			},
+			modelIds: ["xai/grok-code-fast-1"],
+		});
+	});
+
+	it("rejects unknown model IDs", () => {
+		expect(() =>
+			parseGenerateCliArgs(["--model", "invalid-model-id"]),
+		).toThrow("Unknown model: invalid-model-id.");
+
+		expect(() =>
+			parseGenerateCliArgs(["--model", ""]),
+		).toThrow("Missing value for --model.");
 	});
 
 	it("rejects invalid github repo input format", () => {
