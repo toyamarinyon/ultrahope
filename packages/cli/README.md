@@ -41,32 +41,32 @@ git diff --staged | ultrahope translate --target vcs-commit-message --models mis
 
 ### Guide context for commit/message generation
 
-`git ultrahope commit` と `ultrahope jj describe` では `--guide <text>` を使って、差分だけでは分からない生成意図を補足できます。
+In `git ultrahope commit` and `ultrahope jj describe`, you can use `--guide <text>` to provide intent that is not obvious from the diff alone.
 
 ```bash
-# git commit の生成補足
+# Additional guidance for git commit generation
 git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 
-# jj describe の生成補足
+# Additional guidance for jj describe generation
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 ```
 
-`git ultrahope commit`、`ultrahope jj describe`、`ultrahope translate --target vcs-commit-message` のインタラクティブモードでは、`r` で再生成、`R`（Shift+r）で追加条件を入れて再生成できます。
+In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `r` to reroll and `R` (Shift+r) to reroll with additional instructions.
 
-#### guide と再生成条件の違い
+#### Difference Between `guide` And Refine Instructions
 
 - `--guide`:
-  - 差分外の意図補助（例: 仕様番号、背景、変更意図）
+  - Supplemental intent outside the diff (for example: ticket ID, background, change intent)
 - `R refine`:
-  - 生成結果を見直して、次の再生成条件をインライン入力
-  - 例: 「もう少しフォーマルに」「もう少し短く」
-  - `Enter` だけで空入力にすると直前の条件をクリア
-  - 途中で再指定した場合は最後の内容で上書き
-- `R` は「追加条件付き再生成（refine）」です
-- 送信時は内部で `guide` に統合して API に渡します。
-  - `--guide` のみ指定: `guide = "<guide>"`
-  - `R refine` のみ指定: `guide = "<refine>"`
-  - 両方指定: `guide = "<guide>\n\nRefinement: <refine>"`
+  - Review generated results and enter inline instructions for the next reroll
+  - Examples: "more formal", "shorter"
+  - Press `Enter` with empty input to clear the previous refine instructions
+  - If specified multiple times, the last one overwrites previous values
+- `R` means reroll with additional instructions (`refine`)
+- At request time, refine instructions are merged into `guide` and sent to the API:
+  - `--guide` only: `guide = "<guide>"`
+  - `R refine` only: `guide = "<refine>"`
+  - both: `guide = "<guide>\n\nRefinement: <refine>"`
 
 #### Targets
 
