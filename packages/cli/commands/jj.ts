@@ -292,7 +292,7 @@ async function runInteractiveDescribe(
 			continue;
 		}
 
-		if (result.action === "rerollWithGuide" && result.guide !== undefined) {
+		if (result.action === "refine" && result.guide !== undefined) {
 			const nextGuideHint = result.guide.trim() || undefined;
 			onGuideHintChange(nextGuideHint);
 			continue;

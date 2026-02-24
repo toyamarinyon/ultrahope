@@ -575,7 +575,7 @@ async function selectFromSlots(
 			});
 		};
 
-		const rerollWithGuide = async () => {
+		const refineSelection = async () => {
 			if (!hasReadySlot(slots)) return;
 			ttyInput.off("keypress", handleKeypress);
 			renderer.flush();
@@ -612,7 +612,7 @@ async function selectFromSlots(
 			renderer.reset();
 			if (guide === null) return;
 			cancelGeneration();
-			resolveOnce({ action: "rerollWithGuide", guide });
+			resolveOnce({ action: "refine", guide });
 			cleanup();
 		};
 
@@ -645,7 +645,7 @@ async function selectFromSlots(
 				key.name === "r" &&
 				(key.shift || key.name === "R" || key.sequence === "R")
 			) {
-				await rerollWithGuide();
+				await refineSelection();
 				return;
 			}
 

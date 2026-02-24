@@ -197,7 +197,7 @@ async function handleVcsCommitMessage(
 				process.exit(1);
 			}
 
-			if (result.action === "rerollWithGuide" && result.guide !== undefined) {
+			if (result.action === "refine" && result.guide !== undefined) {
 				guideHint = result.guide.trim() || undefined;
 				continue;
 			}

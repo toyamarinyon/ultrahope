@@ -255,7 +255,7 @@ export async function commit(args: string[]) {
 				continue;
 			}
 
-			if (result.action === "rerollWithGuide" && result.guide !== undefined) {
+			if (result.action === "refine" && result.guide !== undefined) {
 				guideHint = result.guide.trim() || undefined;
 				continue;
 			}
