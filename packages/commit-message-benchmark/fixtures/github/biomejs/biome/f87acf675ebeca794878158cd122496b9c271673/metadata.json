@@ -1,0 +1,50 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "biomejs",
+	"repo": "biome",
+	"sha": "f87acf675ebeca794878158cd122496b9c271673",
+	"htmlUrl": "https://github.com/biomejs/biome/commit/f87acf675ebeca794878158cd122496b9c271673",
+	"apiUrl": "https://api.github.com/repos/biomejs/biome/commits/f87acf675ebeca794878158cd122496b9c271673",
+	"diffUrl": "https://github.com/biomejs/biome/commit/f87acf675ebeca794878158cd122496b9c271673.diff",
+	"message": "feat: graphql as valid graphql tag (#9163)\n\nCo-authored-by: Naoki Ikeguchi <me@s6n.jp>\nCo-authored-by: Maikel van Dort <maikel.van.dort@gmail.com>",
+	"authorName": "Ben",
+	"authorEmail": "ben399399@gmail.com",
+	"authoredAt": "2026-02-23T11:04:01Z",
+	"committerName": "GitHub",
+	"committerEmail": "noreply@github.com",
+	"committedAt": "2026-02-23T11:04:01Z",
+	"parents": ["feb026e23860c6ca5095d8c1a2c6591bcca8f2cb"],
+	"stats": {
+		"additions": 41,
+		"deletions": 3,
+		"total": 44
+	},
+	"files": [
+		{
+			"filename": ".changeset/two-signs-try.md",
+			"status": "added",
+			"additions": 20,
+			"deletions": 0,
+			"changes": 20,
+			"patch": "@@ -0,0 +1,20 @@\n+---\n+\"@biomejs/biome\": patch\n+---\n+\n+Added `graphql` to valid embedded graphql template tags inside JavaScript files, when the feature `javascript.experimentalEmbeddedSnippetsEnabled` is enabled. This allows proper support for graphql tags used in RelayJS.\n+\n+Now, code snippets like the following are correctly formatted and limited:\n+\n+```js\n+import { graphql } from \"react-relay\";\n+\n+const query = graphql`\n+  query {\n+    user(id: 1) {\n+      id\n+      name\n+    }\n+  }\n+`;\n+```"
+		},
+		{
+			"filename": "crates/biome_service/src/file_handlers/javascript.rs",
+			"status": "modified",
+			"additions": 4,
+			"deletions": 2,
+			"changes": 6,
+			"patch": "@@ -694,9 +694,11 @@ fn is_styled_tag(tag: Option<&AnyJsExpression>) -> bool {\n }\n \n fn is_graphql_tag(tag: Option<&AnyJsExpression>, template: &JsTemplateExpression) -> bool {\n-    // gql``\n+    // gql`` or graphql``\n     if let Some(AnyJsExpression::JsIdentifierExpression(ident)) = tag\n-        && ident.name().is_ok_and(|name| name.has_name(\"gql\"))\n+        && ident\n+            .name()\n+            .is_ok_and(|name| name.has_name(\"gql\") || name.has_name(\"graphql\"))\n     {\n         return true;\n     }"
+		},
+		{
+			"filename": "crates/biome_service/src/workspace/server.tests.rs",
+			"status": "modified",
+			"additions": 17,
+			"deletions": 1,
+			"changes": 18,
+			"patch": "@@ -570,7 +570,15 @@ const Bar = graphql(`\n        id: $peopleId){\n        totalCount\n        }}\n-`);\"#;\n+`);\n+\n+const Baz = graphql`\n+  query PeopleCount {\n+  people(\n+       id: $peopleId){\n+       totalCount\n+       }}\n+`;\"#;\n \n     let fs = MemoryFileSystem::default();\n     fs.insert(Utf8PathBuf::from(FILE_PATH), FILE_CONTENT);\n@@ -628,5 +636,13 @@ const Bar = graphql(`\n     \t\t}\n     \t}\n     `);\n+\n+    const Baz = graphql`\n+    \tquery PeopleCount {\n+    \t\tpeople(id: $peopleId) {\n+    \t\t\ttotalCount\n+    \t\t}\n+    \t}\n+    `;\n     \");\n }"
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:17.110Z"
+}

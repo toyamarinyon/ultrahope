@@ -1,0 +1,209 @@
+diff --git a/.changeset/busy-numbers-reply.md b/.changeset/busy-numbers-reply.md
+new file mode 100644
+index 000000000000..326f6cd0f2c8
+--- /dev/null
++++ b/.changeset/busy-numbers-reply.md
+@@ -0,0 +1,25 @@
++---
++"@biomejs/biome": patch
++---
++
++Fixed [#9172](https://github.com/biomejs/biome/issues/9172) and [#9168](https://github.com/biomejs/biome/issues/9168):
++Biome now considers more constructs as valid test assertions.
++
++Previously, [`assert`](https://vitest.dev/api/assert.html), [`expectTypeOf`](https://vitest.dev/api/expect-typeof.html) and [`assertType`](https://vitest.dev/api/assert-type.html)
++were not recognized as valid assertions by Biome's linting rules, producing false positives in [`lint/nursery/useExpect`](https://biomejs.dev/linter/rules/use-expect) and other similar rules.
++
++Now, these rules will no longer produce errors in test cases that used these constructs instead of `expect`:
++```ts
++import { expectTypeOf, assert, assertType } from 'vitest';
++
++const myStr = "Hello from vitest!";
++it('should be a string', () => {
++  expectTypeOf(myStr).toBeString();
++});
++test("should still be a string", () => {
++  assertType<string>(myStr);
++});
++it.todo("should still still be a string", () => {
++  assert(typeof myStr === "string");
++});
++```
+diff --git a/crates/biome_js_analyze/src/frameworks/playwright.rs b/crates/biome_js_analyze/src/frameworks/playwright.rs
+index fd1f25fef13c..a7355fe086c3 100644
+--- a/crates/biome_js_analyze/src/frameworks/playwright.rs
++++ b/crates/biome_js_analyze/src/frameworks/playwright.rs
+@@ -206,7 +206,13 @@ fn is_expect_expression(expr: &AnyJsExpression) -> bool {
+             if let Ok(name) = id.name()
+                 && let Ok(token) = name.value_token()
+             {
+-                return token.text_trimmed() == "expect";
++                let text = token.text_trimmed();
++                return text == "expect"
++                // support chai-style `assert` syntax from Vitest
++                || text == "assert"
++                // Include `expectTypeOf`/`assertType` for type assertions from `expect-type`
++                || text == "expectTypeOf"
++                || text == "assertType";
+             }
+             false
+         }
+@@ -215,6 +221,8 @@ fn is_expect_expression(expr: &AnyJsExpression) -> bool {
+             if let Ok(object) = member.object() {
+                 // Recursively check the object - this handles chained member expressions
+                 // like expect(page).not where the object is itself a member expression
++                // NB: This is overly permissive for certain Vitest constructs (ex: `expect.stringContaining()`)
++                // that do not assert anything in and of themselves (see issue #9174)
+                 return is_expect_expression(&object);
+             }
+             false
+diff --git a/crates/biome_js_analyze/src/lint/nursery/use_expect.rs b/crates/biome_js_analyze/src/lint/nursery/use_expect.rs
+index 0c3987ab8929..82f6f1d4fee2 100644
+--- a/crates/biome_js_analyze/src/lint/nursery/use_expect.rs
++++ b/crates/biome_js_analyze/src/lint/nursery/use_expect.rs
+@@ -9,11 +9,17 @@ use biome_rule_options::use_expect::UseExpectOptions;
+ use crate::frameworks::playwright::{contains_expect_call, get_test_callback, is_test_call};
+ 
+ declare_lint_rule! {
+-    /// Ensure that test functions contain at least one `expect()` assertion.
++    /// Ensure that test functions contain at least one `expect()` or similar assertion.
+     ///
+     /// Tests without assertions may pass even when behavior is broken, leading to
+     /// false confidence in the test suite. This rule ensures that every test
+-    /// validates some expected behavior using `expect()`.
++    /// validates some expected behavior using `expect()` or an allowed variant thereof.
++    /// 
++    /// ### Allowed `expect` variants
++    /// 
++    /// - [`assert`](https://www.chaijs.com/api/assert/)
++    /// - [`expectTypeOf`](https://github.com/mmkal/expect-type)
++    /// - [`assertType`](https://vitest.dev/api/assert-type)
+     ///
+     /// ## Examples
+     ///
+@@ -36,11 +42,30 @@ declare_lint_rule! {
+     /// ```
+     ///
+     /// ```js
+-    /// test("soft assertion", async ({ page }) => {
++    /// it("soft assertion", async ({ page }) => {
+     ///     await page.goto("/");
+     ///     await expect.soft(page.locator("h1")).toBeVisible();
+     /// });
+     /// ```
++    /// 
++    /// Variant assertions are allowed:
++    /// ```js
++    /// it("returns bar when passed foo", () => {
++    ///   assert(myFunc("foo") === "bar", "didn't return bar");
++    /// });
++    /// ```
++    ///
++    /// ```ts
++    /// it("should allow passing 'foo' as an argument", () => {
++    ///   expectTypeOf(myFunc).toBeCallableWith("foo");
++    /// });
++    /// ```
++    /// ```ts
++    /// it("should have proper type", () => {
++    ///   assertType<(n: string) => string>(myFunc);
++    /// });
++    /// ```
++    /// (This replicates the rule's behavior in eslint-plugin-vitest with `typecheck` set to `true`.)
+     ///
+     pub UseExpect {
+         version: "2.4.2",
+diff --git a/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts b/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts
+new file mode 100644
+index 000000000000..2d4c6418eeae
+--- /dev/null
++++ b/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts
+@@ -0,0 +1,24 @@
++/* should not generate diagnostics */
++
++it("should typecheck correctly", () => {
++  expectTypeOf("foo").not.toEqualTypeOf("bar");
++});
++it("should be a string", () => {
++  assertType<string>("foo");
++});
++
++describe("math", () => {
++  test("1+1", () => {
++    assert(1 + 1 === 2);
++  });
++});
++
++type MyType<T> = (arg: T) => void;
++
++describe("MyType", () => {
++  it("should be contravariant", () => {
++    // "foo" extends string => T<string> extends T<"foo">
++    expectTypeOf("foo").toExtend<string>();
++    expectTypeOf<MyType<string>>().toExtend<MyType<"foo">>();
++  });
++});
+diff --git a/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts.snap b/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts.snap
+new file mode 100644
+index 000000000000..f88f5610a206
+--- /dev/null
++++ b/crates/biome_js_analyze/tests/specs/nursery/useExpect/valid/vitest-expect-variants.ts.snap
+@@ -0,0 +1,32 @@
++---
++source: crates/biome_js_analyze/tests/spec_tests.rs
++expression: vitest-expect-variants.ts
++---
++# Input
++```ts
++/* should not generate diagnostics */
++
++it("should typecheck correctly", () => {
++  expectTypeOf("foo").not.toEqualTypeOf("bar");
++});
++it("should be a string", () => {
++  assertType<string>("foo");
++});
++
++describe("math", () => {
++  test("1+1", () => {
++    assert(1 + 1 === 2);
++  });
++});
++
++type MyType<T> = (arg: T) => void;
++
++describe("MyType", () => {
++  it("should be contravariant", () => {
++    // "foo" extends string => T<string> extends T<"foo">
++    expectTypeOf("foo").toExtend<string>();
++    expectTypeOf<MyType<string>>().toExtend<MyType<"foo">>();
++  });
++});
++
++```
+diff --git a/packages/@biomejs/backend-jsonrpc/src/workspace.ts b/packages/@biomejs/backend-jsonrpc/src/workspace.ts
+index 592bae604c52..e970138bb0bc 100644
+--- a/packages/@biomejs/backend-jsonrpc/src/workspace.ts
++++ b/packages/@biomejs/backend-jsonrpc/src/workspace.ts
+@@ -2360,7 +2360,7 @@ See https://biomejs.dev/linter/rules/use-exhaustive-switch-cases
+ 	 */
+ 	useExhaustiveSwitchCases?: UseExhaustiveSwitchCasesConfiguration;
+ 	/**
+-	* Ensure that test functions contain at least one expect() assertion.
++	* Ensure that test functions contain at least one expect() or similar assertion.
+ See https://biomejs.dev/linter/rules/use-expect 
+ 	 */
+ 	useExpect?: UseExpectConfiguration;
+diff --git a/packages/@biomejs/biome/configuration_schema.json b/packages/@biomejs/biome/configuration_schema.json
+index 513779b870c2..4defb9fe5d62 100644
+--- a/packages/@biomejs/biome/configuration_schema.json
++++ b/packages/@biomejs/biome/configuration_schema.json
+@@ -6198,7 +6198,7 @@
+ 					]
+ 				},
+ 				"useExpect": {
+-					"description": "Ensure that test functions contain at least one expect() assertion.\nSee https://biomejs.dev/linter/rules/use-expect",
++					"description": "Ensure that test functions contain at least one expect() or similar assertion.\nSee https://biomejs.dev/linter/rules/use-expect",
+ 					"anyOf": [
+ 						{ "$ref": "#/$defs/UseExpectConfiguration" },
+ 						{ "type": "null" }

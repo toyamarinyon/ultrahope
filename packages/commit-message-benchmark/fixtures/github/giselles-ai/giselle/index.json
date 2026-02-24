@@ -1,0 +1,10 @@
+[
+	{
+		"id": "giselle-cc560173-refactor-output-format-into-out",
+		"title": "Refactor output format into OutputConfiguration discriminated union",
+		"sourceRepo": "giselles-ai/giselle",
+		"sourceCommitUrl": "https://github.com/giselles-ai/giselle/commit/cc560173bd5754a3d8757fc5447e59f8dc91d309",
+		"diffFile": "cc560173bd5754a3d8757fc5447e59f8dc91d309/diff.diff",
+		"metadataFile": "cc560173bd5754a3d8757fc5447e59f8dc91d309/metadata.json"
+	}
+]

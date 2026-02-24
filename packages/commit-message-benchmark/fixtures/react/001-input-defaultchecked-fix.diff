@@ -1,0 +1,21 @@
+diff --git a/packages/react-dom-bindings/src/client/ReactDOMInput.js b/packages/react-dom-bindings/src/client/ReactDOMInput.js
+index 34f1a11..4fa9bd1 100644
+--- a/packages/react-dom-bindings/src/client/ReactDOMInput.js
++++ b/packages/react-dom-bindings/src/client/ReactDOMInput.js
+@@ -172,9 +172,13 @@ export function updateInput(
+   if (props.checked != null) {
+     node.checked = props.checked;
+   }
+-
+-  if (props.defaultChecked != null) {
+-    node.defaultChecked = !!props.defaultChecked;
++
++  if (
++    props.checked == null &&
++    props.defaultChecked != null &&
++    node.defaultChecked !== !!props.defaultChecked
++  ) {
++    node.defaultChecked = !!props.defaultChecked;
+   }
+ 
+   if (props.name != null) {

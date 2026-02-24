@@ -1,0 +1,22 @@
+diff --git a/packages/shared/objectIs.js b/packages/shared/objectIs.js
+index 5a29737..9f2d4d0 100644
+--- a/packages/shared/objectIs.js
++++ b/packages/shared/objectIs.js
+@@ -9,12 +9,12 @@
+  * inlined Object.is polyfill to avoid requiring consumers ship their own
+  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+  */
+-function is(x: mixed, y: mixed) {
++function objectIs(x: mixed, y: mixed) {
+   return (
+     (x === y && (x !== 0 || 1 / x === 1 / y)) ||
+     (x !== x && y !== y) // eslint-disable-line no-self-compare
+   );
+ }
+ 
+-const objectIs: (x: mixed, y: mixed) => boolean =
++const sharedObjectIs: (x: mixed, y: mixed) => boolean =
+   typeof Object.is === 'function' ? Object.is : is;
+ 
+-export default objectIs;
++export default sharedObjectIs;

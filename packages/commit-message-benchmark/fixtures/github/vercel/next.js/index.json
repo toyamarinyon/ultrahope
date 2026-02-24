@@ -1,0 +1,10 @@
+[
+	{
+		"id": "next-js-aa6d7c22-devtools-omit-empty-looking-err",
+		"title": "[devtools] Omit empty looking error messages (#90256)",
+		"sourceRepo": "vercel/next.js",
+		"sourceCommitUrl": "https://github.com/vercel/next.js/commit/aa6d7c2271092417de894c2d492ea01253b8117f",
+		"diffFile": "aa6d7c2271092417de894c2d492ea01253b8117f/diff.diff",
+		"metadataFile": "aa6d7c2271092417de894c2d492ea01253b8117f/metadata.json"
+	}
+]

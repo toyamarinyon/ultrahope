@@ -1,0 +1,10 @@
+[
+	{
+		"id": "zed-9304e02b-agent-allow-the-agent-to-reprompt-a",
+		"title": "agent: Allow the agent to reprompt an existing subagent (#49737)",
+		"sourceRepo": "zed-industries/zed",
+		"sourceCommitUrl": "https://github.com/zed-industries/zed/commit/9304e02b9a2e72169d9082f56fce2c632a02a8eb",
+		"diffFile": "9304e02b9a2e72169d9082f56fce2c632a02a8eb/diff.diff",
+		"metadataFile": "9304e02b9a2e72169d9082f56fce2c632a02a8eb/metadata.json"
+	}
+]

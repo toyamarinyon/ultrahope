@@ -1,0 +1,10 @@
+[
+	{
+		"id": "openclaw-5a475259-fix-telegram-suppress-reasonin",
+		"title": "fix(telegram): suppress reasoning-only leaks when reasoning is off",
+		"sourceRepo": "openclaw/openclaw",
+		"sourceCommitUrl": "https://github.com/openclaw/openclaw/commit/5a475259bb4af18da06aab0eb8ceb86b50caf5f2",
+		"diffFile": "5a475259bb4af18da06aab0eb8ceb86b50caf5f2/diff.diff",
+		"metadataFile": "5a475259bb4af18da06aab0eb8ceb86b50caf5f2/metadata.json"
+	}
+]

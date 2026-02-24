@@ -1,0 +1,18 @@
+[
+	{
+		"id": "rails-12e24eaf-introduce-in-this-week-in-this-mo",
+		"title": "Introduce `in_this_week?`, `in_this_month?`, and `in_this_year?` to Date/Time (#55770)",
+		"sourceRepo": "rails/rails",
+		"sourceCommitUrl": "https://github.com/rails/rails/commit/12e24eaf2f0a9613e015653f013dd131317d9bf5",
+		"diffFile": "12e24eaf2f0a9613e015653f013dd131317d9bf5/diff.diff",
+		"metadataFile": "12e24eaf2f0a9613e015653f013dd131317d9bf5/metadata.json"
+	},
+	{
+		"id": "rails-752cc391-optimize-calculating-remote-ip-ad",
+		"title": "Optimize calculating remote IP address",
+		"sourceRepo": "rails/rails",
+		"sourceCommitUrl": "https://github.com/rails/rails/commit/752cc3915d8830e09e236308bff8da1282ed4c9c",
+		"diffFile": "752cc3915d8830e09e236308bff8da1282ed4c9c/diff.diff",
+		"metadataFile": "752cc3915d8830e09e236308bff8da1282ed4c9c/metadata.json"
+	}
+]

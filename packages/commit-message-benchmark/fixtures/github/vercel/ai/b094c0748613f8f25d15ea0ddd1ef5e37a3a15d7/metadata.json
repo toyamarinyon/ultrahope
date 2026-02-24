@@ -1,0 +1,58 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "vercel",
+	"repo": "ai",
+	"sha": "b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7",
+	"htmlUrl": "https://github.com/vercel/ai/commit/b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7",
+	"apiUrl": "https://api.github.com/repos/vercel/ai/commits/b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7",
+	"diffUrl": "https://github.com/vercel/ai/commit/b094c0748613f8f25d15ea0ddd1ef5e37a3a15d7.diff",
+	"message": "fix(anthropic): allow null content in compaction_delta streaming schema (#12471)\n\n## Background\n\nPR #12384 introduced support for Anthropic's compaction feature, but the\nstreaming Zod schema for compaction_delta events requires content to be\na non-nullable string. Anthropic's API sends compaction_delta events\nwith content: null (e.g. the initial frame before the compaction summary\ntext), which causes Zod validation to fail at runtime.\n\n## Summary\n\nChanged content: z.string() to content: z.string().nullish() in the\ncompaction_delta streaming schema in\npackages/anthropic/src/anthropic-messages-api.ts. This matches the\nexisting content_block_start schema for compaction, which already uses\n.nullish().\n\n## Manual Verification\n\nReproduction requires streaming a conversation that exceeds the\ncompaction trigger threshold (50k+ tokens) with @ai-sdk/anthropic, which\ntriggers a compaction_delta event with content: null. This is not\npractical to verify without an API key and a large conversation, but the\nadded regression test simulates this exact scenario by streaming a\ncompaction_delta chunk with content: null.\n\n## Checklist\n\n- Tests have been added / updated (for bug fixes / features)\n- Documentation has been added / updated (for bug fixes / features)\n- A patch changeset for relevant packages has been added (for bug fixes\n/ features - run pnpm changeset in the project root)\n- I have reviewed this pull request (self-review)\n\n## Related Issues\n\nFixes #12470\n\n---------\n\nCo-authored-by: Embedder <215220128+embedder-dev@users.noreply.github.com>\nCo-authored-by: Aayush Kapoor <83492835+aayush-kapoor@users.noreply.github.com>",
+	"authorName": "leo",
+	"authorEmail": "78882874+leog25@users.noreply.github.com",
+	"authoredAt": "2026-02-20T00:44:33Z",
+	"committerName": "GitHub",
+	"committerEmail": "noreply@github.com",
+	"committedAt": "2026-02-20T00:44:33Z",
+	"parents": ["0c531f9eb404444677fa5076840f37edf2d1c86d"],
+	"stats": {
+		"additions": 47,
+		"deletions": 6,
+		"total": 53
+	},
+	"files": [
+		{
+			"filename": ".changeset/great-grapes-dress.md",
+			"status": "added",
+			"additions": 5,
+			"deletions": 0,
+			"changes": 5,
+			"patch": "@@ -0,0 +1,5 @@\n+---\n+'@ai-sdk/anthropic': patch\n+---\n+\n+fix compaction_delta streaming schema to allow null content"
+		},
+		{
+			"filename": "packages/anthropic/src/anthropic-messages-api.ts",
+			"status": "modified",
+			"additions": 1,
+			"deletions": 1,
+			"changes": 2,
+			"patch": "@@ -1128,7 +1128,7 @@ export const anthropicMessagesChunkSchema = lazySchema(() =>\n           }),\n           z.object({\n             type: z.literal('compaction_delta'),\n-            content: z.string(),\n+            content: z.string().nullish(),\n           }),\n           z.object({\n             type: z.literal('citations_delta'),"
+		},
+		{
+			"filename": "packages/anthropic/src/anthropic-messages-language-model.test.ts",
+			"status": "modified",
+			"additions": 34,
+			"deletions": 0,
+			"changes": 34,
+			"patch": "@@ -5679,6 +5679,40 @@ describe('AnthropicMessagesLanguageModel', () => {\n       });\n     });\n \n+    it('should handle compaction_delta with null content', async () => {\n+      server.urls['https://api.anthropic.com/v1/messages'].response = {\n+        type: 'stream-chunks',\n+        chunks: [\n+          `data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":100,\"output_tokens\":0},\"content\":[],\"stop_reason\":null}}\\n\\n`,\n+          `data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"compaction\",\"content\":null}}\\n\\n`,\n+          `data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":null}}\\n\\n`,\n+          `data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"compaction_delta\",\"content\":\"Summary of conversation.\"}}\\n\\n`,\n+          `data: {\"type\":\"content_block_stop\",\"index\":0}\\n\\n`,\n+          `data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":10}}\\n\\n`,\n+          `data: {\"type\":\"message_stop\"}\\n\\n`,\n+        ],\n+      };\n+\n+      const { stream } = await model.doStream({\n+        prompt: TEST_PROMPT,\n+      });\n+\n+      const result = await convertReadableStreamToArray(stream);\n+\n+      // No parsing errors should occur (schema must accept null content)\n+      const errors = result.filter(part => part.type === 'error');\n+      expect(errors).toHaveLength(0);\n+\n+      const compactionDeltas = result.filter(\n+        part => part.type === 'text-delta' && part.id === '0',\n+      );\n+      // null content delta should be skipped, only the string delta comes through\n+      expect(compactionDeltas).toHaveLength(1);\n+      expect((compactionDeltas[0] as { delta: string }).delta).toBe(\n+        'Summary of conversation.',\n+      );\n+    });\n+\n     it('should stream tool deltas', async () => {\n       server.urls['https://api.anthropic.com/v1/messages'].response = {\n         type: 'stream-chunks',"
+		},
+		{
+			"filename": "packages/anthropic/src/anthropic-messages-language-model.ts",
+			"status": "modified",
+			"additions": 7,
+			"deletions": 5,
+			"changes": 12,
+			"patch": "@@ -1840,11 +1840,13 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV3 {\n                 }\n \n                 case 'compaction_delta': {\n-                  controller.enqueue({\n-                    type: 'text-delta',\n-                    id: String(value.index),\n-                    delta: value.delta.content,\n-                  });\n+                  if (value.delta.content != null) {\n+                    controller.enqueue({\n+                      type: 'text-delta',\n+                      id: String(value.index),\n+                      delta: value.delta.content,\n+                    });\n+                  }\n \n                   return;\n                 }"
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:16.192Z"
+}

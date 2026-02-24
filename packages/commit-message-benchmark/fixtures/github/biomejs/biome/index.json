@@ -1,0 +1,18 @@
+[
+	{
+		"id": "biome-101b3bb2-fix-lint-consider-more-constructs",
+		"title": "fix(lint): consider more constructs as valid test assertions (#9178)",
+		"sourceRepo": "biomejs/biome",
+		"sourceCommitUrl": "https://github.com/biomejs/biome/commit/101b3bb2658dd2fb7ce562f82b784fd5d068df62",
+		"diffFile": "101b3bb2658dd2fb7ce562f82b784fd5d068df62/diff.diff",
+		"metadataFile": "101b3bb2658dd2fb7ce562f82b784fd5d068df62/metadata.json"
+	},
+	{
+		"id": "biome-f87acf67-feat-graphql-as-valid-graphql-tag",
+		"title": "feat: graphql as valid graphql tag (#9163)",
+		"sourceRepo": "biomejs/biome",
+		"sourceCommitUrl": "https://github.com/biomejs/biome/commit/f87acf675ebeca794878158cd122496b9c271673",
+		"diffFile": "f87acf675ebeca794878158cd122496b9c271673/diff.diff",
+		"metadataFile": "f87acf675ebeca794878158cd122496b9c271673/metadata.json"
+	}
+]

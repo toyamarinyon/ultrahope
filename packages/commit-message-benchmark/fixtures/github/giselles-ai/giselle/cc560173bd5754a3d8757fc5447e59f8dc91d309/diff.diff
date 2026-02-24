@@ -1,0 +1,366 @@
+diff --git a/.continuity/20260219-200700-feat__add-structured-output-schema.md b/.continuity/20260219-200700-feat__add-structured-output-schema.md
+new file mode 100644
+index 0000000000..7e53919c40
+--- /dev/null
++++ b/.continuity/20260219-200700-feat__add-structured-output-schema.md
+@@ -0,0 +1,60 @@
++# Continuity ledger (per-branch)
++
++## Human intent (must not be overwritten)
++
++- Add structured output schema support to the protocol layer
++- Use discriminated union pattern to make illegal states (e.g., `outputFormat: "text"` with a `structuredOutputSchema`) unrepresentable
++- Follow existing codebase patterns (nested discriminated union as field value, not flat intersection)
++
++## Goal (incl. success criteria)
++
++- `OutputConfiguration` discriminated union in `structured-output.ts` ensures `structuredOutputSchema` only exists when `outputFormat: "json"`
++- Field name `outputConfiguration` (not `outputFormat`) avoids `x.x` redundancy, matching existing patterns like `auth.type`, `state.status`
++- All consumers updated, format/build/types/tidy/tests pass
++
++## Constraints/Assumptions
++
++- Follow existing discriminated union pattern: nested as field value, field name differs from discriminator key
++- Keep `OutputConfiguration` in `structured-output.ts` (root-level shared schema, consistent with `connection.ts` pattern)
++
++## Key decisions
++
++- Renamed `OutputFormat` → `OutputConfiguration` (schema + type export)
++- Field name: `outputConfiguration` (avoids `outputFormat.outputFormat` redundancy)
++- Nested approach (not flat `z.intersection`/`extend`), consistent with all other discriminated unions in the codebase
++
++## State
++
++- All changes complete, all quality checks pass
++
++## Done
++
++- Defined `OutputConfiguration` discriminated union in `structured-output.ts`
++- Updated `text-generation.ts` and `content-generation.ts` to use `outputConfiguration: OutputConfiguration`
++- Updated `node-conversion.ts` to pass `outputConfiguration` as a single object (no manual spread)
++- Updated `node-factories.ts` create functions
++- Updated all test fixtures and assertions
++- format, build-sdk, check-types, tidy, test all pass
++
++## Now
++
++- Complete
++
++## Next
++
++- Commit changes if requested
++
++## Open questions (UNCONFIRMED if needed)
++
++- None
++
++## Working set (files/ids/commands)
++
++- `packages/protocol/src/structured-output.ts`
++- `packages/protocol/src/node/operations/text-generation.ts`
++- `packages/protocol/src/node/operations/content-generation.ts`
++- `packages/node-registry/src/node-conversion.ts`
++- `packages/node-registry/src/node-factories.ts`
++- `packages/node-registry/src/node-conversion.test.ts`
++- `packages/node-registry/src/__fixtures__/node-conversion/nodes.ts`
++- `packages/react/src/workspace/utils/is-supported-connection.test.ts`
+diff --git a/packages/node-registry/src/__fixtures__/node-conversion/nodes.ts b/packages/node-registry/src/__fixtures__/node-conversion/nodes.ts
+index a04f49998d..fd5e818d46 100644
+--- a/packages/node-registry/src/__fixtures__/node-conversion/nodes.ts
++++ b/packages/node-registry/src/__fixtures__/node-conversion/nodes.ts
+@@ -32,7 +32,7 @@ export const openAI_1 = {
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"京都市右京区太秦、太映通り商店街に「アララ」という洋食店はありますか？Webを検索し"}]},{"type":"paragraph","content":[{"type":"text","text":"Yes/Noのみを出力してください。"}]}]}',
+ 		tools: { openaiWebSearch: { searchContextSize: "medium" } },
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -70,7 +70,7 @@ export const openAIWithGitHubTool = {
+ 				auth: { type: "secret", secretId: "scrt-TESTTESTTESTTEST" },
+ 			},
+ 		},
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -102,7 +102,7 @@ export const openAIWithoutTools = {
+ 		},
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"hello"}]}]}',
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -134,7 +134,7 @@ export const openAIWithEmptyTools = {
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Please tell me React.js"}]}]}',
+ 		tools: {},
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -163,7 +163,7 @@ export const anthropicClaudeSonnet = {
+ 		},
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","marks":[{"type":"bold"}],"text":"前提条件"},{"type":"text","text":"："},{"type":"text","marks":[{"type":"bold"}],"text":"Nは100〜250の整数"},{"type":"text","text":"。"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"(a) "},{"type":"text","marks":[{"type":"bold"}],"text":"9の倍数"},{"type":"text","text":"。"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"(b) "},{"type":"text","marks":[{"type":"bold"}],"text":"5の倍数"},{"type":"text","text":"。"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"(c) "},{"type":"text","marks":[{"type":"bold"}],"text":"7進表記で回文（3桁）"},{"type":"text","text":"、すなわち "},{"type":"text","marks":[{"type":"bold"}],"text":"N = 50a + 7b"},{"type":"text","text":"（a∈{2,3,4}, b∈{0..6}）。"}]}]}]},{"type":"paragraph","content":[{"type":"text","marks":[{"type":"bold"}],"text":"問"},{"type":"text","text":"：Nを求めよ。"}]},{"type":"paragraph"},{"type":"paragraph","content":[{"type":"text","text":"You must outputs number only"}]}]}',
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -192,7 +192,7 @@ export const anthropicClaudeOpus45 = {
+ 		},
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Solve x^2 + 4x + 4 = 0."}]}]}',
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+ 
+@@ -227,6 +227,6 @@ export const googleGemini = {
+ 		},
+ 		prompt:
+ 			'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"京都市右京区太秦、太映通り商店街に「アララ」という洋食店はありますか？Webを検索し"}]},{"type":"paragraph","content":[{"type":"text","text":"Yes/Noのみを出力してください。"}]}]}',
+-		outputFormat: "text",
++		outputConfiguration: { outputFormat: "text" },
+ 	},
+ };
+diff --git a/packages/node-registry/src/node-conversion.test.ts b/packages/node-registry/src/node-conversion.test.ts
+index 3eeac24d16..cd34401922 100644
+--- a/packages/node-registry/src/node-conversion.test.ts
++++ b/packages/node-registry/src/node-conversion.test.ts
+@@ -43,7 +43,7 @@ function createOpenAITextNode(
+ 				},
+ 			},
+ 			prompt: "test",
+-			outputFormat: "text",
++			outputConfiguration: { outputFormat: "text" },
+ 		},
+ 	};
+ }
+@@ -357,8 +357,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 			expect(convertedBack.content.tools?.openaiWebSearch).toBeDefined();
+ 		});
+@@ -377,8 +377,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 			expect(convertedBack.content.tools?.github).toBeDefined();
+ 			expect(convertedBack.content.tools?.github?.auth.type).toBe("secret");
+@@ -406,8 +406,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 			expect(convertedBack.content.tools).toBeUndefined();
+ 		});
+@@ -426,8 +426,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 		});
+ 
+@@ -445,8 +445,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 		});
+ 
+@@ -464,8 +464,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 		});
+ 
+@@ -485,8 +485,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 		});
+ 
+@@ -505,8 +505,8 @@ describe("node-conversion", () => {
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe(originalNode.content.llm.id);
+ 			expect(convertedBack.content.prompt).toBe(originalNode.content.prompt);
+-			expect(convertedBack.content.outputFormat).toBe(
+-				originalNode.content.outputFormat,
++			expect(convertedBack.content.outputConfiguration).toEqual(
++				originalNode.content.outputConfiguration,
+ 			);
+ 			expect(convertedBack.content.llm?.id).toBe("gpt-5.1-thinking");
+ 		});
+diff --git a/packages/node-registry/src/node-conversion.ts b/packages/node-registry/src/node-conversion.ts
+index 9fc432f403..b59ea0169a 100644
+--- a/packages/node-registry/src/node-conversion.ts
++++ b/packages/node-registry/src/node-conversion.ts
+@@ -200,8 +200,7 @@ export function convertTextGenerationToContentGeneration(
+ 			languageModel,
+ 			tools,
+ 			prompt: textGenerationContent.prompt ?? "",
+-			outputFormat: textGenerationContent.outputFormat,
+-			structuredOutputSchema: textGenerationContent.structuredOutputSchema,
++			outputConfiguration: textGenerationContent.outputConfiguration,
+ 		},
+ 	};
+ }
+@@ -342,8 +341,7 @@ export function convertContentGenerationToTextGeneration(
+ 			llm,
+ 			prompt: contentGenerationContent.prompt,
+ 			tools: toolsToInclude,
+-			outputFormat: contentGenerationContent.outputFormat,
+-			structuredOutputSchema: contentGenerationContent.structuredOutputSchema,
++			outputConfiguration: contentGenerationContent.outputConfiguration,
+ 		},
+ 	};
+ }
+diff --git a/packages/node-registry/src/node-factories.ts b/packages/node-registry/src/node-factories.ts
+index 8476d6e046..d1fbe8a719 100644
+--- a/packages/node-registry/src/node-factories.ts
++++ b/packages/node-registry/src/node-factories.ts
+@@ -194,7 +194,7 @@ const textGenerationFactoryImpl = {
+ 			content: {
+ 				type: "textGeneration",
+ 				llm,
+-				outputFormat: "text",
++				outputConfiguration: { outputFormat: "text" },
+ 			},
+ 			inputs: [],
+ 			outputs,
+@@ -832,7 +832,7 @@ const contentGenerationFactoryImpl = {
+ 					configuration: languageModel.defaultConfiguration,
+ 				},
+ 				tools: [],
+-				outputFormat: "text",
++				outputConfiguration: { outputFormat: "text" },
+ 			},
+ 			inputs: [],
+ 			outputs,
+diff --git a/packages/protocol/src/node/operations/content-generation.ts b/packages/protocol/src/node/operations/content-generation.ts
+index c3aebb13a7..2d8a5b78f9 100644
+--- a/packages/protocol/src/node/operations/content-generation.ts
++++ b/packages/protocol/src/node/operations/content-generation.ts
+@@ -7,7 +7,7 @@ import {
+ 	type LanguageModelToolName,
+ } from "@giselles-ai/language-model-registry";
+ import * as z from "zod/v4";
+-import { StructuredOutputSchema } from "../../structured-output";
++import { OutputConfiguration } from "../../structured-output";
+ 
+ export const ContentGenerationContent = z.object({
+ 	type: z.literal("contentGeneration"),
+@@ -26,8 +26,7 @@ export const ContentGenerationContent = z.object({
+ 		}),
+ 	),
+ 	prompt: z.string(),
+-	outputFormat: z.enum(["text", "json"]).default("text"),
+-	structuredOutputSchema: StructuredOutputSchema.optional(),
++	outputConfiguration: OutputConfiguration,
+ });
+ 
+ export type ContentGenerationContent = z.infer<typeof ContentGenerationContent>;
+diff --git a/packages/protocol/src/node/operations/text-generation.ts b/packages/protocol/src/node/operations/text-generation.ts
+index 079846e57b..db7dd51a26 100644
+--- a/packages/protocol/src/node/operations/text-generation.ts
++++ b/packages/protocol/src/node/operations/text-generation.ts
+@@ -6,7 +6,7 @@ import {
+ } from "@giselles-ai/language-model";
+ import * as z from "zod/v4";
+ import { SecretId } from "../../secret";
+-import { StructuredOutputSchema } from "../../structured-output";
++import { OutputConfiguration } from "../../structured-output";
+ 
+ export const AnthropicLanguageModelData = AnthropicLanguageModel.pick({
+ 	provider: true,
+@@ -122,8 +122,7 @@ export const TextGenerationContent = z.object({
+ 	llm: TextGenerationLanguageModelData,
+ 	prompt: z.string().optional(),
+ 	tools: z.optional(ToolSet),
+-	outputFormat: z.enum(["text", "json"]).default("text"),
+-	structuredOutputSchema: StructuredOutputSchema.optional(),
++	outputConfiguration: OutputConfiguration,
+ });
+ export type TextGenerationContent = z.infer<typeof TextGenerationContent>;
+ 
+diff --git a/packages/protocol/src/structured-output.ts b/packages/protocol/src/structured-output.ts
+index 672f34fdd3..39c51716f8 100644
+--- a/packages/protocol/src/structured-output.ts
++++ b/packages/protocol/src/structured-output.ts
+@@ -62,5 +62,13 @@ export const StructuredOutputSchema = z.object({
+ 	additionalProperties: z.literal(false),
+ 	required: z.array(z.string()),
+ });
+-
+ export type StructuredOutputSchema = z.infer<typeof StructuredOutputSchema>;
++
++export const OutputConfiguration = z.discriminatedUnion("outputFormat", [
++	z.object({ outputFormat: z.literal("text") }),
++	z.object({
++		outputFormat: z.literal("json"),
++		structuredOutputSchema: StructuredOutputSchema,
++	}),
++]);
++export type OutputConfiguration = z.infer<typeof OutputConfiguration>;
+diff --git a/packages/react/src/workspace/utils/is-supported-connection.test.ts b/packages/react/src/workspace/utils/is-supported-connection.test.ts
+index f2eb567979..2a190b1456 100644
+--- a/packages/react/src/workspace/utils/is-supported-connection.test.ts
++++ b/packages/react/src/workspace/utils/is-supported-connection.test.ts
+@@ -42,7 +42,7 @@ describe("isSupportedConnection", () => {
+ 			content: {
+ 				type: "textGeneration",
+ 				llm,
+-				outputFormat: "text",
++				outputConfiguration: { outputFormat: "text" },
+ 			},
+ 		}) satisfies TextGenerationNode;
+ 	const createImageGenerationNode = (
+@@ -220,7 +220,7 @@ describe("isSupportedConnection", () => {
+ 				configuration: {},
+ 			},
+ 			tools: [],
+-			outputFormat: "text",
++			outputConfiguration: { outputFormat: "text" },
+ 		},
+ 	});
+ 

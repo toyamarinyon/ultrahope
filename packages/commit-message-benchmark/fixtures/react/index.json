@@ -1,0 +1,23 @@
+[
+	{
+		"id": "react-input-defaultchecked-fix",
+		"title": "Fix defaultChecked sync for uncontrolled inputs",
+		"sourceRepo": "facebook/react",
+		"sourceCommitUrl": "https://github.com/facebook/react/commit/6d56a18d7f4dbfa1eb7b2c7bb31da5fb2d6a7f30",
+		"diffFile": "001-input-defaultchecked-fix.diff"
+	},
+	{
+		"id": "react-deferred-value-initial",
+		"title": "Add deferred value helper with explicit initial value",
+		"sourceRepo": "facebook/react",
+		"sourceCommitUrl": "https://github.com/facebook/react/commit/4f8977c4267ea0df9f58f7f42b35f79ece6de251",
+		"diffFile": "002-deferred-value-initial.diff"
+	},
+	{
+		"id": "react-object-is-refactor",
+		"title": "Refactor Object.is fallback naming in shared helper",
+		"sourceRepo": "facebook/react",
+		"sourceCommitUrl": "https://github.com/facebook/react/commit/7cae6d91642ce8065345c8be4892c5cdb33a9a62",
+		"diffFile": "003-object-is-refactor.diff"
+	}
+]

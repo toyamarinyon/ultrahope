@@ -5,7 +5,7 @@ import {
 	mkdtempSync,
 	openSync,
 	readFileSync,
-	unlinkSync,
+	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -74,10 +74,26 @@ function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
 	const candidate = slot.candidate;
 	const title = candidate.content.split("\n")[0]?.trim() || "";
 
+	const formatDuration = (ms: number): string => {
+		const safeMs = Math.max(0, Math.round(ms));
+		if (safeMs < 1000) {
+			return `${safeMs}ms`;
+		}
+		const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
+		return `${seconds}s`;
+	};
+
+	const formattedModel = candidate.model
+		? formatModelName(candidate.model)
+		: "";
+	const formattedDuration =
+		candidate.generationMs == null
+			? ""
+			: ` ${formatDuration(candidate.generationMs)}`;
 	const modelInfo = candidate.model
 		? candidate.cost
-			? `${formatModelName(candidate.model)} ${formatCost(candidate.cost)}`
-			: formatModelName(candidate.model)
+			? `${formattedModel} ${formatCost(candidate.cost)}${formattedDuration}`
+			: `${formattedModel}${formattedDuration}`
 		: "";
 
 	if (selected) {
@@ -106,6 +122,7 @@ function renderSelector(
 	state: RenderState,
 	nowMs: number,
 	renderer: ReturnType<typeof createRenderer>,
+	editedSelections?: Map<string, string>,
 ): void {
 	const { slots, selectedIndex, isGenerating, totalSlots } = state;
 
@@ -130,24 +147,40 @@ function renderSelector(
 		lines.push(ui.success(label));
 	}
 
+	const selectedSlot = slots[selectedIndex];
+	const isEditedSelection =
+		selectedSlot?.status === "ready" &&
+		editedSelections?.has(selectedSlot.candidate.slotId) === true;
+
 	const hasReady = readyCount > 0;
 	if (hasReady) {
-		const hint = ui.hint(
-			"↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
-		);
-		lines.push(ui.prompt(`Select a commit message ${hint}`));
+		if (isEditedSelection) {
+			lines.push(ui.success("Select a commit message"));
+		} else {
+			const hint = ui.hint(
+			  "↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
+      );
+			lines.push(ui.prompt(`Select a commit message ${hint}`));
+		}
 	} else {
 		lines.push(ui.hint("  q quit"));
 	}
 
 	lines.push("");
-
 	for (let i = 0; i < slots.length; i++) {
 		const slotLines = formatSlot(slots[i], i === selectedIndex);
 		for (const line of slotLines) {
 			lines.push(line);
 		}
 		if (slotLines.length > 0) {
+			lines.push("");
+		}
+	}
+	if (selectedSlot?.status === "ready") {
+		const edited = editedSelections?.get(selectedSlot.candidate.slotId);
+		if (edited) {
+			const editedSummary = edited.split("\n")[0]?.slice(0, 120);
+			lines.push(ui.success(`Edited: ${editedSummary}`));
 			lines.push("");
 		}
 	}
@@ -181,28 +214,44 @@ function openEditor(content: string): Promise<string> {
 		const editor = process.env.GIT_EDITOR || process.env.EDITOR || "vi";
 		const tmpDir = mkdtempSync(join(tmpdir(), "ultrahope-"));
 		const tmpFile = join(tmpDir, "EDIT_MESSAGE");
+		let cleanupDone = false;
 
-		writeFileSync(tmpFile, content);
-
-		const child = spawn(editor, [tmpFile], { stdio: "inherit" });
-
-		child.on("close", (code) => {
-			if (code !== 0) {
-				unlinkSync(tmpFile);
-				reject(new Error(`Editor exited with code ${code}`));
-				return;
-			}
-			const result = readFileSync(tmpFile, "utf-8").trim();
-			unlinkSync(tmpFile);
-			resolve(result);
-		});
-
-		child.on("error", (err) => {
+		const cleanupTempArtifacts = () => {
+			if (cleanupDone) return;
+			cleanupDone = true;
 			try {
-				unlinkSync(tmpFile);
+				rmSync(tmpDir, { recursive: true, force: true });
 			} catch {}
+		};
+
+		try {
+			writeFileSync(tmpFile, content);
+
+			const child = spawn(editor, [tmpFile], { stdio: "inherit" });
+
+			child.on("close", (code) => {
+				try {
+					if (code !== 0) {
+						reject(new Error(`Editor exited with code ${code}`));
+						return;
+					}
+					const result = readFileSync(tmpFile, "utf-8").trim();
+					resolve(result);
+				} catch (err) {
+					reject(err);
+				} finally {
+					cleanupTempArtifacts();
+				}
+			});
+
+			child.on("error", (err) => {
+				cleanupTempArtifacts();
+				reject(err);
+			});
+		} catch (err) {
+			cleanupTempArtifacts();
 			reject(err);
-		});
+		}
 	});
 }
 
@@ -228,8 +277,12 @@ export async function selectCandidate(
 	let ttyOutput: tty.WriteStream | null = null;
 	try {
 		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
-		const inputFd = openSync(TTY_PATH, "r");
-		ttyInput = new tty.ReadStream(inputFd);
+		if (process.stdin.isTTY) {
+			ttyInput = process.stdin as tty.ReadStream;
+		} else {
+			const inputFd = openSync(TTY_PATH, "r");
+			ttyInput = new tty.ReadStream(inputFd);
+		}
 		// Use process.stdout if it's a TTY, otherwise open /dev/tty
 		// This works around a Bun bug with tty.WriteStream and kqueue
 		if (process.stdout.isTTY) {
@@ -283,6 +336,7 @@ async function selectFromSlots(
 		};
 
 		const slots = [...initialSlots];
+		const editedSelections = new Map<string, string>();
 		const state: RenderState = {
 			slots,
 			selectedIndex: 0,
@@ -291,23 +345,26 @@ async function selectFromSlots(
 		};
 		let renderInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
+		let isEditorOpen = false;
 
 		const ttyInput = ttyIo.input;
 		const ttyOutput = ttyIo.output;
 		const renderer = createRenderer(ttyOutput);
 
-		const rl = readline.createInterface({
-			input: ttyInput,
-			output: ttyOutput,
-			terminal: true,
-		});
-
-		readline.emitKeypressEvents(ttyInput, rl);
+		readline.emitKeypressEvents(ttyInput);
 		ttyInput.setRawMode(true);
 
+		const setRawModeSafe = (enabled: boolean) => {
+			try {
+				ttyInput.setRawMode(enabled);
+			} catch {
+				// Ignore tty mode errors during shutdown.
+			}
+		};
+
 		const doRender = () => {
-			if (!cleanedUp) {
-				renderSelector(state, Date.now(), renderer);
+			if (!cleanedUp && !isEditorOpen) {
+				renderSelector(state, Date.now(), renderer, editedSelections);
 			}
 		};
 
@@ -343,25 +400,43 @@ async function selectFromSlots(
 			if (clearOutput) {
 				renderer.clearAll();
 			}
-			ttyInput.setRawMode(false);
-			rl.close();
-			ttyInput.destroy();
-			ttyOutput.destroy();
+			ttyInput.removeAllListeners("keypress");
+			setRawModeSafe(false);
+			ttyInput.pause();
+			if (ttyInput !== process.stdin && !ttyInput.destroyed) {
+				ttyInput.destroy();
+			}
+			if (
+				ttyOutput !== process.stdout &&
+				ttyOutput !== process.stderr &&
+				!ttyOutput.destroyed
+			) {
+				ttyOutput.destroy();
+			}
 		};
 
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,
 		): Promise<IteratorResult<CandidateWithModel>> => {
+			if (!asyncCtx?.abortController) {
+				return iterator.next();
+			}
+			const signal = asyncCtx.abortController.signal;
+			if (signal.aborted) {
+				return { done: true, value: undefined };
+			}
+
+			let cleanup = () => {};
 			const abortPromise = new Promise<IteratorResult<CandidateWithModel>>(
 				(resolve) => {
-					asyncCtx?.abortController.signal.addEventListener(
-						"abort",
-						() => resolve({ done: true, value: undefined }),
-						{ once: true },
-					);
+					const onAbort = () => resolve({ done: true, value: undefined });
+					signal.addEventListener("abort", onAbort);
+					cleanup = () => signal.removeEventListener("abort", onAbort);
 				},
 			);
-			return Promise.race([iterator.next(), abortPromise]);
+			return Promise.race([iterator.next(), abortPromise]).finally(() => {
+				cleanup();
+			});
 		};
 
 		const finalizeGeneration = () => {
@@ -433,21 +508,23 @@ async function selectFromSlots(
 			})();
 		}
 
-		const confirmSelection = () => {
+		const confirmSelection = (clearOutput = true) => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
+			const selectedContent =
+				editedSelections.get(candidate.slotId) ?? candidate.content;
 			cancelGeneration();
 			const totalCost = getTotalCost(slots);
 			const quota = getLatestQuota(slots);
 			resolveOnce({
 				action: "confirm",
-				selected: candidate.content,
+				selected: selectedContent,
 				selectedIndex: state.selectedIndex,
 				selectedCandidate: candidate,
 				totalCost: totalCost > 0 ? totalCost : undefined,
 				quota,
 			});
-			cleanup();
+			cleanup(clearOutput);
 		};
 
 		const rerollSelection = () => {
@@ -466,21 +543,35 @@ async function selectFromSlots(
 		const editSelection = async () => {
 			const candidate = getSelectedCandidate(slots, state.selectedIndex);
 			if (!candidate) return;
-			renderer.flush();
-			ttyInput.setRawMode(false);
-			let edited: string | null = null;
+			stopRenderLoop();
+			cancelGeneration();
+			isEditorOpen = true;
+			if (state.isGenerating) {
+				finalizeGeneration();
+			}
+
+			ttyInput.removeListener("keypress", handleKeypress);
+			setRawModeSafe(false);
+			ttyInput.pause();
+
+			let edited = candidate.content;
 			try {
 				const result = await openEditor(candidate.content);
-				edited = result ? result : null;
-			} catch {}
-			ttyInput.setRawMode(true);
+				edited = result || candidate.content;
+			} catch {
+				// Keep existing content when editor exits non-zero.
+			} finally {
+				isEditorOpen = false;
+			}
+
+			editedSelections.set(candidate.slotId, edited);
 			renderer.reset();
-			updateState(() => {
-				if (!edited) return;
-				slots[state.selectedIndex] = {
-					status: "ready",
-					candidate: { ...candidate, content: edited },
-				};
+			doRender();
+			renderer.flush();
+			setImmediate(() => {
+				if (!cleanedUp) {
+					confirmSelection(false);
+				}
 			});
 		};
 

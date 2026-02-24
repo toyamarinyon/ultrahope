@@ -12,7 +12,9 @@
 		"check:write": "biome check --write",
 		"knip": "knip",
 		"ok": "turbo run ok",
-		"scripts:run": "bun run --cwd scripts"
+		"scripts:run": "bun run --cwd scripts",
+		"bench:commit-message": "bun run --cwd packages/commit-message-benchmark generate",
+		"bench:commit-message:add": "bun run --cwd packages/commit-message-benchmark add"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.9",

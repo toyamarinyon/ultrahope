@@ -1,0 +1,50 @@
+{
+	"schemaVersion": 1,
+	"source": "github",
+	"owner": "vercel",
+	"repo": "ai",
+	"sha": "4c3a932a54db2dbb1c35f419e04720db609ad858",
+	"htmlUrl": "https://github.com/vercel/ai/commit/4c3a932a54db2dbb1c35f419e04720db609ad858",
+	"apiUrl": "https://api.github.com/repos/vercel/ai/commits/4c3a932a54db2dbb1c35f419e04720db609ad858",
+	"diffUrl": "https://github.com/vercel/ai/commit/4c3a932a54db2dbb1c35f419e04720db609ad858.diff",
+	"message": "fix(devtools): use explicit env flag for dev mode detection (#12694)\n\n## Summary\n- Replace path-based `/dist/` check with an explicit\n`AI_SDK_DEVTOOLS_DEV` env flag for dev mode detection\n- Prevents false positives in monorepos (NX, Turborepo) where `/dist/`\npaths are common in the workspace\n- The `dev:api` script now sets `AI_SDK_DEVTOOLS_DEV=true`\nautomatically; production mode is the default when the flag is unset\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n---------\n\nCo-authored-by: Claude Opus 4.6 <noreply@anthropic.com>",
+	"authorName": "Nico Albanese",
+	"authorEmail": "49612682+nicoalbanese@users.noreply.github.com",
+	"authoredAt": "2026-02-19T18:39:17Z",
+	"committerName": "GitHub",
+	"committerEmail": "noreply@github.com",
+	"committedAt": "2026-02-19T18:39:17Z",
+	"parents": ["87ef7865d4743182e00dddc14f5d5647a8682c82"],
+	"stats": {
+		"additions": 19,
+		"deletions": 8,
+		"total": 27
+	},
+	"files": [
+		{
+			"filename": ".changeset/cuddly-turtles-collect.md",
+			"status": "added",
+			"additions": 5,
+			"deletions": 0,
+			"changes": 5,
+			"patch": "@@ -0,0 +1,5 @@\n+---\n+'@ai-sdk/devtools': patch\n+---\n+\n+Use explicit AI_SDK_DEVTOOLS_DEV env flag for dev mode detection"
+		},
+		{
+			"filename": "packages/devtools/package.json",
+			"status": "modified",
+			"additions": 1,
+			"deletions": 1,
+			"changes": 2,
+			"patch": "@@ -26,7 +26,7 @@\n   ],\n   \"scripts\": {\n     \"dev\": \"concurrently -k \\\"pnpm dev:api\\\" \\\"pnpm dev:client\\\"\",\n-    \"dev:api\": \"tsx src/viewer/server.ts\",\n+    \"dev:api\": \"AI_SDK_DEVTOOLS_DEV=true tsx src/viewer/server.ts\",\n     \"dev:client\": \"vite\",\n     \"example\": \"tsx examples/basic/index.ts\",\n     \"start\": \"node dist/viewer/server.js\","
+		},
+		{
+			"filename": "packages/devtools/src/viewer/server.ts",
+			"status": "modified",
+			"additions": 13,
+			"deletions": 7,
+			"changes": 20,
+			"patch": "@@ -36,13 +36,19 @@ const broadcastToClients = (event: string, data: Record<string, unknown>) => {\n \n const __dirname = path.dirname(fileURLToPath(import.meta.url));\n \n-// Determine if we're running from source (tsx) or built (dist)\n-// We're in dev mode if NOT running from the dist folder\n-const isDevMode =\n-  !__dirname.includes('/dist/') || process.env.NODE_ENV === 'development';\n-const projectRoot = isDevMode\n-  ? path.resolve(__dirname, '../..')\n-  : path.resolve(__dirname, '../..');\n+// Determine whether to use the dev-mode Vite proxy or serve the built client.\n+//\n+// We rely exclusively on an explicit env flag to avoid false positives in\n+// monorepos where /dist paths are common.\n+//\n+//   AI_SDK_DEVTOOLS_DEV=true  → use dev mode (Vite proxy)\n+//   AI_SDK_DEVTOOLS_DEV=false → use production mode (serve built client)\n+//\n+// If the flag is unset, default to production mode.\n+const devEnv = process.env.AI_SDK_DEVTOOLS_DEV;\n+const isDevMode = devEnv !== undefined && devEnv !== 'false' && devEnv !== '0';\n+// __dirname points at packages/devtools/src/viewer, so ../.. is the package root.\n+const projectRoot = path.resolve(__dirname, '../..');\n \n // Client directory: dist/client in both cases\n const clientDir = path.join(projectRoot, 'dist/client');"
+		}
+	],
+	"fetchedAt": "2026-02-23T23:03:15.691Z"
+}

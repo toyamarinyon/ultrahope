@@ -139,6 +139,10 @@ export function createCandidatesFromReplayGeneration(options: {
 					if (event.event.type !== "commit-message") {
 						continue;
 					}
+					const generationMs =
+						typeof event.atMs === "number" && Number.isFinite(event.atMs)
+							? event.atMs
+							: undefined;
 
 					const candidate: CandidateWithModel = {
 						content: event.event.commitMessage,
@@ -146,6 +150,7 @@ export function createCandidatesFromReplayGeneration(options: {
 						model: event.model,
 						slotIndex: modelSlotIndexes.get(event.model),
 						cost: modelCosts.get(event.model),
+						generationMs,
 						isPartial: lastIndexes.get(event.model) !== index,
 					};
 					yield candidate;

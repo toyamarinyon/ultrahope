@@ -125,7 +125,22 @@ export async function* generateCommitMessages(
 		try {
 			if (signal?.aborted) return;
 			let lastCommitMessage = "";
+			const generationStartedAtMs = Date.now();
+			let lastCommitMessageAtMs: number | undefined;
+			let providerMetadataAtMs: number | undefined;
 			let providerMetadata: unknown;
+			const parseEventAtMs = (
+				event: CommitMessageStreamEvent,
+			): number | undefined => {
+				if (typeof event.atMs !== "number" || !Number.isFinite(event.atMs)) {
+					return undefined;
+				}
+				if (event.atMs < 0) {
+					return 0;
+				}
+				return Math.round(event.atMs);
+			};
+
 			for await (const event of generateWithRetry({
 				cliSessionId: requiredCliSessionId,
 				input: diff,
@@ -134,6 +149,8 @@ export async function* generateCommitMessages(
 			})) {
 				if (event.type === "commit-message") {
 					lastCommitMessage = event.commitMessage;
+					lastCommitMessageAtMs =
+						parseEventAtMs(event) ?? lastCommitMessageAtMs;
 					if (useStream) {
 						yield {
 							content: lastCommitMessage,
@@ -144,6 +161,7 @@ export async function* generateCommitMessages(
 						};
 					}
 				} else if (event.type === "provider-metadata") {
+					providerMetadataAtMs = parseEventAtMs(event) ?? providerMetadataAtMs;
 					providerMetadata = event.providerMetadata;
 				} else if (event.type === "error") {
 					throw new Error(event.message);
@@ -151,11 +169,16 @@ export async function* generateCommitMessages(
 			}
 			if (lastCommitMessage) {
 				const { generationId, cost } = extractGatewayMetadata(providerMetadata);
+				const generationMs =
+					(providerMetadataAtMs ?? lastCommitMessageAtMs) != null
+						? (providerMetadataAtMs ?? lastCommitMessageAtMs)
+						: Math.max(0, Date.now() - generationStartedAtMs);
 				yield {
 					content: lastCommitMessage,
 					slotId: model,
 					model,
 					cost,
+					generationMs,
 					generationId,
 					...(useStream ? { isPartial: false } : {}),
 					slotIndex,
