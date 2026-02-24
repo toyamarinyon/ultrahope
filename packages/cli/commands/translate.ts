@@ -49,6 +49,11 @@ function exitWithInvalidModelError(error: InvalidModelError): never {
 	process.exit(1);
 }
 
+function composeGuidance(guideHint: string | undefined): string | undefined {
+	const normalizedGuideHint = guideHint?.trim() ?? "";
+	return normalizedGuideHint || undefined;
+}
+
 export async function translate(args: string[]) {
 	const options = parseArgs(args);
 	const input = await stdin();
@@ -116,6 +121,7 @@ async function handleVcsCommitMessage(
 			abortController.signal;
 		const commandExecutionPromise: Promise<unknown> | undefined = promise;
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
+		let guideHint: string | undefined;
 
 		commandExecutionPromise.catch(async (error) => {
 			abortController.abort(abortReasonForError(error));
@@ -144,6 +150,7 @@ async function handleVcsCommitMessage(
 			generateCommitMessages({
 				diff: input,
 				models,
+				guide: composeGuidance(guideHint),
 				signal: mergeAbortSignals(signal, commandExecutionSignal),
 				cliSessionId,
 				commandExecutionPromise,
@@ -154,6 +161,7 @@ async function handleVcsCommitMessage(
 			const gen = generateCommitMessages({
 				diff: input,
 				models: models.slice(0, 1),
+				guide: composeGuidance(guideHint),
 				signal: commandExecutionSignal,
 				cliSessionId,
 				commandExecutionPromise,
@@ -187,6 +195,11 @@ async function handleVcsCommitMessage(
 				}
 				console.error("Aborted.");
 				process.exit(1);
+			}
+
+			if (result.action === "refine" && result.guide !== undefined) {
+				guideHint = result.guide.trim() || undefined;
+				continue;
 			}
 
 			if (result.action === "reroll") {

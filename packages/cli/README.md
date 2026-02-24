@@ -41,15 +41,32 @@ git diff --staged | ultrahope translate --target vcs-commit-message --models mis
 
 ### Guide context for commit/message generation
 
-`git ultrahope commit` と `ultrahope jj describe` では `--guide <text>` を使って、差分だけでは分からない生成意図を補足できます。
+In `git ultrahope commit` and `ultrahope jj describe`, you can use `--guide <text>` to provide intent that is not obvious from the diff alone.
 
 ```bash
-# git commit の生成補足
+# Additional guidance for git commit generation
 git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 
-# jj describe の生成補足
+# Additional guidance for jj describe generation
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 ```
+
+In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `r` to reroll and `R` (Shift+r) to reroll with additional instructions.
+
+#### Difference Between `guide` And Refine Instructions
+
+- `--guide`:
+  - Supplemental intent outside the diff (for example: ticket ID, background, change intent)
+- `R refine`:
+  - Review generated results and enter inline instructions for the next reroll
+  - Examples: "more formal", "shorter"
+  - Press `Enter` with empty input to clear the previous refine instructions
+  - If specified multiple times, the last one overwrites previous values
+- `R` means reroll with additional instructions (`refine`)
+- At request time, refine instructions are merged into `guide` and sent to the API:
+  - `--guide` only: `guide = "<guide>"`
+  - `R refine` only: `guide = "<refine>"`
+  - both: `guide = "<guide>\n\nRefinement: <refine>"`
 
 #### Targets
 

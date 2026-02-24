@@ -53,10 +53,11 @@ export interface SelectorState {
 }
 
 export interface SelectorResult {
-	action: "confirm" | "abort" | "reroll";
+	action: "confirm" | "abort" | "reroll" | "refine";
 	selected?: string;
 	selectedIndex?: number;
 	selectedCandidate?: CandidateWithModel;
+	guide?: string;
 	totalCost?: number;
 	quota?: QuotaInfo;
 	error?: unknown;

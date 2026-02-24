@@ -157,7 +157,9 @@ function renderSelector(
 		if (isEditedSelection) {
 			lines.push(ui.success("Select a commit message"));
 		} else {
-			const hint = ui.hint("↑↓ navigate  ⏎ confirm  e edit  r reroll  q quit");
+			const hint = ui.hint(
+			  "↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
+      );
 			lines.push(ui.prompt(`Select a commit message ${hint}`));
 		}
 	} else {
@@ -573,6 +575,47 @@ async function selectFromSlots(
 			});
 		};
 
+		const refineSelection = async () => {
+			if (!hasReadySlot(slots)) return;
+			ttyInput.off("keypress", handleKeypress);
+			renderer.flush();
+			ttyInput.setRawMode(false);
+
+			const guide = await new Promise<string | null>((resolve) => {
+				const prompt = `${ui.prompt(
+					`Enter refine instructions (e.g., more formal / shorter / Enter to clear): `,
+				)}`;
+				const promptReader = readline.createInterface({
+					input: ttyInput,
+					output: ttyOutput,
+					terminal: true,
+				});
+
+				let resolved = false;
+				const finish = (value: string | null) => {
+					if (resolved) return;
+					resolved = true;
+					promptReader.close();
+					resolve(value);
+				};
+
+				promptReader.on("SIGINT", () => {
+					finish(null);
+				});
+				promptReader.question(prompt, (input) => {
+					finish(input.trim());
+				});
+			});
+
+			ttyInput.setRawMode(true);
+			ttyInput.on("keypress", handleKeypress);
+			renderer.reset();
+			if (guide === null) return;
+			cancelGeneration();
+			resolveOnce({ action: "refine", guide });
+			cleanup();
+		};
+
 		const handleKeypress = async (
 			_str: string | undefined,
 			key: readline.Key,
@@ -593,8 +636,16 @@ async function selectFromSlots(
 				return;
 			}
 
-			if (key.name === "r") {
+			if (key.name === "r" && !key.shift) {
 				rerollSelection();
+				return;
+			}
+
+			if (
+				key.name === "r" &&
+				(key.shift || key.name === "R" || key.sequence === "R")
+			) {
+				await refineSelection();
 				return;
 			}
 

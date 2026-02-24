@@ -32,6 +32,18 @@ function normalizeGuide(value: string | undefined): string | undefined {
 	return trimmed.length > 1024 ? trimmed.slice(0, 1024) : trimmed;
 }
 
+function composeGuidance(
+	baseGuide: string | undefined,
+	guideHint: string | undefined,
+): string | undefined {
+	const normalizedBase = baseGuide?.trim() ?? "";
+	const normalizedGuideHint = guideHint?.trim() ?? "";
+	if (!normalizedBase && !normalizedGuideHint) return undefined;
+	if (!normalizedBase) return normalizedGuideHint;
+	if (!normalizedGuideHint) return normalizedBase;
+	return `${normalizedBase}\n\nRefinement: ${normalizedGuideHint}`;
+}
+
 function exitWithInvalidModelError(error: InvalidModelError): never {
 	console.error(`Error: Model '${error.model}' is not supported.`);
 	if (error.allowedModels.length > 0) {
@@ -159,6 +171,7 @@ export async function commit(args: string[]) {
 			abortController.signal;
 		const commandExecutionPromise: Promise<unknown> | undefined = promise;
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
+		let guideHint: string | undefined;
 
 		commandExecutionPromise.catch(async (error) => {
 			abortController.abort(abortReasonForError(error));
@@ -187,7 +200,7 @@ export async function commit(args: string[]) {
 			generateCommitMessages({
 				diff,
 				models,
-				guide: options.guide,
+				guide: composeGuidance(options.guide, guideHint),
 				signal: mergeAbortSignals(signal, commandExecutionSignal),
 				cliSessionId,
 				commandExecutionPromise,
@@ -198,7 +211,7 @@ export async function commit(args: string[]) {
 			const gen = generateCommitMessages({
 				diff,
 				models: models.slice(0, 1),
-				guide: options.guide,
+				guide: composeGuidance(options.guide, guideHint),
 				signal: commandExecutionSignal,
 				cliSessionId,
 				commandExecutionPromise,
@@ -239,6 +252,11 @@ export async function commit(args: string[]) {
 			}
 
 			if (result.action === "reroll") {
+				continue;
+			}
+
+			if (result.action === "refine" && result.guide !== undefined) {
+				guideHint = result.guide.trim() || undefined;
 				continue;
 			}
 
