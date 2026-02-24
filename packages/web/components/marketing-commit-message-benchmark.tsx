@@ -248,12 +248,13 @@ export function MarketingCommitMessageBenchmark() {
 				</select>
 			</div>
 
-			<div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.45fr]">
-				<section className="hidden lg:block">
-					<p className="text-xs uppercase tracking-[0.14em] text-foreground-muted">
-						Samples
-					</p>
-					<div className="mt-3 flex flex-col gap-2 overflow-auto pr-1">
+			<p className="mt-5 hidden text-xs uppercase tracking-[0.14em] text-foreground-muted lg:block">
+				Samples
+			</p>
+
+			<div className="mt-3 grid gap-5 lg:grid-cols-[0.95fr_1.45fr] lg:items-stretch">
+				<section className="hidden lg:relative lg:block lg:min-h-0 lg:overflow-hidden">
+					<div className="flex flex-col gap-2 pr-1 lg:absolute lg:inset-0 lg:overflow-y-auto">
 						{scenarios.map((scenario) => {
 							const isActive = scenario.id === activeScenario.id;
 							const stats = scenarioDiffStatsMap.get(scenario.id);
@@ -286,7 +287,7 @@ export function MarketingCommitMessageBenchmark() {
 					</div>
 				</section>
 
-				<section className="lg:pl-2">
+				<section className="lg:min-h-0 lg:pl-2">
 					<div className="overflow-x-auto rounded-lg border border-border-subtle/70">
 						<table className="w-full min-w-190 border-collapse text-left text-sm">
 							<thead className="bg-canvas-dark/70 text-[11px] uppercase tracking-[0.12em] text-foreground-muted">
