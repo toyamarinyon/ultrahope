@@ -269,7 +269,7 @@ export function MarketingCommitMessageBenchmark() {
 										className={`w-full rounded-lg border px-3 py-2 pr-10 text-left transition-colors ${
 											isActive
 												? "border-foreground/60 bg-canvas-dark text-foreground"
-												: "border-border-subtle/70 text-foreground-muted hover:border-foreground/30 hover:text-foreground"
+												: "border-border-subtle/70 text-foreground-muted group-hover:border-foreground/30 group-hover:text-foreground"
 										}`}
 									>
 										<div className="flex items-center justify-between gap-2">
