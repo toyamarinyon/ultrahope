@@ -115,9 +115,9 @@ export function MarketingHome() {
 							<br />
 							But not every task needs that level of intelligence.
 						</h1>
-						<p className="mb-4 text-lg">
-							Some workflows are narrow and well-defined. They don’t require a
-							general-purpose agent.
+						<p className="mb-4 text-lg text-foreground-muted">
+							For example, commit messages can be output relatively well even
+							with a small model.
 						</p>
 					</div>
 					<div className="w-full max-w-6xl">

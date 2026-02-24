@@ -192,11 +192,11 @@ export function MarketingCommitMessageBenchmark() {
 		<div className="sm:p-6">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<p className="text-xs uppercase tracking-[0.18em] text-foreground-muted">
-						How much intelligence does this task actually need?
+					<p className="text-foreground-muted">
+						How Much Model Do You Actually Need?
 					</p>
 					<h3 className="mt-1 text-xl font-semibold">
-						We measured latency, cost, and output quality on real commit diffs.
+						Commit Message Generation Benchmark
 					</h3>
 				</div>
 				<div className="w-full sm:w-auto">
