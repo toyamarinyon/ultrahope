@@ -49,6 +49,23 @@ git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason
 
 # jj describe の生成補足
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
+
+`git ultrahope commit`、`ultrahope jj describe`、`ultrahope translate --target vcs-commit-message` のインタラクティブモードでは、`r` で再生成、`R`（Shift+r）で追加条件を入れて再生成できます。
+
+#### guide と再生成条件の違い
+
+- `--guide`:
+  - 差分外の意図補助（例: 仕様番号、背景、変更意図）
+- `R refine`:
+  - 生成結果を見直して、次の再生成条件をインライン入力
+  - 例: 「もう少しフォーマルに」「もう少し短く」
+  - `Enter` だけで空入力にすると直前の条件をクリア
+  - 途中で再指定した場合は最後の内容で上書き
+- `R` は「追加条件付き再生成（refine）」です
+- 送信時は内部で `guide` に統合して API に渡します。
+  - `--guide` のみ指定: `guide = "<guide>"`
+  - `R refine` のみ指定: `guide = "<refine>"`
+  - 両方指定: `guide = "<guide>\n\nRefinement: <refine>"`
 ```
 
 #### Targets

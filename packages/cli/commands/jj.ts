@@ -58,6 +58,18 @@ function normalizeGuide(value: string | undefined): string | undefined {
 	return trimmed.length > 1024 ? trimmed.slice(0, 1024) : trimmed;
 }
 
+function composeGuidance(
+	baseGuide: string | undefined,
+	guideHint: string | undefined,
+): string | undefined {
+	const normalizedBase = baseGuide?.trim() ?? "";
+	const normalizedGuideHint = guideHint?.trim() ?? "";
+	if (!normalizedBase && !normalizedGuideHint) return undefined;
+	if (!normalizedBase) return normalizedGuideHint;
+	if (!normalizedGuideHint) return normalizedBase;
+	return `${normalizedBase}\n\nTone: ${normalizedGuideHint}`;
+}
+
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
 	let interactive = true;
@@ -200,13 +212,13 @@ function createCandidateFactory(
 	models: string[],
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
-	guide?: string,
+	getGuide: () => string | undefined,
 ) {
 	return (signal: AbortSignal) =>
 		generateCommitMessages({
 			diff,
 			models,
-			guide,
+			guide: getGuide(),
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -252,6 +264,7 @@ async function runInteractiveDescribe(
 		signal: AbortSignal,
 	) => ReturnType<typeof generateCommitMessages>,
 	context: CommandExecutionContext,
+	onGuideHintChange: (guideHint: string | undefined) => void,
 ): Promise<void> {
 	const stats = getJjDiffStats(options.revision);
 	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
@@ -276,6 +289,12 @@ async function runInteractiveDescribe(
 		}
 
 		if (result.action === "reroll") {
+			continue;
+		}
+
+		if (result.action === "rerollWithGuide" && result.guide !== undefined) {
+			const nextGuideHint = result.guide.trim() || undefined;
+			onGuideHintChange(nextGuideHint);
 			continue;
 		}
 
@@ -315,18 +334,20 @@ async function describe(args: string[]) {
 	});
 
 	try {
+		let guideHint: string | undefined;
 		const context = await initCommandExecutionContext(
 			args,
 			models,
 			diff,
 			options.guide,
 		);
+		const resolveGuide = () => composeGuidance(options.guide, guideHint);
 		const createCandidates = createCandidateFactory(
 			diff,
 			models,
 			context,
 			captureRecorder,
-			options.guide,
+			resolveGuide,
 		);
 
 		if (!options.interactive) {
@@ -336,12 +357,20 @@ async function describe(args: string[]) {
 				diff,
 				context,
 				captureRecorder,
-				options.guide,
+				resolveGuide(),
 			);
 			return;
 		}
 
-		await runInteractiveDescribe(options, models, createCandidates, context);
+		await runInteractiveDescribe(
+			options,
+			models,
+			createCandidates,
+			context,
+			(value) => {
+				guideHint = value;
+			},
+		);
 	} finally {
 		const capturePath = captureRecorder.flush();
 		if (capturePath) {
