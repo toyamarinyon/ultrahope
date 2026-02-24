@@ -49,6 +49,7 @@ git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason
 
 # jj describe の生成補足
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
+```
 
 `git ultrahope commit`、`ultrahope jj describe`、`ultrahope translate --target vcs-commit-message` のインタラクティブモードでは、`r` で再生成、`R`（Shift+r）で追加条件を入れて再生成できます。
 
@@ -66,7 +67,6 @@ jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
   - `--guide` のみ指定: `guide = "<guide>"`
   - `R refine` のみ指定: `guide = "<refine>"`
   - 両方指定: `guide = "<guide>\n\nRefinement: <refine>"`
-```
 
 #### Targets
 

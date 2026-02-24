@@ -41,7 +41,7 @@ function composeGuidance(
 	if (!normalizedBase && !normalizedGuideHint) return undefined;
 	if (!normalizedBase) return normalizedGuideHint;
 	if (!normalizedGuideHint) return normalizedBase;
-	return `${normalizedBase}\n\nTone: ${normalizedGuideHint}`;
+	return `${normalizedBase}\n\nRefinement: ${normalizedGuideHint}`;
 }
 
 function exitWithInvalidModelError(error: InvalidModelError): never {
