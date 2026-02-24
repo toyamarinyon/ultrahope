@@ -1,6 +1,7 @@
 "use client";
 
-import { type CSSProperties, useMemo, useState } from "react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
+import { useMemo, useState } from "react";
 import benchmarkDatasetJson from "@/lib/demo/commit-message-benchmark.dataset.json";
 
 type BenchmarkTier = "small" | "frontier";
@@ -47,17 +48,6 @@ type BenchmarkDataset = {
 };
 
 const benchmarkDataset = benchmarkDatasetJson as BenchmarkDataset;
-const sampleListMaskGradient =
-	"linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)";
-const sampleListMaskStyle: CSSProperties = {
-	maskImage: sampleListMaskGradient,
-	WebkitMaskImage: sampleListMaskGradient,
-	maskRepeat: "no-repeat",
-	WebkitMaskRepeat: "no-repeat",
-	maskSize: "100% 100%",
-	WebkitMaskSize: "100% 100%",
-};
-
 function countDiffStats(diff: string): {
 	additions: number;
 	deletions: number;
@@ -264,83 +254,86 @@ export function MarketingCommitMessageBenchmark() {
 
 			<div className="mt-3 grid gap-5 lg:grid-cols-[0.95fr_1.45fr] lg:items-stretch">
 				<section className="hidden lg:relative lg:block lg:min-h-0 lg:overflow-hidden">
-					<div
-						className="flex flex-col gap-2 pr-1 lg:absolute lg:inset-0 lg:overflow-y-auto"
-						style={sampleListMaskStyle}
-					>
-						{scenarios.map((scenario) => {
-							const isActive = scenario.id === activeScenario.id;
-							const stats = scenarioDiffStatsMap.get(scenario.id);
-							const shortCommitHash = formatShortCommitHash(
-								scenario.sourceCommitUrl,
-							);
-							return (
-								<div key={scenario.id} className="group relative">
-									<button
-										type="button"
-										onClick={() => setActiveScenarioId(scenario.id)}
-										className={`w-full rounded-lg border px-3 py-2 pr-10 text-left transition-colors ${
-											isActive
-												? "border-foreground/60 bg-canvas-dark text-foreground"
-												: "border-border-subtle/70 text-foreground-muted group-hover:border-foreground/30 group-hover:text-foreground"
-										}`}
-									>
-										<div className="flex items-center justify-between gap-2">
-											<p className="text-xs text-foreground-muted">
-												{scenario.sourceRepo}#{shortCommitHash} · +
-												{stats?.additions ?? 0} -{stats?.deletions ?? 0}
-											</p>
-										</div>
-										<p className="mt-1 text-sm text-foreground">
-											{scenario.title}
-										</p>
-									</button>
-									<a
-										href={scenario.sourceCommitUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="pointer-events-none absolute top-2 right-2 inline-flex size-6 items-center justify-center rounded-md text-foreground-muted opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 hover:text-foreground"
-										aria-label={`Open commit ${shortCommitHash} on GitHub`}
-										title="Open commit on GitHub"
-									>
-										<span className="sr-only">
-											Open commit {shortCommitHash} on GitHub
-										</span>
-										<svg
-											width="14"
-											height="14"
-											viewBox="0 0 16 16"
-											fill="none"
-											aria-hidden="true"
-										>
-											<path
-												d="M9 3.5H12.5V7"
-												stroke="currentColor"
-												strokeWidth="1.5"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											/>
-											<path
-												d="M8 8L12.5 3.5"
-												stroke="currentColor"
-												strokeWidth="1.5"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											/>
-											<rect
-												x="3"
-												y="5.5"
-												width="7.5"
-												height="7.5"
-												rx="1.5"
-												stroke="currentColor"
-												strokeWidth="1.5"
-											/>
-										</svg>
-									</a>
-								</div>
-							);
-						})}
+					<div className="lg:absolute lg:inset-0">
+						<ScrollArea.Root className="h-full">
+							<ScrollArea.Viewport className="scroll-fade-y h-full">
+								<ScrollArea.Content className="flex flex-col gap-2 pr-1">
+									{scenarios.map((scenario) => {
+										const isActive = scenario.id === activeScenario.id;
+										const stats = scenarioDiffStatsMap.get(scenario.id);
+										const shortCommitHash = formatShortCommitHash(
+											scenario.sourceCommitUrl,
+										);
+										return (
+											<div key={scenario.id} className="group relative">
+												<button
+													type="button"
+													onClick={() => setActiveScenarioId(scenario.id)}
+													className={`w-full rounded-lg border px-3 py-2 pr-10 text-left transition-colors ${
+														isActive
+															? "border-foreground/60 bg-canvas-dark text-foreground"
+															: "border-border-subtle/70 text-foreground-muted group-hover:border-foreground/30 group-hover:text-foreground"
+													}`}
+												>
+													<div className="flex items-center justify-between gap-2">
+														<p className="text-xs text-foreground-muted">
+															{scenario.sourceRepo}#{shortCommitHash} · +
+															{stats?.additions ?? 0} -{stats?.deletions ?? 0}
+														</p>
+													</div>
+													<p className="mt-1 text-sm text-foreground">
+														{scenario.title}
+													</p>
+												</button>
+												<a
+													href={scenario.sourceCommitUrl}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="pointer-events-none absolute top-2 right-2 inline-flex size-6 items-center justify-center rounded-md text-foreground-muted opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 hover:text-foreground"
+													aria-label={`Open commit ${shortCommitHash} on GitHub`}
+													title="Open commit on GitHub"
+												>
+													<span className="sr-only">
+														Open commit {shortCommitHash} on GitHub
+													</span>
+													<svg
+														width="14"
+														height="14"
+														viewBox="0 0 16 16"
+														fill="none"
+														aria-hidden="true"
+													>
+														<path
+															d="M9 3.5H12.5V7"
+															stroke="currentColor"
+															strokeWidth="1.5"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+														/>
+														<path
+															d="M8 8L12.5 3.5"
+															stroke="currentColor"
+															strokeWidth="1.5"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+														/>
+														<rect
+															x="3"
+															y="5.5"
+															width="7.5"
+															height="7.5"
+															rx="1.5"
+															stroke="currentColor"
+															strokeWidth="1.5"
+														/>
+													</svg>
+												</a>
+											</div>
+										);
+									})}
+								</ScrollArea.Content>
+							</ScrollArea.Viewport>
+						</ScrollArea.Root>
 					</div>
 				</section>
 
