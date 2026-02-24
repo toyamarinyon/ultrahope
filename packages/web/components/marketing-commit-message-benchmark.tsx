@@ -262,26 +262,70 @@ export function MarketingCommitMessageBenchmark() {
 								scenario.sourceCommitUrl,
 							);
 							return (
-								<button
-									key={scenario.id}
-									type="button"
-									onClick={() => setActiveScenarioId(scenario.id)}
-									className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-										isActive
-											? "border-foreground/60 bg-canvas-dark text-foreground"
-											: "border-border-subtle/70 text-foreground-muted hover:border-foreground/30 hover:text-foreground"
-									}`}
-								>
-									<div className="flex items-center justify-between gap-2">
-										<p className="text-xs text-foreground-muted">
-											{scenario.sourceRepo}#{shortCommitHash} · +
-											{stats?.additions ?? 0} -{stats?.deletions ?? 0}
+								<div key={scenario.id} className="group relative">
+									<button
+										type="button"
+										onClick={() => setActiveScenarioId(scenario.id)}
+										className={`w-full rounded-lg border px-3 py-2 pr-10 text-left transition-colors ${
+											isActive
+												? "border-foreground/60 bg-canvas-dark text-foreground"
+												: "border-border-subtle/70 text-foreground-muted hover:border-foreground/30 hover:text-foreground"
+										}`}
+									>
+										<div className="flex items-center justify-between gap-2">
+											<p className="text-xs text-foreground-muted">
+												{scenario.sourceRepo}#{shortCommitHash} · +
+												{stats?.additions ?? 0} -{stats?.deletions ?? 0}
+											</p>
+										</div>
+										<p className="mt-1 text-sm text-foreground">
+											{scenario.title}
 										</p>
-									</div>
-									<p className="mt-1 text-sm text-foreground">
-										{scenario.title}
-									</p>
-								</button>
+									</button>
+									<a
+										href={scenario.sourceCommitUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="pointer-events-none absolute top-2 right-2 inline-flex size-6 items-center justify-center rounded-md text-foreground-muted opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 hover:text-foreground"
+										aria-label={`Open commit ${shortCommitHash} on GitHub`}
+										title="Open commit on GitHub"
+									>
+										<span className="sr-only">
+											Open commit {shortCommitHash} on GitHub
+										</span>
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 16 16"
+											fill="none"
+											aria-hidden="true"
+										>
+											<path
+												d="M9 3.5H12.5V7"
+												stroke="currentColor"
+												strokeWidth="1.5"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											/>
+											<path
+												d="M8 8L12.5 3.5"
+												stroke="currentColor"
+												strokeWidth="1.5"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											/>
+											<rect
+												x="3"
+												y="5.5"
+												width="7.5"
+												height="7.5"
+												rx="1.5"
+												stroke="currentColor"
+												strokeWidth="1.5"
+											/>
+										</svg>
+									</a>
+								</div>
 							);
 						})}
 					</div>
