@@ -492,7 +492,7 @@ async function selectFromSlots(
 
 			const guide = await new Promise<string | null>((resolve) => {
 				const prompt = `${ui.prompt(
-					`再生成条件を入力してください（例: もう少しフォーマルに / もう少し短く / Enterでクリア）: `,
+					`Enter refine instructions (e.g., more formal / shorter / Enter to clear): `,
 				)}`;
 				const promptReader = readline.createInterface({
 					input: ttyInput,
