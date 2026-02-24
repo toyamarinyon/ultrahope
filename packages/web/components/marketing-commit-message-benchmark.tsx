@@ -196,7 +196,7 @@ export function MarketingCommitMessageBenchmark() {
 						How much intelligence does this task actually need?
 					</p>
 					<h3 className="mt-1 text-xl font-semibold">
-						We measured models across the spectrum on real commit diffs.
+						We measured latency, cost, and output quality on real commit diffs.
 					</h3>
 				</div>
 				<div className="w-full sm:w-auto">
