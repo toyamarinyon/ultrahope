@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import benchmarkDatasetJson from "@/lib/demo/commit-message-benchmark.dataset.json";
 
 type BenchmarkTier = "small" | "frontier";
@@ -47,6 +47,16 @@ type BenchmarkDataset = {
 };
 
 const benchmarkDataset = benchmarkDatasetJson as BenchmarkDataset;
+const sampleListMaskGradient =
+	"linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)";
+const sampleListMaskStyle: CSSProperties = {
+	maskImage: sampleListMaskGradient,
+	WebkitMaskImage: sampleListMaskGradient,
+	maskRepeat: "no-repeat",
+	WebkitMaskRepeat: "no-repeat",
+	maskSize: "100% 100%",
+	WebkitMaskSize: "100% 100%",
+};
 
 function countDiffStats(diff: string): {
 	additions: number;
@@ -254,7 +264,10 @@ export function MarketingCommitMessageBenchmark() {
 
 			<div className="mt-3 grid gap-5 lg:grid-cols-[0.95fr_1.45fr] lg:items-stretch">
 				<section className="hidden lg:relative lg:block lg:min-h-0 lg:overflow-hidden">
-					<div className="flex flex-col gap-2 pr-1 lg:absolute lg:inset-0 lg:overflow-y-auto">
+					<div
+						className="flex flex-col gap-2 pr-1 lg:absolute lg:inset-0 lg:overflow-y-auto"
+						style={sampleListMaskStyle}
+					>
 						{scenarios.map((scenario) => {
 							const isActive = scenario.id === activeScenario.id;
 							const stats = scenarioDiffStatsMap.get(scenario.id);
