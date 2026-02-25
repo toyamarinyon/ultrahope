@@ -1,16 +1,15 @@
 @import "tailwindcss";
 
 /*
- * Ultrahope Design System
+ * Ultrahope Design Philosophy
  *
- * 灯り、発光ではなく。
- * 王道の上に空気を乗せる。
- * 色で主張しない。
- * 急いでいない。
+ * Not radiance — a quiet glow.
+ * Honor the classics.
+ * Never let color speak too loud.
+ * Beyond Light / Dark: explore a "Warm" mode.
  */
 
 @theme {
-	/* Colors: 暖かみのあるダーク */
 	--color-canvas: #1a1814;
 	--color-canvas-dark: #0f0d0a;
 	--color-surface: #252119;
