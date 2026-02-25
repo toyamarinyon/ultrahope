@@ -1,4 +1,7 @@
 import { execSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as readline from "node:readline";
+import * as tty from "node:tty";
 import {
 	abortReasonForError,
 	isCommandExecutionAbort,
@@ -115,6 +118,52 @@ function getStagedDiff(): string {
 	}
 }
 
+function canPromptForStagedChanges(): boolean {
+	if (!process.stdin.isTTY || !process.stdout.isTTY) {
+		return false;
+	}
+
+	try {
+		fs.accessSync("/dev/tty", fs.constants.R_OK);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function promptStageAllChanges(): Promise<boolean> {
+	return new Promise((resolve) => {
+		const fd = fs.openSync("/dev/tty", "r");
+		const ttyInput = new tty.ReadStream(fd);
+		const rl = readline.createInterface({
+			input: ttyInput,
+			output: process.stdout,
+			terminal: true,
+		});
+
+		rl.question(
+			ui.prompt(
+				"No staged changes. Stage all files with `git add -A` and continue? (y/N) ",
+			),
+			(answer) => {
+				rl.close();
+				ttyInput.destroy();
+				const normalized = answer.trim().toLowerCase();
+				resolve(normalized === "y");
+			},
+		);
+	});
+}
+
+function stageAllChanges(): void {
+	try {
+		execSync("git add -A", { stdio: "inherit" });
+	} catch {
+		console.error("Error: Failed to stage changes with `git add -A`.");
+		process.exit(1);
+	}
+}
+
 function commitWithMessage(message: string): void {
 	try {
 		execSync(`git commit -m ${JSON.stringify(message)}`, { stdio: "inherit" });
@@ -132,13 +181,33 @@ export async function commit(args: string[]) {
 		apiPath: "/v1/commit-message/stream",
 	});
 	const models = resolveModels(options.cliModels);
-	const diff = getStagedDiff();
+	let diff = getStagedDiff();
 
 	if (!diff.trim()) {
-		console.error(
-			"Error: No staged changes. Stage files with `git add` first.",
-		);
-		process.exit(1);
+		if (!options.interactive || !canPromptForStagedChanges()) {
+			console.error(
+				"Error: No staged changes. Stage files with `git add` first.",
+			);
+			process.exit(1);
+		}
+
+		const shouldStage = await promptStageAllChanges();
+		if (!shouldStage) {
+			console.error(
+				"Error: No staged changes. Stage files with `git add` first.",
+			);
+			process.exit(1);
+		}
+
+		stageAllChanges();
+		diff = getStagedDiff();
+
+		if (!diff.trim()) {
+			console.error(
+				"Error: No staged changes. Stage files with `git add` first.",
+			);
+			process.exit(1);
+		}
 	}
 
 	try {

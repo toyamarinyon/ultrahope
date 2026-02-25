@@ -30,6 +30,8 @@ Commit options:
    --guide <text>     Additional context to guide message generation
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save commit-message stream as replay JSON
+   When no staged changes are found in interactive mode, you will be prompted
+   to run \`git add -A\` first.
 
 Examples:
    git ultrahope commit               # interactive selector (default)
