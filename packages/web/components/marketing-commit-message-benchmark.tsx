@@ -1,6 +1,6 @@
 "use client";
 import { ScrollArea } from "@base-ui/react/scroll-area";
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import benchmarkDatasetJson from "@/lib/demo/commit-message-benchmark.dataset.json";
 
 type BenchmarkTier = "small" | "frontier";
@@ -47,6 +47,18 @@ type BenchmarkDataset = {
 };
 
 const benchmarkDataset = benchmarkDatasetJson as BenchmarkDataset;
+
+const horizontalScrollFadeStyle: CSSProperties = {
+	maskImage:
+		"linear-gradient(to right, transparent 0, black min(3.5rem, var(--scroll-area-overflow-x-start)), black calc(100% - min(3.5rem, var(--scroll-area-overflow-x-end))), transparent 100%)",
+	maskRepeat: "no-repeat",
+	maskSize: "100% 100%",
+	WebkitMaskImage:
+		"linear-gradient(to right, transparent 0, black min(3.5rem, var(--scroll-area-overflow-x-start)), black calc(100% - min(3.5rem, var(--scroll-area-overflow-x-end))), transparent 100%)",
+	WebkitMaskRepeat: "no-repeat",
+	WebkitMaskSize: "100% 100%",
+};
+
 function countDiffStats(diff: string): {
 	additions: number;
 	deletions: number;
@@ -227,7 +239,7 @@ export function MarketingCommitMessageBenchmark() {
 			<div className="mt-3 flex flex-col gap-5">
 				<section className="min-h-0">
 					<ScrollArea.Root>
-						<ScrollArea.Viewport className="scroll-fade-x">
+						<ScrollArea.Viewport style={horizontalScrollFadeStyle}>
 							<ScrollArea.Content className="inline-flex gap-2 pb-1">
 								{scenarios.map((scenario) => {
 									const isActive = scenario.id === activeScenario.id;
