@@ -101,6 +101,30 @@ function formatLatency(latencyMs: number | null): string {
 	return `${Math.round(latencyMs)}ms`;
 }
 
+function formatRelativeMultiplier(
+	value: number | null,
+	baseline: number | null,
+): string | null {
+	if (value == null || baseline == null) {
+		return null;
+	}
+	if (!Number.isFinite(value) || !Number.isFinite(baseline) || baseline === 0) {
+		return null;
+	}
+	return `${(value / baseline).toFixed(2)}x`;
+}
+
+function formatRelativeDisplay(
+	value: number | null,
+	baseline: number | null,
+): string | null {
+	const multiplier = formatRelativeMultiplier(value, baseline);
+	if (multiplier == null) {
+		return null;
+	}
+	return multiplier;
+}
+
 function safeMetric(value: number | null): number {
 	return value ?? Number.POSITIVE_INFINITY;
 }
@@ -186,24 +210,25 @@ export function MarketingCommitMessageBenchmark() {
 
 		return a.modelId.localeCompare(b.modelId);
 	});
+	const baselineResult = orderedResults.find((result) => isSuccessful(result));
+	const baselineLatencyMs =
+		sortKey === "latency" ? (baselineResult?.latencyMs ?? null) : null;
+	const baselineCostUsd =
+		sortKey === "cost" ? (baselineResult?.costUsd ?? null) : null;
 
 	return (
 		<div className="sm:p-6">
-			<div>
+			<div className="mb-8">
 				{/*<p className="text-foreground-muted">
 					How Much Model Do You Actually Need?
 				</p>*/}
 				<h3 className="mt-1 text-xl">
-					Take commit messages. Here's what different models generate from the
-					same diff
+					Take commit messages. Here's what different models generate from a
+					single diff.
 				</h3>
 			</div>
 
-			<p className="mt-5 text-xs uppercase tracking-[0.14em] text-foreground-muted">
-				Samples
-			</p>
-
-			<div className="mt-3 flex flex-col gap-5">
+			<div className="flex flex-col gap-4">
 				<section className="min-h-0">
 					<ScrollArea.Root>
 						<ScrollArea.Viewport className="scroll-fade-x">
@@ -224,8 +249,8 @@ export function MarketingCommitMessageBenchmark() {
 												onClick={() => setActiveScenarioId(scenario.id)}
 												className={`flex h-full w-full flex-col justify-start rounded-lg border px-3 py-2 pr-10 text-left transition-colors ${
 													isActive
-														? "border-foreground/60 bg-canvas-dark text-foreground"
-														: "border-border-subtle/70 text-foreground-muted hover:border-foreground/30 hover:text-foreground"
+														? "border-border-subtle/70 bg-canvas-dark/70 text-foreground"
+														: "border-border-subtle/70 text-foreground-muted hover:border-foreground/10 hover:text-foreground"
 												}`}
 											>
 												<div className="flex items-center justify-between gap-2">
@@ -359,6 +384,17 @@ export function MarketingCommitMessageBenchmark() {
 							</thead>
 							<tbody className="divide-y divide-border-subtle/60 bg-canvas-dark/30">
 								{orderedResults.map((result) => {
+									const relativeLatency =
+										sortKey === "latency"
+											? formatRelativeDisplay(
+													result.latencyMs,
+													baselineLatencyMs,
+												)
+											: null;
+									const relativeCost =
+										sortKey === "cost"
+											? formatRelativeDisplay(result.costUsd, baselineCostUsd)
+											: null;
 									return (
 										<tr key={result.modelId}>
 											<td className="px-3 py-3 align-top">
@@ -383,10 +419,24 @@ export function MarketingCommitMessageBenchmark() {
 												</p>
 											</td>
 											<td className="px-3 py-3 align-top text-right tabular-nums text-foreground">
-												{formatLatency(result.latencyMs)}
+												<div className="flex flex-col items-end gap-0.5 leading-tight">
+													<p>{formatLatency(result.latencyMs)}</p>
+													{sortKey === "latency" && relativeLatency ? (
+														<p className="text-xs text-foreground-muted">
+															{relativeLatency}
+														</p>
+													) : null}
+												</div>
 											</td>
 											<td className="px-3 py-3 align-top text-right tabular-nums text-foreground">
-												{formatCost(result.costUsd)}
+												<div className="flex flex-col items-end gap-0.5 leading-tight">
+													<p>{formatCost(result.costUsd)}</p>
+													{sortKey === "cost" && relativeCost ? (
+														<p className="text-xs text-foreground-muted">
+															{relativeCost}
+														</p>
+													) : null}
+												</div>
 											</td>
 										</tr>
 									);
