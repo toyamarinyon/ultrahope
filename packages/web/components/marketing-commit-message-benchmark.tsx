@@ -304,7 +304,7 @@ export function MarketingCommitMessageBenchmark() {
 									<th className="px-3 py-2 font-medium">Model</th>
 									<th className="px-3 py-2 font-medium">Message</th>
 									<th
-										className="px-3 py-2 font-medium"
+										className="px-3 py-2 text-right font-medium"
 										aria-sort={sortKey === "latency" ? "ascending" : "none"}
 									>
 										<button
@@ -317,7 +317,7 @@ export function MarketingCommitMessageBenchmark() {
 											}`}
 											aria-label="Sort rows by latency"
 										>
-											<span>Latency</span>
+											<span>LATENCY</span>
 											<svg
 												aria-hidden="true"
 												viewBox="0 0 8 8"
@@ -336,14 +336,14 @@ export function MarketingCommitMessageBenchmark() {
 										<button
 											type="button"
 											onClick={() => setSortKey("cost")}
-											className={`ml-auto inline-flex items-center gap-1 outline-none ${
+											className={`inline-flex items-center gap-1 outline-none ${
 												sortKey === "cost"
 													? "text-foreground"
 													: "text-foreground-muted hover:text-foreground"
 											}`}
 											aria-label="Sort rows by cost"
 										>
-											<span>Cost</span>
+											<span>COST</span>
 											<svg
 												aria-hidden="true"
 												viewBox="0 0 8 8"
@@ -382,7 +382,7 @@ export function MarketingCommitMessageBenchmark() {
 														: `Generation failed: ${result.errorMessage ?? "unknown error"}`}
 												</p>
 											</td>
-											<td className="px-3 py-3 align-top text-foreground">
+											<td className="px-3 py-3 align-top text-right tabular-nums text-foreground">
 												{formatLatency(result.latencyMs)}
 											</td>
 											<td className="px-3 py-3 align-top text-right tabular-nums text-foreground">
