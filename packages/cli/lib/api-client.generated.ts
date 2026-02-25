@@ -198,6 +198,23 @@ export interface operations {
 					};
 				};
 			};
+			/** @description Response for status 400 */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @constant */
+						error: "input_too_long";
+						message: string;
+						count: number;
+						limit: number;
+						/** @constant */
+						plan: "free";
+					};
+				};
+			};
 			/** @description Response for status 401 */
 			401: {
 				headers: {
@@ -305,12 +322,22 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": {
-						/** @constant */
-						error: "invalid_model";
-						message: string;
-						allowedModels: string[];
-					};
+					"application/json":
+						| {
+								/** @constant */
+								error: "invalid_model";
+								message: string;
+								allowedModels: string[];
+						  }
+						| {
+								/** @constant */
+								error: "input_too_long";
+								message: string;
+								count: number;
+								limit: number;
+								/** @constant */
+								plan: "free";
+						  };
 				};
 			};
 			/** @description Response for status 401 */
@@ -456,12 +483,22 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": {
-						/** @constant */
-						error: "invalid_model";
-						message: string;
-						allowedModels: string[];
-					};
+					"application/json":
+						| {
+								/** @constant */
+								error: "invalid_model";
+								message: string;
+								allowedModels: string[];
+						  }
+						| {
+								/** @constant */
+								error: "input_too_long";
+								message: string;
+								count: number;
+								limit: number;
+								/** @constant */
+								plan: "free";
+						  };
 				};
 			};
 			/** @description Response for status 401 */
@@ -576,12 +613,22 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": {
-						/** @constant */
-						error: "invalid_model";
-						message: string;
-						allowedModels: string[];
-					};
+					"application/json":
+						| {
+								/** @constant */
+								error: "invalid_model";
+								message: string;
+								allowedModels: string[];
+						  }
+						| {
+								/** @constant */
+								error: "input_too_long";
+								message: string;
+								count: number;
+								limit: number;
+								/** @constant */
+								plan: "free";
+						  };
 				};
 			};
 			/** @description Response for status 401 */

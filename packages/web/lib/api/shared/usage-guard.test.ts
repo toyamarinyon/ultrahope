@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import {
 	enforceDailyLimitOr402,
+	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
+	FREE_INPUT_LENGTH_LIMIT,
 	getBillingInfoOr503,
 } from "./usage-guard";
 
@@ -114,6 +116,45 @@ describe("usage-guard", () => {
 					set: {},
 				},
 			),
+		).toBeNull();
+	});
+
+	it("does not enforce input length when input is within free plan limit", () => {
+		expect(
+			enforceInputLengthLimitOr400({
+				plan: "free",
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
+				limit: FREE_INPUT_LENGTH_LIMIT,
+				set: {},
+			}),
+		).toBeNull();
+	});
+
+	it("returns input length exceeded error for free plan when input exceeds limit", () => {
+		const result = enforceInputLengthLimitOr400({
+			plan: "free",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+			limit: FREE_INPUT_LENGTH_LIMIT,
+			set: {},
+		});
+
+		expect(result?.status).toBe(400);
+		if (result?.status !== 400) {
+			throw new Error("unexpected non-400");
+		}
+		expect(result?.errorBody.error).toBe("input_too_long");
+		expect(result?.errorBody.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(result?.errorBody.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+	});
+
+	it("does not enforce input length for non-free plans", () => {
+		expect(
+			enforceInputLengthLimitOr400({
+				plan: "pro",
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				limit: FREE_INPUT_LENGTH_LIMIT,
+				set: {},
+			}),
 		).toBeNull();
 	});
 });

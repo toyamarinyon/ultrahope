@@ -58,11 +58,20 @@ export const GenerateSuccessResponseSchema = t.Object({
 });
 
 export const GenerateErrorResponseSchemas = {
-	400: t.Object({
-		error: t.Literal("invalid_model"),
-		message: t.String(),
-		allowedModels: t.Array(t.String()),
-	}),
+	400: t.Union([
+		t.Object({
+			error: t.Literal("invalid_model"),
+			message: t.String(),
+			allowedModels: t.Array(t.String()),
+		}),
+		t.Object({
+			error: t.Literal("input_too_long"),
+			message: t.String(),
+			count: t.Number(),
+			limit: t.Number(),
+			plan: t.Literal("free"),
+		}),
+	]),
 	401: t.Object({
 		error: t.String(),
 	}),
@@ -99,6 +108,13 @@ export const GenerateErrorResponseSchemas = {
 export const CommandExecutionResponseSchemas = {
 	200: t.Object({
 		commandExecutionId: t.String(),
+	}),
+	400: t.Object({
+		error: t.Literal("input_too_long"),
+		message: t.String(),
+		count: t.Number(),
+		limit: t.Number(),
+		plan: t.Literal("free"),
 	}),
 	401: t.Object({
 		error: t.String(),

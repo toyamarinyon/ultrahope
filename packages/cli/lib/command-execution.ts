@@ -4,6 +4,7 @@ import {
 	type CommandExecutionRequest,
 	type CommandExecutionResponse,
 	DailyLimitExceededError,
+	InputLengthExceededError,
 	InsufficientBalanceError,
 	UnauthorizedError,
 } from "./api-client";
@@ -88,6 +89,17 @@ export async function handleCommandExecutionError(
 
 	if (error instanceof InsufficientBalanceError) {
 		console.error(error.formatMessage());
+		process.exit(1);
+	}
+
+	if (error instanceof InputLengthExceededError) {
+		console.error("\x1b[31m✖\x1b[0m Input is too long for the Free plan.");
+		console.error(
+			`  Max allowed characters: ${error.limit}. Received: ${error.count}.`,
+		);
+		console.error(
+			"  Please shorten your input or upgrade to Pro for unlimited input length.",
+		);
 		process.exit(1);
 	}
 

@@ -9,6 +9,7 @@ import {
 	unauthorizedBody,
 } from "./shared/errors";
 import type { ApiStorage } from "./shared/storage";
+import { FREE_INPUT_LENGTH_LIMIT } from "./shared/usage-guard";
 
 type TestStorage = ApiStorage & {
 	insertedCommandExecution: boolean;
@@ -201,6 +202,76 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("daily_limit_exceeded");
 	});
 
+	it("returns 400 for command execution when free input exceeds limit", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				target: "vcs-commit-message",
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("input_too_long");
+		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+		expect(body.plan).toBe("free");
+	});
+
+	it("returns 200 for command execution for free user at input limit", async () => {
+		const storage = createStorage();
+		const app = createApiApp(createDeps({ storage }));
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
+				target: "vcs-commit-message",
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.commandExecutionId).toBe("cmd-1");
+		expect(storage.insertedCommandExecution).toBe(true);
+	});
+
+	it("returns 200 for command execution for pro user even when input exceeds limit", async () => {
+		const app = createApiApp(
+			createDeps({
+				getUserBillingInfo: async () => ({
+					plan: "pro",
+					balance: 10,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				target: "vcs-commit-message",
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.commandExecutionId).toBe("cmd-1");
+	});
+
 	it("creates command execution record for valid request", async () => {
 		const storage = createStorage();
 		const deps = createDeps({
@@ -238,6 +309,56 @@ describe("API route contracts", () => {
 
 		expect(response.status).toBe(400);
 		expect(body.error).toBe("invalid_model");
+	});
+
+	it("returns 400 for free commit message when input exceeds limit", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(app, "/api/v1/commit-message", {
+			cliSessionId: "cli-1",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("input_too_long");
+		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+		expect(body.plan).toBe("free");
+	});
+
+	it("returns 200 for free commit message at input limit", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(app, "/api/v1/commit-message", {
+			cliSessionId: "cli-1",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.output).toBe("feat: commit");
+	});
+
+	it("returns 200 for pro commit message when input exceeds limit", async () => {
+		const app = createApiApp(
+			createDeps({
+				getUserBillingInfo: async () => ({
+					plan: "pro",
+					balance: 10,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message", {
+			cliSessionId: "cli-1",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.output).toBe("feat: commit");
 	});
 
 	it("returns 402 for commit message when balance is depleted", async () => {
@@ -348,6 +469,86 @@ describe("API route contracts", () => {
 		expect(receivedGuide).toBe("Security advisory context");
 	});
 
+	it("returns 400 for free stream commit message when input exceeds limit", async () => {
+		const app = createApiApp(
+			createDeps({
+				getUserBillingInfo: async () => ({
+					plan: "free",
+					balance: 10,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message/stream", {
+			cliSessionId: "cli-1",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("input_too_long");
+		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+		expect(body.plan).toBe("free");
+	});
+
+	it("streams commit message at input limit", async () => {
+		let receivedGuide: string | undefined;
+		const app = createApiApp(
+			createDeps({
+				getUserBillingInfo: async () => ({
+					plan: "free",
+					balance: 10,
+					meterId: "meter",
+				}),
+				generateCommitMessageStream: (_input, options) => {
+					receivedGuide = options.guide;
+					const textStream = {
+						[Symbol.asyncIterator]: async function* () {
+							yield "```feat: done```";
+						},
+					};
+					return {
+						textStream,
+						totalUsage: Promise.resolve({ inputTokens: 3, outputTokens: 7 }),
+						providerMetadata: Promise.resolve({
+							model: "model-a",
+						}),
+					} as unknown as ReturnType<
+						ApiDependencies["generateCommitMessageStream"]
+					>;
+				},
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message/stream", {
+			cliSessionId: "cli-1",
+			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
+			model: "mistral/ministral-3b",
+			guide: "Security advisory context",
+		});
+		const text = await response.text();
+		const events = text
+			.split("\n\n")
+			.map((entry) => entry.trim())
+			.filter(Boolean)
+			.map((entry) => JSON.parse(entry.replace(/^data:\s*/, "")));
+		for (const event of events) {
+			expect(event.atMs).toBeTypeOf("number");
+			expect(event.atMs).toBeGreaterThanOrEqual(0);
+		}
+
+		expect(events.map((event) => event.type)).toEqual([
+			"commit-message",
+			"usage",
+			"provider-metadata",
+		]);
+		expect(events[0].commitMessage).toBe("feat: done");
+		expect(events[1].usage.inputTokens).toBe(3);
+		expect(events[2].providerMetadata.model).toBe("model-a");
+		expect(receivedGuide).toBe("Security advisory context");
+	});
+
 	it("returns 401 for unauthenticated pr route", async () => {
 		const app = createApiApp(
 			createDeps({
@@ -375,6 +576,53 @@ describe("API route contracts", () => {
 			const body = await response.json();
 			expect(response.status).toBe(400);
 			expect(body.error).toBe("invalid_model");
+		});
+
+		it(`returns 400 for free ${path} when input exceeds limit`, async () => {
+			const app = createApiApp(createDeps());
+			const response = await request(app, path, {
+				cliSessionId: "cli-1",
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				model: "mistral/ministral-3b",
+			});
+			const body = await response.json();
+			expect(response.status).toBe(400);
+			expect(body.error).toBe("input_too_long");
+			expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+			expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+			expect(body.plan).toBe("free");
+		});
+
+		it(`returns 200 for free ${path} at input limit`, async () => {
+			const app = createApiApp(createDeps());
+			const response = await request(app, path, {
+				cliSessionId: "cli-1",
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
+				model: "mistral/ministral-3b",
+			});
+			const body = await response.json();
+			expect(response.status).toBe(200);
+			expect(body.generationId).toBeTruthy();
+		});
+
+		it(`returns 200 for pro ${path} when input exceeds limit`, async () => {
+			const app = createApiApp(
+				createDeps({
+					getUserBillingInfo: async () => ({
+						plan: "pro",
+						balance: 10,
+						meterId: "meter",
+					}),
+				}),
+			);
+			const response = await request(app, path, {
+				cliSessionId: "cli-1",
+				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				model: "mistral/ministral-3b",
+			});
+			const body = await response.json();
+			expect(response.status).toBe(200);
+			expect(body.generationId).toBeTruthy();
 		});
 
 		it(`returns 200 for ${path}`, async () => {

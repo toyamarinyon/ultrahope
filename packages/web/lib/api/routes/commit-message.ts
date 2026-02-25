@@ -16,7 +16,9 @@ import {
 import {
 	combineAbortSignals,
 	enforceDailyLimitOr402,
+	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
+	FREE_INPUT_LENGTH_LIMIT,
 	getBillingInfoOr503,
 } from "../shared/usage-guard";
 import {
@@ -82,6 +84,26 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				if (!isModelAllowed(body.model)) {
 					set.status = 400;
 					return invalidModelErrorBody(body.model);
+				}
+
+				const billingInfoResult = await getBillingInfoOr503({
+					userId: session.user.id,
+					getUserBillingInfo: (userId) =>
+						deps.getUserBillingInfo(userId, { throwOnError: true }),
+					set,
+				});
+				if (billingInfoResult.status === 503) {
+					return billingInfoResult.errorBody;
+				}
+
+				const inputLengthResult = enforceInputLengthLimitOr400({
+					plan: billingInfoResult.plan,
+					input: body.input,
+					limit: FREE_INPUT_LENGTH_LIMIT,
+					set,
+				});
+				if (inputLengthResult) {
+					return inputLengthResult.errorBody;
 				}
 
 				const ctx = {
@@ -174,7 +196,17 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					return billingInfoResult.errorBody;
 				}
 
-				const { billingInfo, plan } = billingInfoResult;
+				const { plan } = billingInfoResult;
+
+				const inputLengthResult = enforceInputLengthLimitOr400({
+					plan,
+					input: body.input,
+					limit: FREE_INPUT_LENGTH_LIMIT,
+					set,
+				});
+				if (inputLengthResult) {
+					return inputLengthResult.errorBody;
+				}
 
 				const dailyLimitResult = await enforceDailyLimitOr402(
 					{

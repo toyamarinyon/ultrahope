@@ -4,7 +4,9 @@ import type { ApiDependencies } from "../dependencies";
 import { unauthorizedBody } from "../shared/errors";
 import {
 	enforceDailyLimitOr402,
+	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
+	FREE_INPUT_LENGTH_LIMIT,
 } from "../shared/usage-guard";
 import {
 	CommandExecutionBodySchema,
@@ -58,6 +60,16 @@ export function createCommandExecutionRoutes(deps: ApiDependencies): Elysia {
 				throwOnError: true,
 			});
 			const plan = billingInfo?.plan ?? "free";
+
+			const inputLengthResult = enforceInputLengthLimitOr400({
+				plan,
+				input: body.requestPayload.input,
+				limit: FREE_INPUT_LENGTH_LIMIT,
+				set,
+			});
+			if (inputLengthResult) {
+				return inputLengthResult.errorBody;
+			}
 
 			const dailyLimitResult = await enforceDailyLimitOr402(
 				{

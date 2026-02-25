@@ -84,6 +84,21 @@ export class InvalidModelError extends Error {
 	}
 }
 
+export class InputLengthExceededError extends Error {
+	constructor(
+		public count: number,
+		public limit: number,
+		public plan: "free" = "free",
+		message?: string,
+	) {
+		super(
+			message ??
+				`Input length ${count} exceeds the ${plan} plan limit of ${limit} characters.`,
+		);
+		this.name = "InputLengthExceededError";
+	}
+}
+
 export type GenerationScoreRequest = {
 	generationId: string;
 	value: number;
@@ -212,6 +227,26 @@ function handle402Error(error: unknown): never {
 	throw new DailyLimitExceededError(count, limit, resetsAt);
 }
 
+function throwInputLengthExceededError(error: unknown): never {
+	const payload = error as
+		| {
+				count?: number;
+				limit?: number;
+				plan?: string;
+				message?: string;
+		  }
+		| undefined;
+	const count = typeof payload?.count === "number" ? payload.count : 0;
+	const limit = typeof payload?.limit === "number" ? payload.limit : 0;
+	const plan = payload?.plan === "free" ? payload.plan : "free";
+	const message =
+		typeof payload?.message === "string"
+			? payload.message
+			: `Input length ${count} exceeds the ${plan} plan limit of ${limit} characters.`;
+	log("generate error (400 input_too_long)", error);
+	throw new InputLengthExceededError(count, limit, plan, message);
+}
+
 function throwInvalidModelError(error: unknown): never {
 	const payload = error as
 		| { model?: string; message?: string; allowedModels?: unknown }
@@ -226,6 +261,14 @@ function throwInvalidModelError(error: unknown): never {
 		: [];
 	log("generate error (400 invalid_model)", error);
 	throw new InvalidModelError(model, allowedModels, message);
+}
+
+function handle400Error(error: unknown): never {
+	const payload = error as { error?: string } | undefined;
+	if (payload?.error === "input_too_long") {
+		throwInputLengthExceededError(error);
+	}
+	throwInvalidModelError(error);
 }
 
 export function createApiClient(token?: string) {
@@ -276,7 +319,7 @@ export function createApiClient(token?: string) {
 				} catch {
 					errorPayload = await getErrorText(res, null);
 				}
-				throwInvalidModelError(errorPayload);
+				handle400Error(errorPayload);
 			}
 			if (!res.ok) {
 				const text = await getErrorText(res, null);
@@ -346,6 +389,9 @@ export function createApiClient(token?: string) {
 				log("command_execution error (402)", error);
 				handle402Error(error);
 			}
+			if (response.status === 400) {
+				handle400Error(error);
+			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
 				log("command_execution error", { status: response.status, text });
@@ -378,7 +424,7 @@ export function createApiClient(token?: string) {
 				handle402Error(error);
 			}
 			if (response.status === 400) {
-				throwInvalidModelError(error);
+				handle400Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
@@ -442,7 +488,7 @@ export function createApiClient(token?: string) {
 				handle402Error(error);
 			}
 			if (response.status === 400) {
-				throwInvalidModelError(error);
+				handle400Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);
@@ -473,7 +519,7 @@ export function createApiClient(token?: string) {
 				handle402Error(error);
 			}
 			if (response.status === 400) {
-				throwInvalidModelError(error);
+				handle400Error(error);
 			}
 			if (!response.ok) {
 				const text = await getErrorText(response, error);

@@ -4,6 +4,11 @@ import type { ApiDependencies } from "../dependencies";
 import { invalidModelErrorBody, unauthorizedBody } from "../shared/errors";
 import { executeGeneration } from "../shared/generation-service";
 import {
+	enforceInputLengthLimitOr400,
+	FREE_INPUT_LENGTH_LIMIT,
+	getBillingInfoOr503,
+} from "../shared/usage-guard";
+import {
 	GenerateBodySchema,
 	GenerateErrorResponseSchemas,
 	GenerateSuccessResponseSchema,
@@ -46,6 +51,26 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 				if (!isModelAllowed(body.model)) {
 					set.status = 400;
 					return invalidModelErrorBody(body.model);
+				}
+
+				const billingInfoResult = await getBillingInfoOr503({
+					userId: session.user.id,
+					getUserBillingInfo: (userId) =>
+						deps.getUserBillingInfo(userId, { throwOnError: true }),
+					set,
+				});
+				if (billingInfoResult.status === 503) {
+					return billingInfoResult.errorBody;
+				}
+
+				const inputLengthResult = enforceInputLengthLimitOr400({
+					plan: billingInfoResult.plan,
+					input: body.input,
+					limit: FREE_INPUT_LENGTH_LIMIT,
+					set,
+				});
+				if (inputLengthResult) {
+					return inputLengthResult.errorBody;
 				}
 
 				const result = await executeGeneration(
@@ -100,6 +125,26 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 				if (!isModelAllowed(body.model)) {
 					set.status = 400;
 					return invalidModelErrorBody(body.model);
+				}
+
+				const billingInfoResult = await getBillingInfoOr503({
+					userId: session.user.id,
+					getUserBillingInfo: (userId) =>
+						deps.getUserBillingInfo(userId, { throwOnError: true }),
+					set,
+				});
+				if (billingInfoResult.status === 503) {
+					return billingInfoResult.errorBody;
+				}
+
+				const inputLengthResult = enforceInputLengthLimitOr400({
+					plan: billingInfoResult.plan,
+					input: body.input,
+					limit: FREE_INPUT_LENGTH_LIMIT,
+					set,
+				});
+				if (inputLengthResult) {
+					return inputLengthResult.errorBody;
 				}
 
 				const result = await executeGeneration(

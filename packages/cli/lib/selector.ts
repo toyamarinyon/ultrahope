@@ -158,8 +158,8 @@ function renderSelector(
 			lines.push(ui.success("Select a commit message"));
 		} else {
 			const hint = ui.hint(
-			  "↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
-      );
+				"↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
+			);
 			lines.push(ui.prompt(`Select a commit message ${hint}`));
 		}
 	} else {

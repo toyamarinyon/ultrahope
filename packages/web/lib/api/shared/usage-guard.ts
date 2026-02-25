@@ -4,8 +4,10 @@ import {
 	type BillingUnavailableBody,
 	createBillingUnavailableBody,
 	createDailyLimitExceededBody,
+	createInputLengthExceededBody,
 	createInsufficientBalanceBody,
 	type DailyLimitExceededBody,
+	type InputLengthExceededBody,
 	type InsufficientBalanceBody,
 } from "./errors";
 
@@ -13,6 +15,8 @@ const MOCKING = process.env.MOCKING === "1";
 const SKIP_DAILY_LIMIT_CHECK =
 	process.env.NODE_ENV !== "production" &&
 	process.env.SKIP_DAILY_LIMIT_CHECK === "1";
+
+export const FREE_INPUT_LENGTH_LIMIT = 200;
 
 function isMockingEnabled(): boolean {
 	return MOCKING;
@@ -61,7 +65,7 @@ export async function getBillingInfoOr503(args: {
 	userId: number;
 	getUserBillingInfo: GetBillingInfo;
 	set: { status?: number | string };
-	generationAbortController: AbortController;
+	generationAbortController?: AbortController;
 }): Promise<
 	| { status: 200; billingInfo: BillingInfo; plan: "free" | "pro" }
 	| { status: 503; errorBody: BillingUnavailableBody }
@@ -74,7 +78,7 @@ export async function getBillingInfoOr503(args: {
 			plan: billingInfo?.plan ?? "free",
 		};
 	} catch (_error) {
-		args.generationAbortController.abort("billing_unavailable");
+		args.generationAbortController?.abort("billing_unavailable");
 		args.set.status = 503;
 		return {
 			status: 503,
@@ -159,5 +163,30 @@ export function enforceProBalanceOr402(
 			},
 			deps.baseUrl,
 		),
+	};
+}
+
+export function enforceInputLengthLimitOr400(args: {
+	plan: "free" | "pro";
+	input: string;
+	limit: number;
+	set: { status?: number | string };
+}): null | { status: 400; errorBody: InputLengthExceededBody } {
+	if (args.plan !== "free") {
+		return null;
+	}
+
+	const count = args.input.length;
+	if (count <= args.limit) {
+		return null;
+	}
+
+	args.set.status = 400;
+	return {
+		status: 400,
+		errorBody: createInputLengthExceededBody({
+			count,
+			limit: args.limit,
+		}),
 	};
 }

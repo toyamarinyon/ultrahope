@@ -35,6 +35,14 @@ export type BillingUnavailableBody = {
 	message: string;
 };
 
+export type InputLengthExceededBody = {
+	error: "input_too_long";
+	message: string;
+	count: number;
+	limit: number;
+	plan: "free";
+};
+
 export const unauthorizedBody: UnauthorizedBody = {
 	error: "Unauthorized",
 };
@@ -90,6 +98,19 @@ export function createBillingUnavailableBody(): BillingUnavailableBody {
 	return {
 		error: "billing_unavailable",
 		message: "Unable to verify billing info.",
+	};
+}
+
+export function createInputLengthExceededBody(params: {
+	count: number;
+	limit: number;
+}): InputLengthExceededBody {
+	return {
+		error: "input_too_long",
+		message: `Input exceeds ${params.limit} characters.`,
+		count: params.count,
+		limit: params.limit,
+		plan: "free",
 	};
 }
 
