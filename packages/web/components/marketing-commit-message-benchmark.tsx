@@ -11,7 +11,7 @@ type HumanReview = {
 	winnerFlag: boolean;
 };
 
-type BenchmarkSortMode = "latencyThenCost" | "costThenLatency";
+type BenchmarkSortKey = "latency" | "cost";
 
 type BenchmarkResult = {
 	modelId: string;
@@ -121,8 +121,7 @@ export function MarketingCommitMessageBenchmark() {
 	const [activeScenarioId, setActiveScenarioId] = useState(
 		scenarios[0]?.id ?? "",
 	);
-	const [sortMode, setSortMode] =
-		useState<BenchmarkSortMode>("latencyThenCost");
+	const [sortKey, setSortKey] = useState<BenchmarkSortKey>("latency");
 	const modelLabelMap = useMemo(
 		() =>
 			new Map(benchmarkDataset.models.map((model) => [model.id, model.label])),
@@ -159,7 +158,7 @@ export function MarketingCommitMessageBenchmark() {
 			return aSuccessful ? -1 : 1;
 		}
 
-		if (sortMode === "costThenLatency") {
+		if (sortKey === "cost") {
 			const aCost = safeMetric(a.costUsd);
 			const bCost = safeMetric(b.costUsd);
 			if (aCost !== bCost) {
@@ -190,35 +189,14 @@ export function MarketingCommitMessageBenchmark() {
 
 	return (
 		<div className="sm:p-6">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div>
-					{/*<p className="text-foreground-muted">
-						How Much Model Do You Actually Need?
-					</p>*/}
-					<h3 className="mt-1 text-xl">
-						Take commit messages. Here's what different models generate from the
-						same diff
-					</h3>
-				</div>
-				<div className="w-full sm:w-auto">
-					<label
-						htmlFor="benchmark-sort-select"
-						className="text-xs uppercase tracking-[0.14em] text-foreground-muted"
-					>
-						Sort by
-					</label>
-					<select
-						id="benchmark-sort-select"
-						value={sortMode}
-						onChange={(event) =>
-							setSortMode(event.target.value as BenchmarkSortMode)
-						}
-						className="mt-2 w-full sm:w-64 rounded-md bg-canvas-dark/70 px-3 py-2 text-sm text-foreground ring-1 ring-border-subtle/60 outline-none focus:ring-foreground/40"
-					>
-						<option value="latencyThenCost">Latency, then cost</option>
-						<option value="costThenLatency">Cost, then latency</option>
-					</select>
-				</div>
+			<div>
+				{/*<p className="text-foreground-muted">
+					How Much Model Do You Actually Need?
+				</p>*/}
+				<h3 className="mt-1 text-xl">
+					Take commit messages. Here's what different models generate from the
+					same diff
+				</h3>
 			</div>
 
 			<p className="mt-5 text-xs uppercase tracking-[0.14em] text-foreground-muted">
@@ -325,8 +303,58 @@ export function MarketingCommitMessageBenchmark() {
 								<tr>
 									<th className="px-3 py-2 font-medium">Model</th>
 									<th className="px-3 py-2 font-medium">Message</th>
-									<th className="px-3 py-2 font-medium">Latency</th>
-									<th className="px-3 py-2 text-right font-medium">Cost</th>
+									<th
+										className="px-3 py-2 font-medium"
+										aria-sort={sortKey === "latency" ? "ascending" : "none"}
+									>
+										<button
+											type="button"
+											onClick={() => setSortKey("latency")}
+											className={`inline-flex items-center gap-1 outline-none ${
+												sortKey === "latency"
+													? "text-foreground"
+													: "text-foreground-muted hover:text-foreground"
+											}`}
+											aria-label="Sort rows by latency"
+										>
+											<span>Latency</span>
+											<svg
+												aria-hidden="true"
+												viewBox="0 0 8 8"
+												className={`h-2 w-2 ${
+													sortKey === "latency" ? "opacity-100" : "opacity-35"
+												}`}
+											>
+												<path d="M4 1L7 6H1L4 1Z" fill="currentColor" />
+											</svg>
+										</button>
+									</th>
+									<th
+										className="px-3 py-2 text-right font-medium"
+										aria-sort={sortKey === "cost" ? "ascending" : "none"}
+									>
+										<button
+											type="button"
+											onClick={() => setSortKey("cost")}
+											className={`ml-auto inline-flex items-center gap-1 outline-none ${
+												sortKey === "cost"
+													? "text-foreground"
+													: "text-foreground-muted hover:text-foreground"
+											}`}
+											aria-label="Sort rows by cost"
+										>
+											<span>Cost</span>
+											<svg
+												aria-hidden="true"
+												viewBox="0 0 8 8"
+												className={`h-2 w-2 ${
+													sortKey === "cost" ? "opacity-100" : "opacity-35"
+												}`}
+											>
+												<path d="M4 1L7 6H1L4 1Z" fill="currentColor" />
+											</svg>
+										</button>
+									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-border-subtle/60 bg-canvas-dark/30">
