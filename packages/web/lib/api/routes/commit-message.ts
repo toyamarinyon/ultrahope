@@ -196,7 +196,7 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					return billingInfoResult.errorBody;
 				}
 
-				const { plan } = billingInfoResult;
+				const { plan, billingInfo } = billingInfoResult;
 
 				const inputLengthResult = enforceInputLengthLimitOr400({
 					plan,
