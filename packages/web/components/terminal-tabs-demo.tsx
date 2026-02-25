@@ -33,6 +33,7 @@ import type {
 	TerminalStreamReplayCapture,
 	TerminalStreamReplayGeneration,
 } from "../../shared/terminal-stream-replay";
+import { TerminalWindow } from "./terminal-window";
 
 interface DemoTab {
 	id: string;
@@ -597,18 +598,7 @@ export function TerminalTabsDemo() {
 
 	return (
 		<div className="space-y-3">
-			<div className="rounded-xl border border-border-subtle bg-canvas-dark overflow-hidden font-mono">
-				<div className="flex items-center justify-between border-b border-border-subtle bg-surface px-3 py-2">
-					<div className="flex items-center gap-2">
-						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/60" />
-						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/40" />
-						<span className="h-2.5 w-2.5 rounded-full bg-foreground-muted/30" />
-					</div>
-					<span className="text-[11px] text-foreground-secondary">
-						ultrahope demo
-					</span>
-				</div>
-
+			<TerminalWindow title="ultrahope demo" className="font-mono">
 				<div
 					className="flex bg-surface/70"
 					role="tablist"
@@ -754,7 +744,7 @@ export function TerminalTabsDemo() {
 						</div>
 					)}
 				</div>
-			</div>
+			</TerminalWindow>
 		</div>
 	);
 }

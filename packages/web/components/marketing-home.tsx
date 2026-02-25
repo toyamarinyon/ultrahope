@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
+import { MarketingControlLoopSection } from "./marketing-control-loop-section";
 import { MarketingInstallGuide } from "./marketing-install-guide";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
@@ -122,23 +123,7 @@ export function MarketingHome() {
 				</div>
 			</section>
 
-			<section>
-				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
-					<div className="w-full max-w-3xl">
-						<h1 className="mb-4 text-3xl font-medium font-serif">
-							Smaller models are faster and more economical.
-							<br />
-							That makes parallel generation practical. You can choose the best.
-						</h1>
-						<p className="mb-8 text-lg">
-							You don’t have to worry about token cost every time you reroll.{" "}
-						</p>
-						<div className="bg-slate-50/5 w-full h-100 flex items-center justify-center">
-							Placeholder
-						</div>
-					</div>
-				</div>
-			</section>
+			<MarketingControlLoopSection />
 
 			{/* Features */}
 			<section className="py-24 border-t border-border-subtle">
