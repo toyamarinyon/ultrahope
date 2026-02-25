@@ -136,20 +136,11 @@ a:hover {
  * --scroll-area-overflow-y-start / --scroll-area-overflow-y-end
  */
 .scroll-fade-y {
-	--scroll-fade-size: 3.5rem;
-	--scroll-fade-start: min(
-		var(--scroll-fade-size),
-		var(--scroll-area-overflow-y-start)
-	);
-	--scroll-fade-end: min(
-		var(--scroll-fade-size),
-		var(--scroll-area-overflow-y-end)
-	);
 	mask-image: linear-gradient(
 		to bottom,
 		transparent 0,
-		black var(--scroll-fade-start),
-		black calc(100% - var(--scroll-fade-end)),
+		black min(3.5rem, var(--scroll-area-overflow-y-start)),
+		black calc(100% - min(3.5rem, var(--scroll-area-overflow-y-end))),
 		transparent 100%
 	);
 	mask-repeat: no-repeat;
@@ -157,8 +148,8 @@ a:hover {
 	-webkit-mask-image: linear-gradient(
 		to bottom,
 		transparent 0,
-		black var(--scroll-fade-start),
-		black calc(100% - var(--scroll-fade-end)),
+		black min(3.5rem, var(--scroll-area-overflow-y-start)),
+		black calc(100% - min(3.5rem, var(--scroll-area-overflow-y-end))),
 		transparent 100%
 	);
 	-webkit-mask-repeat: no-repeat;
@@ -166,20 +157,11 @@ a:hover {
 }
 
 .scroll-fade-x {
-	--scroll-fade-size: 3.5rem;
-	--scroll-fade-start: min(
-		var(--scroll-fade-size),
-		var(--scroll-area-overflow-x-start)
-	);
-	--scroll-fade-end: min(
-		var(--scroll-fade-size),
-		var(--scroll-area-overflow-x-end)
-	);
 	mask-image: linear-gradient(
 		to right,
 		transparent 0,
-		black var(--scroll-fade-start),
-		black calc(100% - var(--scroll-fade-end)),
+		black min(3.5rem, var(--scroll-area-overflow-x-start)),
+		black calc(100% - min(3.5rem, var(--scroll-area-overflow-x-end))),
 		transparent 100%
 	);
 	mask-repeat: no-repeat;
@@ -187,8 +169,8 @@ a:hover {
 	-webkit-mask-image: linear-gradient(
 		to right,
 		transparent 0,
-		black var(--scroll-fade-start),
-		black calc(100% - var(--scroll-fade-end)),
+		black min(3.5rem, var(--scroll-area-overflow-x-start)),
+		black calc(100% - min(3.5rem, var(--scroll-area-overflow-x-end))),
 		transparent 100%
 	);
 	-webkit-mask-repeat: no-repeat;
