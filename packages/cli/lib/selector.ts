@@ -641,10 +641,7 @@ async function selectFromSlots(
 				return;
 			}
 
-			if (
-				key.name === "r" &&
-				(key.shift || key.name === "R" || key.sequence === "R")
-			) {
+			if (key.name === "r" && (key.shift || key.sequence === "R")) {
 				await refineSelection();
 				return;
 			}

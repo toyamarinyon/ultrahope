@@ -224,30 +224,17 @@ export function parseGenerateCliArgs(argv: string[]): BenchmarkGenerateArgs {
 		throw new Error("Use one of --set, --repo, or --github-all.");
 	}
 
-	if (githubRepo) {
-		const namespace = parseGitHubRepoInput(githubRepo);
-		return {
-			kind: "githubRepo",
-			owner: namespace.owner,
-			repo: namespace.repo,
-		};
-	}
-
-	if (githubAll) {
-		return { kind: "githubAll" };
-	}
-
 	const normalizedModelIds =
 		modelIds.length > 0 ? [...new Set(modelIds)] : undefined;
-	const fixtureSelection =
-		setName?.trim() === "github"
-			? { kind: "githubAll" }
-			: setName
-				? { kind: "set", setName: setName.trim() }
-				: {
-						kind: "set",
-						setName: DEFAULT_FIXTURE_SET,
-					};
+	let fixtureSelection: FixtureSelection = {
+		kind: "set",
+		setName: DEFAULT_FIXTURE_SET,
+	};
+	if (setName?.trim() === "github") {
+		fixtureSelection = { kind: "githubAll" };
+	} else if (setName?.trim()) {
+		fixtureSelection = { kind: "set", setName: setName.trim() };
+	}
 
 	if (githubRepo) {
 		const namespace = parseGitHubRepoInput(githubRepo);

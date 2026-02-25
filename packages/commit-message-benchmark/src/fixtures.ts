@@ -29,7 +29,7 @@ function ensureFixturePathSegment(value: string, label: string): string {
 	return trimmed.toLowerCase();
 }
 
-export function getFixtureSetDir(setName = DEFAULT_FIXTURE_SET): URL {
+function getFixtureSetDir(setName = DEFAULT_FIXTURE_SET): URL {
 	const safeSetName = ensureFixtureSetName(setName);
 	return new URL(`../fixtures/${safeSetName}/`, import.meta.url);
 }
@@ -55,10 +55,7 @@ export function normalizeGitHubFixtureNamespace(args: {
 	};
 }
 
-export function getGitHubRepoFixtureDir(args: {
-	owner: string;
-	repo: string;
-}): URL {
+function getGitHubRepoFixtureDir(args: { owner: string; repo: string }): URL {
 	const namespace = normalizeGitHubFixtureNamespace(args);
 	return new URL(
 		`../fixtures/github/${namespace.owner}/${namespace.repo}/`,
@@ -66,7 +63,7 @@ export function getGitHubRepoFixtureDir(args: {
 	);
 }
 
-export function getGitHubFixtureRootDir(): URL {
+function getGitHubFixtureRootDir(): URL {
 	return new URL("../fixtures/github/", import.meta.url);
 }
 
@@ -87,7 +84,7 @@ export function getGitHubRepoFixtureFilePath(
 	return new URL(relativePath, getGitHubRepoFixtureDir(args));
 }
 
-export async function readJsonFile<T>(path: URL): Promise<T> {
+async function readJsonFile<T>(path: URL): Promise<T> {
 	const text = await readFile(path, "utf8");
 	return JSON.parse(text) as T;
 }
@@ -100,7 +97,7 @@ export async function writeJsonFile(
 	await writeFile(path, `${JSON.stringify(payload, null, "\t")}\n`, "utf8");
 }
 
-export async function loadFixtureIndex(
+async function loadFixtureIndex(
 	setName = DEFAULT_FIXTURE_SET,
 	options?: { allowMissing?: boolean },
 ): Promise<FixtureScenarioIndexEntry[]> {
@@ -135,14 +132,6 @@ export async function loadGitHubRepoFixtureIndex(
 		}
 		throw error;
 	}
-}
-
-export async function saveFixtureIndex(args: {
-	setName?: string;
-	entries: FixtureScenarioIndexEntry[];
-}): Promise<void> {
-	const setName = args.setName ?? DEFAULT_FIXTURE_SET;
-	await writeJsonFile(getFixtureSetIndexPath(setName), args.entries);
 }
 
 export async function saveGitHubRepoFixtureIndex(args: {
