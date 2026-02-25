@@ -51,6 +51,22 @@ git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 ```
 
+If you run `git ultrahope commit` with no staged files, interactive mode now asks whether to stage all changes:
+
+```bash
+# With staged changes:
+git add packages/cli/commands/commit.ts
+git ultrahope commit
+
+# Without staged changes:
+git ultrahope commit
+# prompts: No staged changes. Stage all files with `git add -A` and continue? (y/N)
+```
+
+If you answer `y`, Ultrahope runs `git add -A` and continues with staged changes.
+If you answer `n` (or leave the default), it exits with the existing staged-changes error.
+In `--no-interactive` mode, no prompt is shown and it exits immediately when no staged changes exist.
+
 In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `r` to reroll and `R` (Shift+r) to reroll with additional instructions.
 
 #### Difference Between `guide` And Refine Instructions
