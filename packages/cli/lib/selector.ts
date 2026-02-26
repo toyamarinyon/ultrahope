@@ -103,13 +103,14 @@ function renderSelector(
 		lines.push(
 			`${theme.progress}${viewModel.header.spinner}${theme.reset} ${theme.primary}${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}${theme.reset}`,
 		);
-	} else {
-		lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
-	}
+		} else {
+			lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
+		}
+		lines.push("");
 
-	for (const slot of viewModel.slots) {
-		const slotLines = renderCliSlotLines(slot);
-		for (const line of slotLines) {
+		for (const slot of viewModel.slots) {
+			const slotLines = renderCliSlotLines(slot);
+			for (const line of slotLines) {
 			lines.push(line);
 		}
 		if (slotLines.length > 0) {
