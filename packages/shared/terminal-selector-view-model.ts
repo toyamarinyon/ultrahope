@@ -31,7 +31,7 @@ export interface SelectorCapabilities {
 	refine: boolean;
 }
 
-export interface SelectorHeaderViewModel {
+interface SelectorHeaderViewModel {
 	mode: "running" | "done";
 	spinner?: string;
 	progress: string;
@@ -40,7 +40,7 @@ export interface SelectorHeaderViewModel {
 	generatedLabel: string;
 }
 
-export interface SelectorHintViewModel {
+interface SelectorHintViewModel {
 	kind: "ready" | "empty";
 	selectionLabel?: string;
 	actions: SelectorHintAction[];
@@ -121,22 +121,22 @@ const DEFAULT_HINT_LABELS: Record<
 	},
 };
 
-export const SELECTOR_HINT_ACTION_LABELS = DEFAULT_HINT_LABELS;
+const SELECTOR_HINT_ACTION_LABELS = DEFAULT_HINT_LABELS;
 
-export const DEFAULT_SELECTOR_COPY: SelectorCopy = {
+const DEFAULT_SELECTOR_COPY: SelectorCopy = {
 	runningLabel: "Generating commit messages...",
 	selectionLabel: "Select a commit message",
 	itemLabelSingular: "commit message",
 	itemLabelPlural: "commit messages",
 };
 
-export const DEFAULT_SELECTOR_CAPABILITIES: SelectorCapabilities = {
+const DEFAULT_SELECTOR_CAPABILITIES: SelectorCapabilities = {
 	clickConfirm: false,
 	edit: false,
 	refine: false,
 };
 
-export function formatDuration(ms: number): string {
+function formatDuration(ms: number): string {
 	const safeMs = Math.max(0, Math.round(ms));
 	if (safeMs < 1000) {
 		return `${safeMs}ms`;
