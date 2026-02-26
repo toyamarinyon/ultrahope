@@ -125,42 +125,74 @@ export function MarketingHome() {
 
 			<MarketingControlLoopSection />
 
-			{/* Features */}
-			<section className="py-24 border-t border-border-subtle">
-				<h2 className="text-3xl font-bold tracking-tight mb-12">Features</h2>
-				<div className="grid md:grid-cols-3 gap-8">
-					<div>
-						<h3 className="text-lg font-semibold mb-2">Fast by design</h3>
-						<p className="text-foreground-secondary">
-							Parallel models. Low-latency generation.
-						</p>
-					</div>
-					<div>
-						<h3 className="text-lg font-semibold mb-2">
-							Compare, don't prompt
-						</h3>
-						<p className="text-foreground-secondary">
-							Multiple candidates, instant reroll, and edit before confirm.
-						</p>
-					</div>
-					<div>
-						<h3 className="text-lg font-semibold mb-2">Terminal-native</h3>
-						<p className="text-foreground-secondary">
-							Git. Jujutsu. Pipes. No context switch.
-						</p>
-					</div>
-				</div>
-			</section>
+			<section className="relative py-20 sm:py-28">
+				<div className="relative mx-auto w-full max-w-6xl px-2 text-center sm:px-6">
+					<h2 className="text-3xl font-medium font-serif tracking-tight sm:text-4xl">
+						Start fast. Escalate only when you need to.
+					</h2>
 
-			{/* Why */}
-			<section className="py-24 border-t border-border-subtle">
-				<h2 className="text-3xl font-bold tracking-tight mb-6">
-					Why Ultrahope
-				</h2>
-				<p className="text-lg text-foreground-secondary max-w-3xl leading-relaxed">
-					I wanted fast AI commit messages I could compare in my terminal. So I
-					built this. I use it every day.
-				</p>
+					<div className="mx-auto mt-10 w-full max-w-3xl rounded-2xl border border-border-subtle">
+						<div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-5">
+							<code className="overflow-x-auto whitespace-nowrap text-base text-foreground-secondary sm:text-xl">
+								$ npm i -g ultrahope
+							</code>
+							<span
+								className="inline-flex size-8 shrink-0 items-center justify-center text-foreground-muted sm:size-9"
+								aria-hidden="true"
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									aria-hidden="true"
+								>
+									<rect
+										x="5.5"
+										y="5.5"
+										width="7"
+										height="7"
+										rx="1.5"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									/>
+									<path
+										d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									/>
+								</svg>
+							</span>
+						</div>
+					</div>
+
+					<div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+						<Link
+							href="/signup"
+							className="inline-flex min-w-56 items-center justify-center rounded-2xl bg-foreground px-8 py-3 text-lg font-medium text-canvas no-underline transition-opacity hover:opacity-90"
+						>
+							Get Started for Free →
+						</Link>
+						<Link
+							href="/pricing"
+							className="inline-flex min-w-56 items-center justify-center rounded-2xl border border-border-subtle px-8 py-3 text-lg font-medium text-foreground-secondary no-underline transition-colors hover:border-foreground-muted hover:text-foreground"
+						>
+							View Pricing
+						</Link>
+					</div>
+
+					<p className="mt-8 text-base text-foreground-muted sm:text-lg">
+						Or,{" "}
+						<Link
+							href="https://github.com/toyamarinyon/ultrahope"
+							className="text-inherit underline underline-offset-4 decoration-current transition-opacity hover:opacity-80"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							view on GitHub
+						</Link>
+					</p>
+				</div>
 			</section>
 
 			{/* Install */}
