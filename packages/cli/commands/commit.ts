@@ -18,7 +18,7 @@ import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
-import { formatTotalCost, ui } from "../lib/ui";
+import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface CommitOptions {
@@ -331,12 +331,7 @@ export async function commit(args: string[]) {
 
 			if (result.action === "confirm" && result.selected) {
 				await recordSelection(result.selectedCandidate?.generationId);
-				const costLabel =
-					result.totalCost != null
-						? ` (total: ${formatTotalCost(result.totalCost)})`
-						: "";
-				console.log(ui.success(`Message selected${costLabel}`));
-				console.log(`${ui.success("Running git commit")}\n`);
+				console.log(ui.success("Running git commit"));
 				commitWithMessage(result.selected);
 
 				if (result.quota) {

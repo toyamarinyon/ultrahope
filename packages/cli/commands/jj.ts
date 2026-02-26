@@ -303,9 +303,7 @@ async function runInteractiveDescribe(
 				context.apiClient,
 				result.selectedCandidate?.generationId,
 			);
-			console.log(
-				`${ui.success(`Running jj describe -r ${options.revision}`)}\n`,
-			);
+			console.log(ui.success(`Running jj describe -r ${options.revision}`));
 			describeRevision(options.revision, result.selected);
 
 			if (result.quota) {

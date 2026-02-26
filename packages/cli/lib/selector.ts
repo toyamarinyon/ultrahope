@@ -498,6 +498,27 @@ async function selectFromSlots(
 			cancelGeneration();
 			const totalCost = getTotalCost(slots);
 			const quota = getLatestQuota(slots);
+
+			if (clearOutput) {
+				const viewModel = buildSelectorViewModel({
+					state,
+					nowMs: Date.now(),
+					spinnerFrames: SPINNER_FRAMES,
+					editedSelections,
+					capabilities: { edit: true, refine: true },
+				});
+				const costSuffix = viewModel.header.totalCostLabel
+					? ` (total: ${viewModel.header.totalCostLabel})`
+					: "";
+				const selectedTitle =
+					selectedContent.split("\n")[0]?.trim() || selectedContent;
+				renderer.clearAll();
+				ttyOutput.write(
+					`${ui.success(`${viewModel.header.generatedLabel}${costSuffix}`)}\n`,
+				);
+				ttyOutput.write(`${ui.success(`Selected: ${selectedTitle}`)}\n`);
+			}
+
 			resolveOnce({
 				action: "confirm",
 				selected: selectedContent,
@@ -506,7 +527,7 @@ async function selectFromSlots(
 				totalCost: totalCost > 0 ? totalCost : undefined,
 				quota,
 			});
-			cleanup(clearOutput);
+			cleanup(false);
 		};
 
 		const rerollSelection = () => {
