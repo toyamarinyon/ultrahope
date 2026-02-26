@@ -63,19 +63,25 @@ function collapseToReady(slots: SelectorSlot[]): void {
 }
 
 function renderSlotMeta(meta: string, muted: boolean): string {
-	return muted ? `${theme.dim}${meta}${theme.reset}` : meta;
+	return muted
+		? `${theme.dim}${meta}${theme.reset}`
+		: `${theme.primary}${meta}${theme.reset}`;
 }
 
 function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
-	const linePrefix = `  ${slot.radio}  `;
+	const radio = slot.selected
+		? `${theme.success}${slot.radio}${theme.reset}`
+		: `${theme.dim}${slot.radio}${theme.reset}`;
+	const linePrefix = `  ${radio} `;
+
 	if (slot.status === "ready" && slot.selected) {
-		const line = `${linePrefix}${theme.bold}${slot.title}${theme.reset}`;
-		const meta = slot.meta ? `     ${renderSlotMeta(slot.meta, false)}` : "";
+		const line = `${linePrefix}${theme.primary}${theme.bold}${slot.title}${theme.reset}`;
+		const meta = slot.meta ? `    ${renderSlotMeta(slot.meta, false)}` : "";
 		return meta ? [line, meta] : [line];
 	}
 
-	const line = `${theme.dim}${linePrefix}${slot.title}${theme.reset}`;
-	const meta = slot.meta ? `     ${renderSlotMeta(slot.meta, true)}` : "";
+	const line = `${linePrefix}${theme.dim}${slot.title}${theme.reset}`;
+	const meta = slot.meta ? `    ${renderSlotMeta(slot.meta, true)}` : "";
 	return meta ? [line, meta] : [line];
 }
 
