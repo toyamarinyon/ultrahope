@@ -190,7 +190,7 @@ export function MarketingControlLoopSection() {
 				</div>
 
 				<p className="text-center font-mono text-base text-foreground-secondary sm:text-lg">
-					Fast and cheap by default. Escalate only when you need to.
+					The model drafts. You have the final word.
 				</p>
 			</div>
 		</section>

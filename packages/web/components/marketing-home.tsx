@@ -56,13 +56,15 @@ export function MarketingHome() {
 				<div className="py-16 lg:py-20 flex flex-col items-center gap-14 lg:gap-16">
 					<div className="w-full max-w-4xl">
 						<h1 className="mb-5 text-4xl font-medium font-serif">
-							Fast AI commit messages
-							<br /> you can compare
+							You commit dozens of times a day.
+							<br /> The message shouldn't slow you down.
 						</h1>
 						<div className="max-w-3xl">
 							<div className="text-lg">
-								<p>Turn diffs into multiple proposals in your terminal.</p>
-								<p>Reroll, edit, and confirm — without breaking your flow.</p>
+								<p>
+									Your diff becomes multiple proposals — right in the terminal.
+								</p>
+								<p>Tweak until it reads like you wrote it.</p>
 							</div>
 							<div className="mt-6 flex flex-col items-start gap-3 sm:mt-7">
 								<Link
@@ -111,11 +113,13 @@ export function MarketingHome() {
 			<section>
 				<div className="flex flex-col items-center">
 					<div className="w-full max-w-3xl">
-						<h1 className="mb-10 text-3xl font-medium font-serif">
-							Coding agents are incredibly capable.
-							<br />
-							But not every task needs that level of intelligence.
-						</h1>
+						<h2 className="mb-4 text-3xl font-medium font-serif">
+							Judge by the output, not the model name.
+						</h2>
+						<p className="mb-10 text-lg text-foreground-secondary">
+							A commit message is a single line. How much model do you need for
+							one line?
+						</p>
 					</div>
 					<div className="w-full max-w-6xl">
 						<MarketingCommitMessageBenchmark />
@@ -128,8 +132,11 @@ export function MarketingHome() {
 			<section className="relative py-20 sm:py-28">
 				<div className="relative mx-auto w-full max-w-6xl px-2 text-center sm:px-6">
 					<h2 className="text-3xl font-medium font-serif tracking-tight sm:text-4xl">
-						Start fast. Escalate only when you need to.
+						Try it on your next commit.
 					</h2>
+					<p className="mx-auto mt-4 max-w-2xl text-lg text-foreground-secondary">
+						Install once, run from any repo. Multiple proposals, your choice.
+					</p>
 
 					<div className="mx-auto mt-10 w-full max-w-3xl rounded-2xl border border-border-subtle">
 						<div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-5">
