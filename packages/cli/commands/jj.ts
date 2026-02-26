@@ -13,6 +13,7 @@ import {
 import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
+import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { ui } from "../lib/ui";
@@ -132,7 +133,7 @@ function getJjDiff(revision: string): string {
 function describeRevision(revision: string, message: string): void {
 	try {
 		spawnSync("jj", ["describe", "-r", revision, "-m", message], {
-			stdio: "inherit",
+			stdio: "pipe",
 		});
 	} catch {
 		process.exit(1);
@@ -299,12 +300,16 @@ async function runInteractiveDescribe(
 		}
 
 		if (result.action === "confirm" && result.selected) {
-			await recordSelection(
+			recordSelection(
 				context.apiClient,
 				result.selectedCandidate?.generationId,
 			);
-			console.log(ui.success(`Running jj describe -r ${options.revision}`));
+			const label = `jj describe -r ${options.revision}`;
+			const renderer = createRenderer(process.stderr);
+			renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
 			describeRevision(options.revision, result.selected);
+			renderer.clearAll();
+			console.log(ui.success(label));
 
 			if (result.quota) {
 				showQuotaInfo(result.quota);

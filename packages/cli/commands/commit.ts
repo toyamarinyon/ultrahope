@@ -16,6 +16,7 @@ import {
 import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
+import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { ui } from "../lib/ui";
@@ -166,7 +167,7 @@ function stageAllChanges(): void {
 
 function commitWithMessage(message: string): void {
 	try {
-		execSync(`git commit -m ${JSON.stringify(message)}`, { stdio: "inherit" });
+		execSync(`git commit -m ${JSON.stringify(message)}`, { stdio: "pipe" });
 	} catch {
 		process.exit(1);
 	}
@@ -330,9 +331,13 @@ export async function commit(args: string[]) {
 			}
 
 			if (result.action === "confirm" && result.selected) {
-				await recordSelection(result.selectedCandidate?.generationId);
-				console.log(ui.success("Running git commit"));
+				recordSelection(result.selectedCandidate?.generationId);
+				const label = "git commit";
+				const renderer = createRenderer(process.stderr);
+				renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
 				commitWithMessage(result.selected);
+				renderer.clearAll();
+				console.log(ui.success(label));
 
 				if (result.quota) {
 					showQuotaInfo(result.quota);
