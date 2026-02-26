@@ -28,6 +28,7 @@ import {
 import { formatCost } from "../../shared/terminal-selector-helpers";
 import {
 	buildSelectorViewModel,
+	formatSelectorHintActions,
 	type SelectorSlotViewModel,
 } from "../../shared/terminal-selector-view-model";
 import type {
@@ -563,10 +564,13 @@ export function TerminalTabsDemo() {
 					capabilities: selectorCapabilities,
 				})
 			: [];
+	const renderedSelectorHintLine = selectorViewModel
+		? formatSelectorHintActions(selectorViewModel.hint.actions, "web")
+		: "";
 	const renderedSelectorHeaderLines =
 		selectorState !== null
 			? renderSelectorLinesWithSpinner(
-					renderedSelectorLines,
+					[renderedSelectorLines[0]].filter((line) => line.trim() !== ""),
 					selectorState.isGenerating,
 					SPINNER_FRAMES[spinnerFrameIndex],
 				)
@@ -640,7 +644,6 @@ export function TerminalTabsDemo() {
 								{renderedSelectorHeaderLines.length > 0 && (
 									<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
 										{renderedSelectorHeaderLines[0]}
-										{renderedSelectorHeaderLines[1]}
 									</pre>
 								)}
 								<div className="mt-2 space-y-1">
@@ -700,6 +703,11 @@ export function TerminalTabsDemo() {
 										);
 									})}
 								</div>
+								{renderedSelectorHintLine !== "" && (
+									<p className="mt-2 text-xs text-foreground-muted">
+										{renderedSelectorHintLine}
+									</p>
+								)}
 							</div>
 						)}
 

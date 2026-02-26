@@ -94,6 +94,15 @@ export function renderSelectorLines(
 		lines.push(`${viewModel.header.generatedLabel}${costSuffix}`);
 	}
 
+	lines.push("");
+
+	for (const slot of viewModel.slots) {
+		for (const line of formatSlot(slot)) {
+			lines.push(line);
+		}
+		lines.push("");
+	}
+
 	if (viewModel.hint.kind === "ready") {
 		const hintActions = formatSelectorHintActions(
 			viewModel.hint.actions,
@@ -105,14 +114,6 @@ export function renderSelectorLines(
 			options.noReadyHint ??
 				formatSelectorHintActions(viewModel.hint.actions, "web"),
 		);
-	}
-
-	lines.push("");
-	for (const slot of viewModel.slots) {
-		for (const line of formatSlot(slot)) {
-			lines.push(line);
-		}
-		lines.push("");
 	}
 
 	return lines;

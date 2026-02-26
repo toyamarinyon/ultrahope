@@ -107,17 +107,6 @@ function renderSelector(
 		lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
 	}
 
-	if (viewModel.hint.kind === "ready") {
-		lines.push(
-			ui.hint(formatSelectorHintActions(viewModel.hint.actions, "cli")),
-		);
-	} else {
-		lines.push(
-			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
-		);
-	}
-
-	lines.push("");
 	for (const slot of viewModel.slots) {
 		const slotLines = renderCliSlotLines(slot);
 		for (const line of slotLines) {
@@ -126,6 +115,15 @@ function renderSelector(
 		if (slotLines.length > 0) {
 			lines.push("");
 		}
+	}
+	if (viewModel.hint.kind === "ready") {
+		lines.push(
+			ui.hint(formatSelectorHintActions(viewModel.hint.actions, "cli")),
+		);
+	} else {
+		lines.push(
+			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
+		);
 	}
 	if (viewModel.editedSummary) {
 		lines.push(ui.success(`Edited: ${viewModel.editedSummary}`));

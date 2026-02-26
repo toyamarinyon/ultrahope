@@ -197,8 +197,16 @@ describe("terminal-selector-view-model", () => {
 
 		const readyLines = renderSelectorLines(readyState, 0);
 
-		expect(readyLines[1]).toBe("↑↓ navigate, enter confirm, r reroll, q quit");
-		expect(readyLines[1]).not.toContain("Select a candidate");
+		const hintLine = "↑↓ navigate, enter confirm, r reroll, q quit";
+		const hintIndex = readyLines.indexOf(hintLine);
+		const summaryLineIndex = readyLines.findIndex((line) =>
+			line.includes("feat: add selector metadata"),
+		);
+
+		expect(hintIndex).toBeGreaterThan(-1);
+		expect(summaryLineIndex).toBeGreaterThan(-1);
+		expect(hintIndex).toBeGreaterThan(summaryLineIndex);
+		expect(hintIndex).toBeGreaterThan(1);
 	});
 
 	it("prioritizes legacy hint options in renderSelectorLines", () => {
@@ -221,7 +229,20 @@ describe("terminal-selector-view-model", () => {
 			noReadyHint: "NONE HINT",
 		});
 
-		expect(readyLines[1]).toBe("READY HINT");
-		expect(noReadyLines[1]).toBe("NONE HINT");
+		const readyHintIndex = readyLines.indexOf("READY HINT");
+		const readyCandidateIndex = readyLines.findIndex(
+			(line) => line.startsWith("○") || line.startsWith("●"),
+		);
+		const noReadyHintIndex = noReadyLines.indexOf("NONE HINT");
+		const noReadyCandidateIndex = noReadyLines.findIndex((line) =>
+			line.startsWith("○"),
+		);
+
+		expect(readyHintIndex).toBeGreaterThan(-1);
+		expect(readyCandidateIndex).toBeGreaterThan(-1);
+		expect(readyHintIndex).toBeGreaterThan(readyCandidateIndex);
+		expect(noReadyHintIndex).toBeGreaterThan(-1);
+		expect(noReadyCandidateIndex).toBeGreaterThan(-1);
+		expect(noReadyHintIndex).toBeGreaterThan(noReadyCandidateIndex);
 	});
 });
