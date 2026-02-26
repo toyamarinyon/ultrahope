@@ -16,7 +16,7 @@ const SKIP_DAILY_LIMIT_CHECK =
 	process.env.NODE_ENV !== "production" &&
 	process.env.SKIP_DAILY_LIMIT_CHECK === "1";
 
-export const FREE_INPUT_LENGTH_LIMIT = 200;
+export const FREE_INPUT_LENGTH_LIMIT = 40000;
 
 function isMockingEnabled(): boolean {
 	return MOCKING;

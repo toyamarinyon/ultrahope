@@ -35,7 +35,7 @@ const plans = [
 		description: "Get started with Ultrahope",
 		features: [
 			{ key: "requests", content: "5 requests/day" },
-			{ key: "inputLimit", content: "200 character input limit per request" },
+			{ key: "inputLimit", content: "40000 character input limit per request" },
 			{ key: "reset", content: <ResetTime /> },
 			{ key: "support", content: "Community support" },
 		],
