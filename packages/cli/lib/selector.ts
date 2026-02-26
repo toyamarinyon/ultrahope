@@ -118,7 +118,7 @@ function renderSelector(
 	}
 	if (viewModel.hint.kind === "ready") {
 		lines.push(
-			ui.hint(formatSelectorHintActions(viewModel.hint.actions, "cli")),
+			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
 		);
 	} else {
 		lines.push(
