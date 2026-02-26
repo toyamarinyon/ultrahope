@@ -62,18 +62,20 @@ function collapseToReady(slots: SelectorSlot[]): void {
 	}
 }
 
+function renderSlotMeta(meta: string, muted: boolean): string {
+	return muted ? `${theme.dim}${meta}${theme.reset}` : meta;
+}
+
 function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
 	const linePrefix = `  ${slot.radio}  `;
 	if (slot.status === "ready" && slot.selected) {
 		const line = `${linePrefix}${theme.bold}${slot.title}${theme.reset}`;
-		const meta = slot.meta
-			? `     ${theme.progress}${slot.meta}${theme.reset}`
-			: "";
+		const meta = slot.meta ? `     ${renderSlotMeta(slot.meta, false)}` : "";
 		return meta ? [line, meta] : [line];
 	}
 
 	const line = `${theme.dim}${linePrefix}${slot.title}${theme.reset}`;
-	const meta = slot.meta ? `${theme.dim}     ${slot.meta}${theme.reset}` : "";
+	const meta = slot.meta ? `     ${renderSlotMeta(slot.meta, true)}` : "";
 	return meta ? [line, meta] : [line];
 }
 
