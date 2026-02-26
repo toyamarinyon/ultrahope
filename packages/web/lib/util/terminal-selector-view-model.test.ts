@@ -197,7 +197,7 @@ describe("terminal-selector-view-model", () => {
 
 		const readyLines = renderSelectorLines(readyState, 0);
 
-		const hintLine = "↑↓ navigate, enter confirm, r reroll, q quit";
+		const hintLine = "↑↓ navigate enter confirm | (r)eroll | (q)uit";
 		const hintIndex = readyLines.indexOf(hintLine);
 		const summaryLineIndex = readyLines.findIndex((line) =>
 			line.includes("feat: add selector metadata"),

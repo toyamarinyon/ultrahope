@@ -97,6 +97,12 @@ const HINT_ACTION_ORDER: SelectorHintAction[] = [
 	"quit",
 ];
 
+const HINT_ACTION_GROUPS: SelectorHintAction[][] = [
+	["navigate", "confirm", "clickConfirm"],
+	["edit", "reroll", "refine"],
+	["quit"],
+];
+
 const DEFAULT_HINT_LABELS: Record<
 	SelectorHintTarget,
 	Record<SelectorHintAction, string>
@@ -105,19 +111,19 @@ const DEFAULT_HINT_LABELS: Record<
 		navigate: "↑↓ navigate",
 		confirm: "⏎ confirm",
 		clickConfirm: "click confirm",
-		edit: "e edit",
-		reroll: "r reroll",
-		refine: "R refine",
-		quit: "q quit",
+		edit: "(e)dit",
+		reroll: "(r)eroll",
+		refine: "(R)efine",
+		quit: "(q)uit",
 	},
 	web: {
 		navigate: "↑↓ navigate",
 		confirm: "enter confirm",
 		clickConfirm: "click confirm",
-		edit: "e edit",
-		reroll: "r reroll",
-		refine: "R refine",
-		quit: "q quit",
+		edit: "(e)dit",
+		reroll: "(r)eroll",
+		refine: "(R)efine",
+		quit: "(q)uit",
 	},
 };
 
@@ -154,8 +160,17 @@ export function formatSelectorHintActions(
 ): string {
 	const labels = SELECTOR_HINT_ACTION_LABELS[target];
 	const ordered = normalizeHintActions(actions);
-	const separator = options.separator ?? (target === "cli" ? "  " : ", ");
-	return ordered.map((action) => labels[action]).join(separator);
+	if (options.separator) {
+		return ordered.map((action) => labels[action]).join(options.separator);
+	}
+	return HINT_ACTION_GROUPS.map((group) =>
+		group
+			.filter((action) => ordered.includes(action))
+			.map((action) => labels[action])
+			.join(" "),
+	)
+		.filter((groupText) => groupText !== "")
+		.join(" | ");
 }
 
 function normalizeHintActions(

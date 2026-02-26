@@ -28,6 +28,7 @@ import {
 import {
 	buildSelectorViewModel,
 	formatSelectorHintActions,
+	type SelectorHintAction,
 	type SelectorSlotViewModel,
 } from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
@@ -47,6 +48,11 @@ interface SelectorOptions {
 }
 
 const TTY_PATH = "/dev/tty";
+const CLI_HINT_GROUPS: SelectorHintAction[][] = [
+	["navigate", "confirm", "clickConfirm"],
+	["edit", "reroll", "refine"],
+	["quit"],
+];
 
 function collapseToReady(slots: SelectorSlot[]): void {
 	const readySlots = slots.filter((s) => s.status === "ready");
@@ -69,6 +75,27 @@ function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
 	const line = `${theme.dim}${linePrefix}${slot.title}${theme.reset}`;
 	const meta = slot.meta ? `${theme.dim}     ${slot.meta}${theme.reset}` : "";
 	return meta ? [line, meta] : [line];
+}
+
+function renderCliHintLine(
+	actions: SelectorHintAction[],
+	readyCount: number,
+): string {
+	const actionSet = new Set(actions);
+	const renderedGroups = CLI_HINT_GROUPS.map((group) =>
+		group
+			.filter((action) => actionSet.has(action))
+			.map((action) => {
+				const label = formatSelectorHintActions([action], "cli");
+				if (action === "navigate" && readyCount <= 1) {
+					return `${theme.dim}${label}${theme.reset}`;
+				}
+				return `${theme.primary}${label}${theme.reset}`;
+			})
+			.join(" "),
+	).filter((groupText) => groupText !== "");
+	const separator = ` ${theme.primary}|${theme.reset} `;
+	return `  ${renderedGroups.join(separator)}`;
 }
 
 interface RenderState {
@@ -103,24 +130,25 @@ function renderSelector(
 		lines.push(
 			`${theme.progress}${viewModel.header.spinner}${theme.reset} ${theme.primary}${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}${theme.reset}`,
 		);
-		} else {
-			lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
-		}
-		lines.push("");
+	} else {
+		lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
+	}
+	lines.push("");
 
-		for (const slot of viewModel.slots) {
-			const slotLines = renderCliSlotLines(slot);
-			for (const line of slotLines) {
+	for (const slot of viewModel.slots) {
+		const slotLines = renderCliSlotLines(slot);
+		for (const line of slotLines) {
 			lines.push(line);
 		}
 		if (slotLines.length > 0) {
 			lines.push("");
 		}
 	}
+	const readyCount = viewModel.slots.filter(
+		(slot) => slot.status === "ready",
+	).length;
 	if (viewModel.hint.kind === "ready") {
-		lines.push(
-			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
-		);
+		lines.push(renderCliHintLine(viewModel.hint.actions, readyCount));
 	} else {
 		lines.push(
 			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
