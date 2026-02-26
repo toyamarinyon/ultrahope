@@ -281,8 +281,8 @@ export function buildSelectorViewModel(
 	const frame = Math.floor(input.nowMs / 80) % spinnerFrames.length;
 	const generatedLabel =
 		readyCount === 1
-			? `1 ${copy.itemLabelSingular} generated`
-			: `${readyCount} ${copy.itemLabelPlural} generated`;
+			? `Generated 1 ${copy.itemLabelSingular}`
+			: `Generated ${readyCount} ${copy.itemLabelPlural}`;
 	const hintActions = resolveHintActions({
 		readyCount,
 		capabilities,
