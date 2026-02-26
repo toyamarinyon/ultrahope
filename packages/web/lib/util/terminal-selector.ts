@@ -8,16 +8,19 @@ import type {
 	TerminalSelectorOptions,
 } from "../../../shared/terminal-selector-contract";
 import {
-	formatCost,
-	formatModelName,
-	formatTotalCostLabel,
 	getLatestQuota,
-	getReadyCount,
 	getSelectedCandidate,
 	getTotalCost,
 	hasReadySlot,
 	selectNearestReady,
 } from "../../../shared/terminal-selector-helpers";
+import {
+	buildSelectorViewModel,
+	formatSelectorHintActions,
+	type SelectorCapabilities,
+	type SelectorCopy,
+	type SelectorSlotViewModel,
+} from "../../../shared/terminal-selector-view-model";
 
 export type {
 	CandidateWithModel,
@@ -44,34 +47,18 @@ export interface RenderSelectorLinesOptions {
 	runningLabel?: string;
 	noReadyHint?: string;
 	hasReadyHint?: string;
+	copy?: Partial<SelectorCopy>;
+	capabilities?: Partial<SelectorCapabilities>;
 }
 
 function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
 }
 
-function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
-	if (slot.status === "pending") {
-		const line = `${selected ? "●" : "○"} Generating...`;
-		const meta = slot.model ? `   ${formatModelName(slot.model)}` : "";
-		return meta ? [line, meta] : [line];
-	}
-
-	if (slot.status === "error") {
-		const line = `${selected ? "●" : "○"} ${slot.content}`;
-		return [line];
-	}
-
-	const title = slot.candidate.content.split("\n")[0]?.trim() || "";
-	const radio = selected ? "●" : "○";
-	const modelInfo = slot.candidate.model
-		? slot.candidate.cost != null
-			? `${formatModelName(slot.candidate.model)} ${formatCost(slot.candidate.cost)}`
-			: formatModelName(slot.candidate.model)
-		: "";
-	const lines = [`${radio} ${title}`];
-	if (modelInfo) {
-		lines.push(`   ${modelInfo}`);
+function formatSlot(slot: SelectorSlotViewModel): string[] {
+	const lines = [`${slot.radio} ${slot.title}`];
+	if (slot.meta) {
+		lines.push(`   ${slot.meta}`);
 	}
 	return lines;
 }
@@ -82,41 +69,50 @@ export function renderSelectorLines(
 	options: RenderSelectorLinesOptions = {},
 ): string[] {
 	const lines: string[] = [];
-	const readyCount = getReadyCount(state.slots);
-	const totalCost = getTotalCost(state.slots);
-	const costSuffix =
-		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
-	const runningLabel = options.runningLabel ?? "Generating commit messages...";
+	const copyOverrides: Partial<SelectorCopy> = {
+		...options.copy,
+	};
+	if (options.runningLabel && copyOverrides.runningLabel == null) {
+		copyOverrides.runningLabel = options.runningLabel;
+	}
+	const viewModel = buildSelectorViewModel({
+		state,
+		nowMs,
+		spinnerFrames: SPINNER_FRAMES,
+		copy: copyOverrides,
+		capabilities: options.capabilities,
+	});
+	const costSuffix = viewModel.header.totalCostLabel
+		? ` (total: ${viewModel.header.totalCostLabel})`
+		: "";
 
-	if (state.isGenerating) {
-		const frame = Math.floor(nowMs / 80) % SPINNER_FRAMES.length;
-		const progress = `${readyCount}/${state.totalSlots}`;
+	if (viewModel.header.mode === "running") {
 		lines.push(
-			`${SPINNER_FRAMES[frame]} ${runningLabel} ${progress}${costSuffix}`,
+			`${viewModel.header.spinner} ${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}`,
 		);
 	} else {
-		const label =
-			readyCount === 1
-				? `1 commit message generated${costSuffix}`
-				: `${readyCount} commit messages generated${costSuffix}`;
-		lines.push(label);
+		lines.push(`${viewModel.header.generatedLabel}${costSuffix}`);
 	}
 
-	if (readyCount > 0) {
+	if (viewModel.hint.kind === "ready") {
+		const hintActions = formatSelectorHintActions(
+			viewModel.hint.actions,
+			"web",
+		);
 		lines.push(
 			options.hasReadyHint ??
-				"Select a candidate (↑↓ navigate, enter confirm, r reroll)",
+				`${viewModel.hint.selectionLabel} (${hintActions})`,
 		);
 	} else {
-		lines.push(options.noReadyHint ?? "q quit");
+		lines.push(
+			options.noReadyHint ??
+				formatSelectorHintActions(viewModel.hint.actions, "web"),
+		);
 	}
 
 	lines.push("");
-	for (let index = 0; index < state.slots.length; index++) {
-		for (const line of formatSlot(
-			state.slots[index],
-			index === state.selectedIndex,
-		)) {
+	for (const slot of viewModel.slots) {
+		for (const line of formatSlot(slot)) {
 			lines.push(line);
 		}
 		lines.push("");

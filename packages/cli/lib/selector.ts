@@ -19,16 +19,17 @@ import type {
 	SelectorResult as SharedSelectorResult,
 } from "../../shared/terminal-selector-contract";
 import {
-	formatCost,
-	formatModelName,
-	formatTotalCostLabel,
 	getLatestQuota,
-	getReadyCount,
 	getSelectedCandidate,
 	getTotalCost,
 	hasReadySlot,
 	selectNearestReady,
 } from "../../shared/terminal-selector-helpers";
+import {
+	buildSelectorViewModel,
+	formatSelectorHintActions,
+	type SelectorSlotViewModel,
+} from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
@@ -55,59 +56,18 @@ function collapseToReady(slots: SelectorSlot[]): void {
 	}
 }
 
-function formatSlot(slot: SelectorSlot, selected: boolean): string[] {
-	if (slot.status === "pending") {
-		const radio = "○";
-		const line = `${theme.dim}  ${radio}  Generating...${theme.reset}`;
-		const meta = slot.model
-			? `${theme.dim}     ${formatModelName(slot.model)}${theme.reset}`
+function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
+	const linePrefix = `  ${slot.radio}  `;
+	if (slot.status === "ready" && slot.selected) {
+		const line = `${linePrefix}${theme.bold}${slot.title}${theme.reset}`;
+		const meta = slot.meta
+			? `     ${theme.progress}${slot.meta}${theme.reset}`
 			: "";
 		return meta ? [line, meta] : [line];
 	}
 
-	if (slot.status === "error") {
-		const radio = "○";
-		const line = `${theme.dim}  ${radio}  ${slot.content}${theme.reset}`;
-		return [line];
-	}
-
-	const candidate = slot.candidate;
-	const title = candidate.content.split("\n")[0]?.trim() || "";
-
-	const formatDuration = (ms: number): string => {
-		const safeMs = Math.max(0, Math.round(ms));
-		if (safeMs < 1000) {
-			return `${safeMs}ms`;
-		}
-		const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
-		return `${seconds}s`;
-	};
-
-	const formattedModel = candidate.model
-		? formatModelName(candidate.model)
-		: "";
-	const formattedDuration =
-		candidate.generationMs == null
-			? ""
-			: ` ${formatDuration(candidate.generationMs)}`;
-	const modelInfo = candidate.model
-		? candidate.cost
-			? `${formattedModel} ${formatCost(candidate.cost)}${formattedDuration}`
-			: `${formattedModel}${formattedDuration}`
-		: "";
-
-	if (selected) {
-		const radio = "●";
-		const line = `  ${radio}  ${theme.bold}${title}${theme.reset}`;
-		const meta = modelInfo
-			? `     ${theme.progress}${modelInfo}${theme.reset}`
-			: "";
-		return meta ? [line, meta] : [line];
-	}
-
-	const radio = "○";
-	const line = `${theme.dim}  ${radio}  ${title}${theme.reset}`;
-	const meta = modelInfo ? `${theme.dim}     ${modelInfo}${theme.reset}` : "";
+	const line = `${theme.dim}${linePrefix}${slot.title}${theme.reset}`;
+	const meta = slot.meta ? `${theme.dim}     ${slot.meta}${theme.reset}` : "";
 	return meta ? [line, meta] : [line];
 }
 
@@ -124,51 +84,50 @@ function renderSelector(
 	renderer: ReturnType<typeof createRenderer>,
 	editedSelections?: Map<string, string>,
 ): void {
-	const { slots, selectedIndex, isGenerating, totalSlots } = state;
-
 	const lines: string[] = [];
-	const readyCount = getReadyCount(slots);
-	const totalCost = getTotalCost(slots);
-	const costSuffix =
-		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
+	const viewModel = buildSelectorViewModel({
+		state,
+		nowMs,
+		spinnerFrames: SPINNER_FRAMES,
+		editedSelections,
+		capabilities: {
+			edit: true,
+			refine: true,
+		},
+	});
+	const costSuffix = viewModel.header.totalCostLabel
+		? ` (total: ${viewModel.header.totalCostLabel})`
+		: "";
 
-	if (isGenerating) {
-		const frameIndex = Math.floor(nowMs / 80) % SPINNER_FRAMES.length;
-		const spinner = SPINNER_FRAMES[frameIndex];
-		const progress = `${readyCount}/${totalSlots}`;
+	if (viewModel.header.mode === "running") {
 		lines.push(
-			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${costSuffix}${theme.reset}`,
+			`${theme.progress}${viewModel.header.spinner}${theme.reset} ${theme.primary}${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}${theme.reset}`,
 		);
 	} else {
-		const label =
-			readyCount === 1
-				? `1 commit message generated${costSuffix}`
-				: `${readyCount} commit messages generated${costSuffix}`;
-		lines.push(ui.success(label));
+		lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
 	}
 
-	const selectedSlot = slots[selectedIndex];
-	const isEditedSelection =
-		selectedSlot?.status === "ready" &&
-		editedSelections?.has(selectedSlot.candidate.slotId) === true;
-
-	const hasReady = readyCount > 0;
-	if (hasReady) {
-		if (isEditedSelection) {
-			lines.push(ui.success("Select a commit message"));
-		} else {
-			const hint = ui.hint(
-				"↑↓ navigate  ⏎ confirm  e edit  r reroll  R refine  q quit",
+	if (viewModel.hint.kind === "ready") {
+		if (viewModel.editedSummary) {
+			lines.push(
+				ui.success(viewModel.hint.selectionLabel ?? "Select a commit message"),
 			);
-			lines.push(ui.prompt(`Select a commit message ${hint}`));
+		} else {
+			const hintText = formatSelectorHintActions(viewModel.hint.actions, "cli");
+			const hint = ui.hint(hintText);
+			lines.push(
+				ui.prompt(`${viewModel.hint.selectionLabel ?? ""} ${hint}`.trim()),
+			);
 		}
 	} else {
-		lines.push(ui.hint("  q quit"));
+		lines.push(
+			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
+		);
 	}
 
 	lines.push("");
-	for (let i = 0; i < slots.length; i++) {
-		const slotLines = formatSlot(slots[i], i === selectedIndex);
+	for (const slot of viewModel.slots) {
+		const slotLines = renderCliSlotLines(slot);
 		for (const line of slotLines) {
 			lines.push(line);
 		}
@@ -176,13 +135,9 @@ function renderSelector(
 			lines.push("");
 		}
 	}
-	if (selectedSlot?.status === "ready") {
-		const edited = editedSelections?.get(selectedSlot.candidate.slotId);
-		if (edited) {
-			const editedSummary = edited.split("\n")[0]?.slice(0, 120);
-			lines.push(ui.success(`Edited: ${editedSummary}`));
-			lines.push("");
-		}
+	if (viewModel.editedSummary) {
+		lines.push(ui.success(`Edited: ${viewModel.editedSummary}`));
+		lines.push("");
 	}
 
 	renderer.render(`${lines.join("\n")}\n`);
