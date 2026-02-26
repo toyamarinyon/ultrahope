@@ -542,7 +542,6 @@ export function TerminalTabsDemo() {
 
 	const selectorCopy = {
 		runningLabel: `${activeDemo.runLine}...`,
-		selectionLabel: "Select a candidate",
 	};
 	const selectorCapabilities = {
 		clickConfirm: true,

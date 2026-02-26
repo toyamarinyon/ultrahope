@@ -108,17 +108,9 @@ function renderSelector(
 	}
 
 	if (viewModel.hint.kind === "ready") {
-		if (viewModel.editedSummary) {
-			lines.push(
-				ui.success(viewModel.hint.selectionLabel ?? "Select a commit message"),
-			);
-		} else {
-			const hintText = formatSelectorHintActions(viewModel.hint.actions, "cli");
-			const hint = ui.hint(hintText);
-			lines.push(
-				ui.prompt(`${viewModel.hint.selectionLabel ?? ""} ${hint}`.trim()),
-			);
-		}
+		lines.push(
+			ui.hint(formatSelectorHintActions(viewModel.hint.actions, "cli")),
+		);
 	} else {
 		lines.push(
 			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),

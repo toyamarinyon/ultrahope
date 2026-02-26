@@ -70,8 +70,8 @@ describe("terminal-selector-view-model", () => {
 			nowMs: 0,
 		});
 
-		expect(oneReady.header.generatedLabel).toBe("1 commit message generated");
-		expect(twoReady.header.generatedLabel).toBe("2 commit messages generated");
+		expect(oneReady.header.generatedLabel).toBe("Generated 1 commit message");
+		expect(twoReady.header.generatedLabel).toBe("Generated 2 commit messages");
 	});
 
 	it("derives hint actions from capabilities in canonical order", () => {
@@ -187,6 +187,18 @@ describe("terminal-selector-view-model", () => {
 		});
 
 		expect(viewModel.editedSummary).toBe("feat: edited title");
+	});
+
+	it("renders default ready hint as actions only in renderSelectorLines", () => {
+		const readyState = createState({
+			slots: [readySlot()],
+			totalSlots: 1,
+		});
+
+		const readyLines = renderSelectorLines(readyState, 0);
+
+		expect(readyLines[1]).toBe("↑↓ navigate, enter confirm, r reroll, q quit");
+		expect(readyLines[1]).not.toContain("Select a candidate");
 	});
 
 	it("prioritizes legacy hint options in renderSelectorLines", () => {

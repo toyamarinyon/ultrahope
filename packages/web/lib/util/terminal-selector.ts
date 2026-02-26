@@ -99,10 +99,7 @@ export function renderSelectorLines(
 			viewModel.hint.actions,
 			"web",
 		);
-		lines.push(
-			options.hasReadyHint ??
-				`${viewModel.hint.selectionLabel} (${hintActions})`,
-		);
+		lines.push(options.hasReadyHint ?? hintActions);
 	} else {
 		lines.push(
 			options.noReadyHint ??

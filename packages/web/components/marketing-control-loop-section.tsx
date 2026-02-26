@@ -51,7 +51,7 @@ const TERMINAL_CONTENT: Record<ControlStepId, ReactNode> = {
 			<span className="text-foreground">$ git ultrahope commit{"\n"}</span>
 			<span className="text-emerald-400">✔ Found staged changes{"\n"}</span>3
 			commit messages generated (total: $0.000342){"\n"}
-			Select a candidate (up/down navigate, enter confirm){"\n"}
+			up/down navigate · enter confirm{"\n"}
 			{"\n"}○ feat(api): add stream event timestamps and metadata support{"\n"}
 			ministral-3b $0.0001049 871ms{"\n"}
 			{"\n"}○ refactor(api): restructure stream event metadata handling{"\n"}
@@ -106,7 +106,7 @@ const TERMINAL_CONTENT: Record<ControlStepId, ReactNode> = {
 		<TerminalBody>
 			E -&gt; escalating...{"\n"}
 			{"\n"}2 commit messages generated ($0.0099, 1.6s){"\n"}
-			Select a candidate (up/down navigate, enter confirm){"\n"}
+			up/down navigate · enter confirm{"\n"}
 			{"\n"}○ fix(api): add atMs timestamp to commit message stream events{"\n"}
 			claude-sonnet-4.6 $0.00990 1.6s{"\n"}
 			{"\n"}
