@@ -39,7 +39,7 @@ const CONTROL_STEPS: ControlStep[] = [
 
 function TerminalBody({ children }: { children: ReactNode }) {
 	return (
-		<pre className="whitespace-pre-wrap break-words text-sm leading-[1.5] text-foreground-secondary sm:text-base lg:text-lg">
+		<pre className="whitespace-pre-wrap wrap-break-words text-sm text-foreground-secondary">
 			{children}
 		</pre>
 	);
@@ -131,10 +131,10 @@ export function MarketingControlLoopSection() {
 		<section>
 			<div className="py-16 lg:py-20 flex flex-col items-center gap-12 lg:gap-14">
 				<div className="w-full max-w-4xl text-center">
-					<h2 className="text-4xl font-medium font-serif sm:text-5xl">
+					<h2 className="text-2xl font-medium font-serif sm:text-3xl">
 						What if the result isn&apos;t quite right?
 					</h2>
-					<p className="mt-4 text-xl text-foreground-secondary sm:text-2xl">
+					<p className="mt-4 text-base text-foreground-secondary sm:text-lg">
 						You stay in control. The model just gets you started.
 					</p>
 				</div>
@@ -161,14 +161,14 @@ export function MarketingControlLoopSection() {
 										onClick={() => setActiveStepId(step.id)}
 										className={`w-full border-l-2 pl-5 text-left transition-colors ${
 											isActive
-												? "border-l-[#b78837] text-foreground"
+												? "border-l-foreground-secondary text-foreground"
 												: "border-l-transparent text-foreground-muted hover:text-foreground-secondary"
 										}`}
 									>
-										<p className="text-2xl leading-tight sm:text-3xl">
+										<p className="text-lg leading-tight font-medium">
 											{step.title}
 										</p>
-										<p className="mt-2 text-lg leading-[1.45] whitespace-pre-line sm:text-xl">
+										<p className="mt-1.5 text-sm leading-[1.45] whitespace-pre-line text-foreground-muted sm:text-base">
 											{step.description}
 										</p>
 									</button>
@@ -181,7 +181,7 @@ export function MarketingControlLoopSection() {
 								id="control-loop-panel"
 								role="tabpanel"
 								aria-labelledby={activeTabId}
-								className="h-[38rem] overflow-auto px-5 py-5 sm:px-6 sm:py-6"
+								className="h-100 overflow-auto px-5 py-5 sm:px-6 sm:py-6"
 							>
 								{TERMINAL_CONTENT[activeStepId]}
 							</div>
@@ -189,7 +189,7 @@ export function MarketingControlLoopSection() {
 					</div>
 				</div>
 
-				<p className="text-center font-mono text-xl text-foreground-secondary sm:text-2xl">
+				<p className="text-center font-mono text-base text-foreground-secondary sm:text-lg">
 					Fast and cheap by default. Escalate only when you need to.
 				</p>
 			</div>
