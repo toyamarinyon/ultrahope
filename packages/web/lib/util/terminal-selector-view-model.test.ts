@@ -96,7 +96,7 @@ describe("terminal-selector-view-model", () => {
 		]);
 	});
 
-	it("uses quit-only hints when no ready slots exist", () => {
+	it("includes all actions even when no ready slots exist", () => {
 		const viewModel = buildSelectorViewModel({
 			state: createState({
 				slots: [
@@ -109,7 +109,12 @@ describe("terminal-selector-view-model", () => {
 		});
 
 		expect(viewModel.hint.kind).toBe("empty");
-		expect(viewModel.hint.actions).toEqual(["quit"]);
+		expect(viewModel.hint.actions).toEqual([
+			"navigate",
+			"confirm",
+			"reroll",
+			"quit",
+		]);
 	});
 
 	it("keeps pending and error slot marks unselected", () => {

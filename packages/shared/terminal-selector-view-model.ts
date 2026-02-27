@@ -190,9 +190,6 @@ function resolveHintActions(input: {
 	readyCount: number;
 	capabilities: SelectorCapabilities;
 }): SelectorHintAction[] {
-	if (input.readyCount <= 0) {
-		return ["quit"];
-	}
 	const actions: SelectorHintAction[] = [
 		"navigate",
 		"confirm",

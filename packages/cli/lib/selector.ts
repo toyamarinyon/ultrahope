@@ -85,6 +85,15 @@ function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
 	return meta ? [line, meta] : [line];
 }
 
+const READY_REQUIRED_ACTIONS = new Set<SelectorHintAction>([
+	"navigate",
+	"confirm",
+	"clickConfirm",
+	"edit",
+	"reroll",
+	"refine",
+]);
+
 function renderCliHintLine(
 	actions: SelectorHintAction[],
 	readyCount: number,
@@ -95,7 +104,10 @@ function renderCliHintLine(
 			.filter((action) => actionSet.has(action))
 			.map((action) => {
 				const label = formatSelectorHintActions([action], "cli");
-				if (action === "navigate" && readyCount <= 1) {
+				if (
+					(READY_REQUIRED_ACTIONS.has(action) && readyCount <= 0) ||
+					(action === "navigate" && readyCount <= 1)
+				) {
 					return `${theme.dim}${label}${theme.reset}`;
 				}
 				return `${theme.primary}${label}${theme.reset}`;
@@ -155,13 +167,7 @@ function renderSelector(
 	const readyCount = viewModel.slots.filter(
 		(slot) => slot.status === "ready",
 	).length;
-	if (viewModel.hint.kind === "ready") {
-		lines.push(renderCliHintLine(viewModel.hint.actions, readyCount));
-	} else {
-		lines.push(
-			ui.hint(`  ${formatSelectorHintActions(viewModel.hint.actions, "cli")}`),
-		);
-	}
+	lines.push(renderCliHintLine(viewModel.hint.actions, readyCount));
 	if (viewModel.editedSummary) {
 		lines.push(ui.success(`Edited: ${viewModel.editedSummary}`));
 		lines.push("");
