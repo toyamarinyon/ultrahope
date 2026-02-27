@@ -67,21 +67,21 @@ If you answer `y`, Ultrahope runs `git add -A` and continues with staged changes
 If you answer `n` (or leave the default), it exits with the existing staged-changes error.
 In `--no-interactive` mode, no prompt is shown and it exits immediately when no staged changes exist.
 
-In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `R` (Shift+r) to refine the generated results with additional instructions.
+In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `r` to refine the generated results with additional instructions.
 
 #### Difference Between `guide` And Refine Instructions
 
 - `--guide`:
   - Supplemental intent outside the diff (for example: ticket ID, background, change intent)
-- `R refine`:
+- `r refine`:
   - Review generated results and enter inline instructions for the next refinement pass
   - Examples: "more formal", "shorter"
   - Press `Enter` with empty input to clear the previous refine instructions
   - If specified multiple times, the last one overwrites previous values
-- `R` applies refinement instructions (`refine`)
+- `r` applies refinement instructions (`refine`)
 - At request time, refine instructions are merged into `guide` and sent to the API:
   - `--guide` only: `guide = "<guide>"`
-  - `R refine` only: `guide = "<refine>"`
+  - `r refine` only: `guide = "<refine>"`
   - both: `guide = "<guide>\n\nRefinement: <refine>"`
 
 #### Targets

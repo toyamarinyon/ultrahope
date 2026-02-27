@@ -1,6 +1,7 @@
 import { raceAsyncIterators } from "../../../shared/async-race";
 import type {
-	CandidateWithModel,
+	PromptKind,
+	SelectorFlowContext,
 	SelectorResult,
 	SelectorSlot,
 	SelectorState,
@@ -8,11 +9,11 @@ import type {
 	TerminalSelectorOptions,
 } from "../../../shared/terminal-selector-contract";
 import {
-	getLatestQuota,
-	getSelectedCandidate,
-	getTotalCost,
-	selectNearestReady,
-} from "../../../shared/terminal-selector-helpers";
+	applyCandidateToFlowContext,
+	createInitialFlowContext,
+	selectorStateFromFlowContext,
+	transitionSelectorFlow,
+} from "../../../shared/terminal-selector-flow";
 import {
 	buildSelectorViewModel,
 	formatSelectorHintActions,
@@ -130,273 +131,230 @@ function createInitialSlots(
 	}));
 }
 
-function normalizeState(state: SelectorState) {
-	if (state.slots.length === 0) {
-		state.selectedIndex = 0;
-		return;
-	}
-	if (state.selectedIndex < 0) {
-		state.selectedIndex = 0;
-		return;
-	}
-	if (state.selectedIndex >= state.slots.length) {
-		state.selectedIndex = state.slots.length - 1;
-	}
+function createStateContext(
+	options: TerminalSelectorOptions,
+): SelectorFlowContext {
+	const totalSlots = Math.max(1, options.maxSlots);
+	return {
+		...createInitialFlowContext({
+			slots: createInitialSlots(totalSlots, options.models),
+			totalSlots,
+			listMode: "initial",
+		}),
+		isGenerating: false,
+	};
 }
 
-function collapseToReady(slots: SelectorSlot[]): SelectorSlot[] {
-	return slots.filter((slot) => slot.status !== "pending");
-}
-
-function resolveSlotByCandidate(
-	slots: SelectorSlot[],
-	candidate: CandidateWithModel,
-): number {
-	const bySlotId = slots.findIndex((slot) => {
-		const slotId =
-			slot.status === "ready" ? slot.candidate.slotId : slot.slotId;
-		return slotId === candidate.slotId;
-	});
-	if (bySlotId >= 0) {
-		return bySlotId;
-	}
-
-	if (candidate.slotIndex != null) {
-		const bySlotIndex = slots[candidate.slotIndex];
-		if (bySlotIndex) {
-			return candidate.slotIndex;
-		}
-	}
-
-	if (candidate.model != null) {
-		const byModel = slots.findIndex(
-			(slot) => slot.status === "pending" && slot.model === candidate.model,
-		);
-		if (byModel >= 0) {
-			return byModel;
-		}
-	}
-
-	const byPending = slots.findIndex((slot) => slot.status === "pending");
-	return byPending >= 0 ? byPending : -1;
-}
-
-function hasContent(text: string): boolean {
-	return text.trim().length > 0;
+function getPromptTargetText(context: SelectorFlowContext): string | undefined {
+	const index = context.promptTargetIndex ?? context.selectedIndex;
+	const selected = context.slots[index];
+	return selected?.status === "ready" ? selected.candidate.content : undefined;
 }
 
 export function createTerminalSelectorController(
 	options: TerminalSelectorOptions,
 ): TerminalSelectorController {
 	const listeners = new Set<(state: SelectorState) => void>();
-	let state: SelectorState = {
-		slots: createInitialSlots(options.maxSlots, options.models),
-		selectedIndex: 0,
-		isGenerating: false,
-		totalSlots: Math.max(1, options.maxSlots),
-		createdAtMs: Date.now(),
-	};
+	let context: SelectorFlowContext = createStateContext(options);
 	let generationRun = 0;
 	let generationController: AbortController | null = null;
 
-	const emit = (nextState: SelectorState = state): void => {
+	const snapshotState = (): SelectorState =>
+		selectorStateFromFlowContext(context);
+
+	const emit = (nextState: SelectorState = snapshotState()): void => {
 		for (const listener of listeners) {
 			listener(nextState);
 		}
 		options.onState?.(nextState);
 	};
 
-	const getState = (): SelectorState => ({ ...state, slots: [...state.slots] });
-
-	const setState = (
-		updater: (draft: { slots: SelectorSlot[] } & SelectorState) => void,
-	) => {
-		const next: { slots: SelectorSlot[] } & SelectorState = {
-			...state,
-			slots: [...state.slots],
-		};
-		updater(next);
-		normalizeState(next);
-		state = {
-			...next,
-			slots: [...next.slots],
-		};
-		emit(state);
-	};
-
-	const abortGeneration = () => {
-		if (generationController) {
-			generationController.abort();
-			generationController = null;
+	const cancelGeneration = () => {
+		if (!generationController) {
+			return;
 		}
+		generationController.abort();
+		generationController = null;
 	};
 
-	const finalizeState = (runId: number) => {
-		if (generationRun !== runId) return;
-		setState((draft) => {
-			draft.slots = collapseToReady(draft.slots);
-			draft.isGenerating = false;
-		});
+	const applyTransition = (
+		transitionResult: ReturnType<typeof transitionSelectorFlow>,
+	) => {
+		context = transitionResult.context;
+		let result: SelectorResult | null = null;
+		if (transitionResult.result) {
+			result = transitionResult.result;
+		}
+
+		for (const effect of transitionResult.effects) {
+			if (effect.type === "cancelGeneration") {
+				cancelGeneration();
+			}
+			if (effect.type === "startGeneration") {
+				startGeneration();
+			}
+		}
+
+		emit();
+		return result;
 	};
 
-	const applyCandidate = (candidate: CandidateWithModel, runId: number) => {
-		if (generationRun !== runId) return;
-		setState((draft) => {
-			const targetIndex = resolveSlotByCandidate(draft.slots, candidate);
-			if (targetIndex < 0) {
-				return;
-			}
+	const startGeneration = () => {
+		cancelGeneration();
+		generationController = new AbortController();
+		const runId = ++generationRun;
+		const iterator = options
+			.createCandidates(generationController.signal, context.guideHint)
+			[Symbol.asyncIterator]();
+		const signal = generationController.signal;
 
-			const current = draft.slots[targetIndex];
-			const isPending = current.status === "pending";
-			const currentSlotId =
-				current.status === "ready" ? current.candidate.slotId : current.slotId;
-			if (!currentSlotId) {
-				return;
-			}
-			if (hasContent(candidate.content)) {
-				draft.slots[targetIndex] = {
-					status: "ready",
-					candidate: {
-						...candidate,
-						slotId: currentSlotId,
-					},
-				};
-			} else if (current.status === "ready") {
-				if (candidate.slotId !== currentSlotId) {
+		const run = async () => {
+			try {
+				for await (const { result } of raceAsyncIterators({
+					iterators: [iterator],
+					signal,
+				})) {
+					if (generationRun !== runId || signal.aborted) {
+						return;
+					}
+					context = applyCandidateToFlowContext(context, result.value);
+					emit();
+				}
+				if (generationRun !== runId || signal.aborted) {
 					return;
 				}
-				draft.slots[targetIndex] = {
-					status: "ready",
-					candidate: {
-						...current.candidate,
-						...candidate,
-						slotId: currentSlotId,
-					},
-				};
-			}
-
-			if (
-				isPending &&
-				(draft.selectedIndex >= draft.slots.length ||
-					draft.slots[draft.selectedIndex]?.status !== "ready")
-			) {
-				draft.selectedIndex = targetIndex;
-			}
-		});
-	};
-
-	const consumeCandidates = async (runId: number) => {
-		if (generationRun !== runId) return;
-		const candidatesIterable = options.createCandidates(
-			generationController?.signal ?? new AbortController().signal,
-		);
-		const iterator = candidatesIterable[Symbol.asyncIterator]();
-		const signal = generationController?.signal;
-
-		try {
-			for await (const { result } of raceAsyncIterators({
-				iterators: [iterator],
-				signal,
-			})) {
+				applyTransition(
+					transitionSelectorFlow(context, {
+						type: "GENERATE_DONE",
+					}),
+				);
+			} catch (error) {
 				if (generationRun !== runId) {
 					return;
 				}
-				applyCandidate(result.value, runId);
+				if (signal.aborted || isAbortError(error)) {
+					return;
+				}
+				applyTransition(
+					transitionSelectorFlow(context, {
+						type: "CANCEL_GENERATION",
+					}),
+				);
+			} finally {
+				try {
+					await iterator.return?.();
+				} catch {}
 			}
-		} finally {
-			await iterator.return?.();
-			if (generationRun === runId && (!signal || !signal.aborted)) {
-				finalizeState(runId);
-			}
-		}
+		};
+
+		run();
 	};
 
 	const start = () => {
-		generationRun += 1;
-		const runId = generationRun;
-
-		abortGeneration();
-		generationController = new AbortController();
-		state = {
-			slots: createInitialSlots(options.maxSlots, options.models),
-			selectedIndex: 0,
-			isGenerating: true,
-			totalSlots: Math.max(1, options.maxSlots),
-			createdAtMs: Date.now(),
-		};
-		emit();
-		consumeCandidates(runId).catch((error) => {
-			if (runId !== generationRun) return;
-			if (isAbortError(error)) {
-				return;
-			}
-			setState((draft) => {
-				draft.isGenerating = false;
-			});
-		});
+		context = createStateContext(options);
+		applyTransition(
+			transitionSelectorFlow(context, {
+				type: "GENERATE_START",
+			}),
+		);
 	};
 
 	const abort = (): SelectorResult => {
-		abortGeneration();
-		state = {
-			slots: createInitialSlots(options.maxSlots, options.models),
-			selectedIndex: 0,
+		cancelGeneration();
+		context = {
+			...createStateContext(options),
 			isGenerating: false,
-			totalSlots: Math.max(1, options.maxSlots),
-			createdAtMs: Date.now(),
 		};
 		emit();
 		return {
 			action: "abort",
-			error: undefined,
+			abortReason: "exit",
 		};
 	};
 
 	const confirm = (): SelectorResult | null => {
-		const selectedCandidate = getSelectedCandidate(
-			state.slots,
-			state.selectedIndex,
+		cancelGeneration();
+		return applyTransition(
+			transitionSelectorFlow(context, {
+				type: "CONFIRM",
+			}),
 		);
-		if (!selectedCandidate) {
-			return null;
-		}
-		abortGeneration();
-		state = {
-			...state,
-			isGenerating: false,
-		};
-		emit();
-		return {
-			action: "confirm",
-			selected: selectedCandidate.content,
-			selectedIndex: state.selectedIndex,
-			selectedCandidate,
-			totalCost: getTotalCost(state.slots) || undefined,
-			quota: getLatestQuota(state.slots),
-		};
 	};
 
 	const moveSelection = (direction: -1 | 1) => {
-		setState((draft) => {
-			draft.selectedIndex = selectNearestReady(
-				draft.slots,
-				draft.selectedIndex,
+		applyTransition(
+			transitionSelectorFlow(context, {
+				type: "NAVIGATE",
 				direction,
-			);
-		});
+			}),
+		);
 	};
 
 	const setSelection = (index: number) => {
-		setState((draft) => {
-			if (index < 0 || index >= draft.slots.length) {
-				return;
-			}
-			if (draft.slots[index]?.status !== "ready") {
-				return;
-			}
-			draft.selectedIndex = index;
-		});
+		applyTransition(
+			transitionSelectorFlow(context, {
+				type: "CHOOSE_INDEX",
+				index,
+			}),
+		);
+	};
+
+	const runPrompt = (kind: PromptKind) => {
+		const promptTargetIndex =
+			context.promptTargetIndex ?? context.selectedIndex;
+		const selectionText = getPromptTargetText(context);
+
+		if (!options.onPrompt) {
+			applyTransition(
+				transitionSelectorFlow(context, {
+					type: "PROMPT_CANCEL",
+				}),
+			);
+			return;
+		}
+
+		void Promise.resolve(
+			options.onPrompt({
+				kind,
+				promptTargetIndex,
+				guideHint: context.guideHint,
+				selectionText,
+			}),
+		)
+			.then((input) => {
+				if (input == null) {
+					applyTransition(
+						transitionSelectorFlow(context, {
+							type: "PROMPT_CANCEL",
+						}),
+					);
+					return;
+				}
+
+				if (kind === "refine") {
+					applyTransition(
+						transitionSelectorFlow(context, {
+							type: "PROMPT_SUBMIT",
+							guide: input,
+						}),
+					);
+					return;
+				}
+
+				applyTransition(
+					transitionSelectorFlow(context, {
+						type: "PROMPT_SUBMIT",
+						selectedContent: input,
+					}),
+				);
+			})
+			.catch(() => {
+				applyTransition(
+					transitionSelectorFlow(context, {
+						type: "PROMPT_CANCEL",
+					}),
+				);
+			});
 	};
 
 	const handleKey = (input: {
@@ -410,44 +368,88 @@ export function createTerminalSelectorController(
 			key === "Escape" ||
 			(key === "c" && input.ctrlKey === true)
 		) {
-			return abort();
+			return applyTransition(
+				transitionSelectorFlow(context, {
+					type: "QUIT",
+				}),
+			);
 		}
 
 		if (key === "Enter") {
-			return confirm();
+			return applyTransition(
+				transitionSelectorFlow(context, {
+					type: "CONFIRM",
+				}),
+			);
 		}
 
 		if (key === "ArrowUp" || key === "k") {
-			moveSelection(-1);
-			return null;
+			return applyTransition(
+				transitionSelectorFlow(context, {
+					type: "NAVIGATE",
+					direction: -1,
+				}),
+			);
 		}
 
 		if (key === "ArrowDown" || key === "j") {
-			moveSelection(1);
-			return null;
+			return applyTransition(
+				transitionSelectorFlow(context, {
+					type: "NAVIGATE",
+					direction: 1,
+				}),
+			);
+		}
+
+		if (key === "r") {
+			const transition = transitionSelectorFlow(context, {
+				type: "OPEN_PROMPT",
+				kind: "refine",
+			});
+			const result = applyTransition(transition);
+			if (transition.context.mode === "prompt") {
+				runPrompt("refine");
+			}
+			return result;
+		}
+
+		if (key === "e") {
+			const transition = transitionSelectorFlow(context, {
+				type: "OPEN_PROMPT",
+				kind: "edit",
+			});
+			const result = applyTransition(transition);
+			if (transition.context.mode === "prompt") {
+				runPrompt("edit");
+			}
+			return result;
 		}
 
 		const number = Number.parseInt(key, 10);
 		if (
 			Number.isInteger(number) &&
 			number >= 1 &&
-			number <= state.slots.length
+			number <= context.slots.length
 		) {
-			setSelection(number - 1);
-			return null;
+			return applyTransition(
+				transitionSelectorFlow(context, {
+					type: "CHOOSE_INDEX",
+					index: number - 1,
+				}),
+			);
 		}
 
 		return null;
 	};
 
 	const destroy = () => {
-		abortGeneration();
+		cancelGeneration();
 		listeners.clear();
 	};
 
 	return {
 		get state() {
-			return getState();
+			return snapshotState();
 		},
 		start,
 		abort,
@@ -458,7 +460,7 @@ export function createTerminalSelectorController(
 		destroy,
 		subscribe: (listener) => {
 			listeners.add(listener);
-			listener(state);
+			listener(snapshotState());
 			return () => {
 				listeners.delete(listener);
 			};

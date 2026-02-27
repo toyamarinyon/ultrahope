@@ -216,13 +216,13 @@ function createCandidateFactory(
 	models: string[],
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
-	getGuide: () => string | undefined,
+	baseGuide?: string,
 ) {
-	return (signal: AbortSignal) =>
+	return (signal: AbortSignal, guideHint?: string) =>
 		generateCommitMessages({
 			diff,
 			models,
-			guide: getGuide(),
+			guide: composeGuidance(baseGuide, guideHint),
 			signal: mergeAbortSignals(signal, context.commandExecutionSignal),
 			cliSessionId: context.cliSessionId,
 			commandExecutionPromise: context.commandExecutionPromise,
@@ -266,60 +266,49 @@ async function runInteractiveDescribe(
 	models: string[],
 	createCandidates: (
 		signal: AbortSignal,
+		guideHint?: string,
 	) => ReturnType<typeof generateCommitMessages>,
 	context: CommandExecutionContext,
-	onGuideHintChange: (guideHint: string | undefined) => void,
 ): Promise<void> {
 	const stats = getJjDiffStats(options.revision);
 	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
-	while (true) {
-		const result = await selectCandidate({
-			createCandidates,
-			maxSlots: models.length,
-			abortSignal: context.commandExecutionSignal,
-			models,
-		});
+	const result = await selectCandidate({
+		createCandidates,
+		maxSlots: models.length,
+		abortSignal: context.commandExecutionSignal,
+		models,
+	});
 
-		if (result.action === "abort") {
-			if (result.error instanceof InvalidModelError) {
-				exitWithInvalidModelError(result.error);
-			}
-			if (isCommandExecutionAbort(context.commandExecutionSignal)) {
-				return;
-			}
-			console.error("Aborted.");
-			process.exit(1);
+	if (result.action === "abort") {
+		if (result.error instanceof InvalidModelError) {
+			exitWithInvalidModelError(result.error);
 		}
-
-		if (result.action === "refine" && result.guide !== undefined) {
-			const nextGuideHint = result.guide.trim() || undefined;
-			onGuideHintChange(nextGuideHint);
-			continue;
-		}
-
-		if (result.action === "confirm" && result.selected) {
-			recordSelection(
-				context.apiClient,
-				result.selectedCandidate?.generationId,
-			);
-			const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
-			const renderer = createRenderer(process.stderr);
-			renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
-			const output = describeRevision(options.revision, result.selected);
-			renderer.clearAll();
-			console.log(ui.success(label));
-			if (output) {
-				for (const line of output.split("\n")) {
-					console.log(ui.hint(`  ${line}`));
-				}
-			}
-
-			if (result.quota) {
-				showQuotaInfo(result.quota);
-			}
+		if (isCommandExecutionAbort(context.commandExecutionSignal)) {
 			return;
 		}
+		console.error("Aborted.");
+		process.exit(1);
+	}
+
+	if (result.action === "confirm" && result.selected) {
+		recordSelection(context.apiClient, result.selectedCandidate?.generationId);
+		const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
+		const renderer = createRenderer(process.stderr);
+		renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
+		const output = describeRevision(options.revision, result.selected);
+		renderer.clearAll();
+		console.log(ui.success(label));
+		if (output) {
+			for (const line of output.split("\n")) {
+				console.log(ui.hint(`  ${line}`));
+			}
+		}
+
+		if (result.quota) {
+			showQuotaInfo(result.quota);
+		}
+		return;
 	}
 }
 
@@ -336,20 +325,18 @@ async function describe(args: string[]) {
 	});
 
 	try {
-		let guideHint: string | undefined;
 		const context = await initCommandExecutionContext(
 			args,
 			models,
 			diff,
 			options.guide,
 		);
-		const resolveGuide = () => composeGuidance(options.guide, guideHint);
 		const createCandidates = createCandidateFactory(
 			diff,
 			models,
 			context,
 			captureRecorder,
-			resolveGuide,
+			options.guide,
 		);
 
 		if (!options.interactive) {
@@ -359,20 +346,12 @@ async function describe(args: string[]) {
 				diff,
 				context,
 				captureRecorder,
-				resolveGuide(),
+				options.guide,
 			);
 			return;
 		}
 
-		await runInteractiveDescribe(
-			options,
-			models,
-			createCandidates,
-			context,
-			(value) => {
-				guideHint = value;
-			},
-		);
+		await runInteractiveDescribe(options, models, createCandidates, context);
 	} finally {
 		const capturePath = captureRecorder.flush();
 		if (capturePath) {

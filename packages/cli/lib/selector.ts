@@ -13,24 +13,25 @@ import { join } from "node:path";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
 import type {
-	SelectorSlot,
+	ListMode,
+	SelectorFlowContext,
 	CandidateWithModel as SharedCandidateWithModel,
 	QuotaInfo as SharedQuotaInfo,
 	SelectorResult as SharedSelectorResult,
 } from "../../shared/terminal-selector-contract";
 import {
-	getLatestQuota,
+	applyCandidateToFlowContext,
+	createInitialFlowContext,
+	transitionSelectorFlow,
+} from "../../shared/terminal-selector-flow";
+import {
+	formatModelName,
+	formatTotalCostLabel,
+	normalizeCandidateContentForDisplay,
 	getSelectedCandidate,
 	getTotalCost,
 	hasReadySlot,
-	selectNearestReady,
 } from "../../shared/terminal-selector-helpers";
-import {
-	buildSelectorViewModel,
-	formatSelectorHintActions,
-	type SelectorHintAction,
-	type SelectorSlotViewModel,
-} from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
 import { theme } from "./theme";
@@ -41,152 +42,215 @@ export type QuotaInfo = SharedQuotaInfo;
 export type SelectorResult = SharedSelectorResult;
 
 interface SelectorOptions {
-	createCandidates: (signal: AbortSignal) => AsyncIterable<CandidateWithModel>;
+	createCandidates: (
+		signal: AbortSignal,
+		guideHint?: string,
+	) => AsyncIterable<CandidateWithModel>;
 	maxSlots?: number;
 	abortSignal?: AbortSignal;
 	models?: string[];
+	initialListMode?: ListMode;
+	initialGuideHint?: string;
 }
 
 const TTY_PATH = "/dev/tty";
-const CLI_HINT_GROUPS: SelectorHintAction[][] = [
-	["navigate", "confirm", "clickConfirm"],
-	["edit", "refine"],
-	["quit"],
-];
 
-function collapseToReady(slots: SelectorSlot[]): void {
-	const readySlots = slots.filter((s) => s.status === "ready");
-	slots.length = 0;
-	for (const slot of readySlots) {
-		slots.push(slot);
+function formatDuration(ms: number): string {
+	const safeMs = Math.max(0, Math.round(ms));
+	if (safeMs < 1000) {
+		return `${safeMs}ms`;
 	}
+	const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
+	return `${seconds}s`;
 }
 
-function renderSlotMeta(meta: string, muted: boolean): string {
-	return muted
-		? `${theme.dim}${meta}${theme.reset}`
-		: `${theme.primary}${meta}${theme.reset}`;
-}
-
-function renderCliSlotLines(slot: SelectorSlotViewModel): string[] {
-	const radio = slot.selected
-		? `${theme.success}${slot.radio}${theme.reset}`
-		: `${theme.dim}${slot.radio}${theme.reset}`;
-	const linePrefix = `  ${radio} `;
-
-	if (slot.status === "ready" && slot.selected) {
-		const line = `${linePrefix}${theme.primary}${theme.bold}${slot.title}${theme.reset}`;
-		const meta = slot.meta ? `    ${renderSlotMeta(slot.meta, false)}` : "";
-		return meta ? [line, meta] : [line];
+function formatSlotMeta(candidate: {
+	model?: string;
+	cost?: number;
+	generationMs?: number;
+}): string {
+	if (!candidate.model && !candidate.cost && !candidate.generationMs) {
+		return "";
 	}
 
-	const line = `${linePrefix}${theme.dim}${slot.title}${theme.reset}`;
-	const meta = slot.meta ? `    ${renderSlotMeta(slot.meta, true)}` : "";
-	return meta ? [line, meta] : [line];
+	const segments: string[] = [];
+	if (candidate.model) {
+		segments.push(formatModelName(candidate.model));
+	}
+	if (candidate.cost != null) {
+		segments.push(formatTotalCostLabel(candidate.cost).replace(/^\$/, "$"));
+	}
+	if (candidate.generationMs != null) {
+		segments.push(formatDuration(candidate.generationMs));
+	}
+	return segments.join(" ");
 }
 
-const READY_REQUIRED_ACTIONS = new Set<SelectorHintAction>([
-	"navigate",
-	"confirm",
-	"clickConfirm",
-	"edit",
-	"refine",
-]);
-
-function renderCliHintLine(
-	actions: SelectorHintAction[],
-	readyCount: number,
+function getSlotTitle(
+	slot:
+		| { status: "pending" | "error"; slotId: string }
+		| { status: "ready"; candidate: { content: string } },
 ): string {
-	const actionSet = new Set(actions);
-	const renderedGroups = CLI_HINT_GROUPS.map((group) =>
-		group
-			.filter((action) => actionSet.has(action))
-			.map((action) => {
-				const label = formatSelectorHintActions([action], "cli");
-				if (
-					(READY_REQUIRED_ACTIONS.has(action) && readyCount <= 0) ||
-					(action === "navigate" && readyCount <= 1)
-				) {
-					return `${theme.dim}${label}${theme.reset}`;
-				}
-				return `${theme.primary}${label}${theme.reset}`;
-			})
-			.join(" "),
-	).filter((groupText) => groupText !== "");
-	const separator = ` ${theme.primary}|${theme.reset} `;
-	return `  ${renderedGroups.join(separator)}`;
-}
-
-interface RenderState {
-	slots: SelectorSlot[];
-	selectedIndex: number;
-	isGenerating: boolean;
-	totalSlots: number;
-}
-
-function renderSelector(
-	state: RenderState,
-	nowMs: number,
-	renderer: ReturnType<typeof createRenderer>,
-	editedSelections?: Map<string, string>,
-): void {
-	const lines: string[] = [];
-	const viewModel = buildSelectorViewModel({
-		state,
-		nowMs,
-		spinnerFrames: SPINNER_FRAMES,
-		editedSelections,
-		capabilities: {
-			edit: true,
-			refine: true,
-		},
-	});
-	const costSuffix = viewModel.header.totalCostLabel
-		? ` (total: ${viewModel.header.totalCostLabel})`
-		: "";
-
-	if (viewModel.header.mode === "running") {
-		lines.push(
-			`${theme.progress}${viewModel.header.spinner}${theme.reset} ${theme.primary}${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}${theme.reset}`,
-		);
-	} else {
-		lines.push(ui.success(`${viewModel.header.generatedLabel}${costSuffix}`));
+	if (slot.status === "ready") {
+		return normalizeCandidateContentForDisplay(slot.candidate.content);
 	}
-	lines.push("");
+	return slot.slotId;
+}
 
-	for (const slot of viewModel.slots) {
-		const slotLines = renderCliSlotLines(slot);
-		for (const line of slotLines) {
-			lines.push(line);
+function renderSlotLines(context: SelectorFlowContext): string[] {
+	const lines: string[] = [];
+	for (const [index, slot] of context.slots.entries()) {
+		const selected =
+			context.mode === "list" &&
+			slot.status === "ready" &&
+			index === context.selectedIndex;
+		const radio = selected ? "●" : "○";
+		const radioColor = selected ? theme.success : theme.dim;
+		const titleColor = selected ? theme.primary : theme.dim;
+		const titleFont = selected ? theme.bold : "";
+		const linePrefix = `  ${radioColor}${radio}${theme.reset} `;
+
+		if (slot.status === "ready") {
+			const title = getSlotTitle(slot);
+			const meta = formatSlotMeta(slot.candidate);
+			lines.push(
+				`${linePrefix}${titleColor}${titleFont}${title}${theme.reset}`,
+			);
+			if (meta) {
+				const metaColor = selected ? theme.primary : theme.dim;
+				lines.push(
+					`    ${metaColor}${meta}${theme.reset}`,
+				);
+			}
+		} else {
+			lines.push(
+				`${linePrefix}${titleColor}${titleFont}Generating...${theme.reset}`,
+			);
+			const detail =
+				slot.status === "error"
+					? "error"
+					: slot.model || slot.slotId;
+			lines.push(`    ${theme.dim}${detail}${theme.reset}`);
+			if (slot.status === "error") {
+				const errorText = slot.error?.toString?.() ?? slot.error;
+				lines.push(`    ${theme.fatal}${errorText}${theme.reset}`);
+			}
 		}
-		if (slotLines.length > 0) {
+
+		if (index + 1 < context.slots.length) {
 			lines.push("");
 		}
 	}
-	const readyCount = viewModel.slots.filter(
+	return lines;
+}
+
+function renderList(context: SelectorFlowContext, nowMs: number): string[] {
+	const lines: string[] = [];
+	const readyCount = context.slots.filter(
 		(slot) => slot.status === "ready",
 	).length;
-	lines.push(renderCliHintLine(viewModel.hint.actions, readyCount));
-	if (viewModel.editedSummary) {
-		lines.push(ui.success(`Edited: ${viewModel.editedSummary}`));
-		lines.push("");
+	const totalCost = getTotalCost(context.slots);
+	const costSuffix =
+		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
+	const progress = `${readyCount}/${context.totalSlots}`;
+	const spinner =
+		SPINNER_FRAMES[Math.floor(nowMs / 80) % SPINNER_FRAMES.length];
+	if (context.isGenerating) {
+		lines.push(
+			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${costSuffix}${theme.reset}`,
+		);
+	} else {
+		const generatedLabel =
+			readyCount === 1
+				? `Generated 1 commit message`
+				: `Generated ${readyCount} commit messages`;
+		lines.push(ui.success(`${generatedLabel}${costSuffix}`));
 	}
+	lines.push("");
+	lines.push(...renderSlotLines(context));
+	lines.push("");
 
+	const hasReady = readyCount > 0;
+	const canNavigate = readyCount >= 2;
+	const canEdit = hasReady;
+	const canRefine = hasReady;
+	const canQuit = true;
+	const canConfirm = hasReady;
+
+	const asHint = (label: string, enabled: boolean): string =>
+		enabled ? label : `${theme.dim}${label}${theme.reset}`;
+
+	lines.push(
+		`  ${asHint("↑↓ navigate", canNavigate)} | ${asHint("(e)dit", canEdit)} | ${asHint("(r)efine", canRefine)} | ${asHint("(q)uit", canQuit)} | ${asHint("⏎ confirm", canConfirm)}`,
+	);
+
+	const selectedContent =
+		context.mode === "list"
+			? getSelectedCandidate(context.slots, context.selectedIndex)
+			: undefined;
+	if (selectedContent) {
+		const edited = context.editedSelections.get(selectedContent.slotId);
+		if (edited) {
+			lines.push("");
+			lines.push(ui.success(`Edited: ${edited}`));
+		}
+	}
+	return lines;
+}
+
+function renderPrompt(context: SelectorFlowContext): string[] {
+	const promptKind = context.promptKind ?? "refine";
+	const index = context.promptTargetIndex ?? context.selectedIndex;
+	const candidate = context.slots[index];
+	const targetText =
+		candidate && candidate.status === "ready"
+			? normalizeCandidateContentForDisplay(candidate.candidate.content)
+			: "(no selection)";
+	const totalCost = getTotalCost(context.slots);
+	const elapsed = formatDuration(Date.now() - context.createdAtMs);
+
+	const lines = [
+		ui.hint(`→ ${promptKind === "edit" ? "Edit" : "Refine"} mode`),
+		`${ui.hint(`Target [${Math.min(context.totalSlots, index + 1)}]:`)} ${targetText}`,
+		`Cost/Time (current): ${totalCost > 0 ? formatTotalCostLabel(totalCost) : "$0.000000"} / ${elapsed}`,
+	];
+	if (promptKind === "edit") {
+		detailsPush(lines, "Press q to cancel edit mode.");
+	} else {
+		lines.push("?");
+	}
+	return lines;
+}
+
+function detailsPush(lines: string[], line: string): void {
+	lines.push(line);
+}
+
+function renderSelector(
+	context: SelectorFlowContext,
+	nowMs: number,
+	renderer: ReturnType<typeof createRenderer>,
+): void {
+	const lines: string[] = [];
+	if (context.mode === "prompt") {
+		lines.push(...renderPrompt(context));
+	} else {
+		lines.push(...renderList(context, nowMs));
+	}
 	renderer.render(`${lines.join("\n")}\n`);
 }
 
 function renderError(
 	error: unknown,
-	slots: SelectorSlot[],
-	totalSlots: number,
+	slotsLength: number,
 	output: tty.WriteStream,
 ): void {
-	const readyCount = slots.filter((s) => s.status === "ready").length;
+	const readyCount = slotsLength;
 	const message =
 		error instanceof Error ? error.message : String(error ?? "Unknown error");
 
 	const lines = [
-		ui.blocked(`Generating commit messages... ${readyCount}/${totalSlots}`),
+		ui.blocked(`Generating commit messages... ${readyCount}/${slotsLength}`),
 		"",
 		`${theme.fatal}Error: ${message}${theme.reset}`,
 	];
@@ -245,11 +309,18 @@ function openEditor(content: string): Promise<string> {
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
-	const { createCandidates, maxSlots = 4, abortSignal, models } = options;
+	const {
+		createCandidates,
+		maxSlots = 4,
+		abortSignal,
+		models,
+		initialListMode = "initial",
+		initialGuideHint,
+	} = options;
 	const abortController = new AbortController();
 	if (abortSignal?.aborted) {
 		abortController.abort();
-		return { action: "abort" };
+		return { action: "abort", abortReason: "exit" };
 	}
 
 	if (abortSignal) {
@@ -258,7 +329,7 @@ export async function selectCandidate(
 		});
 	}
 
-	const candidates = createCandidates(abortController.signal);
+	const candidates = createCandidates;
 
 	let ttyInput: tty.ReadStream | null = null;
 	let ttyOutput: tty.WriteStream | null = null;
@@ -270,8 +341,6 @@ export async function selectCandidate(
 			const inputFd = openSync(TTY_PATH, "r");
 			ttyInput = new tty.ReadStream(inputFd);
 		}
-		// Use process.stdout if it's a TTY, otherwise open /dev/tty
-		// This works around a Bun bug with tty.WriteStream and kqueue
 		if (process.stdout.isTTY) {
 			ttyOutput = process.stdout as tty.WriteStream;
 		} else {
@@ -291,29 +360,15 @@ export async function selectCandidate(
 		process.exit(1);
 	}
 
-	const slots: SelectorSlot[] = Array.from({ length: maxSlots }, (_, i) => ({
-		status: "pending",
-		slotId: models?.[i] ?? `slot-${i}`,
-		model: models?.[i],
-	}));
-	return selectFromSlots(
-		slots,
-		{ candidates, abortController, abortSignal },
-		{ input: ttyInput, output: ttyOutput },
+	const initialSlots: SelectorFlowContext["slots"] = Array.from(
+		{ length: maxSlots },
+		(_, i) => ({
+			status: "pending",
+			slotId: models?.[i] ?? `slot-${i}`,
+			model: models?.[i],
+		}),
 	);
-}
 
-interface AsyncContext {
-	candidates: AsyncIterable<CandidateWithModel>;
-	abortController: AbortController;
-	abortSignal?: AbortSignal;
-}
-
-async function selectFromSlots(
-	initialSlots: SelectorSlot[],
-	asyncCtx: AsyncContext | null,
-	ttyIo: { input: tty.ReadStream; output: tty.WriteStream },
-): Promise<SelectorResult> {
 	return new Promise((resolve) => {
 		let resolved = false;
 		const resolveOnce = (result: SelectorResult) => {
@@ -322,49 +377,38 @@ async function selectFromSlots(
 			resolve(result);
 		};
 
-		const slots = [...initialSlots];
-		const editedSelections = new Map<string, string>();
-		const state: RenderState = {
-			slots,
-			selectedIndex: 0,
-			isGenerating: asyncCtx !== null,
-			totalSlots: initialSlots.length,
-		};
+		const initialContext = createInitialFlowContext({
+			slots: initialSlots,
+			totalSlots: maxSlots,
+			listMode: initialListMode,
+			guideHint: initialGuideHint,
+		});
+		let context = initialContext;
 		let renderInterval: ReturnType<typeof setInterval> | null = null;
 		let cleanedUp = false;
-		let isEditorOpen = false;
+		let generationRun = 0;
+		let generationController: AbortController | null = null;
+		let isPromptOpen = false;
 
-		const ttyInput = ttyIo.input;
-		const ttyOutput = ttyIo.output;
-		const renderer = createRenderer(ttyOutput);
+		const ttyReader = ttyInput;
+		const ttyWriter = ttyOutput;
+		const renderer = createRenderer(ttyWriter);
 
-		readline.emitKeypressEvents(ttyInput);
-		ttyInput.setRawMode(true);
+		readline.emitKeypressEvents(ttyReader);
+		ttyReader.setRawMode(true);
 
 		const setRawModeSafe = (enabled: boolean) => {
 			try {
-				ttyInput.setRawMode(enabled);
+				ttyReader.setRawMode(enabled);
 			} catch {
 				// Ignore tty mode errors during shutdown.
 			}
 		};
 
-		const doRender = () => {
-			if (!cleanedUp && !isEditorOpen) {
-				renderSelector(state, Date.now(), renderer, editedSelections);
+		const render = () => {
+			if (!cleanedUp && !isPromptOpen) {
+				renderSelector(context, Date.now(), renderer);
 			}
-		};
-
-		const updateState = (update: (draft: RenderState) => void) => {
-			update(state);
-			doRender();
-		};
-
-		const startRenderLoop = () => {
-			if (!state.isGenerating) return;
-			renderInterval = setInterval(() => {
-				doRender();
-			}, 80);
 		};
 
 		const stopRenderLoop = () => {
@@ -373,42 +417,51 @@ async function selectFromSlots(
 			renderInterval = null;
 		};
 
-		doRender();
-		startRenderLoop();
-
-		const cancelGeneration = () => {
-			asyncCtx?.abortController.abort();
+		const startRenderLoop = () => {
+			if (!context.isGenerating) return;
+			if (renderInterval) return;
+			renderInterval = setInterval(() => {
+				render();
+			}, 80);
 		};
 
 		const cleanup = (clearOutput = true) => {
 			if (cleanedUp) return;
 			cleanedUp = true;
+			cancelGeneration();
 			stopRenderLoop();
 			if (clearOutput) {
 				renderer.clearAll();
 			}
-			ttyInput.removeAllListeners("keypress");
+			ttyReader.removeAllListeners("keypress");
 			setRawModeSafe(false);
-			ttyInput.pause();
-			if (ttyInput !== process.stdin && !ttyInput.destroyed) {
-				ttyInput.destroy();
+			ttyReader.pause();
+			if (ttyReader !== process.stdin && !ttyReader.destroyed) {
+				ttyReader.destroy();
 			}
 			if (
-				ttyOutput !== process.stdout &&
-				ttyOutput !== process.stderr &&
-				!ttyOutput.destroyed
+				ttyWriter !== process.stdout &&
+				ttyWriter !== process.stderr &&
+				!ttyWriter.destroyed
 			) {
-				ttyOutput.destroy();
+				ttyWriter.destroy();
+			}
+		};
+
+		const cancelGeneration = () => {
+			if (generationController) {
+				generationController.abort();
+				generationController = null;
 			}
 		};
 
 		const nextCandidate = async (
 			iterator: AsyncIterator<CandidateWithModel>,
 		): Promise<IteratorResult<CandidateWithModel>> => {
-			if (!asyncCtx?.abortController) {
+			if (!generationController) {
 				return iterator.next();
 			}
-			const signal = asyncCtx.abortController.signal;
+			const signal = generationController.signal;
 			if (signal.aborted) {
 				return { done: true, value: undefined };
 			}
@@ -426,272 +479,305 @@ async function selectFromSlots(
 			});
 		};
 
-		const finalizeGeneration = () => {
-			collapseToReady(slots);
-			stopRenderLoop();
-			updateState((draft) => {
-				if (draft.selectedIndex >= slots.length) {
-					draft.selectedIndex = Math.max(0, slots.length - 1);
+		const applyResult = (
+			transitionResult: ReturnType<typeof transitionSelectorFlow>,
+		) => {
+			context = transitionResult.context;
+			if (transitionResult.effects.length > 0) {
+				for (const effect of transitionResult.effects) {
+					if (effect.type === "cancelGeneration") {
+						cancelGeneration();
+						context.isGenerating = false;
+						stopRenderLoop();
+					}
+					if (effect.type === "startGeneration") {
+						startGeneration();
+					}
 				}
-				draft.isGenerating = false;
-			});
+			}
+			if (transitionResult.context.isGenerating) {
+				startRenderLoop();
+			} else {
+				stopRenderLoop();
+			}
+			render();
+			if (transitionResult.result) {
+				const result = transitionResult.result;
+				if (result.action === "confirm") {
+					const selected = result.selected ?? "";
+					const selectedTitle =
+						normalizeCandidateContentForDisplay(selected) || selected;
+					const readyCount = context.slots.filter(
+						(slot) => slot.status === "ready",
+					).length;
+					const totalCost = getTotalCost(context.slots);
+					const costSuffix =
+						totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
+					const generatedLabel =
+						readyCount === 1
+							? `Generated 1 commit message${costSuffix}`
+							: `Generated ${readyCount} commit messages${costSuffix}`;
+					renderer.clearAll();
+					ttyWriter.write(`${ui.success(generatedLabel)}\n`);
+					if (selectedTitle) {
+						ttyWriter.write(`${ui.success(`Selected: ${selectedTitle}`)}\n`);
+					}
+					resolveOnce(result);
+					cleanup(false);
+					return;
+				}
+				if (result.action === "abort") {
+					resolveOnce(result);
+					cleanup(false);
+					return;
+				}
+			}
 		};
 
-		if (asyncCtx) {
-			const iterator = asyncCtx.candidates[Symbol.asyncIterator]();
-			(async () => {
+		const startGeneration = () => {
+			cancelGeneration();
+			generationController = new AbortController();
+			const runId = ++generationRun;
+			const iterator = candidates(
+				generationController.signal,
+				context.guideHint,
+			)[Symbol.asyncIterator]();
+			const signal = generationController.signal;
+
+			startRenderLoop();
+			const run = async () => {
 				try {
 					while (!cleanedUp) {
 						const result = await nextCandidate(iterator);
-						if (result.done || cleanedUp) break;
-						const candidate = result.value;
-						const targetIndex = slots.findIndex((slot) => {
-							if (slot.status === "ready") {
-								return slot.candidate.slotId === candidate.slotId;
-							}
-							return (
-								slot.status === "pending" && slot.slotId === candidate.slotId
-							);
-						});
-
-						if (targetIndex >= 0 && targetIndex < slots.length) {
-							const isNewSlot = slots[targetIndex].status === "pending";
-							updateState((draft) => {
-								slots[targetIndex] = { status: "ready", candidate };
-								if (
-									isNewSlot &&
-									(draft.selectedIndex >= slots.length ||
-										slots[draft.selectedIndex].status === "pending")
-								) {
-									draft.selectedIndex = targetIndex;
-								}
-							});
+						if (result.done || cleanedUp || runId !== generationRun) {
+							break;
 						}
+						const candidate = result.value;
+						context = applyCandidateToFlowContext(context, candidate);
+						render();
 					}
-					if (cleanedUp) return;
-					finalizeGeneration();
-				} catch (err) {
-					if (
-						asyncCtx?.abortController.signal.aborted ||
-						(err instanceof Error && err.name === "AbortError")
-					) {
+					if (cleanedUp || runId !== generationRun || signal.aborted) {
+						return;
+					}
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "GENERATE_DONE",
+						}),
+					);
+				} catch (error) {
+					if (runId !== generationRun) return;
+					if (signal.aborted) return;
+					if (error instanceof Error && error.name === "AbortError") return;
+					if (error instanceof InvalidModelError) {
+						cleanup();
+						resolveOnce({ action: "abort", error });
 						return;
 					}
 					if (!cleanedUp) {
 						cancelGeneration();
-						if (err instanceof InvalidModelError) {
-							cleanup();
-							resolveOnce({ action: "abort", error: err });
-							return;
-						}
 						renderer.clearAll();
-						renderError(err, slots, state.totalSlots, ttyOutput);
+						renderError(error, context.slots.length, ttyWriter);
 						cleanup(false);
-						resolveOnce({ action: "abort", error: err });
+						resolveOnce({ action: "abort", error });
 					}
 				} finally {
-					iterator.return?.();
+					if (!cleanedUp) {
+						try {
+							await iterator.return?.();
+						} catch {}
+					}
 				}
-			})();
-		}
+			};
 
-		const confirmSelection = (clearOutput = true) => {
-			const candidate = getSelectedCandidate(slots, state.selectedIndex);
-			if (!candidate) return;
-			const selectedContent =
-				editedSelections.get(candidate.slotId) ?? candidate.content;
-			cancelGeneration();
-			const totalCost = getTotalCost(slots);
-			const quota = getLatestQuota(slots);
-
-			if (clearOutput) {
-				const viewModel = buildSelectorViewModel({
-					state,
-					nowMs: Date.now(),
-					spinnerFrames: SPINNER_FRAMES,
-					editedSelections,
-					capabilities: { edit: true, refine: true },
-				});
-				const costSuffix = viewModel.header.totalCostLabel
-					? ` (total: ${viewModel.header.totalCostLabel})`
-					: "";
-				const selectedTitle =
-					selectedContent.split("\n")[0]?.trim() || selectedContent;
-				renderer.clearAll();
-				ttyOutput.write(
-					`${ui.success(`${viewModel.header.generatedLabel}${costSuffix}`)}\n`,
-				);
-				ttyOutput.write(`${ui.success(`Selected: ${selectedTitle}`)}\n`);
-			}
-
-			resolveOnce({
-				action: "confirm",
-				selected: selectedContent,
-				selectedIndex: state.selectedIndex,
-				selectedCandidate: candidate,
-				totalCost: totalCost > 0 ? totalCost : undefined,
-				quota,
-			});
-			cleanup(false);
+			run();
 		};
 
-		const abortSelection = () => {
-			cancelGeneration();
-			cleanup();
-			resolveOnce({ action: "abort" });
+		const renderForPrompt = () => {
+			renderer.reset();
+			render();
 		};
 
-		const editSelection = async () => {
-			const candidate = getSelectedCandidate(slots, state.selectedIndex);
-			if (!candidate) return;
+		const withPromptSuspended = async (task: () => Promise<void>) => {
+			if (isPromptOpen || cleanedUp) return;
+			isPromptOpen = true;
 			stopRenderLoop();
-			cancelGeneration();
-			isEditorOpen = true;
-			if (state.isGenerating) {
-				finalizeGeneration();
-			}
-
-			ttyInput.removeListener("keypress", handleKeypress);
 			setRawModeSafe(false);
-			ttyInput.pause();
+			ttyReader.removeListener("keypress", handleKeypress);
+			await task();
+			if (cleanedUp) return;
+			isPromptOpen = false;
+			ttyReader.on("keypress", handleKeypress);
+			setRawModeSafe(true);
+			renderForPrompt();
+		};
 
-			let edited = candidate.content;
-			try {
-				const result = await openEditor(candidate.content);
-				edited = result || candidate.content;
-			} catch {
-				// Keep existing content when editor exits non-zero.
-			} finally {
-				isEditorOpen = false;
-			}
-
-			editedSelections.set(candidate.slotId, edited);
-			renderer.reset();
-			doRender();
-			renderer.flush();
-			setImmediate(() => {
-				if (!cleanedUp) {
-					confirmSelection(false);
+		const openRefinePrompt = async () => {
+			await withPromptSuspended(async () => {
+				const guide = await new Promise<string | null>((resolve) => {
+					const prompt = `${ui.prompt(
+						`Enter refine instructions (e.g., more formal / shorter / Enter to clear, q=cancel): `,
+					)}`;
+					const promptReader = readline.createInterface({
+						input: ttyReader,
+						output: ttyWriter,
+						terminal: true,
+					});
+					let done = false;
+					const finish = (value: string | null) => {
+						if (done) return;
+						done = true;
+						promptReader.close();
+						resolve(value);
+					};
+					promptReader.on("SIGINT", () => finish(null));
+					promptReader.question(prompt, (input) => {
+						const normalized = (input ?? "").trim();
+						if (normalized.toLowerCase() === "q") {
+							finish(null);
+							return;
+						}
+						finish(normalized);
+					});
+				});
+				if (guide === null) {
+					applyResult(
+						transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
+					);
+					return;
 				}
+				applyResult(
+					transitionSelectorFlow(context, {
+						type: "PROMPT_SUBMIT",
+						guide,
+					}),
+				);
 			});
 		};
 
-		const refineSelection = async () => {
-			if (!hasReadySlot(slots)) return;
-			ttyInput.off("keypress", handleKeypress);
-			renderer.flush();
-			ttyInput.setRawMode(false);
-
-			const guide = await new Promise<string | null>((resolve) => {
-				const prompt = `${ui.prompt(
-					`Enter refine instructions (e.g., more formal / shorter / Enter to clear): `,
-				)}`;
-				const promptReader = readline.createInterface({
-					input: ttyInput,
-					output: ttyOutput,
-					terminal: true,
-				});
-
-				let resolved = false;
-				const finish = (value: string | null) => {
-					if (resolved) return;
-					resolved = true;
-					promptReader.close();
-					resolve(value);
-				};
-
-				promptReader.on("SIGINT", () => {
-					finish(null);
-				});
-				promptReader.question(prompt, (input) => {
-					finish(input.trim());
-				});
+		const openEditPrompt = async () => {
+			const selected = getSelectedCandidate(
+				context.slots,
+				context.selectedIndex,
+			);
+			if (!selected) {
+				return;
+			}
+			await withPromptSuspended(async () => {
+				let edited = selected.content;
+				try {
+					const result = await openEditor(selected.content);
+					edited = result || selected.content;
+				} catch {
+					// Keep existing content when editor exits non-zero.
+				}
+				applyResult(
+					transitionSelectorFlow(context, {
+						type: "PROMPT_SUBMIT",
+						selectedContent: edited,
+					}),
+				);
 			});
-
-			ttyInput.setRawMode(true);
-			ttyInput.on("keypress", handleKeypress);
-			renderer.reset();
-			if (guide === null) return;
-			cancelGeneration();
-			resolveOnce({ action: "refine", guide });
-			cleanup();
 		};
 
 		const handleKeypress = async (
 			_str: string | undefined,
 			key: readline.Key,
 		) => {
-			if (!key) return;
+			if (!key || cleanedUp || isPromptOpen) return;
 
 			if (
 				key.name === "q" ||
 				(key.name === "c" && key.ctrl) ||
 				key.name === "escape"
 			) {
-				abortSelection();
+				applyResult(transitionSelectorFlow(context, { type: "QUIT" }));
 				return;
 			}
 
-			if (key.name === "return") {
-				confirmSelection();
-				return;
-			}
-
-			if (key.name === "r" && (key.shift || key.sequence === "R")) {
-				await refineSelection();
-				return;
-			}
-
-			if (key.name === "e") {
-				await editSelection();
-				return;
-			}
-
-			if (key.name === "up" || key.name === "k") {
-				updateState((draft) => {
-					draft.selectedIndex = selectNearestReady(
-						slots,
-						draft.selectedIndex,
-						-1,
+			if (context.mode === "list") {
+				if (key.name === "return") {
+					applyResult(transitionSelectorFlow(context, { type: "CONFIRM" }));
+					return;
+				}
+				if (key.name === "r" && key.sequence === "r") {
+					if (!hasReadySlot(context.slots)) return;
+					const transition = transitionSelectorFlow(context, {
+						type: "OPEN_PROMPT",
+						kind: "refine",
+					});
+					applyResult(transition);
+					if (transition.context.mode === "prompt") {
+						await openRefinePrompt();
+					}
+					return;
+				}
+				if (key.name === "e") {
+					if (!hasReadySlot(context.slots)) return;
+					const transition = transitionSelectorFlow(context, {
+						type: "OPEN_PROMPT",
+						kind: "edit",
+					});
+					applyResult(transition);
+					if (transition.context.mode === "prompt") {
+						await openEditPrompt();
+					}
+					return;
+				}
+				if (key.name === "up" || key.name === "k") {
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "NAVIGATE",
+							direction: -1,
+						}),
 					);
-				});
-				return;
-			}
-
-			if (key.name === "down" || key.name === "j") {
-				updateState((draft) => {
-					draft.selectedIndex = selectNearestReady(
-						slots,
-						draft.selectedIndex,
-						1,
+					return;
+				}
+				if (key.name === "down" || key.name === "j") {
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "NAVIGATE",
+							direction: 1,
+						}),
 					);
-				});
-				return;
-			}
+					return;
+				}
 
-			const num = Number.parseInt(key.name || "", 10);
-			if (
-				num >= 1 &&
-				num <= slots.length &&
-				slots[num - 1]?.status === "ready"
-			) {
-				updateState((draft) => {
-					draft.selectedIndex = num - 1;
-				});
+				const number = Number.parseInt(key.name || "", 10);
+				if (
+					number >= 1 &&
+					number <= context.slots.length &&
+					context.slots[number - 1]?.status === "ready"
+				) {
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "CHOOSE_INDEX",
+							index: number - 1,
+						}),
+					);
+				}
 				return;
 			}
 		};
 
-		if (asyncCtx?.abortSignal) {
-			if (asyncCtx.abortSignal.aborted) {
-				abortSelection();
-			} else {
-				asyncCtx.abortSignal.addEventListener("abort", abortSelection, {
-					once: true,
-				});
-			}
+		const abortSelection = () => {
+			cleanup();
+			resolveOnce({ action: "abort", abortReason: "exit" });
+		};
+
+		if (abortSignal?.aborted) {
+			abortSelection();
+		} else {
+			abortSignal?.addEventListener("abort", abortSelection, {
+				once: true,
+			});
 		}
 
-		ttyInput.on("keypress", handleKeypress);
+		applyResult(
+			transitionSelectorFlow(context, {
+				type: "GENERATE_START",
+			}),
+		);
+
+		ttyReader.on("keypress", handleKeypress);
 	});
 }

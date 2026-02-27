@@ -39,6 +39,42 @@ export function getLatestQuota(slots: SelectorSlot[]): QuotaInfo | undefined {
 	return undefined;
 }
 
+function normalizeCandidateLineBreaks(content: string): string {
+	const normalized = content.replace(/\r\n?|[\u2028\u2029]/g, "\n");
+	return normalized.split("\n")[0]?.trim() || "";
+}
+
+export function normalizeCandidateContentForDisplay(content: string): string {
+	const line = normalizeCandidateLineBreaks(content);
+	if (!line) {
+		return "";
+	}
+
+	const collapsed = line.replace(/\s+/g, " ").trim();
+	if (!collapsed) {
+		return "";
+	}
+
+	if (collapsed.length % 2 === 0) {
+		const half = collapsed.length / 2;
+		if (collapsed.slice(0, half) === collapsed.slice(half)) {
+			return collapsed.slice(0, half);
+		}
+	}
+
+	const words = collapsed.split(" ");
+	if (words.length >= 6 && words.length % 2 === 0) {
+		const half = words.length / 2;
+		const firstHalf = words.slice(0, half).join(" ");
+		const secondHalf = words.slice(half).join(" ");
+		if (firstHalf === secondHalf) {
+			return firstHalf;
+		}
+	}
+
+	return collapsed;
+}
+
 export function hasReadySlot(slots: SelectorSlot[]): boolean {
 	return getReadyCount(slots) > 0;
 }

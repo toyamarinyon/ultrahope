@@ -66,6 +66,29 @@ function isTTY(output: NodeJS.WriteStream): boolean {
 	return output.isTTY === true;
 }
 
+const ANSI_SEQUENCE_PATTERN = /\x1b\[[0-9;]*m/g;
+
+function stripAnsiCodes(value: string): string {
+	return value.replace(ANSI_SEQUENCE_PATTERN, "");
+}
+
+function estimateVisualLineCount(content: string, columns: number): number {
+	if (columns <= 0) {
+		columns = 80;
+	}
+
+	const normalized = content.replace(/\r/g, "");
+	const hasTrailingNewline = normalized.endsWith("\n");
+	const lines = hasTrailingNewline
+		? normalized.slice(0, -1).split("\n")
+		: normalized.split("\n");
+	return lines.reduce((total, line) => {
+		const visibleLength = stripAnsiCodes(line).length;
+		const wrapped = Math.max(1, Math.ceil(visibleLength / columns));
+		return total + wrapped;
+	}, 0);
+}
+
 /**
  * Render content to the provided output, replacing the previous pending output.
  *
@@ -93,7 +116,10 @@ export function createRenderer(output: NodeJS.WriteStream) {
 		}
 
 		output.write(content);
-		pendingHeight = content.split("\n").length - 1;
+		pendingHeight = estimateVisualLineCount(
+			content,
+			output.columns ?? 80,
+		);
 	};
 
 	const flush = (): void => {
