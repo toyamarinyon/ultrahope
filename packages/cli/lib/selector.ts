@@ -478,6 +478,7 @@ export async function selectCandidate(
 			await task();
 			if (cleanedUp) return;
 			isPromptOpen = false;
+			ttyReader.resume();
 			ttyReader.on("keypress", handleKeypress);
 			setRawModeSafe(true);
 			renderForPrompt();
