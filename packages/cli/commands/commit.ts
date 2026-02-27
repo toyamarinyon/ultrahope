@@ -324,10 +324,6 @@ export async function commit(args: string[]) {
 				process.exit(1);
 			}
 
-			if (result.action === "reroll") {
-				continue;
-			}
-
 			if (result.action === "refine" && result.guide !== undefined) {
 				guideHint = result.guide.trim() || undefined;
 				continue;

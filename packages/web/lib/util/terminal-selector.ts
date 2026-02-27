@@ -11,7 +11,6 @@ import {
 	getLatestQuota,
 	getSelectedCandidate,
 	getTotalCost,
-	hasReadySlot,
 	selectNearestReady,
 } from "../../../shared/terminal-selector-helpers";
 import {
@@ -354,14 +353,6 @@ export function createTerminalSelectorController(
 		};
 	};
 
-	const reroll = (): SelectorResult | null => {
-		if (!hasReadySlot(state.slots)) {
-			return null;
-		}
-		abort();
-		return { action: "reroll" };
-	};
-
 	const confirm = (): SelectorResult | null => {
 		const selectedCandidate = getSelectedCandidate(
 			state.slots,
@@ -422,10 +413,6 @@ export function createTerminalSelectorController(
 			return abort();
 		}
 
-		if (key === "r") {
-			return reroll();
-		}
-
 		if (key === "Enter") {
 			return confirm();
 		}
@@ -464,7 +451,6 @@ export function createTerminalSelectorController(
 		},
 		start,
 		abort,
-		reroll,
 		confirm,
 		moveSelection,
 		setSelection,

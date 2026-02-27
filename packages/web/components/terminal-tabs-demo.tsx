@@ -460,23 +460,16 @@ export function TerminalTabsDemo() {
 		}
 	}, [activeDemo.command, canAutoRun, phase, startSelector, typedText]);
 
-	const onResult = useCallback(
-		(result: SelectorResult) => {
-			if (result.action === "confirm") {
-				setSelectedResult(result);
-				setPhase("selected");
-				return;
-			}
-			if (result.action === "reroll") {
-				startSelector();
-				return;
-			}
-			if (result.action === "abort") {
-				setPhase("waitingEnter");
-			}
-		},
-		[startSelector],
-	);
+	const onResult = useCallback((result: SelectorResult) => {
+		if (result.action === "confirm") {
+			setSelectedResult(result);
+			setPhase("selected");
+			return;
+		}
+		if (result.action === "abort") {
+			setPhase("waitingEnter");
+		}
+	}, []);
 
 	const handleCandidateHover = useCallback(
 		(index: number) => {

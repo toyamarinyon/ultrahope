@@ -50,7 +50,7 @@ interface SelectorOptions {
 const TTY_PATH = "/dev/tty";
 const CLI_HINT_GROUPS: SelectorHintAction[][] = [
 	["navigate", "confirm", "clickConfirm"],
-	["edit", "reroll", "refine"],
+	["edit", "refine"],
 	["quit"],
 ];
 
@@ -90,7 +90,6 @@ const READY_REQUIRED_ACTIONS = new Set<SelectorHintAction>([
 	"confirm",
 	"clickConfirm",
 	"edit",
-	"reroll",
 	"refine",
 ]);
 
@@ -536,13 +535,6 @@ async function selectFromSlots(
 			cleanup(false);
 		};
 
-		const rerollSelection = () => {
-			if (!hasReadySlot(slots)) return;
-			cancelGeneration();
-			resolveOnce({ action: "reroll" });
-			cleanup();
-		};
-
 		const abortSelection = () => {
 			cancelGeneration();
 			cleanup();
@@ -642,11 +634,6 @@ async function selectFromSlots(
 
 			if (key.name === "return") {
 				confirmSelection();
-				return;
-			}
-
-			if (key.name === "r" && !key.shift) {
-				rerollSelection();
 				return;
 			}
 

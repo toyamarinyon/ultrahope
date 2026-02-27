@@ -53,7 +53,7 @@ export interface SelectorState {
 }
 
 export interface SelectorResult {
-	action: "confirm" | "abort" | "reroll" | "refine";
+	action: "confirm" | "abort" | "refine";
 	selected?: string;
 	selectedIndex?: number;
 	selectedCandidate?: CandidateWithModel;
@@ -74,7 +74,6 @@ export interface TerminalSelectorController {
 	readonly state: SelectorState;
 	start: () => void;
 	abort: () => SelectorResult;
-	reroll: () => SelectorResult | null;
 	confirm: () => SelectorResult | null;
 	moveSelection: (direction: -1 | 1) => void;
 	setSelection: (index: number) => void;

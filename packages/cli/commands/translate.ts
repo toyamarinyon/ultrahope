@@ -202,10 +202,6 @@ async function handleVcsCommitMessage(
 				continue;
 			}
 
-			if (result.action === "reroll") {
-				continue;
-			}
-
 			if (result.action === "confirm" && result.selected) {
 				await recordSelection(result.selectedCandidate?.generationId);
 				console.log(result.selected);
@@ -373,7 +369,7 @@ async function handleGenericTarget(
 		return;
 	}
 
-	let candidates = await doGenerate();
+	const candidates = await doGenerate();
 
 	while (true) {
 		const createCandidates = (signal: AbortSignal) =>
@@ -396,11 +392,6 @@ async function handleGenericTarget(
 			}
 			console.error("Aborted.");
 			process.exit(1);
-		}
-
-		if (result.action === "reroll") {
-			candidates = await doGenerate();
-			continue;
 		}
 
 		if (result.action === "confirm" && result.selected) {

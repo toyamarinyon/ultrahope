@@ -12,7 +12,6 @@ export type SelectorHintAction =
 	| "confirm"
 	| "clickConfirm"
 	| "edit"
-	| "reroll"
 	| "refine"
 	| "quit";
 
@@ -92,14 +91,13 @@ const HINT_ACTION_ORDER: SelectorHintAction[] = [
 	"confirm",
 	"clickConfirm",
 	"edit",
-	"reroll",
 	"refine",
 	"quit",
 ];
 
 const HINT_ACTION_GROUPS: SelectorHintAction[][] = [
 	["navigate", "confirm", "clickConfirm"],
-	["edit", "reroll", "refine"],
+	["edit", "refine"],
 	["quit"],
 ];
 
@@ -112,7 +110,6 @@ const DEFAULT_HINT_LABELS: Record<
 		confirm: "⏎ confirm",
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
-		reroll: "(r)eroll",
 		refine: "(R)efine",
 		quit: "(q)uit",
 	},
@@ -121,7 +118,6 @@ const DEFAULT_HINT_LABELS: Record<
 		confirm: "enter confirm",
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
-		reroll: "(r)eroll",
 		refine: "(R)efine",
 		quit: "(q)uit",
 	},
@@ -190,12 +186,7 @@ function resolveHintActions(input: {
 	readyCount: number;
 	capabilities: SelectorCapabilities;
 }): SelectorHintAction[] {
-	const actions: SelectorHintAction[] = [
-		"navigate",
-		"confirm",
-		"reroll",
-		"quit",
-	];
+	const actions: SelectorHintAction[] = ["navigate", "confirm", "quit"];
 	if (input.capabilities.clickConfirm) {
 		actions.push("clickConfirm");
 	}

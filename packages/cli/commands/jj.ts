@@ -292,10 +292,6 @@ async function runInteractiveDescribe(
 			process.exit(1);
 		}
 
-		if (result.action === "reroll") {
-			continue;
-		}
-
 		if (result.action === "refine" && result.guide !== undefined) {
 			const nextGuideHint = result.guide.trim() || undefined;
 			onGuideHintChange(nextGuideHint);

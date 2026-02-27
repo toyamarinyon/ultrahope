@@ -90,7 +90,6 @@ describe("terminal-selector-view-model", () => {
 			"confirm",
 			"clickConfirm",
 			"edit",
-			"reroll",
 			"refine",
 			"quit",
 		]);
@@ -109,12 +108,7 @@ describe("terminal-selector-view-model", () => {
 		});
 
 		expect(viewModel.hint.kind).toBe("empty");
-		expect(viewModel.hint.actions).toEqual([
-			"navigate",
-			"confirm",
-			"reroll",
-			"quit",
-		]);
+		expect(viewModel.hint.actions).toEqual(["navigate", "confirm", "quit"]);
 	});
 
 	it("keeps pending and error slot marks unselected", () => {
@@ -202,7 +196,7 @@ describe("terminal-selector-view-model", () => {
 
 		const readyLines = renderSelectorLines(readyState, 0);
 
-		const hintLine = "↑↓ navigate enter confirm | (r)eroll | (q)uit";
+		const hintLine = "↑↓ navigate enter confirm | (q)uit";
 		const hintIndex = readyLines.indexOf(hintLine);
 		const summaryLineIndex = readyLines.findIndex((line) =>
 			line.includes("feat: add selector metadata"),
