@@ -82,6 +82,7 @@ export type SelectorFlowAbortReason = "exit" | "discard_refine";
 export interface SelectorFlowResult {
 	action: SelectorResult["action"] | "return";
 	selected?: string;
+	edited?: boolean;
 	selectedIndex?: number;
 	selectedCandidate?: CandidateWithModel;
 	guide?: string;
@@ -112,6 +113,7 @@ export interface SelectorState {
 export interface SelectorResult {
 	action: "confirm" | "abort" | "refine" | "return";
 	selected?: string;
+	edited?: boolean;
 	selectedIndex?: number;
 	selectedCandidate?: CandidateWithModel;
 	guide?: string;

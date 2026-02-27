@@ -184,6 +184,7 @@ async function handleVcsCommitMessage(
 				maxSlots: models.length,
 				abortSignal: commandExecutionSignal,
 				models,
+				inlineEditPrompt: true,
 			});
 
 			if (result.action === "abort") {
@@ -384,6 +385,7 @@ async function handleGenericTarget(
 			createCandidates,
 			maxSlots: candidates.length,
 			models: candidates.map((c) => c.model).filter(Boolean) as string[],
+			inlineEditPrompt: true,
 		});
 
 		if (result.action === "abort") {

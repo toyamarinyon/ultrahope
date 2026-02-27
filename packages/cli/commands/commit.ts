@@ -311,6 +311,7 @@ export async function commit(args: string[]) {
 				maxSlots: models.length,
 				abortSignal: commandExecutionSignal,
 				models,
+				inlineEditPrompt: true,
 			});
 
 			if (result.action === "abort") {

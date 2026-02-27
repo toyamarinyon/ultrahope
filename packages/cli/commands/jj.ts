@@ -278,6 +278,7 @@ async function runInteractiveDescribe(
 		maxSlots: models.length,
 		abortSignal: context.commandExecutionSignal,
 		models,
+		inlineEditPrompt: true,
 	});
 
 	if (result.action === "abort") {

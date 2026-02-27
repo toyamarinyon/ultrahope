@@ -66,7 +66,10 @@ function isTTY(output: NodeJS.WriteStream): boolean {
 	return output.isTTY === true;
 }
 
-const ANSI_SEQUENCE_PATTERN = /\x1b\[[0-9;]*m/g;
+const ANSI_SEQUENCE_PATTERN = new RegExp(
+	`${String.fromCharCode(27)}\\[[0-9;]*m`,
+	"g",
+);
 
 function stripAnsiCodes(value: string): string {
 	return value.replace(ANSI_SEQUENCE_PATTERN, "");
@@ -116,10 +119,7 @@ export function createRenderer(output: NodeJS.WriteStream) {
 		}
 
 		output.write(content);
-		pendingHeight = estimateVisualLineCount(
-			content,
-			output.columns ?? 80,
-		);
+		pendingHeight = estimateVisualLineCount(content, output.columns ?? 80);
 	};
 
 	const flush = (): void => {

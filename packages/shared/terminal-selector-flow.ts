@@ -257,10 +257,14 @@ function createFlowResult(
 		selectedCandidate.content;
 	const totalCost = getTotalCost(context.slots);
 	const quota = getLatestQuota(context.slots);
+	const edited = Boolean(
+		selectedCandidate && finalContent !== selectedCandidate.content,
+	);
 
 	return {
 		action: "confirm",
 		selected: finalContent,
+		edited,
 		selectedIndex: context.selectedIndex,
 		selectedCandidate,
 		totalCost: totalCost > 0 ? totalCost : undefined,

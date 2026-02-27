@@ -27,10 +27,10 @@ import {
 import {
 	formatModelName,
 	formatTotalCostLabel,
-	normalizeCandidateContentForDisplay,
 	getSelectedCandidate,
 	getTotalCost,
 	hasReadySlot,
+	normalizeCandidateContentForDisplay,
 } from "../../shared/terminal-selector-helpers";
 import { InvalidModelError } from "./api-client";
 import { createRenderer, SPINNER_FRAMES } from "./renderer";
@@ -51,6 +51,7 @@ interface SelectorOptions {
 	models?: string[];
 	initialListMode?: ListMode;
 	initialGuideHint?: string;
+	inlineEditPrompt?: boolean;
 }
 
 const TTY_PATH = "/dev/tty";
@@ -118,18 +119,14 @@ function renderSlotLines(context: SelectorFlowContext): string[] {
 			);
 			if (meta) {
 				const metaColor = selected ? theme.primary : theme.dim;
-				lines.push(
-					`    ${metaColor}${meta}${theme.reset}`,
-				);
+				lines.push(`    ${metaColor}${meta}${theme.reset}`);
 			}
 		} else {
 			lines.push(
 				`${linePrefix}${titleColor}${titleFont}Generating...${theme.reset}`,
 			);
 			const detail =
-				slot.status === "error"
-					? "error"
-					: slot.model || slot.slotId;
+				slot.status === "error" ? "error" : slot.model || slot.slotId;
 			lines.push(`    ${theme.dim}${detail}${theme.reset}`);
 			if (slot.status === "error") {
 				const errorText = slot.error?.toString?.() ?? slot.error;
@@ -207,24 +204,46 @@ function renderPrompt(context: SelectorFlowContext): string[] {
 			? normalizeCandidateContentForDisplay(candidate.candidate.content)
 			: "(no selection)";
 	const totalCost = getTotalCost(context.slots);
-	const elapsed = formatDuration(Date.now() - context.createdAtMs);
+	const readyCount = context.slots.filter(
+		(slot) => slot.status === "ready",
+	).length;
+	const costSuffix =
+		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
+	const generatedLabel =
+		readyCount === 1
+			? `Generated 1 commit message${costSuffix}`
+			: `Generated ${readyCount} commit messages${costSuffix}`;
+	if (promptKind === "edit") {
+		return [
+			ui.success(generatedLabel),
+			ui.success(`Selected: ${targetText}`),
+			"",
+			`    ${ui.hint("Edit mode")}`,
+		];
+	}
 
-	const lines = [
+	const elapsed = formatDuration(Date.now() - context.createdAtMs);
+	return [
+		ui.success(generatedLabel),
+		"",
 		ui.hint(`→ ${promptKind === "edit" ? "Edit" : "Refine"} mode`),
 		`${ui.hint(`Target [${Math.min(context.totalSlots, index + 1)}]:`)} ${targetText}`,
 		`Cost/Time (current): ${totalCost > 0 ? formatTotalCostLabel(totalCost) : "$0.000000"} / ${elapsed}`,
+		"",
+		"?",
 	];
-	if (promptKind === "edit") {
-		detailsPush(lines, "Press q to cancel edit mode.");
-	} else {
-		lines.push("?");
-	}
-	return lines;
 }
 
-function detailsPush(lines: string[], line: string): void {
-	lines.push(line);
-}
+type InlinePromptOptions = {
+	initialValue?: string;
+	cancelOnQ?: boolean;
+	cancelOnEscape?: boolean;
+	trimResult?: boolean;
+	showPrompt?: boolean;
+	promptPrefix?: string;
+	helpText?: string;
+	helpSpacing?: number;
+};
 
 function renderSelector(
 	context: SelectorFlowContext,
@@ -316,6 +335,7 @@ export async function selectCandidate(
 		models,
 		initialListMode = "initial",
 		initialGuideHint,
+		inlineEditPrompt = false,
 	} = options;
 	const abortController = new AbortController();
 	if (abortSignal?.aborted) {
@@ -505,8 +525,11 @@ export async function selectCandidate(
 				const result = transitionResult.result;
 				if (result.action === "confirm") {
 					const selected = result.selected ?? "";
-					const selectedTitle =
-						normalizeCandidateContentForDisplay(selected) || selected;
+					const selectedTitle = result.selectedCandidate
+						? normalizeCandidateContentForDisplay(
+								result.selectedCandidate.content,
+							)
+						: normalizeCandidateContentForDisplay(selected) || selected;
 					const readyCount = context.slots.filter(
 						(slot) => slot.status === "ready",
 					).length;
@@ -521,6 +544,12 @@ export async function selectCandidate(
 					ttyWriter.write(`${ui.success(generatedLabel)}\n`);
 					if (selectedTitle) {
 						ttyWriter.write(`${ui.success(`Selected: ${selectedTitle}`)}\n`);
+					}
+					if (result.edited) {
+						const editedTitle = normalizeCandidateContentForDisplay(selected);
+						if (editedTitle) {
+							ttyWriter.write(`${ui.success(`Edited ${editedTitle}`)}\n`);
+						}
 					}
 					resolveOnce(result);
 					cleanup(false);
@@ -611,34 +640,92 @@ export async function selectCandidate(
 			renderForPrompt();
 		};
 
+		const openInlinePrompt = async (
+			prompt: string,
+			options: InlinePromptOptions = {},
+		): Promise<string | null> =>
+			new Promise<string | null>((resolve) => {
+				const {
+					initialValue = "",
+					cancelOnQ = false,
+					cancelOnEscape = false,
+					trimResult = true,
+					showPrompt = true,
+					promptPrefix = "",
+					helpText,
+					helpSpacing = 0,
+				} = options;
+				const promptReader = readline.createInterface({
+					input: ttyReader,
+					output: ttyWriter,
+					terminal: true,
+				});
+				let done = false;
+				const finish = (value: string | null) => {
+					if (done) return;
+					done = true;
+					promptReader.close();
+					resolve(value);
+				};
+				promptReader.on("SIGINT", () => finish(null));
+				let restoreKeypress = false;
+				const handlePromptKeypress = (
+					_str: string,
+					key: readline.Key | undefined,
+				) => {
+					if (!cancelOnEscape) return;
+					if (key?.name === "escape") {
+						finish(null);
+						return;
+					}
+				};
+				if (cancelOnEscape) {
+					readline.emitKeypressEvents(ttyReader);
+					ttyReader.on("keypress", handlePromptKeypress);
+					restoreKeypress = true;
+				}
+				const appliedPrompt = showPrompt
+					? ui.prompt(prompt)
+					: promptPrefix || "";
+				promptReader.setPrompt(appliedPrompt);
+				promptReader.prompt();
+				if (initialValue) {
+					promptReader.write(initialValue);
+				}
+				if (helpText) {
+					const restoreColumn = appliedPrompt.length + initialValue.length;
+					readline.moveCursor(ttyWriter, 0, helpSpacing);
+					readline.cursorTo(ttyWriter, 0);
+					readline.clearLine(ttyWriter, 0);
+					ttyWriter.write(helpText);
+					readline.moveCursor(ttyWriter, 0, -helpSpacing);
+					readline.cursorTo(ttyWriter, restoreColumn);
+				}
+
+				promptReader.on("line", (input) => {
+					let value = input ?? "";
+					if (trimResult) {
+						value = value.trim();
+					}
+					if (cancelOnQ && value.toLowerCase() === "q") {
+						finish(null);
+						return;
+					}
+					finish(value);
+				});
+				promptReader.on("close", () => {
+					if (restoreKeypress) {
+						ttyReader.off("keypress", handlePromptKeypress);
+					}
+				});
+			});
+
 		const openRefinePrompt = async () => {
 			await withPromptSuspended(async () => {
-				const guide = await new Promise<string | null>((resolve) => {
-					const prompt = `${ui.prompt(
-						`Enter refine instructions (e.g., more formal / shorter / Enter to clear, q=cancel): `,
-					)}`;
-					const promptReader = readline.createInterface({
-						input: ttyReader,
-						output: ttyWriter,
-						terminal: true,
-					});
-					let done = false;
-					const finish = (value: string | null) => {
-						if (done) return;
-						done = true;
-						promptReader.close();
-						resolve(value);
-					};
-					promptReader.on("SIGINT", () => finish(null));
-					promptReader.question(prompt, (input) => {
-						const normalized = (input ?? "").trim();
-						if (normalized.toLowerCase() === "q") {
-							finish(null);
-							return;
-						}
-						finish(normalized);
-					});
-				});
+				const guide = await openInlinePrompt(
+					"Enter refine instructions (e.g., more formal / shorter / Enter to clear, q=cancel): ",
+					{ cancelOnQ: true },
+				);
 				if (guide === null) {
 					applyResult(
 						transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
@@ -660,6 +747,34 @@ export async function selectCandidate(
 				context.selectedIndex,
 			);
 			if (!selected) {
+				return;
+			}
+			if (inlineEditPrompt) {
+				await withPromptSuspended(async () => {
+					const edited = await openInlinePrompt("", {
+						initialValue: selected.content,
+						cancelOnEscape: true,
+						showPrompt: false,
+						promptPrefix: "    > ",
+						helpText: `    ${ui.hint(
+							"enter: apply | esc: back to select a candidate",
+						)}`,
+						helpSpacing: 2,
+						trimResult: false,
+					});
+					if (edited === null) {
+						applyResult(
+							transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
+						);
+						return;
+					}
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "PROMPT_SUBMIT",
+							selectedContent: edited || selected.content,
+						}),
+					);
+				});
 				return;
 			}
 			await withPromptSuspended(async () => {
