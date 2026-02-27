@@ -165,9 +165,12 @@ function stageAllChanges(): void {
 	}
 }
 
-function commitWithMessage(message: string): void {
+function commitWithMessage(message: string): string {
 	try {
-		execSync(`git commit -m ${JSON.stringify(message)}`, { stdio: "pipe" });
+		return execSync(`git commit -m ${JSON.stringify(message)}`, {
+			stdio: "pipe",
+			encoding: "utf-8",
+		}).trim();
 	} catch {
 		process.exit(1);
 	}
@@ -332,12 +335,17 @@ export async function commit(args: string[]) {
 
 			if (result.action === "confirm" && result.selected) {
 				recordSelection(result.selectedCandidate?.generationId);
-				const label = "git commit";
+				const label = `git commit -m ${JSON.stringify(result.selected)}`;
 				const renderer = createRenderer(process.stderr);
 				renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
-				commitWithMessage(result.selected);
+				const output = commitWithMessage(result.selected);
 				renderer.clearAll();
 				console.log(ui.success(label));
+				if (output) {
+					for (const line of output.split("\n")) {
+						console.log(ui.hint(`  ${line}`));
+					}
+				}
 
 				if (result.quota) {
 					showQuotaInfo(result.quota);

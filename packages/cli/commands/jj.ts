@@ -130,11 +130,14 @@ function getJjDiff(revision: string): string {
 	}
 }
 
-function describeRevision(revision: string, message: string): void {
+function describeRevision(revision: string, message: string): string {
 	try {
-		spawnSync("jj", ["describe", "-r", revision, "-m", message], {
-			stdio: "pipe",
-		});
+		const result = spawnSync(
+			"jj",
+			["describe", "-r", revision, "-m", message],
+			{ stdio: "pipe", encoding: "utf-8" },
+		);
+		return [result.stdout, result.stderr].filter(Boolean).join("").trim();
 	} catch {
 		process.exit(1);
 	}
@@ -304,12 +307,17 @@ async function runInteractiveDescribe(
 				context.apiClient,
 				result.selectedCandidate?.generationId,
 			);
-			const label = `jj describe -r ${options.revision}`;
+			const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
 			const renderer = createRenderer(process.stderr);
 			renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
-			describeRevision(options.revision, result.selected);
+			const output = describeRevision(options.revision, result.selected);
 			renderer.clearAll();
 			console.log(ui.success(label));
+			if (output) {
+				for (const line of output.split("\n")) {
+					console.log(ui.hint(`  ${line}`));
+				}
+			}
 
 			if (result.quota) {
 				showQuotaInfo(result.quota);
