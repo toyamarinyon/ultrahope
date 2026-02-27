@@ -110,7 +110,7 @@ const DEFAULT_HINT_LABELS: Record<
 		confirm: "⏎ confirm",
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
-		refine: "(R)efine",
+			refine: "(r)efine",
 		quit: "(q)uit",
 	},
 	web: {
@@ -118,7 +118,7 @@ const DEFAULT_HINT_LABELS: Record<
 		confirm: "enter confirm",
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
-		refine: "(R)efine",
+			refine: "(r)efine",
 		quit: "(q)uit",
 	},
 };
