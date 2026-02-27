@@ -25,15 +25,17 @@ import {
 	transitionSelectorFlow,
 } from "../../shared/terminal-selector-flow";
 import {
-	formatModelName,
-	formatTotalCostLabel,
 	getSelectedCandidate,
-	getTotalCost,
 	hasReadySlot,
 	normalizeCandidateContentForDisplay,
 } from "../../shared/terminal-selector-helpers";
+import { selectorRenderFrame } from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
-import { createRenderer, SPINNER_FRAMES } from "./renderer";
+import {
+	createRenderer,
+	renderSelectorTextFromRenderFrame,
+	SPINNER_FRAMES,
+} from "./renderer";
 import { theme } from "./theme";
 import { ui } from "./ui";
 
@@ -56,183 +58,15 @@ interface SelectorOptions {
 
 const TTY_PATH = "/dev/tty";
 
-function formatDuration(ms: number): string {
-	const safeMs = Math.max(0, Math.round(ms));
-	if (safeMs < 1000) {
-		return `${safeMs}ms`;
-	}
-	const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
-	return `${seconds}s`;
-}
+const selectorRenderCopy = {
+	runningLabel: "Generating commit messages...",
+};
 
-function formatSlotMeta(candidate: {
-	model?: string;
-	cost?: number;
-	generationMs?: number;
-}): string {
-	if (!candidate.model && !candidate.cost && !candidate.generationMs) {
-		return "";
-	}
-
-	const segments: string[] = [];
-	if (candidate.model) {
-		segments.push(formatModelName(candidate.model));
-	}
-	if (candidate.cost != null) {
-		segments.push(formatTotalCostLabel(candidate.cost).replace(/^\$/, "$"));
-	}
-	if (candidate.generationMs != null) {
-		segments.push(formatDuration(candidate.generationMs));
-	}
-	return segments.join(" ");
-}
-
-function getSlotTitle(
-	slot:
-		| { status: "pending" | "error"; slotId: string }
-		| { status: "ready"; candidate: { content: string } },
-): string {
-	if (slot.status === "ready") {
-		return normalizeCandidateContentForDisplay(slot.candidate.content);
-	}
-	return slot.slotId;
-}
-
-function renderSlotLines(context: SelectorFlowContext): string[] {
-	const lines: string[] = [];
-	for (const [index, slot] of context.slots.entries()) {
-		const selected =
-			context.mode === "list" &&
-			slot.status === "ready" &&
-			index === context.selectedIndex;
-		const radio = selected ? "●" : "○";
-		const radioColor = selected ? theme.success : theme.dim;
-		const titleColor = selected ? theme.primary : theme.dim;
-		const titleFont = selected ? theme.bold : "";
-		const linePrefix = `  ${radioColor}${radio}${theme.reset} `;
-
-		if (slot.status === "ready") {
-			const title = getSlotTitle(slot);
-			const meta = formatSlotMeta(slot.candidate);
-			lines.push(
-				`${linePrefix}${titleColor}${titleFont}${title}${theme.reset}`,
-			);
-			if (meta) {
-				const metaColor = selected ? theme.primary : theme.dim;
-				lines.push(`    ${metaColor}${meta}${theme.reset}`);
-			}
-		} else {
-			lines.push(
-				`${linePrefix}${titleColor}${titleFont}Generating...${theme.reset}`,
-			);
-			const detail =
-				slot.status === "error" ? "error" : slot.model || slot.slotId;
-			lines.push(`    ${theme.dim}${detail}${theme.reset}`);
-			if (slot.status === "error") {
-				const errorText = slot.error?.toString?.() ?? slot.error;
-				lines.push(`    ${theme.fatal}${errorText}${theme.reset}`);
-			}
-		}
-
-		if (index + 1 < context.slots.length) {
-			lines.push("");
-		}
-	}
-	return lines;
-}
-
-function renderList(context: SelectorFlowContext, nowMs: number): string[] {
-	const lines: string[] = [];
-	const readyCount = context.slots.filter(
-		(slot) => slot.status === "ready",
-	).length;
-	const totalCost = getTotalCost(context.slots);
-	const costSuffix =
-		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
-	const progress = `${readyCount}/${context.totalSlots}`;
-	const spinner =
-		SPINNER_FRAMES[Math.floor(nowMs / 80) % SPINNER_FRAMES.length];
-	if (context.isGenerating) {
-		lines.push(
-			`${theme.progress}${spinner}${theme.reset} ${theme.primary}Generating commit messages... ${progress}${costSuffix}${theme.reset}`,
-		);
-	} else {
-		const generatedLabel =
-			readyCount === 1
-				? `Generated 1 commit message`
-				: `Generated ${readyCount} commit messages`;
-		lines.push(ui.success(`${generatedLabel}${costSuffix}`));
-	}
-	lines.push("");
-	lines.push(...renderSlotLines(context));
-	lines.push("");
-
-	const hasReady = readyCount > 0;
-	const canNavigate = readyCount >= 2;
-	const canEdit = hasReady;
-	const canRefine = hasReady;
-	const canQuit = true;
-	const canConfirm = hasReady;
-
-	const asHint = (label: string, enabled: boolean): string =>
-		enabled ? label : `${theme.dim}${label}${theme.reset}`;
-
-	lines.push(
-		`  ${asHint("↑↓ navigate", canNavigate)} | ${asHint("(e)dit", canEdit)} | ${asHint("(r)efine", canRefine)} | ${asHint("(q)uit", canQuit)} | ${asHint("⏎ confirm", canConfirm)}`,
-	);
-
-	const selectedContent =
-		context.mode === "list"
-			? getSelectedCandidate(context.slots, context.selectedIndex)
-			: undefined;
-	if (selectedContent) {
-		const edited = context.editedSelections.get(selectedContent.slotId);
-		if (edited) {
-			lines.push("");
-			lines.push(ui.success(`Edited: ${edited}`));
-		}
-	}
-	return lines;
-}
-
-function renderPrompt(context: SelectorFlowContext): string[] {
-	const promptKind = context.promptKind ?? "refine";
-	const index = context.promptTargetIndex ?? context.selectedIndex;
-	const candidate = context.slots[index];
-	const targetText =
-		candidate && candidate.status === "ready"
-			? normalizeCandidateContentForDisplay(candidate.candidate.content)
-			: "(no selection)";
-	const totalCost = getTotalCost(context.slots);
-	const readyCount = context.slots.filter(
-		(slot) => slot.status === "ready",
-	).length;
-	const costSuffix =
-		totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
-	const generatedLabel =
-		readyCount === 1
-			? `Generated 1 commit message${costSuffix}`
-			: `Generated ${readyCount} commit messages${costSuffix}`;
-	if (promptKind === "edit") {
-		return [
-			ui.success(generatedLabel),
-			ui.success(`Selected: ${targetText}`),
-			"",
-			`    ${ui.hint("Edit mode")}`,
-		];
-	}
-
-	const elapsed = formatDuration(Date.now() - context.createdAtMs);
-	return [
-		ui.success(generatedLabel),
-		"",
-		ui.hint(`→ ${promptKind === "edit" ? "Edit" : "Refine"} mode`),
-		`${ui.hint(`Target [${Math.min(context.totalSlots, index + 1)}]:`)} ${targetText}`,
-		`Cost/Time (current): ${totalCost > 0 ? formatTotalCostLabel(totalCost) : "$0.000000"} / ${elapsed}`,
-		"",
-		"?",
-	];
-}
+const selectorRenderCapabilities = {
+	edit: true,
+	refine: true,
+	clickConfirm: false,
+};
 
 type InlinePromptOptions = {
 	initialValue?: string;
@@ -244,20 +78,6 @@ type InlinePromptOptions = {
 	helpText?: string;
 	helpSpacing?: number;
 };
-
-function renderSelector(
-	context: SelectorFlowContext,
-	nowMs: number,
-	renderer: ReturnType<typeof createRenderer>,
-): void {
-	const lines: string[] = [];
-	if (context.mode === "prompt") {
-		lines.push(...renderPrompt(context));
-	} else {
-		lines.push(...renderList(context, nowMs));
-	}
-	renderer.render(`${lines.join("\n")}\n`);
-}
 
 function renderError(
 	error: unknown,
@@ -427,8 +247,57 @@ export async function selectCandidate(
 
 		const render = () => {
 			if (!cleanedUp && !isPromptOpen) {
-				renderSelector(context, Date.now(), renderer);
+				const frame = selectorRenderFrame({
+					state: {
+						...context,
+						mode: context.mode,
+						promptKind: context.promptKind,
+						promptTargetIndex: context.promptTargetIndex,
+					},
+					nowMs: Date.now(),
+					spinnerFrames: SPINNER_FRAMES,
+					copy: selectorRenderCopy,
+					capabilities: selectorRenderCapabilities,
+				});
+				renderer.render(renderSelectorTextFromRenderFrame(frame));
 			}
+		};
+
+		const renderFinalSelection = (result: SelectorResult) => {
+			const frame = selectorRenderFrame({
+				state: {
+					...context,
+					mode: context.mode,
+					promptKind: context.promptKind,
+					promptTargetIndex: context.promptTargetIndex,
+				},
+				nowMs: Date.now(),
+				spinnerFrames: SPINNER_FRAMES,
+				copy: selectorRenderCopy,
+				capabilities: selectorRenderCapabilities,
+			});
+			const selected =
+				result.selectedCandidate?.content ?? result.selected ?? "";
+			const selectedTitle =
+				normalizeCandidateContentForDisplay(selected) || selected;
+			const costSuffix = frame.viewModel.header.totalCostLabel
+				? ` (total: ${frame.viewModel.header.totalCostLabel})`
+				: "";
+			const generatedLine = `${frame.viewModel.header.generatedLabel}${costSuffix}`;
+			const lines = [ui.success(generatedLine)];
+
+			if (selectedTitle) {
+				lines.push(ui.success(`Selected: ${selectedTitle}`));
+			}
+			if (result.edited) {
+				const editedTitle = normalizeCandidateContentForDisplay(selected);
+				if (editedTitle) {
+					lines.push(ui.success(`Edited ${editedTitle}`));
+				}
+			}
+
+			renderer.clearAll();
+			ttyWriter.write(`${lines.join("\n")}\n`);
 		};
 
 		const stopRenderLoop = () => {
@@ -520,37 +389,10 @@ export async function selectCandidate(
 			} else {
 				stopRenderLoop();
 			}
-			render();
 			if (transitionResult.result) {
 				const result = transitionResult.result;
 				if (result.action === "confirm") {
-					const selected = result.selected ?? "";
-					const selectedTitle = result.selectedCandidate
-						? normalizeCandidateContentForDisplay(
-								result.selectedCandidate.content,
-							)
-						: normalizeCandidateContentForDisplay(selected) || selected;
-					const readyCount = context.slots.filter(
-						(slot) => slot.status === "ready",
-					).length;
-					const totalCost = getTotalCost(context.slots);
-					const costSuffix =
-						totalCost > 0 ? ` (total: ${formatTotalCostLabel(totalCost)})` : "";
-					const generatedLabel =
-						readyCount === 1
-							? `Generated 1 commit message${costSuffix}`
-							: `Generated ${readyCount} commit messages${costSuffix}`;
-					renderer.clearAll();
-					ttyWriter.write(`${ui.success(generatedLabel)}\n`);
-					if (selectedTitle) {
-						ttyWriter.write(`${ui.success(`Selected: ${selectedTitle}`)}\n`);
-					}
-					if (result.edited) {
-						const editedTitle = normalizeCandidateContentForDisplay(selected);
-						if (editedTitle) {
-							ttyWriter.write(`${ui.success(`Edited ${editedTitle}`)}\n`);
-						}
-					}
+					renderFinalSelection(result);
 					resolveOnce(result);
 					cleanup(false);
 					return;
@@ -561,6 +403,7 @@ export async function selectCandidate(
 					return;
 				}
 			}
+			render();
 		};
 
 		const startGeneration = () => {
@@ -622,7 +465,7 @@ export async function selectCandidate(
 		};
 
 		const renderForPrompt = () => {
-			renderer.reset();
+			renderer.clearAll();
 			render();
 		};
 

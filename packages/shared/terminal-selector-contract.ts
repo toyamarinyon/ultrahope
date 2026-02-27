@@ -1,3 +1,9 @@
+import type {
+	SelectorCapabilities,
+	SelectorCopy,
+	SelectorRenderFrame,
+} from "./terminal-selector-view-model";
+
 export interface QuotaInfo {
 	remaining: number;
 	limit: number;
@@ -138,6 +144,12 @@ export interface TerminalSelectorOptions {
 
 export interface TerminalSelectorController {
 	readonly state: SelectorState;
+	snapshot?: () => SelectorState;
+	frame?: (options?: {
+		nowMs?: number;
+		copy?: Partial<SelectorCopy>;
+		capabilities?: Partial<SelectorCapabilities>;
+	}) => SelectorRenderFrame;
 	start: () => void;
 	abort: () => SelectorResult;
 	confirm: () => SelectorResult | null;

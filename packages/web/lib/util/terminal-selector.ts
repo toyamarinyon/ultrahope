@@ -15,12 +15,15 @@ import {
 	transitionSelectorFlow,
 } from "../../../shared/terminal-selector-flow";
 import {
-	buildSelectorViewModel,
 	formatSelectorHintActions,
 	type SelectorCapabilities,
 	type SelectorCopy,
+	type SelectorRenderFrame,
 	type SelectorSlotViewModel,
+	selectorRenderFrame,
 } from "../../../shared/terminal-selector-view-model";
+
+export { selectorRenderFrame };
 
 export type {
 	CandidateWithModel,
@@ -63,25 +66,38 @@ function formatSlot(slot: SelectorSlotViewModel): string[] {
 	return lines;
 }
 
-export function renderSelectorLines(
-	state: SelectorState,
-	nowMs: number,
+function renderPromptLines(frame: SelectorRenderFrame): string[] {
+	const prompt = frame.prompt;
+	if (!prompt) {
+		return [];
+	}
+
+	const lines: string[] = [];
+	if (prompt.selectedLine) {
+		lines.push(prompt.selectedLine);
+	}
+
+	if (prompt.kind === "edit") {
+		lines.push("");
+		lines.push(`    ${prompt.modeLine}`);
+		return lines;
+	}
+
+	lines.push("");
+	lines.push(prompt.modeLine);
+	lines.push(`${prompt.targetLineLabel} ${prompt.targetText}`);
+	lines.push(prompt.costLine);
+	lines.push("");
+	lines.push(prompt.questionLine);
+	return lines;
+}
+
+export function renderSelectorLinesFromRenderFrame(
+	frame: SelectorRenderFrame,
 	options: RenderSelectorLinesOptions = {},
 ): string[] {
 	const lines: string[] = [];
-	const copyOverrides: Partial<SelectorCopy> = {
-		...options.copy,
-	};
-	if (options.runningLabel && copyOverrides.runningLabel == null) {
-		copyOverrides.runningLabel = options.runningLabel;
-	}
-	const viewModel = buildSelectorViewModel({
-		state,
-		nowMs,
-		spinnerFrames: SPINNER_FRAMES,
-		copy: copyOverrides,
-		capabilities: options.capabilities,
-	});
+	const viewModel = frame.viewModel;
 	const costSuffix = viewModel.header.totalCostLabel
 		? ` (total: ${viewModel.header.totalCostLabel})`
 		: "";
@@ -92,6 +108,11 @@ export function renderSelectorLines(
 		);
 	} else {
 		lines.push(`${viewModel.header.generatedLabel}${costSuffix}`);
+	}
+
+	if (frame.mode === "prompt") {
+		lines.push(...renderPromptLines(frame));
+		return lines;
 	}
 
 	lines.push("");
@@ -117,6 +138,30 @@ export function renderSelectorLines(
 	}
 
 	return lines;
+}
+
+export function renderSelectorLines(
+	state: SelectorState,
+	nowMs: number,
+	options: RenderSelectorLinesOptions = {},
+): string[] {
+	const copyOverrides: Partial<SelectorCopy> = {
+		...options.copy,
+	};
+	if (options.runningLabel && copyOverrides.runningLabel == null) {
+		copyOverrides.runningLabel = options.runningLabel;
+	}
+	const frame = selectorRenderFrame({
+		state: {
+			...state,
+			createdAtMs: state.createdAtMs,
+		},
+		nowMs,
+		spinnerFrames: SPINNER_FRAMES,
+		copy: copyOverrides,
+		capabilities: options.capabilities,
+	});
+	return renderSelectorLinesFromRenderFrame(frame, options);
 }
 
 function createInitialSlots(
@@ -447,10 +492,37 @@ export function createTerminalSelectorController(
 		listeners.clear();
 	};
 
+	const createFrame = (options?: {
+		nowMs?: number;
+		copy?: Partial<SelectorCopy>;
+		capabilities?: Partial<SelectorCapabilities>;
+	}): SelectorRenderFrame => {
+		const nowMs = options?.nowMs ?? Date.now();
+		return selectorRenderFrame({
+			state: {
+				...context,
+				mode: context.mode,
+				promptKind: context.promptKind,
+				promptTargetIndex: context.promptTargetIndex,
+				createdAtMs: context.createdAtMs,
+				slots: context.slots,
+				selectedIndex: context.selectedIndex,
+				isGenerating: context.isGenerating,
+				totalSlots: context.totalSlots,
+			},
+			nowMs,
+			spinnerFrames: SPINNER_FRAMES,
+			copy: options?.copy,
+			capabilities: options?.capabilities,
+		});
+	};
+
 	return {
 		get state() {
 			return snapshotState();
 		},
+		snapshot: snapshotState,
+		frame: createFrame,
 		start,
 		abort,
 		confirm,

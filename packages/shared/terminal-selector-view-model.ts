@@ -1,10 +1,16 @@
-import type { SelectorSlot, SelectorState } from "./terminal-selector-contract";
+import type {
+	PromptKind,
+	SelectorFlowContext,
+	SelectorSlot,
+	SelectorState,
+} from "./terminal-selector-contract";
 import {
 	formatCost,
 	formatModelName,
 	formatTotalCostLabel,
 	getReadyCount,
 	getTotalCost,
+	normalizeCandidateContentForDisplay,
 } from "./terminal-selector-helpers";
 
 export type SelectorHintAction =
@@ -55,17 +61,39 @@ export interface SelectorSlotViewModel {
 }
 
 export interface SelectorViewModel {
+	mode: "list" | "prompt";
 	header: SelectorHeaderViewModel;
 	hint: SelectorHintViewModel;
 	slots: SelectorSlotViewModel[];
 	editedSummary?: string;
 }
 
+export interface SelectorPromptViewModel {
+	kind: PromptKind;
+	generatedLine: string;
+	selectedLine?: string;
+	modeLine: string;
+	targetLineLabel: string;
+	targetText: string;
+	targetIndex: number;
+	costLine: string;
+	questionLine: string;
+}
+
+export interface SelectorRenderFrame {
+	mode: "list" | "prompt";
+	viewModel: SelectorViewModel;
+	prompt?: SelectorPromptViewModel;
+}
+
 export interface BuildSelectorViewModelInput {
 	state: Pick<
 		SelectorState,
-		"slots" | "selectedIndex" | "isGenerating" | "totalSlots"
-	>;
+		"slots" | "selectedIndex" | "isGenerating" | "totalSlots" | "createdAtMs"
+	> &
+		Partial<
+			Pick<SelectorFlowContext, "mode" | "promptKind" | "promptTargetIndex">
+		>;
 	nowMs: number;
 	spinnerFrames?: readonly string[];
 	copy?: Partial<SelectorCopy>;
@@ -145,6 +173,56 @@ function formatDuration(ms: number): string {
 	}
 	const seconds = (safeMs / 1000).toFixed(1).replace(/\.0$/, "");
 	return `${seconds}s`;
+}
+
+function resolveRenderMode(
+	inputState: BuildSelectorViewModelInput["state"],
+): "list" | "prompt" {
+	return inputState.mode === "prompt" ? "prompt" : "list";
+}
+
+function resolvePromptLineLabel(kind: PromptKind): string {
+	return kind === "edit" ? "Edit mode" : "→ Refine mode";
+}
+
+function buildPromptViewModel(
+	input: Pick<BuildSelectorViewModelInput, "state" | "nowMs">,
+	viewModel: SelectorViewModel,
+): SelectorPromptViewModel {
+	const state = input.state;
+	const promptKind = state.promptKind ?? "refine";
+	const targetIndex = state.promptTargetIndex ?? state.selectedIndex;
+	const targetSlot = state.slots[targetIndex];
+	const targetText =
+		targetSlot?.status === "ready"
+			? normalizeCandidateContentForDisplay(targetSlot.candidate.content)
+			: "(no selection)";
+	const totalCost = getTotalCost(state.slots);
+	const costLineLabel =
+		totalCost > 0 ? formatTotalCostLabel(totalCost) : "$0.000000";
+	const generatedCostSuffix = viewModel.header.totalCostLabel
+		? ` (total: ${viewModel.header.totalCostLabel})`
+		: "";
+	const generatedLine = `${viewModel.header.generatedLabel}${generatedCostSuffix}`;
+	const modeLine = resolvePromptLineLabel(promptKind);
+	const targetLineLabel = `Target [${Math.min(state.totalSlots, targetIndex + 1)}]:`;
+	const duration = formatDuration(input.nowMs - state.createdAtMs);
+	const costLine = `Cost/Time (current): ${costLineLabel} / ${duration}`;
+
+	const selectedLine =
+		promptKind === "edit" ? `Selected: ${targetText}` : undefined;
+
+	return {
+		kind: promptKind,
+		generatedLine,
+		selectedLine,
+		modeLine,
+		targetLineLabel,
+		targetText,
+		targetIndex,
+		costLine,
+		questionLine: "?",
+	};
 }
 
 export function formatSelectorHintActions(
@@ -292,6 +370,7 @@ export function buildSelectorViewModel(
 	});
 
 	return {
+		mode: resolveRenderMode(input.state),
 		header: {
 			mode: input.state.isGenerating ? "running" : "done",
 			spinner: spinnerFrames[frame],
@@ -310,5 +389,24 @@ export function buildSelectorViewModel(
 			createSlotViewModel(slot, index, input.state.selectedIndex),
 		),
 		editedSummary: resolveEditedSummary(input),
+	};
+}
+
+export function selectorRenderFrame(
+	input: BuildSelectorViewModelInput,
+): SelectorRenderFrame {
+	const viewModel = buildSelectorViewModel(input);
+
+	if (viewModel.mode === "prompt") {
+		return {
+			mode: "prompt",
+			viewModel,
+			prompt: buildPromptViewModel(input, viewModel),
+		};
+	}
+
+	return {
+		mode: "list",
+		viewModel,
 	};
 }

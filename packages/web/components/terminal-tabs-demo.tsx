@@ -12,10 +12,11 @@ import {
 	type CandidateWithModel,
 	type CreateCandidates,
 	createTerminalSelectorController,
-	renderSelectorLines,
+	renderSelectorLinesFromRenderFrame,
 	type SelectorResult,
 	type SelectorState,
 	SPINNER_FRAMES,
+	selectorRenderFrame,
 	type TerminalSelectorController,
 } from "@/lib/util/terminal-selector";
 import { createCandidatesFromTasks } from "@/lib/util/terminal-selector-effect";
@@ -27,9 +28,9 @@ import {
 } from "@/lib/util/terminal-selector-replay";
 import { formatCost } from "../../shared/terminal-selector-helpers";
 import {
-	buildSelectorViewModel,
 	formatSelectorHintActions,
 	type SelectorSlotViewModel,
+	type SelectorViewModel,
 } from "../../shared/terminal-selector-view-model";
 import type {
 	TerminalStreamReplayCapture,
@@ -540,9 +541,9 @@ export function TerminalTabsDemo() {
 	const selectorCapabilities = {
 		clickConfirm: true,
 	};
-	const selectorViewModel =
+	const selectorFrame =
 		selectorState !== null
-			? buildSelectorViewModel({
+			? selectorRenderFrame({
 					state: selectorState,
 					nowMs: 0,
 					spinnerFrames: SPINNER_FRAMES,
@@ -550,21 +551,24 @@ export function TerminalTabsDemo() {
 					capabilities: selectorCapabilities,
 				})
 			: null;
-	const renderedSelectorLines =
-		selectorState !== null
-			? renderSelectorLines(selectorState, 0, {
-					copy: selectorCopy,
-					capabilities: selectorCapabilities,
-				})
-			: [];
+	const selectorViewModel: SelectorViewModel | null = selectorFrame
+		? selectorFrame.viewModel
+		: null;
+	const renderedSelectorLines = selectorFrame
+		? renderSelectorLinesFromRenderFrame(selectorFrame, {
+				copy: selectorCopy,
+				capabilities: selectorCapabilities,
+			})
+		: [];
 	const renderedSelectorHintLine = selectorViewModel
 		? formatSelectorHintActions(selectorViewModel.hint.actions, "web")
 		: "";
+	const isSelectorRunning = selectorState?.isGenerating ?? false;
 	const renderedSelectorHeaderLines =
-		selectorState !== null
+		selectorFrame !== null
 			? renderSelectorLinesWithSpinner(
 					[renderedSelectorLines[0]].filter((line) => line.trim() !== ""),
-					selectorState.isGenerating,
+					isSelectorRunning,
 					SPINNER_FRAMES[spinnerFrameIndex],
 				)
 			: [];
