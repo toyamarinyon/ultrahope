@@ -460,7 +460,7 @@ function setRawModeSafe(stream: NodeJS.ReadableStream, enabled: boolean): void {
 	ttyStream.setRawMode(enabled);
 }
 
-function bufferForDataChunk(data: string | Buffer): Buffer {
+function bufferForDataChunk(data: string | Buffer<ArrayBufferLike>): Buffer<ArrayBufferLike> {
 	if (Buffer.isBuffer(data)) return data;
 	return Buffer.from(data, "utf8");
 }
@@ -478,7 +478,7 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 
 	return new Promise<string | null>((resolve, reject) => {
 		let done = false;
-		let pendingEscape = Buffer.alloc(0);
+			let pendingEscape: Buffer<ArrayBufferLike> = Buffer.alloc(0);
 		let escapeTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const buffer = new TextBuffer(initialValue);
@@ -488,13 +488,18 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 				escapeTimer = null;
 			}
 		};
-		const scheduleEscape = () => {
-			clearTimer();
-			escapeTimer = setTimeout(() => {
-				pendingEscape = Buffer.alloc(0);
-				handleKey({ key: "escape", ctrl: false, alt: false, shift: false });
-			}, escapeTimeout);
-		};
+			const scheduleEscape = () => {
+				clearTimer();
+				escapeTimer = setTimeout(() => {
+					pendingEscape = Buffer.alloc(0);
+					applyKeyEvent({
+						key: "escape",
+						ctrl: false,
+						alt: false,
+						shift: false,
+					});
+				}, escapeTimeout);
+			};
 
 		const finish = (value: string | null) => {
 			if (done) return;
