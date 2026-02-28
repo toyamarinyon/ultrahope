@@ -89,7 +89,7 @@ flowchart LR
 | Phase | Task File | Status | Description |
 |---|---|---|---|
 | 0 | [phase-0-line-editor-core.md](./phase-0-line-editor-core.md) | ✅ DONE | Build the raw-mode line editor with Emacs keybindings and CJK support |
-| 1 | [phase-1-selector-integration.md](./phase-1-selector-integration.md) | 🔲 TODO | Replace `readline.createInterface` in `openInlinePrompt` with the new editor |
+| 1 | [phase-1-selector-integration.md](./phase-1-selector-integration.md) | ✅ DONE | Replace `readline.createInterface` in `openInlinePrompt` with the new editor |
 
 > **How to work on this epic:** Read this file first to understand the full architecture.
 > Then check the status table above. Pick the first `🔲 TODO` task whose dependencies

@@ -31,6 +31,7 @@ import {
 } from "../../shared/terminal-selector-helpers";
 import { selectorRenderFrame } from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
+import { editLine } from "./line-editor";
 import {
 	createRenderer,
 	renderSelectorTextFromRenderFrame,
@@ -71,7 +72,6 @@ const selectorRenderCapabilities = {
 type InlinePromptOptions = {
 	initialValue?: string;
 	cancelOnQ?: boolean;
-	cancelOnEscape?: boolean;
 	trimResult?: boolean;
 	showPrompt?: boolean;
 	promptPrefix?: string;
@@ -487,82 +487,39 @@ export async function selectCandidate(
 		const openInlinePrompt = async (
 			prompt: string,
 			options: InlinePromptOptions = {},
-		): Promise<string | null> =>
-			new Promise<string | null>((resolve) => {
-				const {
-					initialValue = "",
-					cancelOnQ = false,
-					cancelOnEscape = false,
-					trimResult = true,
-					showPrompt = true,
-					promptPrefix = "",
-					helpText,
-					helpSpacing = 0,
-				} = options;
-				const promptReader = readline.createInterface({
-					input: ttyReader,
-					output: ttyWriter,
-					terminal: true,
-				});
-				let done = false;
-				const finish = (value: string | null) => {
-					if (done) return;
-					done = true;
-					promptReader.close();
-					resolve(value);
-				};
-				promptReader.on("SIGINT", () => finish(null));
-				let restoreKeypress = false;
-				const handlePromptKeypress = (
-					_str: string,
-					key: readline.Key | undefined,
-				) => {
-					if (!cancelOnEscape) return;
-					if (key?.name === "escape") {
-						finish(null);
-						return;
-					}
-				};
-				if (cancelOnEscape) {
-					readline.emitKeypressEvents(ttyReader);
-					ttyReader.on("keypress", handlePromptKeypress);
-					restoreKeypress = true;
-				}
-				const appliedPrompt = showPrompt
-					? ui.prompt(prompt)
-					: promptPrefix || "";
-				promptReader.setPrompt(appliedPrompt);
-				promptReader.prompt();
-				if (initialValue) {
-					promptReader.write(initialValue);
-				}
-				if (helpText) {
-					const restoreColumn = appliedPrompt.length + initialValue.length;
-					readline.moveCursor(ttyWriter, 0, helpSpacing);
-					readline.cursorTo(ttyWriter, 0);
-					readline.clearLine(ttyWriter, 0);
-					ttyWriter.write(helpText);
-					readline.moveCursor(ttyWriter, 0, -helpSpacing);
-					readline.cursorTo(ttyWriter, restoreColumn);
-				}
+		): Promise<string | null> => {
+			const {
+				initialValue = "",
+				cancelOnQ = false,
+				trimResult = true,
+				showPrompt = true,
+				promptPrefix = "",
+				helpText,
+				helpSpacing = 0,
+			} = options;
 
-				promptReader.on("line", (input) => {
-					let value = input ?? "";
-					if (trimResult) {
-						value = value.trim();
-					}
-					if (cancelOnQ && value.toLowerCase() === "q") {
-						finish(null);
-						return;
-					}
-					finish(value);
-				});
-				promptReader.on("close", () => {
-					if (restoreKeypress) {
-						ttyReader.off("keypress", handlePromptKeypress);
-					}
-				});
+			const prefix = showPrompt ? ui.prompt(prompt) : promptPrefix || "";
+			const result = await editLine({
+				input: ttyReader,
+				output: ttyWriter,
+				prefix,
+				initialValue,
+				helpText,
+				helpSpacing,
 			});
+			if (result === null) {
+				return null;
+			}
+
+			let value = result;
+			if (trimResult) {
+				value = value.trim();
+			}
+			if (cancelOnQ && value.toLowerCase() === "q") {
+				return null;
+			}
+			return value;
+		};
 
 		const openRefinePrompt = async () => {
 			await withPromptSuspended(async () => {
@@ -597,7 +554,6 @@ export async function selectCandidate(
 				await withPromptSuspended(async () => {
 					const edited = await openInlinePrompt("", {
 						initialValue: selected.content,
-						cancelOnEscape: true,
 						showPrompt: false,
 						promptPrefix: "    > ",
 						helpText: `    ${ui.hint(
