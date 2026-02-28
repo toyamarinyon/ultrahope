@@ -365,17 +365,6 @@ export function parseKey(buf: Buffer): KeyEvent[] {
 			continue;
 		}
 
-		if (value >= 0x01 && value <= 0x1a) {
-			events.push({
-				key: String.fromCharCode(96 + value),
-				ctrl: true,
-				alt: false,
-				shift: false,
-			});
-			i += 1;
-			continue;
-		}
-
 		if (value === 0x0d || value === 0x0a) {
 			events.push({
 				key: "return",
@@ -402,6 +391,17 @@ export function parseKey(buf: Buffer): KeyEvent[] {
 			events.push({
 				key: "tab",
 				ctrl: false,
+				alt: false,
+				shift: false,
+			});
+			i += 1;
+			continue;
+		}
+
+		if (value >= 0x01 && value <= 0x1a) {
+			events.push({
+				key: String.fromCharCode(96 + value),
+				ctrl: true,
 				alt: false,
 				shift: false,
 			});
