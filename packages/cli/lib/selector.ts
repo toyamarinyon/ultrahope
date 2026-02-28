@@ -581,33 +581,102 @@ export async function selectCandidate(
 				return;
 			}
 			if (inlineEditPrompt) {
-				await withPromptSuspended(
-					async () => {
-						const edited = await openInlinePrompt("", {
-							initialValue: selected.content,
-							showPrompt: false,
-							promptPrefix: "    > ",
-							helpText: `    ${ui.hint(
-								"enter: apply | esc: back to select a candidate",
-							)}`,
-							helpSpacing: 2,
-							trimResult: false,
-						});
-						if (edited === null) {
-							applyResult(
-								transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
+				await withPromptSuspended(async () => {
+					let lastEditLineRow = 0;
+
+					const edited = await editLine({
+						input: ttyReader,
+						output: ttyWriter,
+						prefix: "",
+						initialValue: selected.content,
+						finalizeMode: "none",
+						onRender: ({ buffer }) => {
+							if (lastEditLineRow > 0) {
+								readline.moveCursor(ttyWriter, 0, -lastEditLineRow);
+							}
+							readline.cursorTo(ttyWriter, 0);
+							readline.clearScreenDown(ttyWriter);
+
+							const frame = selectorRenderFrame({
+								state: {
+									...context,
+									mode: "list",
+									promptKind: context.promptKind,
+									promptTargetIndex: context.promptTargetIndex,
+								},
+								nowMs: Date.now(),
+								spinnerFrames: SPINNER_FRAMES,
+								copy: selectorRenderCopy,
+								capabilities: selectorRenderCapabilities,
+							});
+
+							const lines: string[] = [];
+							const vm = frame.viewModel;
+							const costSuffix = vm.header.totalCostLabel
+								? ` (total: ${vm.header.totalCostLabel})`
+								: "";
+							lines.push(
+								ui.success(`${vm.header.generatedLabel}${costSuffix}`),
 							);
-							return;
-						}
+							lines.push("");
+
+							let editLineIndex = 0;
+							for (const slot of vm.slots) {
+								if (slot.selected) {
+									editLineIndex = lines.length;
+									lines.push(
+										`  ${theme.success}>${theme.reset} ${buffer.getText()}`,
+									);
+								} else {
+									lines.push(
+										`  ${theme.dim}○${theme.reset} ${theme.dim}${slot.title}${theme.reset}`,
+									);
+								}
+								if (slot.meta) {
+									const metaColor = slot.selected ? theme.primary : theme.dim;
+									lines.push(`    ${metaColor}${slot.meta}${theme.reset}`);
+								}
+								lines.push("");
+							}
+
+							lines.push(`  ${ui.hint("enter apply | esc back to select")}`);
+							ttyWriter.write(lines.join("\n"));
+
+							const moveUp = lines.length - 1 - editLineIndex;
+							if (moveUp > 0) {
+								readline.moveCursor(ttyWriter, 0, -moveUp);
+							}
+							readline.cursorTo(ttyWriter, 0);
+							const col = 4 + buffer.getDisplayCursor();
+							if (col > 0) {
+								readline.moveCursor(ttyWriter, col, 0);
+							}
+
+							lastEditLineRow = editLineIndex;
+						},
+					});
+
+					if (lastEditLineRow > 0) {
+						readline.moveCursor(ttyWriter, 0, -lastEditLineRow);
+					}
+					readline.cursorTo(ttyWriter, 0);
+					readline.clearScreenDown(ttyWriter);
+
+					if (edited === null) {
 						applyResult(
 							transitionSelectorFlow(context, {
-								type: "PROMPT_SUBMIT",
-								selectedContent: edited || selected.content,
+								type: "PROMPT_CANCEL",
 							}),
 						);
-					},
-					{ preserveRendererOutput: true },
-				);
+						return;
+					}
+					applyResult(
+						transitionSelectorFlow(context, {
+							type: "PROMPT_SUBMIT",
+							selectedContent: edited || selected.content,
+						}),
+					);
+				});
 				return;
 			}
 			await withPromptSuspended(async () => {
