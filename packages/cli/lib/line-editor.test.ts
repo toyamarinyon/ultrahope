@@ -1,5 +1,26 @@
 import { describe, expect, it } from "bun:test";
-import { parseKey, TextBuffer } from "./line-editor";
+import { PassThrough } from "node:stream";
+import { editLine, parseKey, TextBuffer } from "./line-editor";
+
+class FakeInputStream extends PassThrough {
+	setRawMode(): void {
+		// no-op: terminal mode switching is intentionally ignored in tests.
+	}
+}
+
+function createOutputWriter() {
+	const chunks: string[] = [];
+	const output = new PassThrough();
+	output.on("data", (chunk) => {
+		chunks.push(
+			Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk),
+		);
+	});
+	return {
+		output,
+		getOutput: () => chunks.join(""),
+	};
+}
 
 describe("TextBuffer", () => {
 	it("inserts ascii chars and tracks cursor", () => {
@@ -149,5 +170,84 @@ describe("parseKey", () => {
 		expect(events).toEqual([
 			{ key: "あ", ctrl: false, alt: false, shift: false },
 		]);
+	});
+});
+
+describe("editLine", () => {
+	it("writes trailing newline in default finalize mode", async () => {
+		const input = new FakeInputStream();
+		const { output, getOutput } = createOutputWriter();
+		const result = editLine({
+			input,
+			output,
+		});
+
+		input.write("x");
+		input.write("\r");
+
+		const value = await result;
+		expect(value).toBe("x");
+		expect(getOutput()).toContain("\n");
+	});
+
+	it("returns entered text on return", async () => {
+		const input = new FakeInputStream();
+		const { output, getOutput } = createOutputWriter();
+		const result = editLine({
+			input,
+			output,
+			finalizeMode: "none",
+			// Avoid non-essential side effects for strict result assertions.
+		});
+
+		input.write("abc");
+		input.write("\r");
+
+		const value = await result;
+		expect(value).toBe("abc");
+		expect(getOutput()).not.toContain("\n");
+	});
+
+	it("returns null on escape", async () => {
+		const input = new FakeInputStream();
+		const { output } = createOutputWriter();
+		const result = editLine({
+			input,
+			output,
+			finalizeMode: "none",
+			escapeTimeout: 1,
+		});
+
+		input.write("abc");
+		input.write("\x1b");
+
+		const value = await result;
+		expect(value).toBeNull();
+	});
+
+	it("invokes custom render callback through line-editor state", async () => {
+		const input = new FakeInputStream();
+		const { output } = createOutputWriter();
+		const snapshots: string[] = [];
+
+		const result = editLine({
+			input,
+			output,
+			finalizeMode: "none",
+			onRender: ({ buffer }) => {
+				snapshots.push(buffer.getText());
+			},
+		});
+
+		input.write("h");
+		input.write("i");
+		input.write("\x7f");
+		input.write("\r");
+
+		const value = await result;
+		expect(value).toBe("h");
+		expect(snapshots.length).toBeGreaterThanOrEqual(3);
+		expect(snapshots[0]).toBe("");
+		expect(snapshots[snapshots.length - 1]).toBe("h");
 	});
 });

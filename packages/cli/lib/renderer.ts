@@ -283,6 +283,11 @@ export function createRenderer(output: NodeJS.WriteStream) {
 		pendingHeight = 0;
 	};
 
+	/**
+	 * remove all pending/committed lines and reset cursor position to the prompt entry point.
+	 * This should be called by the selector UI whenever it enters a modal/input flow
+	 * so that terminal state is reconstructed through a single `render()` call on return.
+	 */
 	const clearAll = (): void => {
 		if (!isTTY(output)) {
 			return;
@@ -298,6 +303,11 @@ export function createRenderer(output: NodeJS.WriteStream) {
 		committedHeight = 0;
 	};
 
+	/**
+	 * reset internal height counters without touching screen contents.
+	 * Unlike `clearAll`, this must only be used when the caller already owns the
+	 * terminal and wants to drop renderer bookkeeping (e.g., on shutdown).
+	 */
 	const reset = (): void => {
 		pendingHeight = 0;
 		committedHeight = 0;

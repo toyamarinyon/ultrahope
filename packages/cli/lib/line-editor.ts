@@ -21,7 +21,18 @@ export interface EditLineOptions {
 	helpText?: string;
 	helpSpacing?: number;
 	escapeTimeout?: number;
+	onRender?: (context: EditLineRenderContext) => void;
+	finalizeMode?: EditLineFinalizeMode;
 }
+
+export interface EditLineRenderContext {
+	buffer: TextBuffer;
+	prefix: string;
+	helpText?: string;
+	helpSpacing?: number;
+}
+
+export type EditLineFinalizeMode = "default" | "none";
 
 function isPrintableChar(char: string): boolean {
 	const codePoint = char.codePointAt(0);
@@ -460,7 +471,9 @@ function setRawModeSafe(stream: NodeJS.ReadableStream, enabled: boolean): void {
 	ttyStream.setRawMode(enabled);
 }
 
-function bufferForDataChunk(data: string | Buffer<ArrayBufferLike>): Buffer<ArrayBufferLike> {
+function bufferForDataChunk(
+	data: string | Buffer<ArrayBufferLike>,
+): Buffer<ArrayBufferLike> {
 	if (Buffer.isBuffer(data)) return data;
 	return Buffer.from(data, "utf8");
 }
@@ -474,32 +487,47 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 		helpText,
 		helpSpacing = 0,
 		escapeTimeout = DEFAULT_ESCAPE_TIMEOUT_MS,
+		onRender,
+		finalizeMode = "default",
 	} = options;
 
 	return new Promise<string | null>((resolve, reject) => {
 		let done = false;
-			let pendingEscape: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+		let pendingEscape: Buffer<ArrayBufferLike> = Buffer.alloc(0);
 		let escapeTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const buffer = new TextBuffer(initialValue);
+		const render = () => {
+			if (onRender) {
+				onRender({
+					buffer,
+					prefix,
+					helpText,
+					helpSpacing,
+				});
+				return;
+			}
+			renderLine(output, prefix, buffer, helpText, helpSpacing);
+		};
+
 		const clearTimer = () => {
 			if (escapeTimer) {
 				clearTimeout(escapeTimer);
 				escapeTimer = null;
 			}
 		};
-			const scheduleEscape = () => {
-				clearTimer();
-				escapeTimer = setTimeout(() => {
-					pendingEscape = Buffer.alloc(0);
-					applyKeyEvent({
-						key: "escape",
-						ctrl: false,
-						alt: false,
-						shift: false,
-					});
-				}, escapeTimeout);
-			};
+		const scheduleEscape = () => {
+			clearTimer();
+			escapeTimer = setTimeout(() => {
+				pendingEscape = Buffer.alloc(0);
+				applyKeyEvent({
+					key: "escape",
+					ctrl: false,
+					alt: false,
+					shift: false,
+				});
+			}, escapeTimeout);
+		};
 
 		const finish = (value: string | null) => {
 			if (done) return;
@@ -509,15 +537,17 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 			clearTimer();
 			setRawModeSafe(input, false);
 
-			output.write("\r");
-			output.write("\x1b[2K");
-			if (helpText && helpSpacing > 0) {
-				output.write(`\x1b[${helpSpacing}B`);
+			if (finalizeMode === "default") {
 				output.write("\r");
 				output.write("\x1b[2K");
-				output.write(`\x1b[${helpSpacing}A`);
+				if (helpText && helpSpacing > 0) {
+					output.write(`\x1b[${helpSpacing}B`);
+					output.write("\r");
+					output.write("\x1b[2K");
+					output.write(`\x1b[${helpSpacing}A`);
+				}
+				output.write("\n");
 			}
-			output.write("\n");
 
 			resolve(value);
 		};
@@ -645,9 +675,10 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 					) {
 						buffer.insert(event.key);
 					}
+					break;
 			}
 
-			renderLine(output, prefix, buffer, helpText, helpSpacing);
+			render();
 		};
 
 		const onData = (chunk: string | Buffer) => {
@@ -675,7 +706,7 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 
 		try {
 			setRawModeSafe(input, true);
-			renderLine(output, prefix, buffer, helpText, helpSpacing);
+			render();
 			input.on("data", onData);
 		} catch (error) {
 			reject(error);

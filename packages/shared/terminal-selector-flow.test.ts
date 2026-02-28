@@ -80,6 +80,30 @@ describe("terminal-selector-flow", () => {
 		expect(cancel.effects).toHaveLength(0);
 	});
 
+	it("does not restart generation when a prompt is canceled", () => {
+		const context = contextWithReadySlots({
+			listMode: "refined",
+			isGenerating: true,
+			totalSlots: 2,
+			slots: [
+				readySlot({ candidate: { content: "first", slotId: "slot-0" } }),
+				readySlot({ candidate: { content: "second", slotId: "slot-1" } }),
+			],
+		});
+		const opened = transitionSelectorFlow(context, {
+			type: "OPEN_PROMPT",
+			kind: "edit",
+		});
+		const canceled = transitionSelectorFlow(opened.context, {
+			type: "PROMPT_CANCEL",
+		});
+
+		expect(canceled.context.mode).toBe("list");
+		expect(canceled.context.listMode).toBe("refined");
+		expect(canceled.context.isGenerating).toBe(false);
+		expect(canceled.effects).toHaveLength(0);
+	});
+
 	it("supports LIST quit flow: abort on initial mode and restart on refined mode", () => {
 		const initial = contextWithReadySlots({
 			listMode: "initial",

@@ -31,7 +31,11 @@ import {
 } from "../../shared/terminal-selector-helpers";
 import { selectorRenderFrame } from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
-import { editLine } from "./line-editor";
+import {
+	type EditLineRenderContext,
+	editLine,
+	renderLine,
+} from "./line-editor";
 import {
 	createRenderer,
 	renderSelectorTextFromRenderFrame,
@@ -465,6 +469,8 @@ export async function selectCandidate(
 		};
 
 		const renderForPrompt = () => {
+			// Reconstruct entire selector frame after prompt mode to avoid accumulating
+			// renderer state with inline-edit cursor movements.
 			renderer.clearAll();
 			render();
 		};
@@ -473,6 +479,7 @@ export async function selectCandidate(
 			if (isPromptOpen || cleanedUp) return;
 			isPromptOpen = true;
 			stopRenderLoop();
+			renderer.clearAll();
 			setRawModeSafe(false);
 			ttyReader.removeListener("keypress", handleKeypress);
 			await task();
@@ -499,6 +506,20 @@ export async function selectCandidate(
 			} = options;
 
 			const prefix = showPrompt ? ui.prompt(prompt) : promptPrefix || "";
+			const renderPrompt = ({
+				buffer,
+				helpText: renderHelpText,
+				helpSpacing: renderHelpSpacing,
+				prefix: renderPrefix,
+			}: EditLineRenderContext) => {
+				renderLine(
+					ttyWriter,
+					renderPrefix,
+					buffer,
+					renderHelpText,
+					renderHelpSpacing,
+				);
+			};
 			const result = await editLine({
 				input: ttyReader,
 				output: ttyWriter,
@@ -506,6 +527,8 @@ export async function selectCandidate(
 				initialValue,
 				helpText,
 				helpSpacing,
+				finalizeMode: "none",
+				onRender: renderPrompt,
 			});
 			if (result === null) {
 				return null;
