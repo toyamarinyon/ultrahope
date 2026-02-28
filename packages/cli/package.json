@@ -39,8 +39,9 @@
 		"smol-toml": "^1.4.1"
 	},
 	"devDependencies": {
-		"@ultrahope/web": "workspace:*",
+		"@types/bun": "1.3.9",
 		"@types/node": "^22.15.29",
+		"@ultrahope/web": "workspace:*",
 		"openapi-typescript": "^7.10.1",
 		"tsup": "8.5.0",
 		"typescript": "^5.8.3"
