@@ -250,7 +250,9 @@ export async function selectCandidate(
 		};
 
 		const render = () => {
-			if (!cleanedUp && !isPromptOpen) {
+			const allowPromptRender =
+				context.mode === "prompt" && context.promptKind === "edit";
+			if (!cleanedUp && (!isPromptOpen || allowPromptRender)) {
 				const frame = selectorRenderFrame({
 					state: {
 						...context,
@@ -475,11 +477,16 @@ export async function selectCandidate(
 			render();
 		};
 
-		const withPromptSuspended = async (task: () => Promise<void>) => {
+		const withPromptSuspended = async (
+			task: () => Promise<void>,
+			options: { preserveRendererOutput?: boolean } = {},
+		) => {
 			if (isPromptOpen || cleanedUp) return;
 			isPromptOpen = true;
 			stopRenderLoop();
-			renderer.clearAll();
+			if (!options.preserveRendererOutput) {
+				renderer.clearAll();
+			}
 			setRawModeSafe(false);
 			ttyReader.removeListener("keypress", handleKeypress);
 			await task();
@@ -574,30 +581,33 @@ export async function selectCandidate(
 				return;
 			}
 			if (inlineEditPrompt) {
-				await withPromptSuspended(async () => {
-					const edited = await openInlinePrompt("", {
-						initialValue: selected.content,
-						showPrompt: false,
-						promptPrefix: "    > ",
-						helpText: `    ${ui.hint(
-							"enter: apply | esc: back to select a candidate",
-						)}`,
-						helpSpacing: 2,
-						trimResult: false,
-					});
-					if (edited === null) {
+				await withPromptSuspended(
+					async () => {
+						const edited = await openInlinePrompt("", {
+							initialValue: selected.content,
+							showPrompt: false,
+							promptPrefix: "    > ",
+							helpText: `    ${ui.hint(
+								"enter: apply | esc: back to select a candidate",
+							)}`,
+							helpSpacing: 2,
+							trimResult: false,
+						});
+						if (edited === null) {
+							applyResult(
+								transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
+							);
+							return;
+						}
 						applyResult(
-							transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
+							transitionSelectorFlow(context, {
+								type: "PROMPT_SUBMIT",
+								selectedContent: edited || selected.content,
+							}),
 						);
-						return;
-					}
-					applyResult(
-						transitionSelectorFlow(context, {
-							type: "PROMPT_SUBMIT",
-							selectedContent: edited || selected.content,
-						}),
-					);
-				});
+					},
+					{ preserveRendererOutput: true },
+				);
 				return;
 			}
 			await withPromptSuspended(async () => {
