@@ -32,7 +32,7 @@ export interface EditLineRenderContext {
 	helpSpacing?: number;
 }
 
-export type EditLineFinalizeMode = "default" | "none";
+type EditLineFinalizeMode = "default" | "none";
 
 function isPrintableChar(char: string): boolean {
 	const codePoint = char.codePointAt(0);

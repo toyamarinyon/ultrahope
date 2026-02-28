@@ -4,7 +4,8 @@
 	"ignoreDependencies": ["@libsql/isomorphic-ws"],
 	"workspaces": {
 		"packages/cli": {
-			"ignore": ["lib/api-client.generated.ts"]
+			"ignore": ["lib/api-client.generated.ts"],
+			"entry": ["**/*.test.ts"]
 		},
 		"packages/web": {
 			"ignore": ["src/db/schema.ts", "scripts/**"],

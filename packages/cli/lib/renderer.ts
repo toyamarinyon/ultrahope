@@ -188,7 +188,7 @@ function renderPromptLines(frame: SelectorRenderFrame): string[] {
 	return lines;
 }
 
-export function renderSelectorLinesFromRenderFrame(
+function renderSelectorLinesFromRenderFrame(
 	frame: SelectorRenderFrame,
 ): string[] {
 	const lines: string[] = [];
