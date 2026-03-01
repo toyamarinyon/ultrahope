@@ -92,6 +92,31 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 				ApiDependencies["generateCommitMessageStream"]
 			>;
 		},
+		generateCommitMessageRefine: async () => ({
+			output: "feat: commit",
+			content: "feat: commit",
+			vendor: "vendor-a",
+			model: "model-a",
+			inputTokens: 5,
+			outputTokens: 3,
+			generationId: "gen-1",
+		}),
+		generateCommitMessageRefineStream: () => {
+			const textStream = {
+				[Symbol.asyncIterator]: async function* () {
+					yield "```feat: done```";
+				},
+			};
+			return {
+				textStream,
+				totalUsage: Promise.resolve({ inputTokens: 3, outputTokens: 7 }),
+				providerMetadata: Promise.resolve({
+					model: "model-a",
+				}),
+			} as unknown as ReturnType<
+				ApiDependencies["generateCommitMessageRefineStream"]
+			>;
+		},
 		generatePrTitleBody: async () => ({
 			output: "feat: title",
 			content: "feat: title",
@@ -547,6 +572,257 @@ describe("API route contracts", () => {
 		expect(events[1].usage.inputTokens).toBe(3);
 		expect(events[2].providerMetadata.model).toBe("model-a");
 		expect(receivedGuide).toBe("Security advisory context");
+	});
+
+	it("returns 401 for unauthenticated commit message refine", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () => withAuth(true),
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message/refine", {
+			cliSessionId: "cli-1",
+			model: "mistral/ministral-3b",
+			originalMessage: "feat: old",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(401);
+		expect(body).toEqual(unauthorizedBody);
+	});
+
+	it("returns 400 for invalid model on commit message refine", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(app, "/api/v1/commit-message/refine", {
+			cliSessionId: "cli-1",
+			originalMessage: "feat: old",
+			model: "invalid-model",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("invalid_model");
+	});
+
+	it("returns 400 for free commit message refine when input exceeds limit", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(app, "/api/v1/commit-message/refine", {
+			cliSessionId: "cli-1",
+			originalMessage: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("input_too_long");
+		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+		expect(body.plan).toBe("free");
+	});
+
+	it("returns commit message refine success and forwards payload", async () => {
+		let receivedOptions:
+			| Parameters<ApiDependencies["generateCommitMessageRefine"]>[0]
+			| undefined;
+		const app = createApiApp(
+			createDeps({
+				generateCommitMessageRefine: async (options) => {
+					receivedOptions = options;
+					return {
+						output: "feat: commit",
+						content: "feat: commit",
+						vendor: "vendor-a",
+						model: options.model,
+						inputTokens: 5,
+						outputTokens: 3,
+						generationId: "gen-1",
+					};
+				},
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message/refine", {
+			cliSessionId: "cli-1",
+			originalMessage: "feat: old",
+			refineInstruction: "make it shorter",
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.output).toBe("feat: commit");
+		expect(body.quota.remaining).toBe(3);
+		expect(receivedOptions?.originalMessage).toBe("feat: old");
+		expect(receivedOptions?.refineInstruction).toBe("make it shorter");
+		expect(receivedOptions?.model).toBe("mistral/ministral-3b");
+	});
+
+	it("returns 401 for unauthenticated stream commit message refine", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () => withAuth(true),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				model: "mistral/ministral-3b",
+				originalMessage: "feat: old",
+			},
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(401);
+		expect(body).toEqual(unauthorizedBody);
+	});
+
+	it("returns 400 for invalid model on stream commit message refine", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				originalMessage: "feat: old",
+				model: "invalid-model",
+			},
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("invalid_model");
+	});
+
+	it("returns 400 for free stream commit message refine when input exceeds limit", async () => {
+		const app = createApiApp(createDeps());
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				originalMessage: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
+				model: "mistral/ministral-3b",
+			},
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("input_too_long");
+		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
+		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
+		expect(body.plan).toBe("free");
+	});
+
+	it("returns 402 for stream commit message refine when daily limit exceeded", async () => {
+		const app = createApiApp(
+			createDeps({
+				assertDailyLimitNotExceeded: async () => {
+					throw new DailyLimitExceededError(
+						5,
+						5,
+						new Date("2026-01-01T00:00:00.000Z"),
+					);
+				},
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				originalMessage: "feat: old",
+				model: "mistral/ministral-3b",
+			},
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("daily_limit_exceeded");
+	});
+
+	it("returns 402 for stream commit message refine when balance is depleted", async () => {
+		const app = createApiApp(
+			createDeps({
+				getUserBillingInfo: async () => ({
+					plan: "pro",
+					balance: 0,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				originalMessage: "feat: old",
+				model: "mistral/ministral-3b",
+			},
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("insufficient_balance");
+	});
+
+	it("streams commit message refine with usage and provider-metadata order", async () => {
+		let receivedOptions:
+			| Parameters<ApiDependencies["generateCommitMessageRefine"]>[0]
+			| undefined;
+		const app = createApiApp(
+			createDeps({
+				generateCommitMessageRefineStream: (options) => {
+					receivedOptions = options;
+					const textStream = {
+						[Symbol.asyncIterator]: async function* () {
+							yield "```feat: done```";
+						},
+					};
+					return {
+						textStream,
+						totalUsage: Promise.resolve({ inputTokens: 3, outputTokens: 7 }),
+						providerMetadata: Promise.resolve({
+							model: options.model,
+						}),
+					} as unknown as ReturnType<
+						ApiDependencies["generateCommitMessageRefineStream"]
+					>;
+				},
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/commit-message/refine/stream",
+			{
+				cliSessionId: "cli-1",
+				originalMessage: "feat: old",
+				refineInstruction: "make it clearer",
+				model: "mistral/ministral-3b",
+			},
+		);
+		const text = await response.text();
+		const events = text
+			.split("\n\n")
+			.map((entry) => entry.trim())
+			.filter(Boolean)
+			.map((entry) => JSON.parse(entry.replace(/^data:\s*/, "")));
+		for (const event of events) {
+			expect(event.atMs).toBeTypeOf("number");
+			expect(event.atMs).toBeGreaterThanOrEqual(0);
+		}
+
+		expect(events.map((event) => event.type)).toEqual([
+			"commit-message",
+			"usage",
+			"provider-metadata",
+		]);
+		expect(events[0].commitMessage).toBe("feat: done");
+		expect(events[1].usage.inputTokens).toBe(3);
+		expect(events[2].providerMetadata.model).toBe("mistral/ministral-3b");
+		expect(receivedOptions?.originalMessage).toBe("feat: old");
+		expect(receivedOptions?.refineInstruction).toBe("make it clearer");
+		expect(receivedOptions?.model).toBe("mistral/ministral-3b");
 	});
 
 	it("returns 401 for unauthenticated pr route", async () => {

@@ -33,6 +33,8 @@ describe("openapi contract", () => {
 			"/api/v1/command_execution": ["post"],
 			"/api/v1/commit-message": ["post"],
 			"/api/v1/commit-message/stream": ["post"],
+			"/api/v1/commit-message/refine": ["post"],
+			"/api/v1/commit-message/refine/stream": ["post"],
 			"/api/v1/pr-title-body": ["post"],
 			"/api/v1/pr-intent": ["post"],
 			"/api/v1/generation_score": ["post"],

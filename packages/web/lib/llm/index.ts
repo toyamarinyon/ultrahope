@@ -2,6 +2,8 @@ import { getPolarClient } from "@/lib/auth/auth";
 
 export {
 	generateCommitMessage,
+	generateCommitMessageRefine,
+	generateCommitMessageRefineStream,
 	generateCommitMessageStream,
 } from "./commit-message.server";
 export { generatePrIntent } from "./pr-intent";

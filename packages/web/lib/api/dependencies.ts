@@ -5,6 +5,8 @@ import { getAuth, getPolarClient } from "@/lib/auth/auth";
 import { MICRODOLLARS_PER_USD } from "@/lib/billing/auto-recharge";
 import {
 	generateCommitMessage,
+	generateCommitMessageRefine,
+	generateCommitMessageRefineStream,
 	generateCommitMessageStream,
 	generatePrIntent,
 	generatePrTitleBody,
@@ -31,6 +33,8 @@ export type ApiDependencies = {
 	getDailyUsageInfo: typeof getDailyUsageInfo;
 	generateCommitMessage: typeof generateCommitMessage;
 	generateCommitMessageStream: typeof generateCommitMessageStream;
+	generateCommitMessageRefine: typeof generateCommitMessageRefine;
+	generateCommitMessageRefineStream: typeof generateCommitMessageRefineStream;
 	generatePrTitleBody: typeof generatePrTitleBody;
 	generatePrIntent: typeof generatePrIntent;
 	storage: ApiStorage;
@@ -71,6 +75,8 @@ export function createDefaultApiDependencies(): ApiDependencies {
 		getDailyUsageInfo,
 		generateCommitMessage,
 		generateCommitMessageStream,
+		generateCommitMessageRefine,
+		generateCommitMessageRefineStream,
 		generatePrIntent,
 		generatePrTitleBody,
 		storage: createDefaultApiStorage(),

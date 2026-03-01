@@ -869,6 +869,463 @@
         "operationId": "postApiV1Commit-messageStream"
       }
     },
+    "/api/v1/commit-message/refine": {
+      "post": {
+        "summary": "Refine a commit message from a selected message",
+        "tags": [
+          "generate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "output",
+                    "content",
+                    "vendor",
+                    "model",
+                    "inputTokens",
+                    "outputTokens",
+                    "generationId"
+                  ],
+                  "properties": {
+                    "output": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "vendor": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "inputTokens": {
+                      "type": "number"
+                    },
+                    "outputTokens": {
+                      "type": "number"
+                    },
+                    "cachedInputTokens": {
+                      "type": "number"
+                    },
+                    "cost": {
+                      "type": "number"
+                    },
+                    "generationId": {
+                      "type": "string"
+                    },
+                    "quota": {
+                      "type": "object",
+                      "required": [
+                        "remaining",
+                        "limit",
+                        "resetsAt"
+                      ],
+                      "properties": {
+                        "remaining": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "resetsAt": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response for status 400",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "allowedModels"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "invalid_model",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "allowedModels": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "plan"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "input_too_long",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "plan": {
+                          "const": "free",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Response for status 402",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "resetsAt",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "daily_limit_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "resetsAt": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "free",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "upgrade"
+                          ],
+                          "properties": {
+                            "upgrade": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "balance",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "insufficient_balance",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "balance": {
+                          "type": "number"
+                        },
+                        "plan": {
+                          "anyOf": [
+                            {
+                              "const": "free",
+                              "type": "string"
+                            },
+                            {
+                              "const": "pro",
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "buyCredits"
+                          ],
+                          "properties": {
+                            "buyCredits": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "billing_unavailable",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postApiV1Commit-messageRefine"
+      }
+    },
+    "/api/v1/commit-message/refine/stream": {
+      "post": {
+        "summary": "Stream a refined commit message from a selected message",
+        "tags": [
+          "generate"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cliSessionId",
+                  "model",
+                  "originalMessage"
+                ],
+                "properties": {
+                  "cliSessionId": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "originalMessage": {
+                    "type": "string"
+                  },
+                  "refineInstruction": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "postApiV1Commit-messageRefineStream"
+      }
+    },
     "/api/v1/pr-title-body": {
       "post": {
         "summary": "Generate a PR title and body from git log",

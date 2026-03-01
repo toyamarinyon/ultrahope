@@ -18,9 +18,37 @@ Quality rules:
 - If the diff is mostly formatting, use type "style" and describe what was formatted.
 `;
 
+const REFINE_SYSTEM_PROMPT = `You are an expert software engineer that writes high-quality git commit messages.
+You are given an existing single-line commit message and an optional refinement instruction.
+Return one refined commit message only.
+
+Output requirements:
+- Output plain text only: one line, nothing else (no markdown, no code fences, no body).
+- Use Conventional Commits format: <type>(<scope>): <subject>
+  - type: feat|fix|refactor|perf|docs|test|build|ci|chore|style
+  - scope: optional; infer from file paths or package/module name (e.g., core, cli, web)
+  - subject: imperative mood, present tense, no trailing period, <= 72 characters
+- Do NOT include a body or additional lines. Output exactly one line.
+- Do NOT surround the commit message with backticks (single or triple).
+- Make minimal edits to preserve meaning.
+`;
+
 function buildSystemPrompt(guide?: string): string {
 	if (!guide) return SYSTEM_PROMPT;
 	return `${SYSTEM_PROMPT}\n\nGuide: ${guide}`;
+}
+
+function buildRefineSystemPrompt(
+	originalMessage: string,
+	refineInstruction?: string,
+): string {
+	const trimmedInstruction = refineInstruction?.trim() ?? "";
+	const instructionText =
+		trimmedInstruction.length > 0
+			? trimmedInstruction
+			: "No explicit refine instruction was provided. Keep the meaning unchanged while improving clarity and formatting if needed.";
+
+	return `${REFINE_SYSTEM_PROMPT}\n\nOriginal message:\n${originalMessage}\n\nRefine instruction:\n${instructionText}`;
 }
 
 let grokReasoningErrorWarned = false;
@@ -62,6 +90,16 @@ export type CommitMessageRuntimeOptions = {
 
 export type CommitMessageRuntimeStreamOptions = CommitMessageRuntimeOptions;
 
+export type CommitMessageRefineRuntimeOptions = {
+	model: CommitMessageModel;
+	abortSignal?: AbortSignal;
+	originalMessage: string;
+	refineInstruction?: string;
+};
+
+export type CommitMessageRefineRuntimeStreamOptions =
+	CommitMessageRefineRuntimeOptions;
+
 export type CommitMessageRuntimeResult = {
 	text: string;
 	usage: {
@@ -102,6 +140,38 @@ export function generateCommitMessageStream(
 	});
 }
 
+export function generateCommitMessageRefineStream(
+	options: CommitMessageRefineRuntimeStreamOptions,
+) {
+	return streamText({
+		model: options.model,
+		system: buildRefineSystemPrompt(
+			options.originalMessage,
+			options.refineInstruction,
+		),
+		prompt:
+			"Refine the commit message above using the provided context and instruction.",
+		abortSignal: options.abortSignal,
+		output: Output.text(),
+		onError({ error }) {
+			if (isKnownGrokReasoningError(error, options.model)) {
+				if (!grokReasoningErrorWarned) {
+					grokReasoningErrorWarned = true;
+					console.warn(
+						"[commit-message] Ignoring known AI_TypeValidationError for grok reasoning_text.delta chunk. " +
+							"See https://github.com/vercel/ai/issues/10491",
+					);
+				}
+				return;
+			}
+			console.error(
+				`[commit-message] streamText onError (model: ${String(options.model)}):`,
+				error,
+			);
+		},
+	});
+}
+
 function normalizeCommitMessage(text: string): string {
 	return text.replace(/\s+/g, " ").trim();
 }
@@ -116,6 +186,32 @@ export async function generateCommitMessage(
 
 	if (!commitMessage) {
 		throw new Error("Failed to generate commit message.");
+	}
+
+	const [usage, providerMetadata] = await Promise.all([
+		stream.totalUsage,
+		stream.providerMetadata,
+	]);
+
+	return {
+		text: commitMessage,
+		usage: {
+			inputTokens: usage.inputTokens ?? 0,
+			outputTokens: usage.outputTokens ?? 0,
+		},
+		providerMetadata,
+	};
+}
+
+export async function generateCommitMessageRefine(
+	options: CommitMessageRefineRuntimeOptions,
+): Promise<CommitMessageRuntimeResult> {
+	const stream = generateCommitMessageRefineStream(options);
+	const outputText = await stream.text;
+	const commitMessage = normalizeCommitMessage(outputText);
+
+	if (!commitMessage) {
+		throw new Error("Failed to refine commit message.");
 	}
 
 	const [usage, providerMetadata] = await Promise.all([
