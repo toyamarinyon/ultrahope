@@ -31,11 +31,7 @@ import {
 } from "../../shared/terminal-selector-helpers";
 import { selectorRenderFrame } from "../../shared/terminal-selector-view-model";
 import { InvalidModelError } from "./api-client";
-import {
-	type EditLineRenderContext,
-	editLine,
-	renderLine,
-} from "./line-editor";
+import { editLine } from "./line-editor";
 import {
 	createRenderer,
 	renderSelectorTextFromRenderFrame,
@@ -75,16 +71,6 @@ const selectorRenderCapabilities = {
 	edit: true,
 	refine: true,
 	clickConfirm: false,
-};
-
-type InlinePromptOptions = {
-	initialValue?: string;
-	cancelOnQ?: boolean;
-	trimResult?: boolean;
-	showPrompt?: boolean;
-	promptPrefix?: string;
-	helpText?: string;
-	helpSpacing?: number;
 };
 
 function renderError(
@@ -522,75 +508,102 @@ export async function selectCandidate(
 			renderForPrompt();
 		};
 
-		const openInlinePrompt = async (
-			prompt: string,
-			options: InlinePromptOptions = {},
-		): Promise<string | null> => {
-			const {
-				initialValue = "",
-				cancelOnQ = false,
-				trimResult = true,
-				showPrompt = true,
-				promptPrefix = "",
-				helpText,
-				helpSpacing = 0,
-			} = options;
-
-			const prefix = showPrompt ? ui.prompt(prompt) : promptPrefix || "";
-			const renderPrompt = ({
-				buffer,
-				helpText: renderHelpText,
-				helpSpacing: renderHelpSpacing,
-				prefix: renderPrefix,
-			}: EditLineRenderContext) => {
-				renderLine(
-					ttyWriter,
-					renderPrefix,
-					buffer,
-					renderHelpText,
-					renderHelpSpacing,
-				);
-			};
-			const result = await editLine({
-				input: ttyReader,
-				output: ttyWriter,
-				prefix,
-				initialValue,
-				helpText,
-				helpSpacing,
-				finalizeMode: "none",
-				onRender: renderPrompt,
-			});
-			if (result === null) {
-				return null;
-			}
-
-			let value = result;
-			if (trimResult) {
-				value = value.trim();
-			}
-			if (cancelOnQ && value.toLowerCase() === "q") {
-				return null;
-			}
-			return value;
-		};
-
 		const openRefinePrompt = async () => {
 			await withPromptSuspended(async () => {
-				const guide = await openInlinePrompt(
-					"Enter refine instructions (e.g., more formal / shorter / Enter to clear, q=cancel): ",
-					{ cancelOnQ: true },
-				);
+				let lastRefineLineRow = 0;
+
+				const guide = await editLine({
+					input: ttyReader,
+					output: ttyWriter,
+					prefix: "",
+					initialValue: "",
+					finalizeMode: "none",
+					onRender: ({ buffer }) => {
+						if (lastRefineLineRow > 0) {
+							readline.moveCursor(ttyWriter, 0, -lastRefineLineRow);
+						}
+						readline.cursorTo(ttyWriter, 0);
+						readline.clearScreenDown(ttyWriter);
+
+						const frame = selectorRenderFrame({
+							state: {
+								...context,
+								mode: "list",
+								promptKind: context.promptKind,
+								promptTargetIndex: context.promptTargetIndex,
+							},
+							nowMs: Date.now(),
+							spinnerFrames: SPINNER_FRAMES,
+							copy: selectorRenderCopy,
+							capabilities: selectorRenderCapabilities,
+						});
+
+						const lines: string[] = [];
+						const vm = frame.viewModel;
+						const costSuffix = vm.header.totalCostLabel
+							? ` (total: ${vm.header.totalCostLabel})`
+							: "";
+						lines.push(ui.success(`${vm.header.generatedLabel}${costSuffix}`));
+						lines.push("");
+
+						for (const slot of vm.slots) {
+							const radio = slot.selected
+								? `${theme.success}●${theme.reset}`
+								: `${theme.dim}○${theme.reset}`;
+							const titleColor = slot.selected ? theme.primary : theme.dim;
+							const titleFont = slot.selected ? theme.bold : "";
+							lines.push(
+								`  ${radio} ${titleColor}${titleFont}${slot.title}${theme.reset}`,
+							);
+							if (slot.meta) {
+								const metaColor = slot.selected ? theme.primary : theme.dim;
+								lines.push(`    ${metaColor}${slot.meta}${theme.reset}`);
+							}
+							lines.push("");
+						}
+
+						const refineLineIndex = lines.length;
+						const refinePrefix = `  ${theme.primary}Refine:${theme.reset} `;
+						lines.push(`${refinePrefix}${buffer.getText()}`);
+						lines.push(
+							`  ${theme.dim}e.g. more formal / shorter / in Japanese${theme.reset}`,
+						);
+						lines.push("");
+						lines.push(`  ${ui.hint("enter refine | esc back to select")}`);
+						ttyWriter.write(lines.join("\n"));
+
+						const moveUp = lines.length - 1 - refineLineIndex;
+						if (moveUp > 0) {
+							readline.moveCursor(ttyWriter, 0, -moveUp);
+						}
+						readline.cursorTo(ttyWriter, 0);
+						const prefixWidth = 10; // "  Refine: " visible width
+						const col = prefixWidth + buffer.getDisplayCursor();
+						if (col > 0) {
+							readline.moveCursor(ttyWriter, col, 0);
+						}
+
+						lastRefineLineRow = refineLineIndex;
+					},
+				});
+
+				if (lastRefineLineRow > 0) {
+					readline.moveCursor(ttyWriter, 0, -lastRefineLineRow);
+				}
+				readline.cursorTo(ttyWriter, 0);
+				readline.clearScreenDown(ttyWriter);
+
 				if (guide === null) {
 					applyResult(
 						transitionSelectorFlow(context, { type: "PROMPT_CANCEL" }),
 					);
 					return;
 				}
+				const trimmed = guide.trim();
 				applyResult(
 					transitionSelectorFlow(context, {
 						type: "PROMPT_SUBMIT",
-						guide,
+						guide: trimmed || undefined,
 					}),
 				);
 			});
