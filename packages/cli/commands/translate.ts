@@ -36,7 +36,6 @@ const TARGET_TO_API_PATH: Record<Target, string> = {
 
 interface TranslateOptions {
 	target: Target;
-	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
 }
@@ -157,27 +156,6 @@ async function handleVcsCommitMessage(
 				streamCaptureRecorder: captureRecorder,
 			});
 
-		if (!options.interactive) {
-			const gen = generateCommitMessages({
-				diff: input,
-				models: models.slice(0, 1),
-				guide: composeGuidance(guideHint),
-				signal: commandExecutionSignal,
-				cliSessionId,
-				commandExecutionPromise,
-				streamCaptureRecorder: captureRecorder,
-			});
-			const first = await gen.next().catch((error) => {
-				if (error instanceof InvalidModelError) {
-					exitWithInvalidModelError(error);
-				}
-				throw error;
-			});
-			await recordSelection(first.value?.generationId);
-			console.log(first.value?.content ?? "");
-			return;
-		}
-
 		while (true) {
 			const result = await selectCandidate({
 				createCandidates,
@@ -230,7 +208,6 @@ async function handleGenericTarget(
 
 	const api = createApiClient(token);
 	const models = resolveModels(options.cliModels);
-	const defaultModel = models[0];
 	const requestPayload =
 		models.length === 1
 			? { input, target: options.target, model: models[0] }
@@ -332,44 +309,6 @@ async function handleGenericTarget(
 		return candidates;
 	};
 
-	if (!options.interactive) {
-		if (!defaultModel) {
-			console.error("Error: No model available for generation.");
-			process.exit(1);
-		}
-		const result = await generateWithRetry(defaultModel).catch((error) => {
-			if (isAbortError(error) || abortController.signal.aborted) {
-				return null;
-			}
-			if (error instanceof InvalidModelError) {
-				exitWithInvalidModelError(error);
-			}
-			if (error instanceof InsufficientBalanceError) {
-				console.error(error.formatMessage());
-				process.exit(1);
-			}
-			throw error;
-		});
-		if (result) {
-			if (result.generationId) {
-				try {
-					await api.recordGenerationScore({
-						generationId: result.generationId,
-						value: 1,
-					});
-				} catch (error) {
-					const message =
-						error instanceof Error ? error.message : String(error);
-					if (!message.includes("Generation not found")) {
-						console.error(`Warning: Failed to record selection. ${message}`);
-					}
-				}
-			}
-			console.log(result.output);
-		}
-		return;
-	}
-
 	const candidates = await doGenerate();
 
 	while (true) {
@@ -419,7 +358,6 @@ async function handleGenericTarget(
 
 function parseArgs(args: string[]): TranslateOptions {
 	let target: Target | undefined;
-	let interactive = true;
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
 
@@ -434,7 +372,10 @@ function parseArgs(args: string[]): TranslateOptions {
 			}
 			target = value as Target;
 		} else if (arg === "--no-interactive") {
-			interactive = false;
+			console.error(
+				"Error: --no-interactive is no longer supported. Use interactive mode only.",
+			);
+			process.exit(1);
 		} else if (arg === "--models") {
 			const value = args[++i];
 			if (!value) {
@@ -463,5 +404,5 @@ function parseArgs(args: string[]): TranslateOptions {
 		process.exit(1);
 	}
 
-	return { target, interactive, cliModels, captureStreamPath };
+	return { target, cliModels, captureStreamPath };
 }

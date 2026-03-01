@@ -188,14 +188,14 @@ export async function selectCandidate(
 			}
 		} catch {
 			console.error(
-				"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+				"Error: /dev/tty is not available. Interactive mode requires a terminal.",
 			);
 			process.exit(1);
 		}
 	}
 	if (!ttyInput || !ttyOutput) {
 		console.error(
-			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+			"Error: /dev/tty is not available. Interactive mode requires a terminal.",
 		);
 		process.exit(1);
 	}

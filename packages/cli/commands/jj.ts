@@ -21,7 +21,6 @@ import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface DescribeOptions {
 	revision: string;
-	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
 	guide?: string;
@@ -73,7 +72,6 @@ function composeGuidance(
 
 function parseDescribeArgs(args: string[]): DescribeOptions {
 	let revision = "@";
-	let interactive = true;
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
 	let guide: string | undefined;
@@ -83,7 +81,10 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		if (arg === "-r") {
 			revision = args[++i] || "@";
 		} else if (arg === "--no-interactive") {
-			interactive = false;
+			console.error(
+				"Error: --no-interactive is no longer supported. Use interactive mode only.",
+			);
+			process.exit(1);
 		} else if (arg === "--models") {
 			const value = args[++i];
 			if (!value) {
@@ -108,7 +109,7 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 		}
 	}
 
-	return { revision, interactive, cliModels, captureStreamPath, guide };
+	return { revision, cliModels, captureStreamPath, guide };
 }
 
 function getJjDiff(revision: string): string {
@@ -231,36 +232,6 @@ function createCandidateFactory(
 		});
 }
 
-async function runNonInteractiveDescribe(
-	revision: string,
-	models: string[],
-	diff: string,
-	context: CommandExecutionContext,
-	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
-	guide?: string,
-): Promise<void> {
-	const gen = generateCommitMessages({
-		diff,
-		models: models.slice(0, 1),
-		guide,
-		signal: context.commandExecutionSignal,
-		cliSessionId: context.cliSessionId,
-		commandExecutionPromise: context.commandExecutionPromise,
-		useStream: true,
-		streamCaptureRecorder: captureRecorder,
-	});
-	const first = await gen.next().catch((error) => {
-		if (error instanceof InvalidModelError) {
-			exitWithInvalidModelError(error);
-		}
-		throw error;
-	});
-	await recordSelection(context.apiClient, first.value?.generationId);
-	const message = first.value?.content ?? "";
-
-	describeRevision(revision, message);
-}
-
 async function runInteractiveDescribe(
 	options: DescribeOptions,
 	models: string[],
@@ -340,18 +311,6 @@ async function describe(args: string[]) {
 			options.guide,
 		);
 
-		if (!options.interactive) {
-			await runNonInteractiveDescribe(
-				options.revision,
-				models,
-				diff,
-				context,
-				captureRecorder,
-				options.guide,
-			);
-			return;
-		}
-
 		await runInteractiveDescribe(options, models, createCandidates, context);
 	} finally {
 		const capturePath = captureRecorder.flush();
@@ -405,7 +364,6 @@ Commands:
 
 Describe options:
    -r <revset>       Revision to describe (default: @)
-   --no-interactive  Single candidate, no selection
    --guide <text>     Additional context to guide message generation
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save candidate stream as replay JSON

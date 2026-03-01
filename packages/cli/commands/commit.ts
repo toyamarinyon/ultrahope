@@ -1,7 +1,4 @@
 import { execSync } from "node:child_process";
-import * as fs from "node:fs";
-import * as readline from "node:readline";
-import * as tty from "node:tty";
 import {
 	abortReasonForError,
 	isCommandExecutionAbort,
@@ -23,7 +20,6 @@ import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 interface CommitOptions {
-	interactive: boolean;
 	cliModels?: string[];
 	captureStreamPath?: string;
 	guide?: string;
@@ -73,6 +69,12 @@ function parseArgs(args: string[]): CommitOptions {
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
+		if (arg === "--no-interactive") {
+			console.error(
+				"Error: --no-interactive is no longer supported. Use interactive mode only.",
+			);
+			process.exit(1);
+		}
 		if (arg === "--models") {
 			const value = args[i + 1];
 			if (!value) {
@@ -101,7 +103,6 @@ function parseArgs(args: string[]): CommitOptions {
 	}
 
 	return {
-		interactive: !args.includes("--no-interactive"),
 		cliModels,
 		captureStreamPath,
 		guide,
@@ -115,52 +116,6 @@ function getStagedDiff(): string {
 		console.error(
 			"Error: Failed to get staged changes. Are you in a git repository?",
 		);
-		process.exit(1);
-	}
-}
-
-function canPromptForStagedChanges(): boolean {
-	if (!process.stdin.isTTY || !process.stdout.isTTY) {
-		return false;
-	}
-
-	try {
-		fs.accessSync("/dev/tty", fs.constants.R_OK);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-async function promptStageAllChanges(): Promise<boolean> {
-	return new Promise((resolve) => {
-		const fd = fs.openSync("/dev/tty", "r");
-		const ttyInput = new tty.ReadStream(fd);
-		const rl = readline.createInterface({
-			input: ttyInput,
-			output: process.stdout,
-			terminal: true,
-		});
-
-		rl.question(
-			ui.prompt(
-				"No staged changes. Stage all files with `git add -A` and continue? (y/N) ",
-			),
-			(answer) => {
-				rl.close();
-				ttyInput.destroy();
-				const normalized = answer.trim().toLowerCase();
-				resolve(normalized === "y");
-			},
-		);
-	});
-}
-
-function stageAllChanges(): void {
-	try {
-		execSync("git add -A", { stdio: "inherit" });
-	} catch {
-		console.error("Error: Failed to stage changes with `git add -A`.");
 		process.exit(1);
 	}
 }
@@ -185,33 +140,13 @@ export async function commit(args: string[]) {
 		apiPath: "/v1/commit-message/stream",
 	});
 	const models = resolveModels(options.cliModels);
-	let diff = getStagedDiff();
+	const diff = getStagedDiff();
 
 	if (!diff.trim()) {
-		if (!options.interactive || !canPromptForStagedChanges()) {
-			console.error(
-				"Error: No staged changes. Stage files with `git add` first.",
-			);
-			process.exit(1);
-		}
-
-		const shouldStage = await promptStageAllChanges();
-		if (!shouldStage) {
-			console.error(
-				"Error: No staged changes. Stage files with `git add` first.",
-			);
-			process.exit(1);
-		}
-
-		stageAllChanges();
-		diff = getStagedDiff();
-
-		if (!diff.trim()) {
-			console.error(
-				"Error: No staged changes. Stage files with `git add` first.",
-			);
-			process.exit(1);
-		}
+		console.error(
+			"Error: No staged changes. Stage files with `git add` first.",
+		);
+		process.exit(1);
 	}
 
 	try {
@@ -279,28 +214,6 @@ export async function commit(args: string[]) {
 				commandExecutionPromise,
 				streamCaptureRecorder: captureRecorder,
 			});
-
-		if (!options.interactive) {
-			const gen = generateCommitMessages({
-				diff,
-				models: models.slice(0, 1),
-				guide: composeGuidance(options.guide, guideHint),
-				signal: commandExecutionSignal,
-				cliSessionId,
-				commandExecutionPromise,
-				streamCaptureRecorder: captureRecorder,
-			});
-			const first = await gen.next().catch((error) => {
-				if (error instanceof InvalidModelError) {
-					exitWithInvalidModelError(error);
-				}
-				throw error;
-			});
-			await recordSelection(first.value?.generationId);
-			const message = first.value?.content ?? "";
-			commitWithMessage(message);
-			return;
-		}
 
 		const stats = getGitStagedStats();
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));

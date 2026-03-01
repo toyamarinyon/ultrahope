@@ -26,18 +26,15 @@ Commands:
    commit      Generate commit message from staged changes
 
 Commit options:
-   --no-interactive  Single candidate, commit directly
    --guide <text>     Additional context to guide message generation
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save commit-message stream as replay JSON
-   When no staged changes are found in interactive mode, you will be prompted
-   to run \`git add -A\` first.
 
 Examples:
    git ultrahope commit               # interactive selector (default)
    git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason"
    git ultrahope commit --capture-stream /tmp/git-commit-stream.capture.json
-   git ultrahope commit --no-interactive  # single candidate, commit directly`);
+`);
 }
 
 main().catch((err) => {
