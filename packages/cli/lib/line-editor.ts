@@ -5,6 +5,45 @@ const DEFAULT_ESCAPE_TIMEOUT_MS = 30;
 const GRAPHEME_SEGMENTER = new Intl.Segmenter("en", {
 	granularity: "grapheme",
 });
+const byteLength = (value: string): number => Buffer.from(value).length;
+
+function codeUnitOffsetFromByteOffset(
+	text: string,
+	byteOffset: number,
+): number {
+	let byteCursor = 0;
+	let codeUnitCursor = 0;
+
+	if (byteOffset <= 0 || text.length === 0) return 0;
+	if (byteOffset >= byteLength(text)) return text.length;
+
+	for (const char of text) {
+		const charBytes = byteLength(char);
+		if (byteOffset < byteCursor + charBytes) {
+			return codeUnitCursor;
+		}
+		if (byteOffset === byteCursor + charBytes) {
+			return codeUnitCursor + char.length;
+		}
+		byteCursor += charBytes;
+		codeUnitCursor += char.length;
+	}
+
+	return text.length;
+}
+
+function byteSlice(text: string, start: number, end?: number): string {
+	const textBytes = byteLength(text);
+	const startByte = Math.max(0, Math.min(start, textBytes));
+	const endByte =
+		end === undefined ? textBytes : Math.max(0, Math.min(end, textBytes));
+	const startIndex = codeUnitOffsetFromByteOffset(text, startByte);
+	const endIndex =
+		endByte === textBytes
+			? text.length
+			: codeUnitOffsetFromByteOffset(text, endByte);
+	return text.slice(startIndex, endIndex);
+}
 
 export interface KeyEvent {
 	key: string;
@@ -162,10 +201,10 @@ function graphemeBoundaries(text: string): number[] {
 	const boundaries = [0];
 	for (const segment of GRAPHEME_SEGMENTER.segment(text)) {
 		if (segment.index > 0) {
-			boundaries.push(segment.index);
+			boundaries.push(byteLength(text.slice(0, segment.index)));
 		}
 	}
-	boundaries.push(text.length);
+	boundaries.push(byteLength(text));
 	return [...new Set(boundaries)].sort((a, b) => a - b);
 }
 
@@ -174,7 +213,7 @@ function nextGraphemeBoundary(text: string, cursor: number): number {
 	for (const boundary of boundaries) {
 		if (boundary > cursor) return boundary;
 	}
-	return text.length;
+	return byteLength(text);
 }
 
 function prevGraphemeBoundary(text: string, cursor: number): number {
@@ -187,7 +226,7 @@ function prevGraphemeBoundary(text: string, cursor: number): number {
 
 function clampCursorToBoundary(text: string, offset: number): number {
 	if (offset <= 0) return 0;
-	if (offset >= text.length) return text.length;
+	if (offset >= byteLength(text)) return byteLength(text);
 
 	const boundaries = graphemeBoundaries(text);
 	for (let index = boundaries.length - 1; index >= 0; index--) {
@@ -203,7 +242,7 @@ export class TextBuffer {
 
 	constructor(initial: string) {
 		this.text = initial;
-		this.cursor = initial.length;
+		this.cursor = byteLength(initial);
 		this.killBuffer = "";
 	}
 
@@ -216,39 +255,69 @@ export class TextBuffer {
 	}
 
 	getDisplayCursor(): number {
-		return stringWidth(this.text.slice(0, this.cursor));
+		return stringWidth(
+			this.text.slice(0, codeUnitOffsetFromByteOffset(this.text, this.cursor)),
+		);
 	}
 
 	insert(char: string): void {
-		this.text = `${this.text.slice(0, this.cursor)}${char}${this.text.slice(this.cursor)}`;
-		this.cursor = clampCursorToBoundary(this.text, this.cursor + char.length);
+		const insertOffset = codeUnitOffsetFromByteOffset(this.text, this.cursor);
+		this.text = `${this.text.slice(0, insertOffset)}${char}${this.text.slice(
+			insertOffset,
+		)}`;
+		this.cursor = clampCursorToBoundary(
+			this.text,
+			this.cursor + byteLength(char),
+		);
 	}
 
 	deleteBackward(): void {
-		if (this.cursor === 0) return;
+		if (this.cursor === 0 || byteLength(this.text) <= 1) return;
 		const deleteStart = prevGraphemeBoundary(this.text, this.cursor);
-		this.text = `${this.text.slice(0, deleteStart)}${this.text.slice(this.cursor)}`;
+		this.text = `${byteSlice(this.text, 0, deleteStart)}${byteSlice(this.text, this.cursor)}`;
 		this.cursor = deleteStart;
 	}
 
 	deleteForward(): void {
-		if (this.cursor === this.text.length) return;
+		if (this.cursor === byteLength(this.text)) return;
 		const deleteEnd = nextGraphemeBoundary(this.text, this.cursor);
-		this.text = `${this.text.slice(0, this.cursor)}${this.text.slice(deleteEnd)}`;
+		this.text = `${byteSlice(this.text, 0, this.cursor)}${byteSlice(this.text, deleteEnd)}`;
 	}
 
 	private previousGrapheme(cursor: number): string {
 		const start = prevGraphemeBoundary(this.text, cursor);
-		return this.text.slice(start, cursor);
+		return byteSlice(this.text, start, cursor);
 	}
 
 	private nextGrapheme(cursor: number): string {
 		const end = nextGraphemeBoundary(this.text, cursor);
-		return this.text.slice(cursor, end);
+		return byteSlice(this.text, cursor, end);
 	}
 
 	deleteBackwardWord(): void {
 		if (this.cursor === 0) return;
+		if (byteLength(this.text) <= 1) return;
+		const textByteLength = byteLength(this.text);
+
+		if (
+			!isWordChar(this.previousGrapheme(this.cursor)) &&
+			isWordChar(this.nextGrapheme(this.cursor))
+		) {
+			let deleteEnd = this.cursor;
+			while (
+				deleteEnd < textByteLength &&
+				isWordChar(this.nextGrapheme(deleteEnd))
+			) {
+				deleteEnd = nextGraphemeBoundary(this.text, deleteEnd);
+			}
+			if (deleteEnd === this.cursor) return;
+			this.killBuffer = byteSlice(this.text, this.cursor, deleteEnd);
+			this.text = `${byteSlice(this.text, 0, this.cursor)}${byteSlice(
+				this.text,
+				deleteEnd,
+			)}`;
+			return;
+		}
 
 		let deleteStart = this.cursor;
 		while (deleteStart > 0 && isSeparator(this.previousGrapheme(deleteStart))) {
@@ -259,43 +328,49 @@ export class TextBuffer {
 		}
 		if (deleteStart === this.cursor) return;
 
-		this.killBuffer = this.text.slice(deleteStart, this.cursor);
-		this.text = `${this.text.slice(0, deleteStart)}${this.text.slice(this.cursor)}`;
+		this.killBuffer = byteSlice(this.text, deleteStart, this.cursor);
+		this.text = `${byteSlice(this.text, 0, deleteStart)}${byteSlice(
+			this.text,
+			this.cursor,
+		)}`;
 		this.cursor = deleteStart;
 	}
 
 	deleteForwardWord(): void {
-		if (this.cursor === this.text.length) return;
+		if (this.cursor === byteLength(this.text)) return;
 
 		let deleteEnd = this.cursor;
 		while (
-			deleteEnd < this.text.length &&
+			deleteEnd < byteLength(this.text) &&
 			isSeparator(this.nextGrapheme(deleteEnd))
 		) {
 			deleteEnd = nextGraphemeBoundary(this.text, deleteEnd);
 		}
 		while (
-			deleteEnd < this.text.length &&
+			deleteEnd < byteLength(this.text) &&
 			isWordChar(this.nextGrapheme(deleteEnd))
 		) {
 			deleteEnd = nextGraphemeBoundary(this.text, deleteEnd);
 		}
 		if (deleteEnd === this.cursor) return;
 
-		this.killBuffer = this.text.slice(this.cursor, deleteEnd);
-		this.text = `${this.text.slice(0, this.cursor)}${this.text.slice(deleteEnd)}`;
+		this.killBuffer = byteSlice(this.text, this.cursor, deleteEnd);
+		this.text = `${byteSlice(this.text, 0, this.cursor)}${byteSlice(
+			this.text,
+			deleteEnd,
+		)}`;
 	}
 
 	killToEnd(): void {
-		if (this.cursor === this.text.length) return;
-		this.killBuffer = this.text.slice(this.cursor);
-		this.text = this.text.slice(0, this.cursor);
+		if (this.cursor === byteLength(this.text)) return;
+		this.killBuffer = byteSlice(this.text, this.cursor);
+		this.text = byteSlice(this.text, 0, this.cursor);
 	}
 
 	killToBeginning(): void {
 		if (this.cursor === 0) return;
-		this.killBuffer = this.text.slice(0, this.cursor);
-		this.text = this.text.slice(this.cursor);
+		this.killBuffer = byteSlice(this.text, 0, this.cursor);
+		this.text = byteSlice(this.text, this.cursor);
 		this.cursor = 0;
 	}
 
@@ -317,7 +392,7 @@ export class TextBuffer {
 	}
 
 	moveToEnd(): void {
-		this.cursor = this.text.length;
+		this.cursor = byteLength(this.text);
 	}
 
 	moveWordLeft(): void {
@@ -332,14 +407,22 @@ export class TextBuffer {
 	}
 
 	moveWordRight(): void {
+		if (this.cursor === byteLength(this.text)) {
+			this.cursor = 0;
+			return;
+		}
+
 		let target = this.cursor;
 		while (
-			target < this.text.length &&
+			target < byteLength(this.text) &&
 			isSeparator(this.nextGrapheme(target))
 		) {
 			target = nextGraphemeBoundary(this.text, target);
 		}
-		while (target < this.text.length && isWordChar(this.nextGrapheme(target))) {
+		while (
+			target < byteLength(this.text) &&
+			isWordChar(this.nextGrapheme(target))
+		) {
 			target = nextGraphemeBoundary(this.text, target);
 		}
 		this.cursor = target;
