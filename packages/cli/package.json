@@ -30,7 +30,8 @@
 		"prebuild": "bun run generate:client",
 		"generate:client": "tsx scripts/generate-client.ts",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"string-width": "^7.0.0",
