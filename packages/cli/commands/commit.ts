@@ -159,6 +159,7 @@ export async function commit(args: string[]) {
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
+		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
 
 		const recordSelection = async (generationId?: string) => {
@@ -177,15 +178,18 @@ export async function commit(args: string[]) {
 			}
 		};
 
-		const startCommandExecutionSession = () => {
+		const startCommandExecutionSession = (isRefineAttempt: boolean) => {
 			const sessionId = ++commandExecutionRun;
 			const requestGuide = composeGuidance(options.guide, guideHint);
+			const apiPath = isRefineAttempt
+				? "/v1/commit-message/refine"
+				: "/v1/commit-message";
 			const { commandExecutionPromise, abortController, cliSessionId } =
 				startCommandExecution({
 					api,
 					command: "commit",
 					args,
-					apiPath: "/v1/commit-message",
+					apiPath,
 					requestPayload: {
 						input: diff,
 						target: "vcs-commit-message",
@@ -215,8 +219,9 @@ export async function commit(args: string[]) {
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
 		while (true) {
+			const isRefineAttempt = refineMessage !== undefined;
 			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
-				startCommandExecutionSession();
+				startCommandExecutionSession(isRefineAttempt);
 			const createCandidates = (signal: AbortSignal) =>
 				generateCommitMessages({
 					diff,
@@ -226,6 +231,12 @@ export async function commit(args: string[]) {
 					cliSessionId,
 					commandExecutionPromise,
 					streamCaptureRecorder: captureRecorder,
+					refine: isRefineAttempt
+						? {
+								originalMessage: refineMessage,
+								refineInstruction: guideHint,
+							}
+						: undefined,
 				});
 
 			const result = await selectCandidate({
@@ -250,6 +261,7 @@ export async function commit(args: string[]) {
 
 			if (result.action === "refine") {
 				guideHint = result.guide;
+				refineMessage = result.selected ?? result.selectedCandidate?.content;
 				continue;
 			}
 

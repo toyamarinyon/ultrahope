@@ -28,6 +28,10 @@ export interface GeneratorOptions {
 	commandExecutionPromise?: Promise<unknown>;
 	useStream?: boolean;
 	streamCaptureRecorder?: StreamCaptureRecorder;
+	refine?: {
+		originalMessage: string;
+		refineInstruction?: string;
+	};
 }
 
 const isAbortError = (error: unknown) =>
@@ -72,17 +76,32 @@ export async function* generateCommitMessages(
 
 	const generateWithRetry = async function* (payload: {
 		cliSessionId: string;
-		input: string;
 		model: string;
-		guide?: string;
 	}): AsyncGenerator<CommitMessageStreamEvent> {
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			const attemptNumber = attempt + 1;
 			try {
-				for await (const event of api.streamCommitMessage(payload, {
-					signal,
-				})) {
+				const stream = options.refine
+					? api.streamCommitMessageRefine(
+							{
+								cliSessionId,
+								model: payload.model,
+								originalMessage: options.refine.originalMessage,
+								refineInstruction: options.refine.refineInstruction,
+							},
+							{ signal },
+						)
+					: api.streamCommitMessage(
+							{
+								...payload,
+								input: diff,
+								guide: options.guide,
+							},
+							{ signal },
+						);
+
+				for await (const event of stream) {
 					if (captureGenerationId != null) {
 						streamCaptureRecorder?.recordEvent(captureGenerationId, {
 							model: payload.model,
@@ -143,9 +162,7 @@ export async function* generateCommitMessages(
 
 			for await (const event of generateWithRetry({
 				cliSessionId: requiredCliSessionId,
-				input: diff,
 				model,
-				guide: options.guide,
 			})) {
 				if (event.type === "commit-message") {
 					lastCommitMessage = event.commitMessage;

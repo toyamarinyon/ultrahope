@@ -160,6 +160,7 @@ async function initCommandExecutionContext(
 	models: string[],
 	diff: string,
 	guide?: string,
+	apiPath: string,
 	isSessionActive?: () => boolean,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
@@ -174,7 +175,7 @@ async function initCommandExecutionContext(
 			api,
 			command: "jj",
 			args: ["describe", ...args],
-			apiPath: "/v1/commit-message/stream",
+			apiPath,
 			requestPayload: {
 				input: diff,
 				target: "vcs-commit-message",
@@ -226,6 +227,7 @@ function createCandidateFactory(
 	context: CommandExecutionContext,
 	captureRecorder: ReturnType<typeof createStreamCaptureRecorder>,
 	baseGuide?: string,
+	refineMessage?: string,
 ) {
 	return (signal: AbortSignal, guideHint?: string) =>
 		generateCommitMessages({
@@ -237,6 +239,12 @@ function createCandidateFactory(
 			commandExecutionPromise: context.commandExecutionPromise,
 			useStream: true,
 			streamCaptureRecorder: captureRecorder,
+			refine: refineMessage
+				? {
+						originalMessage: refineMessage,
+						refineInstruction: guideHint,
+					}
+				: undefined,
 		});
 }
 
@@ -276,14 +284,19 @@ async function describe(args: string[]) {
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
 		let guideHint: string | undefined;
+		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
 		while (true) {
 			const sessionId = ++commandExecutionRun;
+			const isRefineAttempt = refineMessage !== undefined;
 			const context = await initCommandExecutionContext(
 				args,
 				models,
 				diff,
 				composeGuidance(options.guide, guideHint),
+				isRefineAttempt
+					? "/v1/commit-message/refine"
+					: "/v1/commit-message/stream",
 				() => sessionId === commandExecutionRun,
 			);
 			const createCandidates = createCandidateFactory(
@@ -292,6 +305,7 @@ async function describe(args: string[]) {
 				context,
 				captureRecorder,
 				options.guide,
+				refineMessage,
 			);
 			const result = await runInteractiveDescribe(
 				models,
@@ -313,6 +327,7 @@ async function describe(args: string[]) {
 
 			if (result.action === "refine") {
 				guideHint = result.guide;
+				refineMessage = result.selected ?? result.selectedCandidate?.content;
 				continue;
 			}
 

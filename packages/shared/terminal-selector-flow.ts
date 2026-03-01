@@ -363,9 +363,19 @@ export function transitionSelectorFlow(
 			if (targetPromptKind === "refine") {
 				const refinedGuide = normalizeGuide(event.guide);
 				next.guideHint = refinedGuide;
+				const selectedCandidate = getSelectedCandidate(
+					next.slots,
+					next.selectedIndex,
+				);
+				const selected = selectedCandidate
+					? (next.editedSelections.get(selectedCandidate.slotId) ??
+						selectedCandidate.content)
+					: undefined;
 				result = {
 					action: "refine",
 					guide: refinedGuide,
+					selected,
+					selectedCandidate,
 				};
 				break;
 			}

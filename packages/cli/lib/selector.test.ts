@@ -200,5 +200,10 @@ describe("selectCandidate", () => {
 		const value = await result;
 		expect(value.action).toBe("refine");
 		expect(value.guide).toBe("concise");
+		expect(value.selected).toBe("feat: add feature");
+		expect(value.selectedCandidate).toMatchObject({
+			content: "feat: add feature",
+			slotId: "slot-0",
+		});
 	});
 });

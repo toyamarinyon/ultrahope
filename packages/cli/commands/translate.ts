@@ -102,6 +102,7 @@ async function handleVcsCommitMessage(
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
+		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
 
 		const recordSelection = async (generationId?: string) => {
@@ -120,15 +121,19 @@ async function handleVcsCommitMessage(
 			}
 		};
 
-		const startCommandExecutionSession = () => {
+		const startCommandExecutionSession = (isRefineAttempt: boolean) => {
 			const sessionId = ++commandExecutionRun;
 			const requestGuide = composeGuidance(guideHint);
+			const apiPath =
+				isRefineAttempt && options.target === "vcs-commit-message"
+					? "/v1/commit-message/refine"
+					: TARGET_TO_API_PATH[options.target];
 			const { commandExecutionPromise, abortController, cliSessionId } =
 				startCommandExecution({
 					api,
 					command: "translate",
 					args,
-					apiPath: TARGET_TO_API_PATH[options.target],
+					apiPath,
 					requestPayload: {
 						...(models.length === 1
 							? { input, target: "vcs-commit-message", model: models[0] }
@@ -155,8 +160,9 @@ async function handleVcsCommitMessage(
 		};
 
 		while (true) {
+			const isRefineAttempt = refineMessage !== undefined;
 			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
-				startCommandExecutionSession();
+				startCommandExecutionSession(isRefineAttempt);
 			const createCandidates = (signal: AbortSignal) =>
 				generateCommitMessages({
 					diff: input,
@@ -166,6 +172,12 @@ async function handleVcsCommitMessage(
 					cliSessionId,
 					commandExecutionPromise,
 					streamCaptureRecorder: captureRecorder,
+					refine: isRefineAttempt
+						? {
+								originalMessage: refineMessage,
+								refineInstruction: guideHint,
+							}
+						: undefined,
 				});
 
 			const result = await selectCandidate({
@@ -190,6 +202,7 @@ async function handleVcsCommitMessage(
 
 			if (result.action === "refine") {
 				guideHint = result.guide;
+				refineMessage = result.selected ?? result.selectedCandidate?.content;
 				continue;
 			}
 

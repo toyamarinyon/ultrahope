@@ -7,6 +7,9 @@ const API_BASE_URL = process.env.ULTRAHOPE_API_URL ?? "https://ultrahope.dev";
 export type GenerateRequest =
 	paths["/api/v1/commit-message"]["post"]["requestBody"]["content"]["application/json"];
 
+export type CommitMessageRefineRequest =
+	paths["/api/v1/commit-message/refine"]["post"]["requestBody"]["content"]["application/json"];
+
 export type GenerateResponse =
 	paths["/api/v1/commit-message"]["post"]["responses"][200]["content"]["application/json"];
 
@@ -324,6 +327,81 @@ export function createApiClient(token?: string) {
 			if (!res.ok) {
 				const text = await getErrorText(res, null);
 				log("streamCommitMessage error", {
+					status: res.status,
+					text,
+				});
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+			if (!res.body) {
+				throw new Error("API error: empty response body");
+			}
+
+			const decoder = new TextDecoder();
+			let buffer = "";
+			const reader = res.body.getReader();
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buffer += decoder.decode(value, { stream: true });
+					const parsed = parseSseEvents(buffer);
+					buffer = parsed.remainder;
+					for (const event of parsed.events) {
+						yield event;
+					}
+				}
+				buffer += decoder.decode();
+				const parsed = parseSseEvents(buffer);
+				for (const event of parsed.events) {
+					yield event;
+				}
+			} finally {
+				reader.releaseLock();
+			}
+		},
+
+		async *streamCommitMessageRefine(
+			req: CommitMessageRefineRequest,
+			options?: { signal?: AbortSignal },
+		): AsyncGenerator<CommitMessageStreamEvent> {
+			log("streamCommitMessageRefine request", req);
+			const res = await fetch(
+				`${API_BASE_URL}/api/v1/commit-message/refine/stream`,
+				{
+					method: "POST",
+					headers: {
+						...headers,
+						Accept: "text/event-stream",
+					},
+					body: JSON.stringify(req),
+					signal: options?.signal,
+				},
+			);
+			if (res.status === 401) {
+				log("streamCommitMessageRefine error (401)");
+				throw new UnauthorizedError();
+			}
+			if (res.status === 402) {
+				let errorPayload: unknown;
+				try {
+					errorPayload = await res.json();
+				} catch {
+					errorPayload = await getErrorText(res, null);
+				}
+				handle402Error(errorPayload);
+			}
+			if (res.status === 400) {
+				let errorPayload: unknown;
+				try {
+					errorPayload = await res.json();
+				} catch {
+					errorPayload = await getErrorText(res, null);
+				}
+				handle400Error(errorPayload);
+			}
+			if (!res.ok) {
+				const text = await getErrorText(res, null);
+				log("streamCommitMessageRefine error", {
 					status: res.status,
 					text,
 				});
