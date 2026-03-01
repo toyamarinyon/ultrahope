@@ -59,6 +59,10 @@ interface SelectorOptions {
 	initialListMode?: ListMode;
 	initialGuideHint?: string;
 	inlineEditPrompt?: boolean;
+	io?: {
+		input: NodeJS.ReadableStream;
+		output: NodeJS.WritableStream;
+	};
 }
 
 const TTY_PATH = "/dev/tty";
@@ -86,7 +90,7 @@ type InlinePromptOptions = {
 function renderError(
 	error: unknown,
 	slotsLength: number,
-	output: tty.WriteStream,
+	output: NodeJS.WritableStream,
 ): void {
 	const readyCount = slotsLength;
 	const message =
@@ -160,6 +164,7 @@ export async function selectCandidate(
 		initialListMode = "initial",
 		initialGuideHint,
 		inlineEditPrompt = false,
+		io,
 	} = options;
 	const abortController = new AbortController();
 	if (abortSignal?.aborted) {
@@ -175,27 +180,32 @@ export async function selectCandidate(
 
 	const candidates = createCandidates;
 
-	let ttyInput: tty.ReadStream | null = null;
-	let ttyOutput: tty.WriteStream | null = null;
-	try {
-		accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
-		if (process.stdin.isTTY) {
-			ttyInput = process.stdin as tty.ReadStream;
-		} else {
-			const inputFd = openSync(TTY_PATH, "r");
-			ttyInput = new tty.ReadStream(inputFd);
+	let ttyInput: NodeJS.ReadableStream | null = null;
+	let ttyOutput: NodeJS.WritableStream | null = null;
+	if (io) {
+		ttyInput = io.input;
+		ttyOutput = io.output;
+	} else {
+		try {
+			accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
+			if (process.stdin.isTTY) {
+				ttyInput = process.stdin as tty.ReadStream;
+			} else {
+				const inputFd = openSync(TTY_PATH, "r");
+				ttyInput = new tty.ReadStream(inputFd);
+			}
+			if (process.stdout.isTTY) {
+				ttyOutput = process.stdout as tty.WriteStream;
+			} else {
+				const outputFd = openSync(TTY_PATH, "w");
+				ttyOutput = new tty.WriteStream(outputFd);
+			}
+		} catch {
+			console.error(
+				"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
+			);
+			process.exit(1);
 		}
-		if (process.stdout.isTTY) {
-			ttyOutput = process.stdout as tty.WriteStream;
-		} else {
-			const outputFd = openSync(TTY_PATH, "w");
-			ttyOutput = new tty.WriteStream(outputFd);
-		}
-	} catch {
-		console.error(
-			"Error: /dev/tty is not available. Use --no-interactive for non-interactive mode.",
-		);
-		process.exit(1);
 	}
 	if (!ttyInput || !ttyOutput) {
 		console.error(
@@ -236,18 +246,21 @@ export async function selectCandidate(
 
 		const ttyReader = ttyInput;
 		const ttyWriter = ttyOutput;
-		const renderer = createRenderer(ttyWriter);
-
-		readline.emitKeypressEvents(ttyReader);
-		ttyReader.setRawMode(true);
+		const renderer = createRenderer(ttyWriter as NodeJS.WriteStream);
 
 		const setRawModeSafe = (enabled: boolean) => {
 			try {
-				ttyReader.setRawMode(enabled);
+				const r = ttyReader as unknown as {
+					setRawMode?: (enabled: boolean) => void;
+				};
+				r.setRawMode?.(enabled);
 			} catch {
 				// Ignore tty mode errors during shutdown.
 			}
 		};
+
+		readline.emitKeypressEvents(ttyReader);
+		setRawModeSafe(true);
 
 		const render = () => {
 			const allowPromptRender =
@@ -331,15 +344,26 @@ export async function selectCandidate(
 			ttyReader.removeAllListeners("keypress");
 			setRawModeSafe(false);
 			ttyReader.pause();
-			if (ttyReader !== process.stdin && !ttyReader.destroyed) {
-				ttyReader.destroy();
-			}
+			const reader = ttyReader as unknown as {
+				destroyed?: boolean;
+				destroy?(): void;
+			};
 			if (
-				ttyWriter !== process.stdout &&
-				ttyWriter !== process.stderr &&
-				!ttyWriter.destroyed
+				ttyReader !== (process.stdin as NodeJS.ReadableStream) &&
+				!reader.destroyed
 			) {
-				ttyWriter.destroy();
+				reader.destroy?.();
+			}
+			const writer = ttyWriter as unknown as {
+				destroyed?: boolean;
+				destroy?(): void;
+			};
+			if (
+				ttyWriter !== (process.stdout as NodeJS.WritableStream) &&
+				ttyWriter !== (process.stderr as NodeJS.WritableStream) &&
+				!writer.destroyed
+			) {
+				writer.destroy?.();
 			}
 		};
 
