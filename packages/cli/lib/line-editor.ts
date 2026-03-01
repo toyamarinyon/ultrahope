@@ -64,7 +64,7 @@ export interface EditLineOptions {
 	finalizeMode?: EditLineFinalizeMode;
 }
 
-export interface EditLineRenderContext {
+interface EditLineRenderContext {
 	buffer: TextBuffer;
 	prefix: string;
 	helpText?: string;
@@ -511,7 +511,7 @@ export function parseKey(buf: Buffer): KeyEvent[] {
 	return events;
 }
 
-export function renderLine(
+function renderLine(
 	output: NodeJS.WritableStream,
 	prefix: string,
 	buffer: TextBuffer,

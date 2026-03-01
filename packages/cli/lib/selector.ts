@@ -1,16 +1,9 @@
 import { spawn } from "node:child_process";
-import {
-	closeSync,
-	mkdtempSync,
-	openSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as readline from "node:readline";
-import * as tty from "node:tty";
+import type * as tty from "node:tty";
 import type {
 	ListMode,
 	SelectorFlowContext,
@@ -37,6 +30,12 @@ import {
 	SPINNER_FRAMES,
 } from "./renderer";
 import { theme } from "./theme";
+import {
+	cleanupTtyResources,
+	createTtyReadStream,
+	createTtyWriteStream,
+	type StreamCleanup,
+} from "./tty";
 import { ui } from "./ui";
 
 export type CandidateWithModel = SharedCandidateWithModel;
@@ -60,8 +59,6 @@ interface SelectorOptions {
 	};
 }
 
-const TTY_PATH = "/dev/tty";
-
 const selectorRenderCopy = {
 	runningLabel: "Generating commit messages...",
 };
@@ -71,33 +68,6 @@ const selectorRenderCapabilities = {
 	refine: true,
 	clickConfirm: false,
 };
-
-const TTY_CANDIDATE_PATHS = {
-	input: Array.from(
-		new Set(
-			[
-				process.env.SSH_TTY,
-				process.env.TTY,
-				"/proc/self/fd/0",
-				"/dev/fd/0",
-				TTY_PATH,
-			].filter(Boolean),
-		),
-	).filter((value): value is string => value !== undefined),
-	output: Array.from(
-		new Set(
-			[
-				process.env.SSH_TTY,
-				process.env.TTY,
-				"/proc/self/fd/2",
-				"/dev/fd/2",
-				TTY_PATH,
-			].filter(Boolean),
-		),
-	).filter((value): value is string => value !== undefined),
-};
-
-type TtyDirection = "input" | "output";
 
 function renderError(
 	error: unknown,
@@ -163,78 +133,6 @@ function openEditor(content: string): Promise<string> {
 			reject(err);
 		}
 	});
-}
-
-type StreamCleanup = () => void;
-
-function createTtyReadStream(): {
-	stream: tty.ReadStream;
-	cleanup: StreamCleanup;
-} {
-	const inputFd = openTtyFile("r", "input");
-	const stream = new tty.ReadStream(inputFd);
-	let cleaned = false;
-
-	const cleanup = () => {
-		if (cleaned) return;
-		cleaned = true;
-		try {
-			stream.destroy();
-		} catch {}
-	};
-
-	return { stream, cleanup };
-}
-
-function createTtyWriteStream(): {
-	stream: tty.WriteStream;
-	cleanup: StreamCleanup;
-} {
-	const outputFd = openTtyFile("w", "output");
-	const stream = new tty.WriteStream(outputFd);
-	let cleaned = false;
-
-	const cleanup = () => {
-		if (cleaned) return;
-		cleaned = true;
-		try {
-			stream.destroy();
-		} catch {}
-	};
-
-	return { stream, cleanup };
-}
-
-function openTtyFile(flags: "r" | "w", direction: TtyDirection): number {
-	let lastError: unknown;
-	for (const path of TTY_CANDIDATE_PATHS[direction]) {
-		try {
-			const fd = openSync(path, flags);
-			if (!tty.isatty(fd)) {
-				try {
-					closeSync(fd);
-				} catch {}
-				continue;
-			}
-			return fd;
-		} catch (error) {
-			lastError = error;
-		}
-	}
-	throw lastError instanceof Error
-		? lastError
-		: new Error("Failed to open tty file");
-}
-
-function cleanupTtyResources(resources: StreamCleanup[]) {
-	while (resources.length > 0) {
-		const resource = resources.pop();
-		if (resource) {
-			try {
-				resource();
-			} catch {}
-		}
-	}
 }
 
 export async function selectCandidate(

@@ -1,95 +1,12 @@
-import { closeSync, openSync } from "node:fs";
 import * as readline from "node:readline";
-import * as tty from "node:tty";
+import type * as tty from "node:tty";
 import open from "open";
 import { formatResetTime } from "./format-time";
 import { theme } from "./theme";
+import { createTtyStreams, type StreamCleanup } from "./tty";
 import { ui } from "./ui";
 
 const PRICING_URL = "https://ultrahope.dev/pricing";
-const TTY_PATH = "/dev/tty";
-const TTY_CANDIDATE_PATHS = {
-	input: Array.from(
-		new Set(
-			[
-				process.env.SSH_TTY,
-				process.env.TTY,
-				"/proc/self/fd/0",
-				"/dev/fd/0",
-				TTY_PATH,
-			].filter(Boolean),
-		),
-	).filter((value): value is string => value !== undefined),
-	output: Array.from(
-		new Set(
-			[
-				process.env.SSH_TTY,
-				process.env.TTY,
-				"/proc/self/fd/2",
-				"/dev/fd/2",
-				TTY_PATH,
-			].filter(Boolean),
-		),
-	).filter((value): value is string => value !== undefined),
-};
-
-type StreamCleanup = () => void;
-type TtyDirection = "input" | "output";
-
-function createTtyStreams(): {
-	input: tty.ReadStream;
-	output: tty.WriteStream;
-	cleanup: StreamCleanup;
-} {
-	const inputFd = openTtyFile("r", "input");
-	let outputFd: number | null = null;
-	let cleaned = false;
-
-	try {
-		outputFd = openTtyFile("w", "output");
-		const input = new tty.ReadStream(inputFd);
-		const output = new tty.WriteStream(outputFd);
-
-		const cleanup = () => {
-			if (cleaned) return;
-			cleaned = true;
-			try {
-				input.destroy();
-			} catch {}
-			try {
-				output.destroy();
-			} catch {}
-		};
-
-		return { input, output, cleanup };
-	} catch (error) {
-		try {
-			closeSync(inputFd);
-		} catch {}
-		throw error;
-	}
-}
-
-function openTtyFile(flags: "r" | "w", direction: TtyDirection): number {
-	let lastError: unknown;
-	for (const path of TTY_CANDIDATE_PATHS[direction]) {
-		try {
-			const fd = openSync(path, flags);
-			if (!tty.isatty(fd)) {
-				try {
-					closeSync(fd);
-				} catch {}
-				continue;
-			}
-			return fd;
-		} catch (error) {
-			lastError = error;
-		}
-	}
-	throw lastError instanceof Error
-		? lastError
-		: new Error("Failed to open tty file");
-}
 
 function canUseInteractive(): boolean {
 	try {
