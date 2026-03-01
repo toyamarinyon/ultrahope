@@ -180,4 +180,25 @@ describe("selectCandidate", () => {
 		expect(value.action).toBe("confirm");
 		expect(value.selectedIndex).toBe(0);
 	});
+
+	it("returns refine action when refine prompt is submitted", async () => {
+		const input = new FakeInputStream();
+		const output = new PassThrough();
+
+		const result = selectCandidate({
+			createCandidates: fakeCandidates(TWO_CANDIDATES),
+			maxSlots: 2,
+			io: { input, output },
+		});
+
+		await waitForGeneration();
+		input.write("r");
+		await waitForGeneration();
+		input.write("  concise ");
+		input.write("\r");
+
+		const value = await result;
+		expect(value.action).toBe("refine");
+		expect(value.guide).toBe("concise");
+	});
 });

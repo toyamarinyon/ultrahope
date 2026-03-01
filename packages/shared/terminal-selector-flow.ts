@@ -361,13 +361,12 @@ export function transitionSelectorFlow(
 			clearPrompt(next);
 
 			if (targetPromptKind === "refine") {
-				next.guideHint = normalizeGuide(event.guide);
-				next.listMode = "refined";
-				next.editedSelections = new Map();
-				next.slots = toPendingSlots(next.slots, next.totalSlots);
-				next.selectedIndex = 0;
-				next.isGenerating = true;
-				effects.push({ type: "startGeneration" });
+				const refinedGuide = normalizeGuide(event.guide);
+				next.guideHint = refinedGuide;
+				result = {
+					action: "refine",
+					guide: refinedGuide,
+				};
 				break;
 			}
 

@@ -157,36 +157,9 @@ export async function commit(args: string[]) {
 		}
 
 		const api = createApiClient(token);
-		const {
-			commandExecutionPromise: promise,
-			abortController,
-			cliSessionId: id,
-		} = startCommandExecution({
-			api,
-			command: "commit",
-			args,
-			apiPath: "/v1/commit-message",
-			requestPayload: {
-				input: diff,
-				target: "vcs-commit-message",
-				model: models[0],
-				...(options.guide ? { guide: options.guide } : {}),
-			},
-		});
-
-		const cliSessionId: string | undefined = id;
-		const commandExecutionSignal: AbortSignal | undefined =
-			abortController.signal;
-		const commandExecutionPromise: Promise<unknown> | undefined = promise;
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
-
-		commandExecutionPromise.catch(async (error) => {
-			abortController.abort(abortReasonForError(error));
-			await handleCommandExecutionError(error, {
-				progress: { ready: 0, total: models.length },
-			});
-		});
+		let commandExecutionRun = 0;
 
 		const recordSelection = async (generationId?: string) => {
 			if (!generationId || !apiClient) return;
@@ -204,27 +177,64 @@ export async function commit(args: string[]) {
 			}
 		};
 
-		const createCandidates = (signal: AbortSignal) =>
-			generateCommitMessages({
-				diff,
-				models,
-				guide: composeGuidance(options.guide, guideHint),
-				signal: mergeAbortSignals(signal, commandExecutionSignal),
-				cliSessionId,
-				commandExecutionPromise,
-				streamCaptureRecorder: captureRecorder,
+		const startCommandExecutionSession = () => {
+			const sessionId = ++commandExecutionRun;
+			const requestGuide = composeGuidance(options.guide, guideHint);
+			const { commandExecutionPromise, abortController, cliSessionId } =
+				startCommandExecution({
+					api,
+					command: "commit",
+					args,
+					apiPath: "/v1/commit-message",
+					requestPayload: {
+						input: diff,
+						target: "vcs-commit-message",
+						model: models[0],
+						...(requestGuide ? { guide: requestGuide } : {}),
+					},
+				});
+
+			commandExecutionPromise.catch(async (error) => {
+				if (sessionId !== commandExecutionRun) {
+					return;
+				}
+				abortController.abort(abortReasonForError(error));
+				await handleCommandExecutionError(error, {
+					progress: { ready: 0, total: models.length },
+				});
 			});
+
+			return {
+				commandExecutionSignal: abortController.signal,
+				commandExecutionPromise,
+				cliSessionId,
+			};
+		};
 
 		const stats = getGitStagedStats();
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
 		while (true) {
+			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
+				startCommandExecutionSession();
+			const createCandidates = (signal: AbortSignal) =>
+				generateCommitMessages({
+					diff,
+					models,
+					guide: composeGuidance(options.guide, guideHint),
+					signal: mergeAbortSignals(signal, commandExecutionSignal),
+					cliSessionId,
+					commandExecutionPromise,
+					streamCaptureRecorder: captureRecorder,
+				});
+
 			const result = await selectCandidate({
 				createCandidates,
 				maxSlots: models.length,
 				abortSignal: commandExecutionSignal,
 				models,
 				inlineEditPrompt: true,
+				initialGuideHint: guideHint,
 			});
 
 			if (result.action === "abort") {
@@ -238,8 +248,8 @@ export async function commit(args: string[]) {
 				process.exit(1);
 			}
 
-			if (result.action === "refine" && result.guide !== undefined) {
-				guideHint = result.guide.trim() || undefined;
+			if (result.action === "refine") {
+				guideHint = result.guide;
 				continue;
 			}
 

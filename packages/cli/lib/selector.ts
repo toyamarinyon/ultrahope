@@ -248,6 +248,7 @@ export async function selectCandidate(
 
 		readline.emitKeypressEvents(ttyReader);
 		setRawModeSafe(true);
+		ttyReader.resume();
 
 		const render = () => {
 			const allowPromptRender =
@@ -413,6 +414,11 @@ export async function selectCandidate(
 				const result = transitionResult.result;
 				if (result.action === "confirm") {
 					renderFinalSelection(result);
+					resolveOnce(result);
+					cleanup(false);
+					return;
+				}
+				if (result.action === "refine") {
 					resolveOnce(result);
 					cleanup(false);
 					return;

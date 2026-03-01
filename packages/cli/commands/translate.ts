@@ -100,34 +100,9 @@ async function handleVcsCommitMessage(
 		}
 
 		const api = createApiClient(token);
-		const {
-			commandExecutionPromise: promise,
-			abortController,
-			cliSessionId: id,
-		} = startCommandExecution({
-			api,
-			command: "translate",
-			args,
-			apiPath: TARGET_TO_API_PATH[options.target],
-			requestPayload:
-				models.length === 1
-					? { input, target: "vcs-commit-message", model: models[0] }
-					: { input, target: "vcs-commit-message", models },
-		});
-
-		const cliSessionId: string | undefined = id;
-		const commandExecutionSignal: AbortSignal | undefined =
-			abortController.signal;
-		const commandExecutionPromise: Promise<unknown> | undefined = promise;
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
-
-		commandExecutionPromise.catch(async (error) => {
-			abortController.abort(abortReasonForError(error));
-			await handleCommandExecutionError(error, {
-				progress: { ready: 0, total: models.length },
-			});
-		});
+		let commandExecutionRun = 0;
 
 		const recordSelection = async (generationId?: string) => {
 			if (!generationId || !apiClient) return;
@@ -145,24 +120,61 @@ async function handleVcsCommitMessage(
 			}
 		};
 
-		const createCandidates = (signal: AbortSignal) =>
-			generateCommitMessages({
-				diff: input,
-				models,
-				guide: composeGuidance(guideHint),
-				signal: mergeAbortSignals(signal, commandExecutionSignal),
-				cliSessionId,
-				commandExecutionPromise,
-				streamCaptureRecorder: captureRecorder,
+		const startCommandExecutionSession = () => {
+			const sessionId = ++commandExecutionRun;
+			const requestGuide = composeGuidance(guideHint);
+			const { commandExecutionPromise, abortController, cliSessionId } =
+				startCommandExecution({
+					api,
+					command: "translate",
+					args,
+					apiPath: TARGET_TO_API_PATH[options.target],
+					requestPayload: {
+						...(models.length === 1
+							? { input, target: "vcs-commit-message", model: models[0] }
+							: { input, target: "vcs-commit-message", models }),
+						...(requestGuide ? { guide: requestGuide } : {}),
+					},
+				});
+
+			commandExecutionPromise.catch(async (error) => {
+				if (sessionId !== commandExecutionRun) {
+					return;
+				}
+				abortController.abort(abortReasonForError(error));
+				await handleCommandExecutionError(error, {
+					progress: { ready: 0, total: models.length },
+				});
 			});
 
+			return {
+				commandExecutionSignal: abortController.signal,
+				commandExecutionPromise,
+				cliSessionId,
+			};
+		};
+
 		while (true) {
+			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
+				startCommandExecutionSession();
+			const createCandidates = (signal: AbortSignal) =>
+				generateCommitMessages({
+					diff: input,
+					models,
+					guide: composeGuidance(guideHint),
+					signal: mergeAbortSignals(signal, commandExecutionSignal),
+					cliSessionId,
+					commandExecutionPromise,
+					streamCaptureRecorder: captureRecorder,
+				});
+
 			const result = await selectCandidate({
 				createCandidates,
 				maxSlots: models.length,
 				abortSignal: commandExecutionSignal,
 				models,
 				inlineEditPrompt: true,
+				initialGuideHint: guideHint,
 			});
 
 			if (result.action === "abort") {
@@ -176,8 +188,8 @@ async function handleVcsCommitMessage(
 				process.exit(1);
 			}
 
-			if (result.action === "refine" && result.guide !== undefined) {
-				guideHint = result.guide.trim() || undefined;
+			if (result.action === "refine") {
+				guideHint = result.guide;
 				continue;
 			}
 

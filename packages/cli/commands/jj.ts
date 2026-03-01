@@ -14,7 +14,11 @@ import { parseModelsArg, resolveModels } from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
-import { type QuotaInfo, selectCandidate } from "../lib/selector";
+import {
+	type QuotaInfo,
+	type SelectorResult,
+	selectCandidate,
+} from "../lib/selector";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
@@ -156,6 +160,7 @@ async function initCommandExecutionContext(
 	models: string[],
 	diff: string,
 	guide?: string,
+	isSessionActive?: () => boolean,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
 	if (!token) {
@@ -179,6 +184,9 @@ async function initCommandExecutionContext(
 		});
 
 	commandExecutionPromise.catch(async (error) => {
+		if (isSessionActive && !isSessionActive()) {
+			return;
+		}
 		abortController.abort(abortReasonForError(error));
 		await handleCommandExecutionError(error, {
 			progress: { ready: 0, total: models.length },
@@ -233,55 +241,22 @@ function createCandidateFactory(
 }
 
 async function runInteractiveDescribe(
-	options: DescribeOptions,
 	models: string[],
 	createCandidates: (
 		signal: AbortSignal,
 		guideHint?: string,
 	) => ReturnType<typeof generateCommitMessages>,
 	context: CommandExecutionContext,
-): Promise<void> {
-	const stats = getJjDiffStats(options.revision);
-	console.log(ui.success(`Found ${formatDiffStats(stats)}`));
-
-	const result = await selectCandidate({
+	guideHint?: string,
+): Promise<SelectorResult> {
+	return selectCandidate({
 		createCandidates,
 		maxSlots: models.length,
 		abortSignal: context.commandExecutionSignal,
 		models,
 		inlineEditPrompt: true,
+		initialGuideHint: guideHint,
 	});
-
-	if (result.action === "abort") {
-		if (result.error instanceof InvalidModelError) {
-			exitWithInvalidModelError(result.error);
-		}
-		if (isCommandExecutionAbort(context.commandExecutionSignal)) {
-			return;
-		}
-		console.error("Aborted.");
-		process.exit(1);
-	}
-
-	if (result.action === "confirm" && result.selected) {
-		recordSelection(context.apiClient, result.selectedCandidate?.generationId);
-		const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
-		const renderer = createRenderer(process.stderr);
-		renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
-		const output = describeRevision(options.revision, result.selected);
-		renderer.clearAll();
-		console.log(ui.success(label));
-		if (output) {
-			for (const line of output.split("\n")) {
-				console.log(ui.hint(`  ${line}`));
-			}
-		}
-
-		if (result.quota) {
-			showQuotaInfo(result.quota);
-		}
-		return;
-	}
 }
 
 async function describe(args: string[]) {
@@ -297,21 +272,73 @@ async function describe(args: string[]) {
 	});
 
 	try {
-		const context = await initCommandExecutionContext(
-			args,
-			models,
-			diff,
-			options.guide,
-		);
-		const createCandidates = createCandidateFactory(
-			diff,
-			models,
-			context,
-			captureRecorder,
-			options.guide,
-		);
+		const stats = getJjDiffStats(options.revision);
+		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
-		await runInteractiveDescribe(options, models, createCandidates, context);
+		let guideHint: string | undefined;
+		let commandExecutionRun = 0;
+		while (true) {
+			const sessionId = ++commandExecutionRun;
+			const context = await initCommandExecutionContext(
+				args,
+				models,
+				diff,
+				composeGuidance(options.guide, guideHint),
+				() => sessionId === commandExecutionRun,
+			);
+			const createCandidates = createCandidateFactory(
+				diff,
+				models,
+				context,
+				captureRecorder,
+				options.guide,
+			);
+			const result = await runInteractiveDescribe(
+				models,
+				createCandidates,
+				context,
+				guideHint,
+			);
+
+			if (result.action === "abort") {
+				if (result.error instanceof InvalidModelError) {
+					exitWithInvalidModelError(result.error);
+				}
+				if (isCommandExecutionAbort(context.commandExecutionSignal)) {
+					return;
+				}
+				console.error("Aborted.");
+				process.exit(1);
+			}
+
+			if (result.action === "refine") {
+				guideHint = result.guide;
+				continue;
+			}
+
+			if (result.action === "confirm" && result.selected) {
+				recordSelection(
+					context.apiClient,
+					result.selectedCandidate?.generationId,
+				);
+				const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
+				const renderer = createRenderer(process.stderr);
+				renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
+				const output = describeRevision(options.revision, result.selected);
+				renderer.clearAll();
+				console.log(ui.success(label));
+				if (output) {
+					for (const line of output.split("\n")) {
+						console.log(ui.hint(`  ${line}`));
+					}
+				}
+
+				if (result.quota) {
+					showQuotaInfo(result.quota);
+				}
+				return;
+			}
+		}
 	} finally {
 		const capturePath = captureRecorder.flush();
 		if (capturePath) {
