@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 import {
-	accessSync,
-	constants,
+	closeSync,
 	mkdtempSync,
 	openSync,
 	readFileSync,
@@ -73,6 +72,33 @@ const selectorRenderCapabilities = {
 	clickConfirm: false,
 };
 
+const TTY_CANDIDATE_PATHS = {
+	input: Array.from(
+		new Set(
+			[
+				process.env.SSH_TTY,
+				process.env.TTY,
+				"/proc/self/fd/0",
+				"/dev/fd/0",
+				TTY_PATH,
+			].filter(Boolean),
+		),
+	).filter((value): value is string => value !== undefined),
+	output: Array.from(
+		new Set(
+			[
+				process.env.SSH_TTY,
+				process.env.TTY,
+				"/proc/self/fd/2",
+				"/dev/fd/2",
+				TTY_PATH,
+			].filter(Boolean),
+		),
+	).filter((value): value is string => value !== undefined),
+};
+
+type TtyDirection = "input" | "output";
+
 function renderError(
 	error: unknown,
 	slotsLength: number,
@@ -139,6 +165,78 @@ function openEditor(content: string): Promise<string> {
 	});
 }
 
+type StreamCleanup = () => void;
+
+function createTtyReadStream(): {
+	stream: tty.ReadStream;
+	cleanup: StreamCleanup;
+} {
+	const inputFd = openTtyFile("r", "input");
+	const stream = new tty.ReadStream(inputFd);
+	let cleaned = false;
+
+	const cleanup = () => {
+		if (cleaned) return;
+		cleaned = true;
+		try {
+			stream.destroy();
+		} catch {}
+	};
+
+	return { stream, cleanup };
+}
+
+function createTtyWriteStream(): {
+	stream: tty.WriteStream;
+	cleanup: StreamCleanup;
+} {
+	const outputFd = openTtyFile("w", "output");
+	const stream = new tty.WriteStream(outputFd);
+	let cleaned = false;
+
+	const cleanup = () => {
+		if (cleaned) return;
+		cleaned = true;
+		try {
+			stream.destroy();
+		} catch {}
+	};
+
+	return { stream, cleanup };
+}
+
+function openTtyFile(flags: "r" | "w", direction: TtyDirection): number {
+	let lastError: unknown;
+	for (const path of TTY_CANDIDATE_PATHS[direction]) {
+		try {
+			const fd = openSync(path, flags);
+			if (!tty.isatty(fd)) {
+				try {
+					closeSync(fd);
+				} catch {}
+				continue;
+			}
+			return fd;
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError instanceof Error
+		? lastError
+		: new Error("Failed to open tty file");
+}
+
+function cleanupTtyResources(resources: StreamCleanup[]) {
+	while (resources.length > 0) {
+		const resource = resources.pop();
+		if (resource) {
+			try {
+				resource();
+			} catch {}
+		}
+	}
+}
+
 export async function selectCandidate(
 	options: SelectorOptions,
 ): Promise<SelectorResult> {
@@ -168,25 +266,28 @@ export async function selectCandidate(
 
 	let ttyInput: NodeJS.ReadableStream | null = null;
 	let ttyOutput: NodeJS.WritableStream | null = null;
+	const ttyResources: StreamCleanup[] = [];
 	if (io) {
 		ttyInput = io.input;
 		ttyOutput = io.output;
 	} else {
 		try {
-			accessSync(TTY_PATH, constants.R_OK | constants.W_OK);
 			if (process.stdin.isTTY) {
 				ttyInput = process.stdin as tty.ReadStream;
 			} else {
-				const inputFd = openSync(TTY_PATH, "r");
-				ttyInput = new tty.ReadStream(inputFd);
+				const { stream, cleanup } = createTtyReadStream();
+				ttyInput = stream;
+				ttyResources.push(cleanup);
 			}
 			if (process.stdout.isTTY) {
 				ttyOutput = process.stdout as tty.WriteStream;
 			} else {
-				const outputFd = openSync(TTY_PATH, "w");
-				ttyOutput = new tty.WriteStream(outputFd);
+				const { stream, cleanup } = createTtyWriteStream();
+				ttyOutput = stream;
+				ttyResources.push(cleanup);
 			}
 		} catch {
+			cleanupTtyResources(ttyResources);
 			console.error(
 				"Error: /dev/tty is not available. Interactive mode requires a terminal.",
 			);
@@ -194,11 +295,13 @@ export async function selectCandidate(
 		}
 	}
 	if (!ttyInput || !ttyOutput) {
+		cleanupTtyResources(ttyResources);
 		console.error(
 			"Error: /dev/tty is not available. Interactive mode requires a terminal.",
 		);
 		process.exit(1);
 	}
+	const ownsTtyResources = ttyResources.length > 0;
 
 	const initialSlots: SelectorFlowContext["slots"] = Array.from(
 		{ length: maxSlots },
@@ -324,32 +427,35 @@ export async function selectCandidate(
 			cleanedUp = true;
 			cancelGeneration();
 			stopRenderLoop();
+			cleanupTtyResources(ttyResources);
 			if (clearOutput) {
 				renderer.clearAll();
 			}
 			ttyReader.removeAllListeners("keypress");
 			setRawModeSafe(false);
 			ttyReader.pause();
-			const reader = ttyReader as unknown as {
-				destroyed?: boolean;
-				destroy?(): void;
-			};
-			if (
-				ttyReader !== (process.stdin as NodeJS.ReadableStream) &&
-				!reader.destroyed
-			) {
-				reader.destroy?.();
-			}
-			const writer = ttyWriter as unknown as {
-				destroyed?: boolean;
-				destroy?(): void;
-			};
-			if (
-				ttyWriter !== (process.stdout as NodeJS.WritableStream) &&
-				ttyWriter !== (process.stderr as NodeJS.WritableStream) &&
-				!writer.destroyed
-			) {
-				writer.destroy?.();
+			if (!ownsTtyResources) {
+				const reader = ttyReader as unknown as {
+					destroyed?: boolean;
+					destroy?(): void;
+				};
+				if (
+					ttyReader !== (process.stdin as NodeJS.ReadableStream) &&
+					!reader.destroyed
+				) {
+					reader.destroy?.();
+				}
+				const writer = ttyWriter as unknown as {
+					destroyed?: boolean;
+					destroy?(): void;
+				};
+				if (
+					ttyWriter !== (process.stdout as NodeJS.WritableStream) &&
+					ttyWriter !== (process.stderr as NodeJS.WritableStream) &&
+					!writer.destroyed
+				) {
+					writer.destroy?.();
+				}
 			}
 		};
 

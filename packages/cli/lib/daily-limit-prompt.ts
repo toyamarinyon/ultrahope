@@ -1,4 +1,4 @@
-import { accessSync, constants, openSync } from "node:fs";
+import { closeSync, openSync } from "node:fs";
 import * as readline from "node:readline";
 import * as tty from "node:tty";
 import open from "open";
@@ -7,13 +7,94 @@ import { theme } from "./theme";
 import { ui } from "./ui";
 
 const PRICING_URL = "https://ultrahope.dev/pricing";
+const TTY_PATH = "/dev/tty";
+const TTY_CANDIDATE_PATHS = {
+	input: Array.from(
+		new Set(
+			[
+				process.env.SSH_TTY,
+				process.env.TTY,
+				"/proc/self/fd/0",
+				"/dev/fd/0",
+				TTY_PATH,
+			].filter(Boolean),
+		),
+	).filter((value): value is string => value !== undefined),
+	output: Array.from(
+		new Set(
+			[
+				process.env.SSH_TTY,
+				process.env.TTY,
+				"/proc/self/fd/2",
+				"/dev/fd/2",
+				TTY_PATH,
+			].filter(Boolean),
+		),
+	).filter((value): value is string => value !== undefined),
+};
+
+type StreamCleanup = () => void;
+type TtyDirection = "input" | "output";
+
+function createTtyStreams(): {
+	input: tty.ReadStream;
+	output: tty.WriteStream;
+	cleanup: StreamCleanup;
+} {
+	const inputFd = openTtyFile("r", "input");
+	let outputFd: number | null = null;
+	let cleaned = false;
+
+	try {
+		outputFd = openTtyFile("w", "output");
+		const input = new tty.ReadStream(inputFd);
+		const output = new tty.WriteStream(outputFd);
+
+		const cleanup = () => {
+			if (cleaned) return;
+			cleaned = true;
+			try {
+				input.destroy();
+			} catch {}
+			try {
+				output.destroy();
+			} catch {}
+		};
+
+		return { input, output, cleanup };
+	} catch (error) {
+		try {
+			closeSync(inputFd);
+		} catch {}
+		throw error;
+	}
+}
+
+function openTtyFile(flags: "r" | "w", direction: TtyDirection): number {
+	let lastError: unknown;
+	for (const path of TTY_CANDIDATE_PATHS[direction]) {
+		try {
+			const fd = openSync(path, flags);
+			if (!tty.isatty(fd)) {
+				try {
+					closeSync(fd);
+				} catch {}
+				continue;
+			}
+			return fd;
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError instanceof Error
+		? lastError
+		: new Error("Failed to open tty file");
+}
 
 function canUseInteractive(): boolean {
-	if (!process.stdout.isTTY) {
-		return false;
-	}
 	try {
-		accessSync("/dev/tty", constants.R_OK);
+		const { cleanup } = createTtyStreams();
+		cleanup();
 		return true;
 	} catch {
 		return false;
@@ -87,16 +168,28 @@ export async function showDailyLimitPrompt(
 
 function promptChoice(): Promise<"1" | "2" | "q"> {
 	return new Promise((resolve) => {
-		const fd = openSync("/dev/tty", "r");
-		const ttyInput = new tty.ReadStream(fd);
+		let ttyInput: tty.ReadStream;
+		let ttyOutput: tty.WriteStream;
+		let cleanupTTY: StreamCleanup;
+		try {
+			const ttyStreams = createTtyStreams();
+			ttyInput = ttyStreams.input;
+			ttyOutput = ttyStreams.output;
+			cleanupTTY = ttyStreams.cleanup;
+		} catch {
+			console.error(
+				"Error: /dev/tty is not available. Interactive mode requires a terminal.",
+			);
+			process.exit(1);
+		}
 
 		const rl = readline.createInterface({
 			input: ttyInput,
-			output: process.stdout,
+			output: ttyOutput,
 			terminal: true,
 		});
 
-		process.stdout.write(
+		ttyOutput.write(
 			`${theme.prompt}Select an option [1-2], or press q to quit:${theme.reset} `,
 		);
 
@@ -106,8 +199,8 @@ function promptChoice(): Promise<"1" | "2" | "q"> {
 		const cleanup = () => {
 			ttyInput.setRawMode(false);
 			rl.close();
-			ttyInput.destroy();
-			console.log("");
+			ttyOutput.write("\n");
+			cleanupTTY();
 		};
 
 		const handleKeypress = (str: string | undefined, key: readline.Key) => {
@@ -154,12 +247,24 @@ function handleRetryLater() {
 	console.log("");
 
 	return new Promise<void>((resolve) => {
-		const fd = openSync("/dev/tty", "r");
-		const ttyInput = new tty.ReadStream(fd);
+		let ttyInput: tty.ReadStream;
+		let ttyOutput: tty.WriteStream;
+		let cleanupTTY: StreamCleanup;
+		try {
+			const ttyStreams = createTtyStreams();
+			ttyInput = ttyStreams.input;
+			ttyOutput = ttyStreams.output;
+			cleanupTTY = ttyStreams.cleanup;
+		} catch {
+			console.error(
+				"Error: /dev/tty is not available. Interactive mode requires a terminal.",
+			);
+			process.exit(1);
+		}
 
 		const rl = readline.createInterface({
 			input: ttyInput,
-			output: process.stdout,
+			output: ttyOutput,
 			terminal: true,
 		});
 
@@ -169,8 +274,8 @@ function handleRetryLater() {
 		const cleanup = () => {
 			ttyInput.setRawMode(false);
 			rl.close();
-			ttyInput.destroy();
-			console.log("");
+			ttyOutput.write("\n");
+			cleanupTTY();
 		};
 
 		const handleKeypress = (str: string | undefined, key: readline.Key) => {
