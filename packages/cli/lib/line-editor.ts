@@ -693,20 +693,28 @@ export function editLine(options: EditLineOptions): Promise<string | null> {
 						buffer.insert(event.key);
 					}
 					break;
-				case "b":
-					if (event.ctrl || event.alt) {
-						buffer.moveWordLeft();
-					} else {
+			case "b":
+						if (event.alt) {
+							buffer.moveWordLeft();
+							break;
+						}
+						if (event.ctrl) {
+							buffer.moveLeft();
+							break;
+						}
 						buffer.insert(event.key);
-					}
-					break;
-				case "f":
-					if (event.ctrl || event.alt) {
-						buffer.moveWordRight();
-					} else {
+						break;
+					case "f":
+						if (event.alt) {
+							buffer.moveWordRight();
+							break;
+						}
+						if (event.ctrl) {
+							buffer.moveRight();
+							break;
+						}
 						buffer.insert(event.key);
-					}
-					break;
+						break;
 				case "a":
 					if (event.ctrl) {
 						buffer.moveToBeginning();
