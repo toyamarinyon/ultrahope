@@ -172,12 +172,13 @@ async function handleVcsCommitMessage(
 					cliSessionId,
 					commandExecutionPromise,
 					streamCaptureRecorder: captureRecorder,
-					refine: isRefineAttempt
-						? {
-								originalMessage: refineMessage,
-								refineInstruction: guideHint,
-							}
-						: undefined,
+					refine:
+						refineMessage !== undefined
+							? {
+									originalMessage: refineMessage,
+									refineInstruction: guideHint,
+								}
+							: undefined,
 				});
 
 			const result = await selectCandidate({

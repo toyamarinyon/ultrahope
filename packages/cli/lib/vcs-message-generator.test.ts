@@ -57,8 +57,8 @@ async function collectCandidates(args: {
 	guide?: string;
 	refine?: { originalMessage: string; refineInstruction?: string };
 	cliSessionId: string;
-}): Promise<Array<{ content: string; model: string; slotId: string }>> {
-	const candidates: Array<{ content: string; model: string; slotId: string }> =
+}): Promise<Array<{ content: string; model?: string; slotId: string }>> {
+	const candidates: Array<{ content: string; model?: string; slotId: string }> =
 		[];
 	for await (const candidate of generateCommitMessages({
 		diff: args.diff,

@@ -231,12 +231,13 @@ export async function commit(args: string[]) {
 					cliSessionId,
 					commandExecutionPromise,
 					streamCaptureRecorder: captureRecorder,
-					refine: isRefineAttempt
-						? {
-								originalMessage: refineMessage,
-								refineInstruction: guideHint,
-							}
-						: undefined,
+					refine:
+						refineMessage !== undefined
+							? {
+									originalMessage: refineMessage,
+									refineInstruction: guideHint,
+								}
+							: undefined,
 				});
 
 			const result = await selectCandidate({

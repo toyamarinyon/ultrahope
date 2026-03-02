@@ -159,8 +159,8 @@ async function initCommandExecutionContext(
 	args: string[],
 	models: string[],
 	diff: string,
-	guide?: string,
 	apiPath: string,
+	guide?: string,
 	isSessionActive?: () => boolean,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
@@ -293,10 +293,10 @@ async function describe(args: string[]) {
 				args,
 				models,
 				diff,
-				composeGuidance(options.guide, guideHint),
 				isRefineAttempt
 					? "/v1/commit-message/refine"
 					: "/v1/commit-message/stream",
+				composeGuidance(options.guide, guideHint),
 				() => sessionId === commandExecutionRun,
 			);
 			const createCandidates = createCandidateFactory(
