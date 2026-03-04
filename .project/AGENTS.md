@@ -1,9 +1,9 @@
-# .workspace-fs Structure
+# .project Structure
 
 ## Core layout (operational view)
 
 ```
-.workspace-fs/
+.project/
 ├── tasks/                     # Task board
 │   ├── AGENTS.md
 │   ├── active/
@@ -14,8 +14,12 @@
 │   ├── AGENTS.md
 │   └── ...
 └── docs/                      # External documentation references and reference notes
-    ├── elysiajs/
-    └── mise/tasks
+    ├── nextjs/
+    ├── polar/
+    ├── privacy-policy-review/
+    ├── privacy-policy-review2/
+    ├── terms-of-use-review/
+    └── auth-monitoring-runbook.md
 ```
 
 ## Index and update rule
@@ -26,11 +30,11 @@
 
 ## Inspection commands
 
-- Full task board snapshot: `find .workspace-fs/tasks -maxdepth 2 -type f | sort`
-- Active: `find .workspace-fs/tasks/active -maxdepth 1 -type f | sort`
-- Backlog: `find .workspace-fs/tasks/backlog -maxdepth 1 -type f | sort`
-- Blocked: `find .workspace-fs/tasks/blocked -maxdepth 1 -type f | sort`
-- Done: `find .workspace-fs/tasks/done -maxdepth 1 -type f | sort`
+- Full task board snapshot: `find .project/tasks -maxdepth 2 -type f | sort`
+- Active: `find .project/tasks/active -maxdepth 1 -type f | sort`
+- Backlog: `find .project/tasks/backlog -maxdepth 1 -type f | sort`
+- Blocked: `find .project/tasks/blocked -maxdepth 1 -type f | sort`
+- Done: `find .project/tasks/done -maxdepth 1 -type f | sort`
 
 ## Naming conventions
 
@@ -40,4 +44,9 @@
 
 ## docs/
 
-- `docs/elysiajs/llms-full.txt` — ElysiaJS information used for API implementation
+- `docs/nextjs/` — Next.js reference
+- `docs/polar/` — Polar SDK reference and OAT scope documentation
+- `docs/privacy-policy-review/` — Privacy policy review (1st round)
+- `docs/privacy-policy-review2/` — Privacy policy review (2nd round, developer UX focus)
+- `docs/terms-of-use-review/` — Terms of use review
+- `docs/auth-monitoring-runbook.md` — Auth incident response runbook

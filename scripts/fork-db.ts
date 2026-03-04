@@ -1,7 +1,7 @@
 /**
  * Helper script to quickly fork a Turso DB for a branch and wire branch preview env
  * variables. The mitigation from
- * `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`
+ * `.project/tasks/active/polar-external-id-collision-investigation.md`
  * is specifically implemented via the `user` sequence offset step.
  * See that investigation doc for the rationale behind the collision prevention.
  */
@@ -226,7 +226,7 @@ function buildForkName(parentDbName: string, branchSafe: string): string {
 function makeOffset(min: number, max: number): number {
 	// In the Polar collision scenario, forked DBs can inherit user IDs; a random
 	// offset keeps newly generated local user IDs away from existing ones.
-	// See `.workspace-fs/tasks/active/polar-external-id-collision-investigation.md`
+	// See `.project/tasks/active/polar-external-id-collision-investigation.md`
 	// for the full rationale.
 	return randomInt(min, max + 1);
 }

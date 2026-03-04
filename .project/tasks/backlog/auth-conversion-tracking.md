@@ -8,7 +8,7 @@ Context:
 - Upgrading to Vercel Pro plan unlocks `@vercel/analytics` Custom Events for automated, dashboard-level conversion tracking.
 
 Related tasks:
-- `./.workspace-fs/tasks/done/monitor-auth-flow-health.md` — Parent task that established the monitoring foundation.
+- `./.project/tasks/done/monitor-auth-flow-health.md` — Parent task that established the monitoring foundation.
 
 Acceptance criteria:
 - [ ] Integrate `@vercel/analytics` Custom Events for sign-in and password-reset conversion tracking.

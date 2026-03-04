@@ -1,32 +1,33 @@
-# AGENTS.md What and Why of Ultrahope
+# AGENTS.md — Ultrahope
 
-Ultrahope is LLM-powered development workflow assistant toolbox. A simple UNIX tool that works with
-pipes.
+Ultrahope is an LLM-powered development workflow assistant. It consists of a **CLI** published to npm and a **Web** application (Next.js) that provides the API backend, billing, and marketing site.
 
-## Why I built Ultrahope
+## Why Ultrahope exists
 
 Coding Agents are amazing, but I do not believe the entire development flow should be completed within a single agent.
 I also want to combine multiple Coding Agents, and I do not like strongly depending on the features of one specific agent.
 I like Unix commands. Even now I build my development flow by combining Unix‑friendly tools like git, gh, jujutsu, and fzf.
 I wanted to insert the power of LLMs into that flow.
 
-## Our workspace
+## Monorepo structure
 
-The `./.workspace-fs` directory is our working file system. It contains specs under consideration, tasks in progress, and documentation for libraries and frameworks we use.
+| Package | Description |
+|---------|-------------|
+| `packages/cli` | CLI tool (`ultrahope` / `git-hope`). Published to npm. |
+| `packages/web` | Next.js app — API (Elysia), auth (Better Auth), billing (Polar), DB (Turso/Drizzle). |
+| `packages/shared` | Shared utilities used by both CLI and Web. |
+| `packages/commit-message-benchmark` | Internal benchmark suite for commit message generation quality. |
+| `scripts/` | Operational scripts (DB fork, Polar sync, user management). |
 
-The three most important items are below. For everything else, see [./.workspace-fs/AGENTS.md](./.workspace-fs/AGENTS.md).
+Each package has its own `AGENTS.md` with package-specific guidance.
 
-- [state.md](./.workspace-fs/state.md)
+## Project management — `.project/`
 
-    A file that summarizes the current state of the product. It lists key decisions and recent development tasks, and serves as an index with links to related files.
+The `.project/` directory holds tasks, decisions, and reference docs. See [.project/AGENTS.md](.project/AGENTS.md) for the full layout.
 
-- [to-be/cli.md](./.workspace-fs/to-be/cli.md)
-
-    A document describing the intended target state for the CLI.
-
-- [to-be/api.md](./.workspace-fs/to-be/api.md)
-
-    A document describing the intended target state for the API.
+- `tasks/` — Task board (`active/`, `backlog/`, `blocked/`, `done/`)
+- `decisions/` — ADR-style decision records
+- `docs/` — External documentation references (Polar, Next.js, etc.)
 
 ## File Change Workflow
 

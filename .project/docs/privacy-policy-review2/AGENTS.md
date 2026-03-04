@@ -217,8 +217,8 @@ Comprehensive implementation alignment report with 97% accuracy score.
 
 ### Cross-References
 - Privacy policy text: `packages/web/app/privacy/privacy.md`
-- Terms of use review: `.workspace-fs/docs/terms-of-use-review/FINAL-REPORT.md`
-- Previous privacy review: `.workspace-fs/docs/privacy-policy-review/`
+- Terms of use review: `.project/docs/terms-of-use-review/FINAL-REPORT.md`
+- Previous privacy review: `.project/docs/privacy-policy-review/`
 - Implementation code: `packages/web/lib/*`, `packages/web/app/*`, `packages/web/db/schemas/*`
 
 ---
@@ -272,13 +272,13 @@ The Explore agent provided high-confidence implementation verification that woul
 
 ## Comparison to Previous Review
 
-### Previous Review (`.workspace-fs/docs/privacy-policy-review/`)
+### Previous Review (`.project/docs/privacy-policy-review/`)
 **Date:** 2026-02-11
 **Focus:** Implementation alignment (technical accuracy)
 **Issues found:** 10 (all marked DONE)
 **Approach:** Fix-focused (correct inaccuracies)
 
-### This Review (`.workspace-fs/docs/privacy-policy-review2/`)
+### This Review (`.project/docs/privacy-policy-review2/`)
 **Date:** 2026-02-12
 **Focus:** Developer experience & trust (UX quality)
 **Issues found:** 12 (broader scope)

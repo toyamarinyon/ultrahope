@@ -168,5 +168,5 @@ If test cleanup scripts remove users from DB but keep a shared Polar dataset, ra
 
 ## Related decisions
 
-- `./.workspace-fs/decisions/authentication.md`
-- `./.workspace-fs/decisions/billing-free-plan-auto-subscription.md`
+- `./.project/decisions/authentication.md`
+- `./.project/decisions/billing-free-plan-auto-subscription.md`

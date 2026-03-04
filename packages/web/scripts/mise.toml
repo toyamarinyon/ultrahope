@@ -1,5 +1,5 @@
 # Scripts tasks for packages/web
-# See .workspace-fs/docs/mise/tasks/environment-separation.md for pattern details
+# See .project/docs/mise/tasks/environment-separation.md for pattern details
 
 [tasks."script:clear-test-user"]
 description = "Clear test user from Turso and Polar"

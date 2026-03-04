@@ -12,9 +12,9 @@ Acceptance criteria:
   - Added structured JSON log wrapper to `/api/auth/[[...all]]/route.ts`. All requests/responses include correlationId, action, status, and duration.
 - [x] Track conversion failures for sign-in and password-reset requests.
   - Runtime Logs can be filtered by `action` field (`sign-in/email`, `forget-password`, etc.) and `status`.
-  - Dedicated tracking via `@vercel/analytics` Custom Events deferred to Pro plan adoption. See `./.workspace-fs/tasks/backlog/auth-conversion-tracking.md`.
+  - Dedicated tracking via `@vercel/analytics` Custom Events deferred to Pro plan adoption. See `./.project/tasks/backlog/auth-conversion-tracking.md`.
 - [x] Add manual runbook for recovery on provider/login outages.
-  - Created operational runbook at `./.workspace-fs/docs/auth-monitoring-runbook.md`.
+  - Created operational runbook at `./.project/docs/auth-monitoring-runbook.md`.
   - Covers incident response for GitHub OAuth / Email login / Password reset / full outage scenarios.
 - [x] Verify logs include correlation IDs for failed login/signup events.
   - All auth requests include a `randomUUID()` correlationId in structured logs.
@@ -22,9 +22,9 @@ Acceptance criteria:
 
 Artifacts:
 - `packages/web/app/api/auth/[[...all]]/route.ts` — Structured log wrapper
-- `./.workspace-fs/docs/auth-monitoring-runbook.md` — Operational runbook
+- `./.project/docs/auth-monitoring-runbook.md` — Operational runbook
 - `.agents/skills/checking-auth-health/SKILL.md` — Agent skill for automated health checks via `vercel logs` CLI
 
 Outcome:
 - All acceptance criteria met within Vercel free plan constraints.
-- Conversion tracking enhancement deferred to `./.workspace-fs/tasks/backlog/auth-conversion-tracking.md`.
+- Conversion tracking enhancement deferred to `./.project/tasks/backlog/auth-conversion-tracking.md`.

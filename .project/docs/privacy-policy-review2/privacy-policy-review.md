@@ -129,7 +129,7 @@
 
 ## References
 
-- Previous review: `.workspace-fs/docs/privacy-policy-review/`
+- Previous review: `.project/docs/privacy-policy-review/`
 - Implementation analysis: Agent aabae4f (2026-02-12)
 - Privacy policy: `packages/web/app/privacy/privacy.md`
-- Terms of use review: `.workspace-fs/docs/terms-of-use-review/FINAL-REPORT.md`
+- Terms of use review: `.project/docs/terms-of-use-review/FINAL-REPORT.md`
