@@ -15,11 +15,12 @@ import {
 	transitionSelectorFlow,
 } from "../../../shared/terminal-selector-flow";
 import {
+	buildSelectorRenderLines,
 	formatSelectorHintActions,
 	type SelectorCapabilities,
 	type SelectorCopy,
 	type SelectorRenderFrame,
-	type SelectorSlotViewModel,
+	type SelectorRenderLine,
 	selectorRenderFrame,
 } from "../../../shared/terminal-selector-view-model";
 
@@ -58,86 +59,50 @@ function isAbortError(error: unknown): boolean {
 	return error instanceof Error && error.name === "AbortError";
 }
 
-function formatSlot(slot: SelectorSlotViewModel): string[] {
-	const lines = [`${slot.radio} ${slot.title}`];
-	if (slot.meta) {
-		lines.push(`   ${slot.meta}`);
+function renderLineToString(
+	line: SelectorRenderLine,
+	options: RenderSelectorLinesOptions,
+): string {
+	switch (line.type) {
+		case "headerRunning":
+			return `${line.spinner} ${line.label} ${line.progress}${line.costSuffix}`;
+		case "headerDone":
+			return `${line.label}${line.costSuffix}`;
+		case "blank":
+			return "";
+		case "slot":
+			return `  ${line.radio} ${line.title}`;
+		case "slotMeta":
+			return `    ${line.text}`;
+		case "promptInput":
+			return `${line.prefix}${line.text}`;
+		case "placeholder":
+			return `  ${line.text}`;
+		case "hint":
+			if (line.actions.length > 0) {
+				const formatted = formatSelectorHintActions(line.actions, "web");
+				if (options.hasReadyHint || options.noReadyHint) {
+					return (
+						(line.readyCount > 0
+							? options.hasReadyHint
+							: options.noReadyHint) ?? formatted
+					);
+				}
+				return formatted;
+			}
+			return `  ${line.text}`;
+		case "editedSummary":
+			return `Edited: ${line.text}`;
 	}
-	return lines;
-}
-
-function renderPromptLines(frame: SelectorRenderFrame): string[] {
-	const prompt = frame.prompt;
-	if (!prompt) {
-		return [];
-	}
-
-	const lines: string[] = [];
-	if (prompt.selectedLine) {
-		lines.push(prompt.selectedLine);
-	}
-
-	if (prompt.kind === "edit") {
-		lines.push("");
-		lines.push(`    ${prompt.modeLine}`);
-		return lines;
-	}
-
-	lines.push("");
-	lines.push(prompt.modeLine);
-	lines.push(`${prompt.targetLineLabel} ${prompt.targetText}`);
-	lines.push(prompt.costLine);
-	lines.push("");
-	lines.push(prompt.questionLine);
-	return lines;
 }
 
 export function renderSelectorLinesFromRenderFrame(
 	frame: SelectorRenderFrame,
 	options: RenderSelectorLinesOptions = {},
 ): string[] {
-	const lines: string[] = [];
-	const viewModel = frame.viewModel;
-	const costSuffix = viewModel.header.totalCostLabel
-		? ` (total: ${viewModel.header.totalCostLabel})`
-		: "";
-
-	if (viewModel.header.mode === "running") {
-		lines.push(
-			`${viewModel.header.spinner} ${viewModel.header.runningLabel} ${viewModel.header.progress}${costSuffix}`,
-		);
-	} else {
-		lines.push(`${viewModel.header.generatedLabel}${costSuffix}`);
-	}
-
-	if (frame.mode === "prompt") {
-		lines.push(...renderPromptLines(frame));
-		return lines;
-	}
-
-	lines.push("");
-
-	for (const slot of viewModel.slots) {
-		for (const line of formatSlot(slot)) {
-			lines.push(line);
-		}
-		lines.push("");
-	}
-
-	if (viewModel.hint.kind === "ready") {
-		const hintActions = formatSelectorHintActions(
-			viewModel.hint.actions,
-			"web",
-		);
-		lines.push(options.hasReadyHint ?? hintActions);
-	} else {
-		lines.push(
-			options.noReadyHint ??
-				formatSelectorHintActions(viewModel.hint.actions, "web"),
-		);
-	}
-
-	return lines;
+	return buildSelectorRenderLines(frame).map((line) =>
+		renderLineToString(line, options),
+	);
 }
 
 export function renderSelectorLines(

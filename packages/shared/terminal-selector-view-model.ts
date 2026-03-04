@@ -56,7 +56,7 @@ interface SelectorHintViewModel {
 export interface SelectorSlotViewModel {
 	status: SelectorSlot["status"];
 	selected: boolean;
-	radio: "○" | "●";
+	radio: "○" | "●" | ">";
 	title: string;
 	meta?: string;
 	muted: boolean;
@@ -80,6 +80,15 @@ export interface SelectorPromptViewModel {
 	targetIndex: number;
 	costLine: string;
 	questionLine: string;
+
+	slots: SelectorSlotViewModel[];
+	promptLineCount: number;
+	promptInputLineIndex: number;
+	promptInputPrefix: string;
+	promptInputPrefixWidth: number;
+	promptInputText: string;
+	promptPlaceholderLine?: string;
+	promptHintLine: string;
 }
 
 export interface SelectorRenderFrame {
@@ -87,6 +96,34 @@ export interface SelectorRenderFrame {
 	viewModel: SelectorViewModel;
 	prompt?: SelectorPromptViewModel;
 }
+
+export type SelectorRenderLine =
+	| {
+			type: "headerRunning";
+			spinner: string;
+			label: string;
+			progress: string;
+			costSuffix: string;
+	  }
+	| { type: "headerDone"; label: string; costSuffix: string }
+	| { type: "blank" }
+	| {
+			type: "slot";
+			radio: "○" | "●" | ">";
+			title: string;
+			selected: boolean;
+			muted: boolean;
+	  }
+	| { type: "slotMeta"; text: string; muted: boolean }
+	| { type: "promptInput"; prefix: string; text: string }
+	| { type: "placeholder"; text: string }
+	| {
+			type: "hint";
+			text: string;
+			actions: SelectorHintAction[];
+			readyCount: number;
+	  }
+	| { type: "editedSummary"; text: string };
 
 export interface BuildSelectorViewModelInput {
 	state: Pick<
@@ -97,6 +134,7 @@ export interface BuildSelectorViewModelInput {
 			Pick<SelectorFlowContext, "mode" | "promptKind" | "promptTargetIndex">
 		>;
 	nowMs: number;
+	bufferText?: string;
 	spinnerFrames?: readonly string[];
 	copy?: Partial<SelectorCopy>;
 	capabilities?: Partial<SelectorCapabilities>;
@@ -157,6 +195,11 @@ const DEFAULT_HINT_LABELS: Record<
 };
 
 const SELECTOR_HINT_ACTION_LABELS = DEFAULT_HINT_LABELS;
+const PROMPT_EDIT_HINT = "enter apply | esc back to select";
+const PROMPT_REFINE_HINT = "enter refine | esc back to select";
+const PROMPT_EDIT_PREFIX = "  > ";
+const PROMPT_REFINE_PREFIX = "  Refine: ";
+const PROMPT_REFINE_PLACEHOLDER = "e.g. more formal / shorter / in Japanese";
 
 const DEFAULT_SELECTOR_COPY: SelectorCopy = {
 	runningLabel: "Generating commit messages...",
@@ -191,8 +234,55 @@ function resolvePromptLineLabel(kind: PromptKind): string {
 	return kind === "edit" ? "Edit mode" : "→ Refine mode";
 }
 
+function buildPromptSlots(
+	viewModelSlots: SelectorSlotViewModel[],
+	promptKind: PromptKind,
+	targetIndex: number,
+	bufferText: string,
+): SelectorSlotViewModel[] {
+	if (promptKind === "edit") {
+		return viewModelSlots.map((slot, index) => {
+			const isTarget = index === targetIndex;
+			return {
+				...slot,
+				radio: isTarget ? ">" : "○",
+				title: isTarget ? bufferText : slot.title,
+				selected: isTarget,
+				muted: isTarget ? false : slot.muted,
+			};
+		});
+	}
+
+	return viewModelSlots;
+}
+
+function estimatePromptSlotLineCount(slots: SelectorSlotViewModel[]): number {
+	let count = 1;
+	for (const slot of slots) {
+		const lineCount = 1 + (slot.meta == null ? 0 : 1) + 1;
+		count += lineCount;
+	}
+	return count;
+}
+
+function estimatePromptEditInputLineIndex(
+	promptSlots: SelectorSlotViewModel[],
+	targetIndex: number,
+): number {
+	let lineIndex = 2;
+	for (const [index, slot] of promptSlots.entries()) {
+		if (index === targetIndex) {
+			return lineIndex;
+		}
+		const slotLineCount = 1 + (slot.meta == null ? 0 : 1) + 1;
+		lineIndex += slotLineCount;
+	}
+
+	return Math.max(2, lineIndex);
+}
+
 function buildPromptViewModel(
-	input: Pick<BuildSelectorViewModelInput, "state" | "nowMs">,
+	input: Pick<BuildSelectorViewModelInput, "state" | "nowMs" | "bufferText">,
 	viewModel: SelectorViewModel,
 ): SelectorPromptViewModel {
 	const state = input.state;
@@ -214,6 +304,24 @@ function buildPromptViewModel(
 	const targetLineLabel = `Target [${Math.min(state.totalSlots, targetIndex + 1)}]:`;
 	const duration = formatDuration(input.nowMs - state.createdAtMs);
 	const costLine = `Cost/Time (current): ${costLineLabel} / ${duration}`;
+	const isEdit = promptKind === "edit";
+	const promptInputPrefix = isEdit ? PROMPT_EDIT_PREFIX : PROMPT_REFINE_PREFIX;
+	const promptHintLine = isEdit ? PROMPT_EDIT_HINT : PROMPT_REFINE_HINT;
+	const promptPlaceholderLine = isEdit ? undefined : PROMPT_REFINE_PLACEHOLDER;
+	const promptInputText = input.bufferText ?? "";
+	const promptSlots = buildPromptSlots(
+		viewModel.slots,
+		promptKind,
+		targetIndex,
+		promptInputText,
+	);
+	const promptSlotLineCount = estimatePromptSlotLineCount(promptSlots);
+	const promptExtraLines = isEdit ? 1 : 4;
+	const promptLineCount = 1 + promptSlotLineCount + promptExtraLines;
+	const promptInputLineIndex = isEdit
+		? estimatePromptEditInputLineIndex(promptSlots, targetIndex)
+		: promptLineCount - promptExtraLines;
+	const promptInputPrefixWidth = promptInputPrefix.length;
 
 	const selectedLine =
 		promptKind === "edit" ? `Selected: ${targetText}` : undefined;
@@ -228,6 +336,14 @@ function buildPromptViewModel(
 		targetIndex,
 		costLine,
 		questionLine: "?",
+		slots: promptSlots,
+		promptLineCount,
+		promptInputLineIndex,
+		promptInputPrefix,
+		promptInputPrefixWidth,
+		promptInputText,
+		promptPlaceholderLine,
+		promptHintLine,
 	};
 }
 
@@ -418,4 +534,112 @@ export function selectorRenderFrame(
 		mode: "list",
 		viewModel,
 	};
+}
+
+function slotToRenderLines(slot: SelectorSlotViewModel): SelectorRenderLine[] {
+	const lines: SelectorRenderLine[] = [
+		{
+			type: "slot",
+			radio: slot.radio,
+			title: slot.title,
+			selected: slot.selected,
+			muted: slot.muted,
+		},
+	];
+	if (slot.meta) {
+		lines.push({ type: "slotMeta", text: slot.meta, muted: slot.muted });
+	}
+	return lines;
+}
+
+function buildHeaderLine(viewModel: SelectorViewModel): SelectorRenderLine {
+	const costSuffix =
+		viewModel.header.totalCostLabel != null
+			? ` (total: ${viewModel.header.totalCostLabel})`
+			: "";
+
+	if (viewModel.header.mode === "running") {
+		return {
+			type: "headerRunning",
+			spinner: viewModel.header.spinner ?? "",
+			label: viewModel.header.runningLabel,
+			progress: viewModel.header.progress,
+			costSuffix,
+		};
+	}
+	return {
+		type: "headerDone",
+		label: viewModel.header.generatedLabel,
+		costSuffix,
+	};
+}
+
+function buildPromptRenderLines(
+	frame: SelectorRenderFrame,
+): SelectorRenderLine[] {
+	const prompt = frame.prompt;
+	if (!prompt) return [];
+
+	const lines: SelectorRenderLine[] = [{ type: "blank" }];
+	for (const slot of prompt.slots) {
+		lines.push(...slotToRenderLines(slot));
+		lines.push({ type: "blank" });
+	}
+
+	if (prompt.kind === "refine") {
+		lines.push({
+			type: "promptInput",
+			prefix: prompt.promptInputPrefix,
+			text: prompt.promptInputText,
+		});
+		if (prompt.promptPlaceholderLine != null) {
+			lines.push({ type: "placeholder", text: prompt.promptPlaceholderLine });
+			lines.push({ type: "blank" });
+		}
+	}
+	lines.push({
+		type: "hint",
+		text: prompt.promptHintLine,
+		actions: [],
+		readyCount: 0,
+	});
+	return lines;
+}
+
+function buildListRenderLines(
+	viewModel: SelectorViewModel,
+): SelectorRenderLine[] {
+	const lines: SelectorRenderLine[] = [{ type: "blank" }];
+	for (const slot of viewModel.slots) {
+		lines.push(...slotToRenderLines(slot));
+		lines.push({ type: "blank" });
+	}
+
+	if (viewModel.editedSummary) {
+		lines.push({ type: "blank" });
+		lines.push({ type: "editedSummary", text: viewModel.editedSummary });
+	}
+
+	const readyCount = viewModel.slots.filter((s) => s.status === "ready").length;
+	lines.push({
+		type: "hint",
+		text: "",
+		actions: viewModel.hint.actions,
+		readyCount,
+	});
+	return lines;
+}
+
+export function buildSelectorRenderLines(
+	frame: SelectorRenderFrame,
+): SelectorRenderLine[] {
+	const lines: SelectorRenderLine[] = [buildHeaderLine(frame.viewModel)];
+
+	if (frame.mode === "prompt") {
+		lines.push(...buildPromptRenderLines(frame));
+	} else {
+		lines.push(...buildListRenderLines(frame.viewModel));
+	}
+
+	return lines;
 }

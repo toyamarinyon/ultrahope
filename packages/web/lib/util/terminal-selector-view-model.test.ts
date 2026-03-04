@@ -3,8 +3,14 @@ import type {
 	SelectorSlot,
 	SelectorState,
 } from "../../../shared/terminal-selector-contract";
-import { buildSelectorViewModel } from "../../../shared/terminal-selector-view-model";
-import { renderSelectorLines } from "./terminal-selector";
+import {
+	buildSelectorViewModel,
+	selectorRenderFrame,
+} from "../../../shared/terminal-selector-view-model";
+import {
+	renderSelectorLines,
+	renderSelectorLinesFromRenderFrame,
+} from "./terminal-selector";
 
 function createState(overrides: Partial<SelectorState>): SelectorState {
 	return {
@@ -28,6 +34,11 @@ function readySlot(overrides: Partial<SelectorSlot> = {}): SelectorSlot {
 		...overrides,
 	} as SelectorSlot;
 }
+
+const readyState = createState({
+	slots: [readySlot()],
+	totalSlots: 1,
+});
 
 describe("terminal-selector-view-model", () => {
 	it("builds running header with spinner, progress, and total cost", () => {
@@ -189,11 +200,6 @@ describe("terminal-selector-view-model", () => {
 	});
 
 	it("renders default ready hint as actions only in renderSelectorLines", () => {
-		const readyState = createState({
-			slots: [readySlot()],
-			totalSlots: 1,
-		});
-
 		const readyLines = renderSelectorLines(readyState, 0);
 
 		const hintLine = "↑↓ navigate enter confirm | (q)uit";
@@ -209,10 +215,6 @@ describe("terminal-selector-view-model", () => {
 	});
 
 	it("prioritizes legacy hint options in renderSelectorLines", () => {
-		const readyState = createState({
-			slots: [readySlot()],
-			totalSlots: 1,
-		});
 		const noReadyState = createState({
 			slots: [{ status: "pending", slotId: "slot-0" }],
 			totalSlots: 1,
@@ -230,11 +232,11 @@ describe("terminal-selector-view-model", () => {
 
 		const readyHintIndex = readyLines.indexOf("READY HINT");
 		const readyCandidateIndex = readyLines.findIndex(
-			(line) => line.startsWith("○") || line.startsWith("●"),
+			(line) => line.includes("○") || line.includes("●"),
 		);
 		const noReadyHintIndex = noReadyLines.indexOf("NONE HINT");
 		const noReadyCandidateIndex = noReadyLines.findIndex((line) =>
-			line.startsWith("○"),
+			line.includes("○"),
 		);
 
 		expect(readyHintIndex).toBeGreaterThan(-1);
@@ -243,5 +245,59 @@ describe("terminal-selector-view-model", () => {
 		expect(noReadyHintIndex).toBeGreaterThan(-1);
 		expect(noReadyCandidateIndex).toBeGreaterThan(-1);
 		expect(noReadyHintIndex).toBeGreaterThan(noReadyCandidateIndex);
+	});
+
+	it("renders refine prompt lines from shared view model", () => {
+		const state: SelectorState & {
+			mode: "prompt";
+			promptKind: "refine";
+			promptTargetIndex: number;
+		} = {
+			...readyState,
+			mode: "prompt",
+			promptKind: "refine",
+			promptTargetIndex: 0,
+		};
+		const frame = selectorRenderFrame({
+			state,
+			nowMs: 0,
+			spinnerFrames: ["a"],
+			bufferText: "concise",
+		});
+		const lines = renderSelectorLinesFromRenderFrame(frame);
+		const promptInputLine = lines.find((line) => line.startsWith("  Refine: "));
+
+		expect(promptInputLine).toBe("  Refine: concise");
+		expect(lines).toContain("  e.g. more formal / shorter / in Japanese");
+		expect(lines).toContain("  enter refine | esc back to select");
+	});
+
+	it("renders edit prompt lines from shared view model", () => {
+		const state: SelectorState & {
+			mode: "prompt";
+			promptKind: "edit";
+			promptTargetIndex: number;
+		} = {
+			...readyState,
+			mode: "prompt",
+			promptKind: "edit",
+			promptTargetIndex: 0,
+		};
+		const frame = selectorRenderFrame({
+			state,
+			nowMs: 0,
+			spinnerFrames: ["a"],
+			bufferText: "custom edit text",
+		});
+		const lines = renderSelectorLinesFromRenderFrame(frame);
+		const promptInputLine = lines.find((line) => line.startsWith("  > "));
+
+		expect(promptInputLine).toBe("  > custom edit text");
+		expect(lines).toContain("  enter apply | esc back to select");
+		expect(
+			lines.some((line) =>
+				line.includes("e.g. more formal / shorter / in Japanese"),
+			),
+		).toBe(false);
 	});
 });

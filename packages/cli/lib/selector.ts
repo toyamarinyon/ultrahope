@@ -556,7 +556,7 @@ export async function selectCandidate(
 
 		const openRefinePrompt = async () => {
 			await withPromptSuspended(async () => {
-				let lastRefineLineRow = 0;
+				let lastCursorRow = 0;
 
 				const guide = await editLine({
 					input: ttyReader,
@@ -565,8 +565,8 @@ export async function selectCandidate(
 					initialValue: "",
 					finalizeMode: "none",
 					onRender: ({ buffer }) => {
-						if (lastRefineLineRow > 0) {
-							readline.moveCursor(ttyWriter, 0, -lastRefineLineRow);
+						if (lastCursorRow > 0) {
+							readline.moveCursor(ttyWriter, 0, -lastCursorRow);
 						}
 						readline.cursorTo(ttyWriter, 0);
 						readline.clearScreenDown(ttyWriter);
@@ -574,7 +574,7 @@ export async function selectCandidate(
 						const frame = selectorRenderFrame({
 							state: {
 								...context,
-								mode: "list",
+								mode: context.mode,
 								promptKind: context.promptKind,
 								promptTargetIndex: context.promptTargetIndex,
 							},
@@ -582,59 +582,34 @@ export async function selectCandidate(
 							spinnerFrames: SPINNER_FRAMES,
 							copy: renderCopy,
 							capabilities: selectorRenderCapabilities,
+							bufferText: buffer.getText(),
 						});
-
-						const lines: string[] = [];
-						const vm = frame.viewModel;
-						const costSuffix = vm.header.totalCostLabel
-							? ` (total: ${vm.header.totalCostLabel})`
-							: "";
-						lines.push(ui.success(`${vm.header.generatedLabel}${costSuffix}`));
-						lines.push("");
-
-						for (const slot of vm.slots) {
-							const radio = slot.selected
-								? `${theme.success}●${theme.reset}`
-								: `${theme.dim}○${theme.reset}`;
-							const titleColor = slot.selected ? theme.primary : theme.dim;
-							const titleFont = slot.selected ? theme.bold : "";
-							lines.push(
-								`  ${radio} ${titleColor}${titleFont}${slot.title}${theme.reset}`,
-							);
-							if (slot.meta) {
-								const metaColor = slot.selected ? theme.primary : theme.dim;
-								lines.push(`    ${metaColor}${slot.meta}${theme.reset}`);
-							}
-							lines.push("");
-						}
-
-						const refineLineIndex = lines.length;
-						const refinePrefix = `  ${theme.primary}Refine:${theme.reset} `;
-						lines.push(`${refinePrefix}${buffer.getText()}`);
-						lines.push(
-							`  ${theme.dim}e.g. more formal / shorter / in Japanese${theme.reset}`,
+						const prompt = frame.prompt;
+						if (!prompt) return;
+						const rendered = renderSelectorTextFromRenderFrame(frame).replace(
+							/\n$/,
+							"",
 						);
-						lines.push("");
-						lines.push(`  ${ui.hint("enter refine | esc back to select")}`);
-						ttyWriter.write(lines.join("\n"));
+						ttyWriter.write(rendered);
 
-						const moveUp = lines.length - 1 - refineLineIndex;
+						const moveUp =
+							prompt.promptLineCount - 1 - prompt.promptInputLineIndex;
 						if (moveUp > 0) {
 							readline.moveCursor(ttyWriter, 0, -moveUp);
 						}
 						readline.cursorTo(ttyWriter, 0);
-						const prefixWidth = 10; // "  Refine: " visible width
+						const prefixWidth = prompt.promptInputPrefixWidth;
 						const col = prefixWidth + buffer.getDisplayCursor();
 						if (col > 0) {
 							readline.moveCursor(ttyWriter, col, 0);
 						}
 
-						lastRefineLineRow = refineLineIndex;
+						lastCursorRow = prompt.promptInputLineIndex;
 					},
 				});
 
-				if (lastRefineLineRow > 0) {
-					readline.moveCursor(ttyWriter, 0, -lastRefineLineRow);
+				if (lastCursorRow > 0) {
+					readline.moveCursor(ttyWriter, 0, -lastCursorRow);
 				}
 				readline.cursorTo(ttyWriter, 0);
 				readline.clearScreenDown(ttyWriter);
@@ -665,7 +640,7 @@ export async function selectCandidate(
 			}
 			if (inlineEditPrompt) {
 				await withPromptSuspended(async () => {
-					let lastEditLineRow = 0;
+					let lastCursorRow = 0;
 
 					const edited = await editLine({
 						input: ttyReader,
@@ -674,8 +649,8 @@ export async function selectCandidate(
 						initialValue: selected.content,
 						finalizeMode: "none",
 						onRender: ({ buffer }) => {
-							if (lastEditLineRow > 0) {
-								readline.moveCursor(ttyWriter, 0, -lastEditLineRow);
+							if (lastCursorRow > 0) {
+								readline.moveCursor(ttyWriter, 0, -lastCursorRow);
 							}
 							readline.cursorTo(ttyWriter, 0);
 							readline.clearScreenDown(ttyWriter);
@@ -683,7 +658,7 @@ export async function selectCandidate(
 							const frame = selectorRenderFrame({
 								state: {
 									...context,
-									mode: "list",
+									mode: context.mode,
 									promptKind: context.promptKind,
 									promptTargetIndex: context.promptTargetIndex,
 								},
@@ -691,56 +666,34 @@ export async function selectCandidate(
 								spinnerFrames: SPINNER_FRAMES,
 								copy: renderCopy,
 								capabilities: selectorRenderCapabilities,
+								bufferText: buffer.getText(),
 							});
-
-							const lines: string[] = [];
-							const vm = frame.viewModel;
-							const costSuffix = vm.header.totalCostLabel
-								? ` (total: ${vm.header.totalCostLabel})`
-								: "";
-							lines.push(
-								ui.success(`${vm.header.generatedLabel}${costSuffix}`),
+							const prompt = frame.prompt;
+							const rendered = renderSelectorTextFromRenderFrame(frame).replace(
+								/\n$/,
+								"",
 							);
-							lines.push("");
+							ttyWriter.write(rendered);
 
-							let editLineIndex = 0;
-							for (const slot of vm.slots) {
-								if (slot.selected) {
-									editLineIndex = lines.length;
-									lines.push(
-										`  ${theme.success}>${theme.reset} ${buffer.getText()}`,
-									);
-								} else {
-									lines.push(
-										`  ${theme.dim}○${theme.reset} ${theme.dim}${slot.title}${theme.reset}`,
-									);
-								}
-								if (slot.meta) {
-									const metaColor = slot.selected ? theme.primary : theme.dim;
-									lines.push(`    ${metaColor}${slot.meta}${theme.reset}`);
-								}
-								lines.push("");
-							}
-
-							lines.push(`  ${ui.hint("enter apply | esc back to select")}`);
-							ttyWriter.write(lines.join("\n"));
-
-							const moveUp = lines.length - 1 - editLineIndex;
+							if (!prompt) return;
+							const moveUp =
+								prompt.promptLineCount - 1 - prompt.promptInputLineIndex;
 							if (moveUp > 0) {
 								readline.moveCursor(ttyWriter, 0, -moveUp);
 							}
 							readline.cursorTo(ttyWriter, 0);
-							const col = 4 + buffer.getDisplayCursor();
+							const col =
+								prompt.promptInputPrefixWidth + buffer.getDisplayCursor();
 							if (col > 0) {
 								readline.moveCursor(ttyWriter, col, 0);
 							}
 
-							lastEditLineRow = editLineIndex;
+							lastCursorRow = prompt.promptInputLineIndex;
 						},
 					});
 
-					if (lastEditLineRow > 0) {
-						readline.moveCursor(ttyWriter, 0, -lastEditLineRow);
+					if (lastCursorRow > 0) {
+						readline.moveCursor(ttyWriter, 0, -lastCursorRow);
 					}
 					readline.cursorTo(ttyWriter, 0);
 					readline.clearScreenDown(ttyWriter);
