@@ -101,17 +101,22 @@ const REFINE_SLOTS: SelectorSlot[] = [
 	),
 ];
 
+function pendingSlot(
+	slotId: string,
+	model?: string,
+): Extract<SelectorSlot, { status: "pending" }> {
+	return { status: "pending", slotId, model };
+}
+
 const ESCALATE_SLOTS: SelectorSlot[] = [
 	readySlot(
 		"slot-0",
-		"fix(api): add atMs timestamp to commit message stream events",
-		{ model: "claude-sonnet-4.6", cost: 0.0099, generationMs: 1600 },
-	),
-	readySlot(
-		"slot-1",
 		"feat(api): add event timestamp and metadata support to streams",
-		{ model: "claude-sonnet-4.6", cost: 0.0099, generationMs: 1600 },
+		{ model: "claude-sonnet-4-20250514", cost: 0.0032, generationMs: 1800 },
 	),
+	pendingSlot("slot-1", "gpt-4.1"),
+	pendingSlot("slot-2", "gemini-2.5-pro"),
+	pendingSlot("slot-3", "claude-sonnet-4-20250514"),
 ];
 
 function buildInput(
@@ -581,34 +586,38 @@ function RefineTerminal({
 	);
 }
 
-// --- Escalate: list mode with different model, shows committed result ---
+// --- Escalate: previous generation (done) + escalated generation (running) ---
 
 function EscalateTerminal() {
-	const [selectedIndex, setSelectedIndex] = useState(1);
+	const prevInput = buildInput(COMPARE_SLOTS, 2, {
+		edit: true,
+		refine: true,
+		escalate: true,
+	});
+	const prevFrame = selectorRenderFrame(prevInput);
+	const prevCostSuffix = prevFrame.viewModel.header.totalCostLabel
+		? ` (total: ${prevFrame.viewModel.header.totalCostLabel})`
+		: "";
+	const prevGeneratedLine = `${prevFrame.viewModel.header.generatedLabel}${prevCostSuffix}`;
 
-	const input = buildInput(ESCALATE_SLOTS, selectedIndex, {});
-	const { lines, slotIndices } = buildLines(input);
-
-	const handleHover = useCallback((index: number) => {
-		setSelectedIndex(index);
-	}, []);
-
-	const selectedSlot = ESCALATE_SLOTS[selectedIndex];
-	const committedTitle =
-		selectedSlot?.status === "ready" ? selectedSlot.candidate.content : "";
+	const escalateInput = buildInput(
+		ESCALATE_SLOTS,
+		0,
+		{ edit: true, refine: true, escalate: true },
+		{ isGenerating: true, totalSlots: 4 },
+	);
+	const { lines: escalateLines, slotIndices } = buildLines(escalateInput);
 
 	return (
 		<div>
 			<CommandPreamble />
 			<div className="mt-1 text-sm text-foreground-secondary leading-relaxed">
-				<SelectorFrame
-					lines={lines}
-					slotIndices={slotIndices}
-					onHover={handleHover}
-					onClick={handleHover}
-					interactive
-				/>
-				<div className="text-emerald-400">✔ Committed: {committedTitle}</div>
+				<div>
+					<span className="text-emerald-400">✔</span>{" "}
+					<span className="text-foreground">{prevGeneratedLine}</span>
+				</div>
+				<div className="text-foreground-muted/60 pl-4">→ Escalate</div>
+				<SelectorFrame lines={escalateLines} slotIndices={slotIndices} />
 			</div>
 		</div>
 	);
