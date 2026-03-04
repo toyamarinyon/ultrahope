@@ -2,6 +2,7 @@ import {
 	renderSelectorTextFromRenderFrame,
 	SPINNER_FRAMES,
 } from "../../cli/lib/renderer";
+import type { SelectorSlot } from "../../shared/terminal-selector-contract";
 import {
 	type BuildSelectorViewModelInput,
 	selectorRenderFrame,
@@ -22,6 +23,10 @@ const selectorCapabilities = {
 	escalate: false,
 	clickConfirm: false,
 };
+
+type ReadySlot = Extract<SelectorSlot, { status: "ready" }>;
+type PendingSlot = Extract<SelectorSlot, { status: "pending" }>;
+type ErrorSlot = Extract<SelectorSlot, { status: "error" }>;
 
 interface SelectorStoryInput {
 	name: string;
@@ -70,7 +75,7 @@ function readySlot(
 		cost?: number;
 		generationMs?: number;
 	} = {},
-) {
+): ReadySlot {
 	return {
 		status: "ready",
 		candidate: {
@@ -83,7 +88,7 @@ function readySlot(
 	};
 }
 
-function pendingSlot(slotId: string, model: string) {
+function pendingSlot(slotId: string, model?: string): PendingSlot {
 	return {
 		status: "pending",
 		slotId,
@@ -91,7 +96,7 @@ function pendingSlot(slotId: string, model: string) {
 	};
 }
 
-function errorSlot(slotId: string, content: string, model: string) {
+function errorSlot(slotId: string, content: string, model?: string): ErrorSlot {
 	return {
 		status: "error",
 		slotId,
