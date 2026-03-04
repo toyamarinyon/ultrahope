@@ -210,7 +210,7 @@ function getActiveStory(
 
 function formatHintLine(activeStory: Story | null): string {
 	const storyHint = activeStory ? ` active: ${activeStory.name}` : "";
-	return `  ↑↓ / j/k select  ←→ collapse/expand  ⏎ select  (q)uit${storyHint}`;
+	return `  ↑↓ / j/k select  ←→ collapse/expand  (↵) toggle  (q)uit${storyHint}`;
 }
 
 function formatTreeRow(
@@ -366,10 +366,18 @@ export async function runStoryViewer(storyGroups: StoryGroup[]): Promise<void> {
 		if (visibleRows.length === 0) {
 			return;
 		}
-		selectedRowIndex = Math.min(
+		const nextIndex = Math.min(
 			Math.max(0, selectedRowIndex + direction),
 			visibleRows.length - 1,
 		);
+		selectedRowIndex = nextIndex;
+
+		const selectedRow = visibleRows[selectedRowIndex];
+		if (selectedRow?.kind === "story") {
+			selectActiveStory(selectedRow);
+			return;
+		}
+
 		rerender();
 	};
 
