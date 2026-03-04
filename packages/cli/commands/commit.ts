@@ -224,6 +224,7 @@ export async function commit(args: string[]) {
 		const stats = getGitStagedStats();
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
+		let isEscalation = false;
 		while (true) {
 			const isRefineAttempt = refineMessage !== undefined;
 			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
@@ -253,6 +254,7 @@ export async function commit(args: string[]) {
 				models,
 				inlineEditPrompt: true,
 				initialGuideHint: guideHint,
+				isEscalation,
 			});
 
 			if (result.action === "abort") {
@@ -267,9 +269,11 @@ export async function commit(args: string[]) {
 			}
 
 			if (result.action === "escalate") {
+				console.log(ui.hint("  -> Escalate"));
 				models = escalationModels;
 				guideHint = undefined;
 				refineMessage = undefined;
+				isEscalation = true;
 				continue;
 			}
 

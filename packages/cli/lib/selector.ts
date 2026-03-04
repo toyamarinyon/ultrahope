@@ -53,6 +53,7 @@ interface SelectorOptions {
 	initialListMode?: ListMode;
 	initialGuideHint?: string;
 	inlineEditPrompt?: boolean;
+	isEscalation?: boolean;
 	io?: {
 		input: NodeJS.ReadableStream;
 		output: NodeJS.WritableStream;
@@ -147,6 +148,7 @@ export async function selectCandidate(
 		initialListMode = "initial",
 		initialGuideHint,
 		inlineEditPrompt = false,
+		isEscalation = false,
 		io,
 	} = options;
 	const abortController = new AbortController();
@@ -211,6 +213,15 @@ export async function selectCandidate(
 		}),
 	);
 
+	const renderCopy = isEscalation
+		? {
+				...selectorRenderCopy,
+				runningLabel: "Generating commit messages with escalate models...",
+				itemLabelPlural: "commit messages with escalate models",
+				itemLabelSingular: "commit message with escalate models",
+			}
+		: selectorRenderCopy;
+
 	return new Promise((resolve) => {
 		let resolved = false;
 		const resolveOnce = (result: SelectorResult) => {
@@ -264,7 +275,7 @@ export async function selectCandidate(
 					},
 					nowMs: Date.now(),
 					spinnerFrames: SPINNER_FRAMES,
-					copy: selectorRenderCopy,
+					copy: renderCopy,
 					capabilities: selectorRenderCapabilities,
 				});
 				renderer.render(renderSelectorTextFromRenderFrame(frame));
@@ -281,7 +292,7 @@ export async function selectCandidate(
 				},
 				nowMs: Date.now(),
 				spinnerFrames: SPINNER_FRAMES,
-				copy: selectorRenderCopy,
+				copy: renderCopy,
 				capabilities: selectorRenderCapabilities,
 			});
 			const selected =
@@ -425,6 +436,24 @@ export async function selectCandidate(
 					return;
 				}
 				if (result.action === "escalate") {
+					const frame = selectorRenderFrame({
+						state: {
+							...context,
+							mode: context.mode,
+							promptKind: context.promptKind,
+							promptTargetIndex: context.promptTargetIndex,
+						},
+						nowMs: Date.now(),
+						spinnerFrames: SPINNER_FRAMES,
+						copy: renderCopy,
+						capabilities: selectorRenderCapabilities,
+					});
+					const costSuffix = frame.viewModel.header.totalCostLabel
+						? ` (total: ${frame.viewModel.header.totalCostLabel})`
+						: "";
+					const generatedLine = `${frame.viewModel.header.generatedLabel}${costSuffix}`;
+					renderer.clearAll();
+					ttyWriter.write(`${ui.success(generatedLine)}\n`);
 					resolveOnce(result);
 					cleanup(false);
 					return;
@@ -435,6 +464,7 @@ export async function selectCandidate(
 					return;
 				}
 			}
+
 			render();
 		};
 
@@ -550,7 +580,7 @@ export async function selectCandidate(
 							},
 							nowMs: Date.now(),
 							spinnerFrames: SPINNER_FRAMES,
-							copy: selectorRenderCopy,
+							copy: renderCopy,
 							capabilities: selectorRenderCapabilities,
 						});
 
@@ -659,7 +689,7 @@ export async function selectCandidate(
 								},
 								nowMs: Date.now(),
 								spinnerFrames: SPINNER_FRAMES,
-								copy: selectorRenderCopy,
+								copy: renderCopy,
 								capabilities: selectorRenderCapabilities,
 							});
 

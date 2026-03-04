@@ -260,6 +260,7 @@ async function runInteractiveDescribe(
 	) => ReturnType<typeof generateCommitMessages>,
 	context: CommandExecutionContext,
 	guideHint?: string,
+	isEscalation?: boolean,
 ): Promise<SelectorResult> {
 	return selectCandidate({
 		createCandidates,
@@ -268,6 +269,7 @@ async function runInteractiveDescribe(
 		models,
 		inlineEditPrompt: true,
 		initialGuideHint: guideHint,
+		isEscalation,
 	});
 }
 
@@ -292,6 +294,7 @@ async function describe(args: string[]) {
 		let guideHint: string | undefined;
 		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
+		let isEscalation = false;
 		while (true) {
 			const sessionId = ++commandExecutionRun;
 			const isRefineAttempt = refineMessage !== undefined;
@@ -318,6 +321,7 @@ async function describe(args: string[]) {
 				createCandidates,
 				context,
 				guideHint,
+				isEscalation,
 			);
 
 			if (result.action === "abort") {
@@ -332,9 +336,11 @@ async function describe(args: string[]) {
 			}
 
 			if (result.action === "escalate") {
+				console.log(ui.hint("  -> Escalate"));
 				models = escalationModels;
 				guideHint = undefined;
 				refineMessage = undefined;
+				isEscalation = true;
 				continue;
 			}
 

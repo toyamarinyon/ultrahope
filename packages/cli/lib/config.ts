@@ -140,24 +140,6 @@ export function resolveModels(cliModels?: string[]): string[] {
 	return DEFAULT_MODELS;
 }
 
-export function parseEscalationModelsArg(value: string): string[] {
-	const rawModels = value.split(",");
-	const models = rawModels.map((m) => m.trim());
-
-	if (models.length === 0 || models.every((m) => m.length === 0)) {
-		fail("--escalation-models requires at least one non-empty model.");
-	}
-
-	const emptyIndex = models.findIndex((m) => m.length === 0);
-	if (emptyIndex !== -1) {
-		fail(
-			`--escalation-models contains an empty value at position ${emptyIndex + 1}.`,
-		);
-	}
-
-	return models;
-}
-
 export function resolveEscalationModels(
 	cliEscalationModels?: string[],
 ): string[] {
