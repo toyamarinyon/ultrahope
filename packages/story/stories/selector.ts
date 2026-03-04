@@ -2,6 +2,7 @@ import {
 	renderSelectorTextFromRenderFrame,
 	SPINNER_FRAMES,
 } from "../../cli/lib/renderer";
+import { ui } from "../../cli/lib/ui";
 import type { SelectorSlot } from "../../shared/terminal-selector-contract";
 import {
 	type BuildSelectorViewModelInput,
@@ -20,7 +21,7 @@ const selectorCopy = {
 const selectorCapabilities = {
 	edit: true,
 	refine: true,
-	escalate: false,
+	escalate: true,
 	clickConfirm: false,
 };
 
@@ -156,6 +157,44 @@ const allReadyState: BuildSelectorViewModelInput["state"] = {
 	createdAtMs: selectorCreatedAtMs - 1500,
 };
 
+const escalatedGeneratingState: BuildSelectorViewModelInput["state"] = {
+	slots: [
+		readySlot("slot-1", "feat: add user login page with session handling", {
+			model: "claude-sonnet-4-20250514",
+			cost: 0.0032,
+			generationMs: 1800,
+		}),
+		pendingSlot("slot-2", "gpt-4.1"),
+		pendingSlot("slot-3", "gemini-2.5-pro"),
+		pendingSlot("slot-4", "claude-sonnet-4-20250514"),
+	],
+	selectedIndex: 0,
+	isGenerating: true,
+	totalSlots: 4,
+	createdAtMs: selectorCreatedAtMs + 2000,
+};
+
+function buildEscalateText(
+	prevState: BuildSelectorViewModelInput["state"],
+	escalatedState: BuildSelectorViewModelInput["state"],
+	nowMs: number,
+): string {
+	const prevFrame = selectorRenderFrame({
+		state: prevState,
+		nowMs,
+		spinnerFrames: SPINNER_FRAMES,
+		copy: selectorCopy,
+		capabilities: selectorCapabilities,
+	});
+	const costSuffix = prevFrame.viewModel.header.totalCostLabel
+		? ` (total: ${prevFrame.viewModel.header.totalCostLabel})`
+		: "";
+	const generatedLine = `${prevFrame.viewModel.header.generatedLabel}${costSuffix}`;
+	const header = `${ui.success(generatedLine)}\n${ui.hint("  -> Escalate")}\n`;
+	const escalatedSelector = buildSelectorText(escalatedState, nowMs);
+	return `${header}${escalatedSelector}`;
+}
+
 export const selectorStories: Story[] = [
 	createSelectorStory({
 		name: "selector: generating 2/4",
@@ -229,4 +268,19 @@ export const selectorStories: Story[] = [
 			selectedIndex: 1,
 		},
 	}),
+	{
+		name: "selector: escalate (Generated -> Escalate)",
+		render: (_columns: number) =>
+			buildEscalateText(
+				allReadyState,
+				escalatedGeneratingState,
+				selectorCreatedAtMs + 240,
+			),
+		animate: (tick, _columns) =>
+			buildEscalateText(
+				allReadyState,
+				escalatedGeneratingState,
+				escalatedGeneratingState.createdAtMs + tick * 80,
+			),
+	},
 ];
