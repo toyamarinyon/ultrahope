@@ -81,7 +81,8 @@ export type SelectorFlowEvent =
 	| { type: "PROMPT_SUBMIT"; guide?: string; selectedContent?: string }
 	| { type: "PROMPT_CANCEL" }
 	| { type: "CONFIRM" }
-	| { type: "QUIT" };
+	| { type: "QUIT" }
+	| { type: "ESCALATE" };
 
 export type SelectorFlowAbortReason = "exit" | "discard_refine";
 
@@ -117,7 +118,7 @@ export interface SelectorState {
 }
 
 export interface SelectorResult {
-	action: "confirm" | "abort" | "refine" | "return";
+	action: "confirm" | "abort" | "refine" | "escalate" | "return";
 	selected?: string;
 	edited?: boolean;
 	selectedIndex?: number;

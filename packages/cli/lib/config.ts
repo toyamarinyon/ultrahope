@@ -2,10 +2,14 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { parse } from "smol-toml";
-import { DEFAULT_MODELS } from "./vcs-message-generator";
+import {
+	DEFAULT_ESCALATION_MODELS,
+	DEFAULT_MODELS,
+} from "./vcs-message-generator";
 
 interface CliConfig {
 	models?: unknown;
+	escalation_models?: unknown;
 }
 
 const PROJECT_CONFIG_FILENAMES = [".ultrahope.toml", "ultrahope.toml"] as const;
@@ -85,7 +89,10 @@ function findNearestProjectConfig(cwd: string): string | null {
 	}
 }
 
-function readConfigModels(configPath: string): string[] | undefined {
+function readConfigField(
+	configPath: string,
+	field: keyof CliConfig,
+): string[] | undefined {
 	let raw = "";
 	try {
 		raw = fs.readFileSync(configPath, "utf-8");
@@ -102,11 +109,11 @@ function readConfigModels(configPath: string): string[] | undefined {
 		fail(`Failed to parse TOML config ${configPath}: ${message}`);
 	}
 
-	if (parsed.models === undefined) {
+	if (parsed[field] === undefined) {
 		return undefined;
 	}
 
-	return validateModels(parsed.models, configPath);
+	return validateModels(parsed[field], configPath);
 }
 
 export function resolveModels(cliModels?: string[]): string[] {
@@ -116,7 +123,7 @@ export function resolveModels(cliModels?: string[]): string[] {
 
 	const projectConfigPath = findNearestProjectConfig(process.cwd());
 	if (projectConfigPath) {
-		const projectModels = readConfigModels(projectConfigPath);
+		const projectModels = readConfigField(projectConfigPath, "models");
 		if (projectModels) {
 			return projectModels;
 		}
@@ -124,13 +131,60 @@ export function resolveModels(cliModels?: string[]): string[] {
 
 	const globalConfigPath = getGlobalConfigPath();
 	if (fs.existsSync(globalConfigPath)) {
-		const globalModels = readConfigModels(globalConfigPath);
+		const globalModels = readConfigField(globalConfigPath, "models");
 		if (globalModels) {
 			return globalModels;
 		}
 	}
 
 	return DEFAULT_MODELS;
+}
+
+export function parseEscalationModelsArg(value: string): string[] {
+	const rawModels = value.split(",");
+	const models = rawModels.map((m) => m.trim());
+
+	if (models.length === 0 || models.every((m) => m.length === 0)) {
+		fail("--escalation-models requires at least one non-empty model.");
+	}
+
+	const emptyIndex = models.findIndex((m) => m.length === 0);
+	if (emptyIndex !== -1) {
+		fail(
+			`--escalation-models contains an empty value at position ${emptyIndex + 1}.`,
+		);
+	}
+
+	return models;
+}
+
+export function resolveEscalationModels(
+	cliEscalationModels?: string[],
+): string[] {
+	if (cliEscalationModels && cliEscalationModels.length > 0) {
+		return cliEscalationModels;
+	}
+
+	const projectConfigPath = findNearestProjectConfig(process.cwd());
+	if (projectConfigPath) {
+		const projectModels = readConfigField(
+			projectConfigPath,
+			"escalation_models",
+		);
+		if (projectModels) {
+			return projectModels;
+		}
+	}
+
+	const globalConfigPath = getGlobalConfigPath();
+	if (fs.existsSync(globalConfigPath)) {
+		const globalModels = readConfigField(globalConfigPath, "escalation_models");
+		if (globalModels) {
+			return globalModels;
+		}
+	}
+
+	return DEFAULT_ESCALATION_MODELS;
 }
 
 export async function ensureGlobalConfigFile(): Promise<void> {
@@ -142,7 +196,7 @@ export async function ensureGlobalConfigFile(): Promise<void> {
 	const dir = path.dirname(configPath);
 	await fs.promises.mkdir(dir, { recursive: true });
 
-	const content = `# Ultrahope CLI configuration\n# https://github.com/toyamarinyon/ultrahope\n\n# Models to use for generation (each model produces one candidate)\n# See available models: https://ultrahope.dev/models\nmodels = ["mistral/ministral-3b", "xai/grok-code-fast-1"]\n`;
+	const content = `# Ultrahope CLI configuration\n# https://github.com/toyamarinyon/ultrahope\n\n# Models to use for generation (each model produces one candidate)\n# See available models: https://ultrahope.dev/models\nmodels = ["mistral/ministral-3b", "xai/grok-code-fast-1"]\n\n# Models to use when pressing Shift+E to escalate\nescalation_models = ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"]\n`;
 
 	await fs.promises.writeFile(configPath, content, { mode: 0o644, flag: "wx" });
 }

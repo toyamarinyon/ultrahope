@@ -9,6 +9,16 @@ export const ALLOWED_MODELS = [
 		provider: "xAI",
 		providerUrl: "https://x.ai",
 	},
+	{
+		id: "anthropic/claude-sonnet-4.6",
+		provider: "Anthropic",
+		providerUrl: "https://anthropic.com",
+	},
+	{
+		id: "openai/gpt-5.3-codex",
+		provider: "OpenAI",
+		providerUrl: "https://openai.com",
+	},
 ] as const;
 
 export const ALLOWED_MODEL_IDS = ALLOWED_MODELS.map((m) => m.id);

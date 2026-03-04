@@ -19,6 +19,7 @@ export type SelectorHintAction =
 	| "clickConfirm"
 	| "edit"
 	| "refine"
+	| "escalate"
 	| "quit";
 
 export type SelectorHintTarget = "cli" | "web";
@@ -34,6 +35,7 @@ export interface SelectorCapabilities {
 	clickConfirm: boolean;
 	edit: boolean;
 	refine: boolean;
+	escalate: boolean;
 }
 
 interface SelectorHeaderViewModel {
@@ -120,12 +122,13 @@ const HINT_ACTION_ORDER: SelectorHintAction[] = [
 	"clickConfirm",
 	"edit",
 	"refine",
+	"escalate",
 	"quit",
 ];
 
 const HINT_ACTION_GROUPS: SelectorHintAction[][] = [
 	["navigate", "confirm", "clickConfirm"],
-	["edit", "refine"],
+	["edit", "refine", "escalate"],
 	["quit"],
 ];
 
@@ -139,6 +142,7 @@ const DEFAULT_HINT_LABELS: Record<
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
 		refine: "(r)efine",
+		escalate: "(E)scalate",
 		quit: "(q)uit",
 	},
 	web: {
@@ -147,6 +151,7 @@ const DEFAULT_HINT_LABELS: Record<
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
 		refine: "(r)efine",
+		escalate: "(E)scalate",
 		quit: "(q)uit",
 	},
 };
@@ -164,6 +169,7 @@ const DEFAULT_SELECTOR_CAPABILITIES: SelectorCapabilities = {
 	clickConfirm: false,
 	edit: false,
 	refine: false,
+	escalate: false,
 };
 
 function formatDuration(ms: number): string {
@@ -273,6 +279,9 @@ function resolveHintActions(input: {
 	}
 	if (input.capabilities.refine) {
 		actions.push("refine");
+	}
+	if (input.capabilities.escalate) {
+		actions.push("escalate");
 	}
 	return normalizeHintActions(actions);
 }

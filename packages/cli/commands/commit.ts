@@ -10,7 +10,11 @@ import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
-import { parseModelsArg, resolveModels } from "../lib/config";
+import {
+	parseModelsArg,
+	resolveEscalationModels,
+	resolveModels,
+} from "../lib/config";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
@@ -139,7 +143,9 @@ export async function commit(args: string[]) {
 		args: ["commit", ...args],
 		apiPath: "/v1/commit-message/stream",
 	});
-	const models = resolveModels(options.cliModels);
+	const baseModels = resolveModels(options.cliModels);
+	const escalationModels = resolveEscalationModels();
+	let models = baseModels;
 	const diff = getStagedDiff();
 
 	if (!diff.trim()) {
@@ -258,6 +264,13 @@ export async function commit(args: string[]) {
 				}
 				console.error("Aborting commit.");
 				process.exit(1);
+			}
+
+			if (result.action === "escalate") {
+				models = escalationModels;
+				guideHint = undefined;
+				refineMessage = undefined;
+				continue;
 			}
 
 			if (result.action === "refine") {

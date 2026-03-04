@@ -105,6 +105,7 @@ const SELECTOR_HINT_LABELS: Record<SelectorHintAction, string> = {
 	clickConfirm: "click confirm",
 	edit: "(e)dit",
 	refine: "(r)efine",
+	escalate: "(E)scalate",
 	quit: "(q)uit",
 };
 
@@ -134,6 +135,7 @@ function renderHintLine(
 	const canNavigate = readyCount >= 2;
 	const canEdit = hasReady;
 	const canRefine = hasReady;
+	const canEscalate = hasReady;
 	const canQuit = true;
 	const canConfirm = hasReady;
 	const canClickConfirm = hasReady;
@@ -149,6 +151,9 @@ function renderHintLine(
 		actionSet.has("edit") ? asHint(SELECTOR_HINT_LABELS.edit, canEdit) : "",
 		actionSet.has("refine")
 			? asHint(SELECTOR_HINT_LABELS.refine, canRefine)
+			: "",
+		actionSet.has("escalate")
+			? asHint(SELECTOR_HINT_LABELS.escalate, canEscalate)
 			: "",
 		actionSet.has("quit") ? asHint(SELECTOR_HINT_LABELS.quit, canQuit) : "",
 		actionSet.has("confirm")

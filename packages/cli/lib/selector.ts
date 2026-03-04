@@ -66,6 +66,7 @@ const selectorRenderCopy = {
 const selectorRenderCapabilities = {
 	edit: true,
 	refine: true,
+	escalate: true,
 	clickConfirm: false,
 };
 
@@ -423,6 +424,11 @@ export async function selectCandidate(
 					cleanup(false);
 					return;
 				}
+				if (result.action === "escalate") {
+					resolveOnce(result);
+					cleanup(false);
+					return;
+				}
 				if (result.action === "abort") {
 					resolveOnce(result);
 					cleanup(false);
@@ -775,7 +781,12 @@ export async function selectCandidate(
 					}
 					return;
 				}
-				if (key.name === "e") {
+				if (key.name === "e" && key.shift) {
+					if (!hasReadySlot(context.slots)) return;
+					applyResult(transitionSelectorFlow(context, { type: "ESCALATE" }));
+					return;
+				}
+				if (key.name === "e" && !key.shift) {
 					if (!hasReadySlot(context.slots)) return;
 					const transition = transitionSelectorFlow(context, {
 						type: "OPEN_PROMPT",

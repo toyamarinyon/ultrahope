@@ -19,6 +19,11 @@ export const DEFAULT_MODELS = [
 	"xai/grok-code-fast-1",
 ];
 
+export const DEFAULT_ESCALATION_MODELS = [
+	"anthropic/claude-sonnet-4.6",
+	"openai/gpt-5.3-codex",
+];
+
 export interface GeneratorOptions {
 	diff: string;
 	models: string[];

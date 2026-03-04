@@ -10,7 +10,11 @@ import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
-import { parseModelsArg, resolveModels } from "../lib/config";
+import {
+	parseModelsArg,
+	resolveEscalationModels,
+	resolveModels,
+} from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
 import { formatResetTime } from "../lib/format-time";
 import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
@@ -269,7 +273,9 @@ async function runInteractiveDescribe(
 
 async function describe(args: string[]) {
 	const options = parseDescribeArgs(args);
-	const models = resolveModels(options.cliModels);
+	const baseModels = resolveModels(options.cliModels);
+	const escalationModels = resolveEscalationModels();
+	let models = baseModels;
 	const diff = getJjDiff(options.revision);
 	assertDiffAvailable(options.revision, diff);
 	const captureRecorder = createStreamCaptureRecorder({
@@ -323,6 +329,13 @@ async function describe(args: string[]) {
 				}
 				console.error("Aborted.");
 				process.exit(1);
+			}
+
+			if (result.action === "escalate") {
+				models = escalationModels;
+				guideHint = undefined;
+				refineMessage = undefined;
+				continue;
 			}
 
 			if (result.action === "refine") {

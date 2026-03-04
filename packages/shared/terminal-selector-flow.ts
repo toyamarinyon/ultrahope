@@ -403,6 +403,23 @@ export function transitionSelectorFlow(
 			}
 			break;
 		}
+		case "ESCALATE": {
+			if (next.mode !== "list" || !hasReadySlot(next.slots)) break;
+			const selectedCandidate = getSelectedCandidate(
+				next.slots,
+				next.selectedIndex,
+			);
+			const selected = selectedCandidate
+				? (next.editedSelections.get(selectedCandidate.slotId) ??
+					selectedCandidate.content)
+				: undefined;
+			result = {
+				action: "escalate",
+				selected,
+				selectedCandidate,
+			};
+			break;
+		}
 		case "QUIT": {
 			if (next.mode === "prompt") {
 				next.mode = "list";
