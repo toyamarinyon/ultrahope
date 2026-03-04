@@ -464,6 +464,7 @@ export async function runStoryViewer(storyGroups: StoryGroup[]): Promise<void> {
 		stopAnimation();
 		stdout.off("resize", onResizeRef);
 		stdin.removeListener("keypress", onKeypress);
+		stdin.pause();
 		setRawMode(false);
 		stdout.write(ANSI_RESET);
 		stdout.write(ANSI_SHOW_CURSOR);
