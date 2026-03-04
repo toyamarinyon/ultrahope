@@ -476,5 +476,5 @@ export async function runStoryViewer(storyGroups: StoryGroup[]): Promise<void> {
 
 		startAnimation();
 		// Resolve only when explicitly closed via the key handler.
-	})();
+	});
 }
