@@ -140,7 +140,7 @@ function renderLineToString(line: SelectorRenderLine): string {
 		case "promptInput":
 			return `${theme.primary}${line.prefix}${theme.reset}${line.text}`;
 		case "placeholder":
-			return `${theme.dim}${line.text}${theme.reset}`;
+			return `  ${theme.dim}${line.text}${theme.reset}`;
 		case "hint":
 			if (line.actions.length > 0) {
 				return renderHintActions(line.actions);
