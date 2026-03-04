@@ -1,0 +1,12 @@
+{
+	"name": "@ultrahope/story",
+	"version": "0.1.0",
+	"description": "Terminal story viewer for Ultrahope CLI UI renderings",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun main.ts",
+		"typecheck": "tsc --noEmit",
+		"test": "echo \"No tests configured\""
+	}
+}

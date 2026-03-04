@@ -15,7 +15,7 @@
     },
     "packages/cli": {
       "name": "ultrahope",
-      "version": "0.1.7",
+      "version": "0.1.9",
       "bin": {
         "ultrahope": "dist/index.js",
         "git-ultrahope": "dist/git-ultrahope.js",
@@ -48,6 +48,10 @@
         "@types/node": "25.0.8",
         "typescript": "5.9.3",
       },
+    },
+    "packages/story": {
+      "name": "@ultrahope/story",
+      "version": "0.1.0",
     },
     "packages/web": {
       "name": "@ultrahope/web",
@@ -690,6 +694,8 @@
     "@typespec/ts-http-runtime": ["@typespec/ts-http-runtime@0.3.2", "", { "dependencies": { "http-proxy-agent": "^7.0.0", "https-proxy-agent": "^7.0.0", "tslib": "^2.6.2" } }, "sha512-IlqQ/Gv22xUC1r/WQm4StLkYQmaaTsXAhUVsNE0+xiyf0yRFiH5++q78U3bw6bLKDCTmh0uqKB9eG9+Bt75Dkg=="],
 
     "@ultrahope/commit-message-benchmark": ["@ultrahope/commit-message-benchmark@workspace:packages/commit-message-benchmark"],
+
+    "@ultrahope/story": ["@ultrahope/story@workspace:packages/story"],
 
     "@ultrahope/web": ["@ultrahope/web@workspace:packages/web"],
 
