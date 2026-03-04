@@ -210,7 +210,7 @@ function getActiveStory(
 
 function formatHintLine(activeStory: Story | null): string {
 	const storyHint = activeStory ? ` active: ${activeStory.name}` : "";
-	return `  ↑↓ select  ←→ collapse/expand  ⏎ select  (q)uit${storyHint}`;
+	return `  ↑↓ / j/k select  ←→ collapse/expand  ⏎ select  (q)uit${storyHint}`;
 }
 
 function formatTreeRow(
@@ -395,6 +395,16 @@ export async function runStoryViewer(storyGroups: StoryGroup[]): Promise<void> {
 			}
 
 			case "down": {
+				updateSelection(1);
+				break;
+			}
+
+			case "k": {
+				updateSelection(-1);
+				break;
+			}
+
+			case "j": {
 				updateSelection(1);
 				break;
 			}
