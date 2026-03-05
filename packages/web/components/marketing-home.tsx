@@ -1,3 +1,4 @@
+import { CopyIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "./logo";
 import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
@@ -143,33 +144,7 @@ export function MarketingHome() {
 							<code className="overflow-x-auto whitespace-nowrap text-base text-foreground-secondary sm:text-xl">
 								$ npm i -g ultrahope
 							</code>
-							<span
-								className="inline-flex size-8 shrink-0 items-center justify-center text-foreground-muted sm:size-9"
-								aria-hidden="true"
-							>
-								<svg
-									width="16"
-									height="16"
-									viewBox="0 0 16 16"
-									fill="none"
-									aria-hidden="true"
-								>
-									<rect
-										x="5.5"
-										y="5.5"
-										width="7"
-										height="7"
-										rx="1.5"
-										stroke="currentColor"
-										strokeWidth="1.5"
-									/>
-									<path
-										d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"
-										stroke="currentColor"
-										strokeWidth="1.5"
-									/>
-								</svg>
-							</span>
+							<CopyIcon className="inline-flex size-8 shrink-0 items-center justify-center text-foreground-muted sm:size-9" />
 						</div>
 					</div>
 
