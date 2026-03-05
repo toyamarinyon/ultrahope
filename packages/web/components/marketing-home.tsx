@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
 import { MarketingControlLoopSection } from "./marketing-control-loop-section";
+import { MarketingFooter } from "./marketing-footer";
 import { MarketingInstallCommand } from "./marketing-install-command";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
@@ -119,11 +120,11 @@ export function MarketingHome() {
 
 			<section>
 				<div className="flex flex-col items-center">
-					<div className="w-full max-w-3xl">
-						<h2 className="mb-4 text-3xl font-medium font-serif">
+					<div className="w-full max-w-4xl text-center">
+						<h2 className="text-2xl font-medium font-serif sm:text-3xl">
 							Judge by the output, not the model name.
 						</h2>
-						<p className="mb-10 text-lg text-foreground-secondary">
+						<p className="mt-4 mb-10 text-base text-foreground-secondary sm:text-lg">
 							A commit message is a single line. How much model do you need for
 							one line?
 						</p>
@@ -136,60 +137,7 @@ export function MarketingHome() {
 
 			<MarketingControlLoopSection />
 
-			<section className="relative py-20 sm:py-28">
-				<div className="relative mx-auto w-full max-w-6xl px-2 text-center sm:px-6">
-					<h2 className="text-3xl font-medium font-serif tracking-tight sm:text-4xl">
-						Try it on your next commit.
-					</h2>
-					<p className="mx-auto mt-4 max-w-2xl text-lg text-foreground-secondary">
-						Install once, run from any repo. Multiple proposals, your choice.
-					</p>
-
-					<div className="flex justify-center mt-8">
-						<MarketingInstallCommand />
-					</div>
-
-					<div className="mt-14 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-						<Link
-							href="/signup"
-							className="inline-flex min-w-56 items-center justify-center rounded-2xl bg-foreground px-8 py-3 text-lg font-medium text-canvas no-underline transition-opacity hover:opacity-90"
-						>
-							Get Started for Free →
-						</Link>
-						<Link
-							href="/pricing"
-							className="inline-flex min-w-56 items-center justify-center rounded-2xl border border-border-subtle px-8 py-3 text-lg font-medium text-foreground-secondary no-underline transition-colors hover:border-foreground-muted hover:text-foreground"
-						>
-							View Pricing
-						</Link>
-					</div>
-
-					<p className="mt-8 text-base text-foreground-muted sm:text-lg">
-						Or,{" "}
-						<Link
-							href="https://github.com/toyamarinyon/ultrahope"
-							className="text-inherit underline underline-offset-4 decoration-current transition-opacity hover:opacity-80"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							view on GitHub
-						</Link>
-					</p>
-				</div>
-			</section>
-
-			{/* Install */}
-			<section className="py-24 border-t border-border-subtle">
-				<div className="mt-6 text-sm text-foreground-secondary">
-					<Link href="/privacy" className="hover:opacity-80">
-						Privacy Policy
-					</Link>
-					<span className="mx-2">·</span>
-					<Link href="/terms" className="hover:opacity-80">
-						Terms of Use
-					</Link>
-				</div>
-			</section>
+			<MarketingFooter />
 		</main>
 	);
 }
