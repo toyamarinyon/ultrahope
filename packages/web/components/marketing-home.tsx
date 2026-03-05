@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
 import { MarketingControlLoopSection } from "./marketing-control-loop-section";
-import { MarketingInstallGuide } from "./marketing-install-guide";
+import { MarketingInstallCommand } from "./marketing-install-command";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
 function UltrahopeLogo() {
@@ -106,7 +106,14 @@ export function MarketingHome() {
 								<TerminalTabsDemo />
 							</div>
 						</div>
-						<MarketingInstallGuide />
+						<div className="mt-6 sm:mt-8 flex flex-col items-center">
+							<div>
+								<p className="text-center text-sm text-foreground-muted">
+									Install and run it locally
+								</p>
+								<MarketingInstallCommand />
+							</div>
+						</div>
 					</div>
 				</div>
 			</section>
