@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-02-24T00:01:35.738Z",
+	"generatedAt": "2026-03-05T05:30:30.084Z",
 	"provider": "vercel-ai-gateway",
 	"models": [
 		{
@@ -21,6 +21,11 @@
 			"id": "openai/gpt-5.2",
 			"tier": "frontier",
 			"label": "GPT-5.2"
+		},
+		{
+			"id": "openai/gpt-5.3-codex",
+			"tier": "frontier",
+			"label": "GPT-5.3 Codex"
 		},
 		{
 			"id": "anthropic/claude-opus-4.5",
@@ -509,6 +514,80 @@
 							"cost": "0",
 							"marketCost": "0.0048825",
 							"generationId": "gen_01KJ6F3JV34ZWDM0DZ71DKN72B",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(js-analyze): treat Vitest assert and type assertions as expect variants",
+					"latencyMs": 1532,
+					"costUsd": 0.0048685,
+					"inputTokens": 2630,
+					"outputTokens": 19,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0cdc49488f194b220169a914e7f8388196b45387feab30538b",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 36551.82872,
+										"endTime": 37631.238032,
+										"statusCode": 200,
+										"providerResponseId": "resp_0cdc49488f194b220169a914e7f8388196b45387feab30538b"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 36551.82872,
+												"endTime": 37631.238032,
+												"statusCode": 200,
+												"providerResponseId": "resp_0cdc49488f194b220169a914e7f8388196b45387feab30538b"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.0048685",
+							"marketCost": "0.0048685",
+							"generationId": "gen_01KJY7KAES3AWCCV00XRGPTNV0",
 							"billableWebSearchCalls": 0
 						}
 					}
@@ -1042,6 +1121,80 @@
 					}
 				},
 				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(javascript): recognize graphql tagged templates as embedded GraphQL",
+					"latencyMs": 1653,
+					"costUsd": 0.0017955,
+					"inputTokens": 898,
+					"outputTokens": 16,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0b2fee1aaa6e0ae50169a914e94be0819085c2c8219cf060ce",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 9346.844734,
+										"endTime": 10767.541348,
+										"statusCode": 200,
+										"providerResponseId": "resp_0b2fee1aaa6e0ae50169a914e94be0819085c2c8219cf060ce"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 9346.844734,
+												"endTime": 10767.541348,
+												"statusCode": 200,
+												"providerResponseId": "resp_0b2fee1aaa6e0ae50169a914e94be0819085c2c8219cf060ce"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.0017955",
+							"marketCost": "0.0017955",
+							"generationId": "gen_01KJY7KBQEZA3XZXNE0KRC8WCQ",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
 					"modelId": "xai/grok-code-fast-1",
 					"tier": "small",
 					"status": "success",
@@ -1565,6 +1718,80 @@
 							"cost": "0",
 							"marketCost": "0.00798175",
 							"generationId": "gen_01KJ6F49JVJP3CVKYFY8G8ZTV0",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "feat(protocol): add OutputConfiguration union and migrate generation nodes",
+					"latencyMs": 1992,
+					"costUsd": 0.00796775,
+					"inputTokens": 4433,
+					"outputTokens": 15,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_04a9018b7bf5f0a50169a914eb1f9c8193bfcd6ffa6e017241",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 8748.848498,
+										"endTime": 10336.38575,
+										"statusCode": 200,
+										"providerResponseId": "resp_04a9018b7bf5f0a50169a914eb1f9c8193bfcd6ffa6e017241"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 8748.848498,
+												"endTime": 10336.38575,
+												"statusCode": 200,
+												"providerResponseId": "resp_04a9018b7bf5f0a50169a914eb1f9c8193bfcd6ffa6e017241"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.00796775",
+							"marketCost": "0.00796775",
+							"generationId": "gen_01KJY7KDFV058P1MBK3E1T10PD",
 							"billableWebSearchCalls": 0
 						}
 					}
@@ -2098,6 +2325,80 @@
 					}
 				},
 				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(telegram): suppress reasoning-only fallback text when reasoning is off",
+					"latencyMs": 1258,
+					"costUsd": 0.0064925,
+					"inputTokens": 3574,
+					"outputTokens": 17,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0077e3f660d5e2750169a914ed27e48193b603c18775cfa0ef",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 41716.211808,
+										"endTime": 42503.819296,
+										"statusCode": 200,
+										"providerResponseId": "resp_0077e3f660d5e2750169a914ed27e48193b603c18775cfa0ef"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 41716.211808,
+												"endTime": 42503.819296,
+												"statusCode": 200,
+												"providerResponseId": "resp_0077e3f660d5e2750169a914ed27e48193b603c18775cfa0ef"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.0064925",
+							"marketCost": "0.0064925",
+							"generationId": "gen_01KJY7KFDWTSDRRZ7N8RAV76PJ",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
 					"modelId": "xai/grok-code-fast-1",
 					"tier": "small",
 					"status": "success",
@@ -2621,6 +2922,80 @@
 							"cost": "0",
 							"marketCost": "0.002709",
 							"generationId": "gen_01KJ6F4ZGRGW0B3Y871Q4MXQQ0",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "feat(activesupport): add this_week?, this_month?, and this_year? helpers",
+					"latencyMs": 1172,
+					"costUsd": 0.002667,
+					"inputTokens": 1356,
+					"outputTokens": 21,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0cd9dcc9bd161f040169a914ee32688190a31dce93bb228feb",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 14260.892316,
+										"endTime": 15193.137637,
+										"statusCode": 200,
+										"providerResponseId": "resp_0cd9dcc9bd161f040169a914ee32688190a31dce93bb228feb"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 14260.892316,
+												"endTime": 15193.137637,
+												"statusCode": 200,
+												"providerResponseId": "resp_0cd9dcc9bd161f040169a914ee32688190a31dce93bb228feb"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.002667",
+							"marketCost": "0.002667",
+							"generationId": "gen_01KJY7KGH4145RSHAGPVCBMA8N",
 							"billableWebSearchCalls": 0
 						}
 					}
@@ -3154,6 +3529,80 @@
 					}
 				},
 				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(action_dispatch): correctly detect first non-proxy IP in remote_ip",
+					"latencyMs": 1431,
+					"costUsd": 0.00128625,
+					"inputTokens": 591,
+					"outputTokens": 18,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0aabfcbd5473f0350169a914ef67a88194872ff8011a939639",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 43923.877811,
+										"endTime": 45136.208597,
+										"statusCode": 200,
+										"providerResponseId": "resp_0aabfcbd5473f0350169a914ef67a88194872ff8011a939639"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 43923.877811,
+												"endTime": 45136.208597,
+												"statusCode": 200,
+												"providerResponseId": "resp_0aabfcbd5473f0350169a914ef67a88194872ff8011a939639"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.00128625",
+							"marketCost": "0.00128625",
+							"generationId": "gen_01KJY7KHN3N40C6PZRGFAJ9C0S",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
 					"modelId": "xai/grok-code-fast-1",
 					"tier": "small",
 					"status": "success",
@@ -3677,6 +4126,80 @@
 							"cost": "0",
 							"marketCost": "0.001848",
 							"generationId": "gen_01KJ6F5P6GPPCN0MWWWP8GM5ZM",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(devtools): use AI_SDK_DEVTOOLS_DEV flag for dev mode detection",
+					"latencyMs": 1210,
+					"costUsd": 0.001834,
+					"inputTokens": 888,
+					"outputTokens": 20,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_011f0a94e64aea710169a914f0c8ec8190b75debdedbf7f9bb",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 81186.26011,
+										"endTime": 82179.19258,
+										"statusCode": 200,
+										"providerResponseId": "resp_011f0a94e64aea710169a914f0c8ec8190b75debdedbf7f9bb"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 81186.26011,
+												"endTime": 82179.19258,
+												"statusCode": 200,
+												"providerResponseId": "resp_011f0a94e64aea710169a914f0c8ec8190b75debdedbf7f9bb"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.001834",
+							"marketCost": "0.001834",
+							"generationId": "gen_01KJY7KK1QADE9Z3THB59B9N0S",
 							"billableWebSearchCalls": 0
 						}
 					}
@@ -4210,6 +4733,80 @@
 					}
 				},
 				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(anthropic): allow null compaction_delta content in streaming parser",
+					"latencyMs": 1198,
+					"costUsd": 0.00254625,
+					"inputTokens": 1311,
+					"outputTokens": 18,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0ef2ad56d8e5e54f0169a914f201c08193a70099c25399edaf",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 16188.116904,
+										"endTime": 17171.862116,
+										"statusCode": 200,
+										"providerResponseId": "resp_0ef2ad56d8e5e54f0169a914f201c08193a70099c25399edaf"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 16188.116904,
+												"endTime": 17171.862116,
+												"statusCode": 200,
+												"providerResponseId": "resp_0ef2ad56d8e5e54f0169a914f201c08193a70099c25399edaf"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.00254625",
+							"marketCost": "0.00254625",
+							"generationId": "gen_01KJY7KM7PA70312531Y2Z2C49",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
 					"modelId": "xai/grok-code-fast-1",
 					"tier": "small",
 					"status": "success",
@@ -4733,6 +5330,80 @@
 							"cost": "0",
 							"marketCost": "0.00658175",
 							"generationId": "gen_01KJ6F68BJ7V0PZKEVNVGHNM3R",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "fix(dev-overlay): omit empty error descriptions and cause messages",
+					"latencyMs": 1426,
+					"costUsd": 0.00655375,
+					"inputTokens": 3625,
+					"outputTokens": 15,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0c784f666483bdae0169a914f36a6c8194a1d4875ca29c0bce",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 16913.549165,
+										"endTime": 17836.125928,
+										"statusCode": 200,
+										"providerResponseId": "resp_0c784f666483bdae0169a914f36a6c8194a1d4875ca29c0bce"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 16913.549165,
+												"endTime": 17836.125928,
+												"statusCode": 200,
+												"providerResponseId": "resp_0c784f666483bdae0169a914f36a6c8194a1d4875ca29c0bce"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.00655375",
+							"marketCost": "0.00655375",
+							"generationId": "gen_01KJY7KNHZM2WRVQP20XZ3PDSD",
 							"billableWebSearchCalls": 0
 						}
 					}
@@ -5266,6 +5937,80 @@
 					}
 				},
 				{
+					"modelId": "openai/gpt-5.3-codex",
+					"tier": "frontier",
+					"status": "success",
+					"message": "feat(agent): add subagent session resume support to subagent tool",
+					"latencyMs": 1655,
+					"costUsd": 0.00841225,
+					"inputTokens": 4671,
+					"outputTokens": 17,
+					"humanReview": {
+						"overallScore": 3,
+						"notes": "Pending manual review.",
+						"winnerFlag": false
+					},
+					"providerMetadata": {
+						"openai": {
+							"responseId": "resp_0048d293d7b3e2370169a914f4c7dc8196b5adbc347caca39e",
+							"serviceTier": "default"
+						},
+						"gateway": {
+							"routing": {
+								"originalModelId": "openai/gpt-5.3-codex",
+								"resolvedProvider": "openai",
+								"resolvedProviderApiModelId": "gpt-5.3-codex",
+								"internalResolvedModelId": "openai:gpt-5.3-codex",
+								"fallbacksAvailable": ["azure"],
+								"internalReasoning": "Selected openai as preferred provider for gpt-5.3-codex. 1 fallback(s) available: azure",
+								"planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+								"canonicalSlug": "openai/gpt-5.3-codex",
+								"finalProvider": "openai",
+								"attempts": [
+									{
+										"provider": "openai",
+										"internalModelId": "openai:gpt-5.3-codex",
+										"providerApiModelId": "gpt-5.3-codex",
+										"credentialType": "system",
+										"success": true,
+										"startTime": 49361.305949,
+										"endTime": 50543.330935,
+										"statusCode": 200,
+										"providerResponseId": "resp_0048d293d7b3e2370169a914f4c7dc8196b5adbc347caca39e"
+									}
+								],
+								"modelAttemptCount": 1,
+								"modelAttempts": [
+									{
+										"modelId": "openai:gpt-5.3-codex",
+										"canonicalSlug": "openai/gpt-5.3-codex",
+										"success": true,
+										"providerAttemptCount": 1,
+										"providerAttempts": [
+											{
+												"provider": "openai",
+												"internalModelId": "openai:gpt-5.3-codex",
+												"providerApiModelId": "gpt-5.3-codex",
+												"credentialType": "system",
+												"success": true,
+												"startTime": 49361.305949,
+												"endTime": 50543.330935,
+												"statusCode": 200,
+												"providerResponseId": "resp_0048d293d7b3e2370169a914f4c7dc8196b5adbc347caca39e"
+											}
+										]
+									}
+								],
+								"totalProviderAttemptCount": 1
+							},
+							"cost": "0.00841225",
+							"marketCost": "0.00841225",
+							"generationId": "gen_01KJY7KPYS5QP9C4D2MJDRC12Q",
+							"billableWebSearchCalls": 0
+						}
+					}
+				},
+				{
 					"modelId": "xai/grok-code-fast-1",
 					"tier": "small",
 					"status": "success",
@@ -5364,6 +6109,15 @@
 				"avgScore": 3
 			},
 			{
+				"modelId": "openai/gpt-5.3-codex",
+				"tier": "frontier",
+				"successCount": 10,
+				"errorCount": 0,
+				"avgLatencyMs": 1452.7,
+				"avgCostUsd": 0.0044424,
+				"avgScore": 3
+			},
+			{
 				"modelId": "anthropic/claude-opus-4.5",
 				"tier": "frontier",
 				"successCount": 10,
@@ -5401,6 +6155,6 @@
 			}
 		],
 		"smallTopModelId": "mistral/ministral-3b",
-		"frontierTopModelId": "anthropic/claude-sonnet-4.6"
+		"frontierTopModelId": "openai/gpt-5.3-codex"
 	}
 }

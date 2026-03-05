@@ -24,6 +24,11 @@ export const BENCHMARK_MODELS: BenchmarkModelConfig[] = [
 		label: "GPT-5.2",
 	},
 	{
+		id: "openai/gpt-5.3-codex",
+		tier: "frontier",
+		label: "GPT-5.3 Codex",
+	},
+	{
 		id: "anthropic/claude-opus-4.5",
 		tier: "frontier",
 		label: "Claude Opus 4.5",
