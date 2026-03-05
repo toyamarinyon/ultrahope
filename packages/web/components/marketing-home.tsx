@@ -1,4 +1,3 @@
-import { CopyIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "./logo";
 import { MarketingCommitMessageBenchmark } from "./marketing-commit-message-benchmark";
@@ -146,16 +145,11 @@ export function MarketingHome() {
 						Install once, run from any repo. Multiple proposals, your choice.
 					</p>
 
-					<div className="mx-auto mt-10 w-full max-w-3xl rounded-2xl border border-border-subtle">
-						<div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-5">
-							<code className="overflow-x-auto whitespace-nowrap text-base text-foreground-secondary sm:text-xl">
-								$ npm i -g ultrahope
-							</code>
-							<CopyIcon className="inline-flex size-8 shrink-0 items-center justify-center text-foreground-muted sm:size-9" />
-						</div>
+					<div className="flex justify-center mt-8">
+						<MarketingInstallCommand />
 					</div>
 
-					<div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+					<div className="mt-14 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
 						<Link
 							href="/signup"
 							className="inline-flex min-w-56 items-center justify-center rounded-2xl bg-foreground px-8 py-3 text-lg font-medium text-canvas no-underline transition-opacity hover:opacity-90"
