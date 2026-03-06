@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	type KeyboardEvent as ReactKeyboardEvent,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import commitMessageStreamCapture from "@/lib/demo/commit-message-stream.capture.json";
 import {
 	type CandidateWithModel,
@@ -19,6 +25,7 @@ import {
 	pickLatestReplayGeneration,
 	pickLatestReplayRun,
 } from "@/lib/util/terminal-selector-replay";
+import type { PromptKind } from "../../shared/terminal-selector-contract";
 import { normalizeCandidateContentForDisplay } from "../../shared/terminal-selector-helpers";
 import {
 	buildSelectorRenderLines,
@@ -43,11 +50,21 @@ interface DemoTab {
 		| { kind: "gitCommit" }
 		| { kind: "jjDescribe"; revision: string }
 		| { kind: "translate" };
+	defaultRefineInstruction: string;
+	refinedFallbacks: string[];
+	escalatedModels: string[];
+	escalatedFallbacks: string[];
 	models: string[];
 	replayGeneration?: TerminalStreamReplayGeneration | null;
 }
 
 const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
+const ESCALATED_MODELS = [
+	"claude-sonnet-4-20250514",
+	"gpt-4.1",
+	"gemini-2.5-pro",
+	"grok-code-fast-1",
+];
 
 function resolveReplay(capture: TerminalStreamReplayCapture): {
 	generation: TerminalStreamReplayGeneration | null;
@@ -92,6 +109,19 @@ index 9c9e8f7..6d2f8a1 100644
 		foundLine: "✔ Found staged changes",
 		runLine: "Generating commit messages",
 		confirmOutput: { kind: "gitCommit" },
+		defaultRefineInstruction: "be more specific about the multi-model support",
+		refinedFallbacks: [
+			"feat(cli): support multi-model commit message generation",
+			"refactor(cli): clarify multi-model candidate selection flow",
+			"fix(cli): safely handle multi-model commit message generation",
+		],
+		escalatedModels: ESCALATED_MODELS,
+		escalatedFallbacks: [
+			"feat(cli): add multi-model commit message generation with clearer candidate selection",
+			"refactor(cli): streamline commit message generation for parallel model runs",
+			"fix(cli): preserve commit generation reliability when multiple models are configured",
+			"feat(cli): improve staged diff commit message generation across multiple models",
+		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -117,6 +147,20 @@ index 4f8d4e1..7b3c8a2 100644
 		foundLine: "✔ Found current revision diff",
 		runLine: "Generating description candidates",
 		confirmOutput: { kind: "jjDescribe", revision: "@" },
+		defaultRefineInstruction:
+			"make it clearer that the input is formatted before generation",
+		refinedFallbacks: [
+			"feat(jj): format describe input before generating revision messages",
+			"refactor(jj): make describe generation use formatted revision input",
+			"fix(jj): preserve describe output while formatting input first",
+		],
+		escalatedModels: ESCALATED_MODELS,
+		escalatedFallbacks: [
+			"feat(jj): format revision input before generating describe candidates",
+			"refactor(jj): route describe generation through normalized revision formatting",
+			"fix(jj): keep revision descriptions stable when pre-formatting input",
+			"feat(jj): improve describe candidate quality with formatted revision context",
+		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -143,6 +187,20 @@ index a1b2c3d..d4e5f6g 100644
 		foundLine: "✔ Reading input from stdin",
 		runLine: "Generating commit message translations",
 		confirmOutput: { kind: "translate" },
+		defaultRefineInstruction:
+			"emphasize that stdin is translated into a VCS commit message",
+		refinedFallbacks: [
+			"feat(cli): translate stdin diff input into clearer commit messages",
+			"refactor(core): improve stdin-to-commit-message translation flow",
+			"fix(cli): preserve multiline stdin input during commit message translation",
+		],
+		escalatedModels: ESCALATED_MODELS,
+		escalatedFallbacks: [
+			"feat(cli): turn staged stdin diff input into clearer VCS commit messages",
+			"refactor(core): tighten translation from stdin patches to commit message output",
+			"fix(cli): keep multiline stdin translation stable for commit message generation",
+			"feat(api): improve commit message translation quality for streamed stdin input",
+		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -206,6 +264,12 @@ type DemoOutputLine =
 	| { kind: "success"; text: string }
 	| { kind: "plain"; text: string };
 
+interface DemoPromptState {
+	kind: PromptKind;
+	promptTargetIndex: number;
+	value: string;
+}
+
 function formatSelectedOutputLine(
 	tab: DemoTab,
 	selected: string,
@@ -251,7 +315,7 @@ function buildSelectedPhaseLines(input: {
 	if (selectedTitle) {
 		lines.push({
 			kind: "success",
-			text: `Selected: ${selectedTitle}`,
+			text: `${input.result.edited ? "Edited + selected" : "Selected"}: ${selectedTitle}`,
 		});
 	}
 
@@ -374,18 +438,32 @@ async function makeMockCandidate({
 	};
 }
 
-function createCandidatesForDemo(tab: DemoTab): CreateCandidates {
-	if (tab.replayGeneration && tab.replayGeneration.events.length > 0) {
+function createCandidatesForDemoRun(
+	tab: DemoTab,
+	options: {
+		models?: string[];
+		fallbacks?: string[];
+		replayGeneration?: TerminalStreamReplayGeneration | null;
+	},
+): CreateCandidates {
+	const models = options.models ?? tab.models;
+	const fallbacks = options.fallbacks ?? tab.fallbacks;
+	const replayGeneration =
+		options.replayGeneration === undefined
+			? tab.replayGeneration
+			: options.replayGeneration;
+
+	if (replayGeneration && replayGeneration.events.length > 0) {
 		return createCandidatesFromReplayGeneration({
-			generation: tab.replayGeneration,
-			models: tab.models,
+			generation: replayGeneration,
+			models,
 		});
 	}
 
 	return createCandidatesFromDirectCore({
 		diff: tab.diff,
-		models: tab.models,
-		fallbacks: tab.fallbacks,
+		models,
+		fallbacks,
 	});
 }
 
@@ -402,40 +480,67 @@ export function TerminalTabsDemo() {
 	const [selectedResult, setSelectedResult] = useState<SelectorResult | null>(
 		null,
 	);
+	const [promptState, setPromptState] = useState<DemoPromptState | null>(null);
+	const [selectorRunLine, setSelectorRunLine] = useState(activeDemo.runLine);
+	const [contextNote, setContextNote] = useState<string | null>(null);
 	const [spinnerFrameIndex, setSpinnerFrameIndex] = useState(0);
 	const selectorControllerRef = useRef<TerminalSelectorController | null>(null);
+	const promptInputRef = useRef<HTMLInputElement | null>(null);
+
+	const cancelPrompt = useCallback(() => {
+		setPromptState(null);
+	}, []);
 
 	const destroySelector = useCallback(() => {
+		cancelPrompt();
 		selectorControllerRef.current?.destroy();
 		selectorControllerRef.current = null;
 		setSelectorState(null);
 		setSelectedResult(null);
-	}, []);
+	}, [cancelPrompt]);
 
-	const startSelector = useCallback(() => {
-		destroySelector();
-		const candidates = createCandidatesForDemo(activeDemo);
+	const startSelector = useCallback(
+		(options?: {
+			models?: string[];
+			fallbacks?: string[];
+			replayGeneration?: TerminalStreamReplayGeneration | null;
+			runLine?: string;
+			contextNote?: string | null;
+		}) => {
+			destroySelector();
+			const models = options?.models ?? activeDemo.models;
+			const candidates = createCandidatesForDemoRun(activeDemo, {
+				models,
+				fallbacks: options?.fallbacks,
+				replayGeneration: options?.replayGeneration,
+			});
 
-		const controller = createTerminalSelectorController({
-			maxSlots: Math.max(1, activeDemo.models.length),
-			models: activeDemo.models,
-			createCandidates: candidates,
-			onState: setSelectorState,
-		});
+			const controller = createTerminalSelectorController({
+				maxSlots: Math.max(1, models.length),
+				models,
+				createCandidates: candidates,
+				onState: setSelectorState,
+			});
 
-		selectorControllerRef.current = controller;
-		setSelectedResult(null);
-		setSpinnerFrameIndex(0);
-		setPhase("selector");
-		controller.start();
-	}, [activeDemo, destroySelector]);
+			selectorControllerRef.current = controller;
+			setSelectedResult(null);
+			setSelectorRunLine(options?.runLine ?? activeDemo.runLine);
+			setContextNote(options?.contextNote ?? null);
+			setSpinnerFrameIndex(0);
+			setPhase("selector");
+			controller.start();
+		},
+		[activeDemo, destroySelector],
+	);
 
 	useEffect(() => {
 		if (activeTab) {
 			setPhase("initial");
+			setSelectorRunLine(activeDemo.runLine);
+			setContextNote(null);
 			destroySelector();
 		}
-	}, [activeTab, destroySelector]);
+	}, [activeDemo.runLine, activeTab, destroySelector]);
 
 	useEffect(() => {
 		return () => {
@@ -445,8 +550,10 @@ export function TerminalTabsDemo() {
 
 	const handleReplay = useCallback(() => {
 		destroySelector();
+		setSelectorRunLine(activeDemo.runLine);
+		setContextNote(null);
 		setPhase("initial");
-	}, [destroySelector]);
+	}, [activeDemo.runLine, destroySelector]);
 
 	useEffect(() => {
 		if (canAutoRun) return;
@@ -492,22 +599,22 @@ export function TerminalTabsDemo() {
 
 	const handleCandidateHover = useCallback(
 		(index: number) => {
-			if (phase !== "selector") return;
+			if (phase !== "selector" || promptState) return;
 			selectorControllerRef.current?.setSelection(index);
 		},
-		[phase],
+		[phase, promptState],
 	);
 
 	const handleCandidateClick = useCallback(
 		(index: number) => {
-			if (phase !== "selector") return;
+			if (phase !== "selector" || promptState) return;
 			selectorControllerRef.current?.setSelection(index);
 			const result = selectorControllerRef.current?.confirm();
-			if (result?.action === "confirm") {
+			if (result) {
 				onResult(result);
 			}
 		},
-		[onResult, phase],
+		[onResult, phase, promptState],
 	);
 
 	useEffect(() => {
@@ -517,6 +624,97 @@ export function TerminalTabsDemo() {
 		}, 80);
 		return () => clearInterval(timer);
 	}, [selectorState?.isGenerating]);
+
+	useEffect(() => {
+		if (!promptState) return;
+		const timer = setTimeout(() => {
+			promptInputRef.current?.focus();
+			promptInputRef.current?.select();
+		}, 0);
+		return () => clearTimeout(timer);
+	}, [promptState]);
+
+	const openPrompt = useCallback(
+		(kind: PromptKind) => {
+			if (phase !== "selector" || promptState || !selectorState) {
+				return;
+			}
+			const selectedSlot = selectorState.slots[selectorState.selectedIndex];
+			if (selectedSlot?.status !== "ready") {
+				return;
+			}
+			setPromptState({
+				kind,
+				promptTargetIndex: selectorState.selectedIndex,
+				value:
+					kind === "edit"
+						? selectedSlot.candidate.content
+						: activeDemo.defaultRefineInstruction,
+			});
+		},
+		[activeDemo.defaultRefineInstruction, phase, promptState, selectorState],
+	);
+
+	const submitPrompt = useCallback(() => {
+		if (!promptState || !selectorState) {
+			return;
+		}
+
+		const selectedSlot = selectorState.slots[promptState.promptTargetIndex];
+		if (selectedSlot?.status !== "ready") {
+			cancelPrompt();
+			return;
+		}
+
+		if (promptState.kind === "edit") {
+			const nextValue = promptState.value.trim();
+			setPromptState(null);
+			setSelectedResult({
+				action: "confirm",
+				selected: nextValue || selectedSlot.candidate.content,
+				selectedCandidate: selectedSlot.candidate,
+				selectedIndex: promptState.promptTargetIndex,
+				edited:
+					(nextValue || selectedSlot.candidate.content) !==
+					selectedSlot.candidate.content,
+			});
+			setPhase("selected");
+			return;
+		}
+
+		const guide =
+			promptState.value.trim() || activeDemo.defaultRefineInstruction;
+		setPromptState(null);
+		startSelector({
+			fallbacks: activeDemo.refinedFallbacks,
+			replayGeneration: null,
+			runLine: "Refining commit messages",
+			contextNote: `→ Refine: ${guide}`,
+		});
+	}, [
+		activeDemo.defaultRefineInstruction,
+		activeDemo.refinedFallbacks,
+		cancelPrompt,
+		promptState,
+		selectorState,
+		startSelector,
+	]);
+
+	const handlePromptInputKeyDown = useCallback(
+		(event: ReactKeyboardEvent) => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				submitPrompt();
+				return;
+			}
+
+			if (event.key === "Escape") {
+				event.preventDefault();
+				cancelPrompt();
+			}
+		},
+		[cancelPrompt, submitPrompt],
+	);
 
 	const onKeyDown = useCallback(
 		(event: KeyboardEvent) => {
@@ -536,6 +734,37 @@ export function TerminalTabsDemo() {
 
 			if (phase !== "selector") return;
 			if (isInteractiveKeyTarget(event.target)) return;
+			if (promptState) {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					cancelPrompt();
+				}
+				return;
+			}
+
+			if (event.key === "e") {
+				event.preventDefault();
+				openPrompt("edit");
+				return;
+			}
+
+			if (event.key === "r") {
+				event.preventDefault();
+				openPrompt("refine");
+				return;
+			}
+
+			if (event.key === "E" || (event.key === "e" && event.shiftKey)) {
+				event.preventDefault();
+				startSelector({
+					models: activeDemo.escalatedModels,
+					fallbacks: activeDemo.escalatedFallbacks,
+					replayGeneration: null,
+					runLine: "Escalating to stronger models",
+					contextNote: "→ Escalate to stronger models",
+				});
+				return;
+			}
 
 			const result = selectorControllerRef.current?.handleKey({
 				key: event.key,
@@ -545,7 +774,16 @@ export function TerminalTabsDemo() {
 			event.preventDefault();
 			onResult(result);
 		},
-		[phase, onResult, startSelector],
+		[
+			activeDemo.escalatedFallbacks,
+			activeDemo.escalatedModels,
+			cancelPrompt,
+			onResult,
+			openPrompt,
+			phase,
+			promptState,
+			startSelector,
+		],
 	);
 
 	useEffect(() => {
@@ -554,7 +792,7 @@ export function TerminalTabsDemo() {
 	}, [onKeyDown]);
 
 	const selectorCopy = {
-		runningLabel: `${activeDemo.runLine}...`,
+		runningLabel: `${selectorRunLine}...`,
 		selectionLabel: "Select a commit message",
 		itemLabelSingular: "commit message",
 		itemLabelPlural: "commit messages",
@@ -568,9 +806,17 @@ export function TerminalTabsDemo() {
 	const selectorFrame =
 		selectorState !== null
 			? selectorRenderFrame({
-					state: selectorState,
+					state: promptState
+						? {
+								...selectorState,
+								mode: "prompt",
+								promptKind: promptState.kind,
+								promptTargetIndex: promptState.promptTargetIndex,
+							}
+						: selectorState,
 					nowMs: spinnerFrameIndex * 80,
 					spinnerFrames: SPINNER_FRAMES,
+					bufferText: promptState?.value,
 					copy: selectorCopy,
 					capabilities: selectorCapabilities,
 				})
@@ -651,13 +897,44 @@ export function TerminalTabsDemo() {
 					{phase === "selector" && selectorState && selectorFrame && (
 						<div className="text-sm leading-relaxed">
 							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
+							{contextNote && (
+								<div className="pl-4 text-foreground-muted/60">
+									{contextNote}
+								</div>
+							)}
 							<div className="text-foreground-secondary">
 								<SelectorFrame
 									lines={selectorLines}
 									slotIndices={selectorSlotIndices}
 									onHover={handleCandidateHover}
 									onClick={handleCandidateClick}
-									interactive
+									interactive={!promptState}
+									editableSlot={
+										promptState?.kind === "edit"
+											? {
+													value: promptState.value,
+													onChange: (value) =>
+														setPromptState((current) =>
+															current == null ? current : { ...current, value },
+														),
+													onKeyDown: handlePromptInputKeyDown,
+													inputRef: promptInputRef,
+												}
+											: undefined
+									}
+									editablePrompt={
+										promptState?.kind === "refine"
+											? {
+													value: promptState.value,
+													onChange: (value) =>
+														setPromptState((current) =>
+															current == null ? current : { ...current, value },
+														),
+													onKeyDown: handlePromptInputKeyDown,
+													inputRef: promptInputRef,
+												}
+											: undefined
+									}
 								/>
 							</div>
 						</div>
@@ -666,6 +943,11 @@ export function TerminalTabsDemo() {
 					{phase === "selected" && selectedResult?.selected && (
 						<div className="text-sm leading-relaxed">
 							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
+							{contextNote && (
+								<div className="pl-4 text-foreground-muted/60">
+									{contextNote}
+								</div>
+							)}
 							<div>
 								{selectedPhaseLines.map((line, index) =>
 									line.kind === "success" ? (

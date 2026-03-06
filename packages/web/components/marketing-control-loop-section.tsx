@@ -74,17 +74,12 @@ const COMPARE_SLOTS: SelectorSlot[] = [
 	readySlot(
 		"slot-0",
 		"feat(api): add stream event timestamps and metadata support",
-		{ model: "ministral-3b", cost: 0.0001049, generationMs: 871 },
+		{ model: "mistral/ministral-3b", cost: 0.0001049, generationMs: 871 },
 	),
-	readySlot(
-		"slot-1",
-		"refactor(api): restructure stream event metadata handling",
-		{ model: "ministral-3b", cost: 0.0001049, generationMs: 871 },
-	),
-	readySlot("slot-2", "fix(api): add missing timestamp to stream events", {
-		model: "ministral-3b",
-		cost: 0.0001049,
-		generationMs: 871,
+	readySlot("slot-1", "fix(api): add missing timestamp to stream events", {
+		model: "xai/grok-code-fast-1",
+		cost: 0.0001842,
+		generationMs: 902,
 	}),
 ];
 
@@ -92,12 +87,12 @@ const REFINE_SLOTS: SelectorSlot[] = [
 	readySlot(
 		"slot-0",
 		"fix(api): add atMs field to stream event payload for timestamp tracking",
-		{ model: "ministral-3b", cost: 0.0001, generationMs: 893 },
+		{ model: "mistral/ministral-3b", cost: 0.0001, generationMs: 893 },
 	),
 	readySlot(
 		"slot-1",
 		"fix(api): add missing atMs timestamp field to commit message stream events",
-		{ model: "ministral-3b", cost: 0.0001, generationMs: 893 },
+		{ model: "xai/grok-code-fast-1", cost: 0.0001734, generationMs: 944 },
 	),
 ];
 
@@ -112,11 +107,9 @@ const ESCALATE_SLOTS: SelectorSlot[] = [
 	readySlot(
 		"slot-0",
 		"feat(api): add event timestamp and metadata support to streams",
-		{ model: "claude-sonnet-4-20250514", cost: 0.0032, generationMs: 1800 },
+		{ model: "anthropic/claude-sonnet-4.6", cost: 0.0032, generationMs: 1800 },
 	),
-	pendingSlot("slot-1", "gpt-4.1"),
-	pendingSlot("slot-2", "gemini-2.5-pro"),
-	pendingSlot("slot-3", "claude-sonnet-4-20250514"),
+	pendingSlot("slot-1", "openai/gpt-5.3-codex"),
 ];
 
 function buildInput(
@@ -222,7 +215,7 @@ function CompareTerminal({
 }: {
 	toast: { visible: boolean; show: () => void };
 }) {
-	const [selectedIndex, setSelectedIndex] = useState(2);
+	const [selectedIndex, setSelectedIndex] = useState(1);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const input = buildInput(COMPARE_SLOTS, selectedIndex, {
@@ -308,12 +301,12 @@ function EditTerminal({
 
 	const input = buildInput(
 		COMPARE_SLOTS,
-		2,
+		1,
 		{ refine: true, escalate: true },
 		{
 			mode: "prompt",
 			promptKind: "edit",
-			promptTargetIndex: 2,
+			promptTargetIndex: 1,
 		},
 	);
 	const { lines, slotIndices } = buildLines(input);
@@ -400,7 +393,7 @@ function RefineTerminal({
 // --- Escalate: previous generation (done) + escalated generation (running) ---
 
 function EscalateTerminal() {
-	const prevInput = buildInput(COMPARE_SLOTS, 2, {
+	const prevInput = buildInput(COMPARE_SLOTS, 1, {
 		edit: true,
 		refine: true,
 		escalate: true,
@@ -415,7 +408,7 @@ function EscalateTerminal() {
 		ESCALATE_SLOTS,
 		0,
 		{ edit: true, refine: true, escalate: true },
-		{ isGenerating: true, totalSlots: 4 },
+		{ isGenerating: true, totalSlots: ESCALATE_SLOTS.length },
 	);
 	const { lines: escalateLines, slotIndices } = buildLines(escalateInput);
 
