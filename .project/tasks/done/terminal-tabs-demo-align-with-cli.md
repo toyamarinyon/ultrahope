@@ -2,7 +2,7 @@
 
 Owner: satoshi
 Expected completion date: 2026-03-06
-Next action: Run browser verification on the marketing homepage once `packages/web` can be served locally without the unrelated port `3000` app, the `.next/dev/lock` conflict, or Google Fonts fetch failures during build.
+Completed: Browser verification on the marketing homepage was completed by the user on 2026-03-06.
 
 ## Motivation
 
@@ -36,7 +36,7 @@ Acceptance criteria:
 
 - [x] `RenderLine` and `SelectorFrame` live in a shared file
 - [x] `marketing-control-loop-section.tsx` imports from the shared file and works identically
-- [ ] No visual regression
+- [x] No visual regression
 
 ### Task 2: Replace manual selector rendering in terminal-tabs-demo
 
@@ -107,9 +107,8 @@ Visual verification in browser at the marketing page to confirm the demo termina
 - [x] `bun --cwd packages/web typecheck`
 - [x] `bun --cwd packages/web test lib/util/terminal-selector-view-model.test.ts`
 - [x] `mise run format`
-- [ ] Browser verification on the marketing homepage
-  Blocked in this environment:
-  an unrelated app is already serving on `http://localhost:3000`, `mise run web:dev` for this repo fails because `packages/web/.next/dev/lock` is already held, and `bun --cwd packages/web build` fails under restricted network because `next/font` cannot fetch Google Fonts.
+- [x] Browser verification on the marketing homepage
+  Verified by the user on 2026-03-06. The terminal tabs demo matches the CLI-aligned rendering with no visual regression observed on the marketing page.
 
 ## Related files
 
