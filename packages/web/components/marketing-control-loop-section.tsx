@@ -499,7 +499,7 @@ export function MarketingControlLoopSection() {
 								id="control-loop-panel"
 								role="tabpanel"
 								aria-labelledby={activeTabId}
-								className="relative h-100 overflow-auto px-5 py-5 sm:px-6 sm:py-6"
+								className="relative h-100 overflow-auto px-5 py-5 text-sm text-foreground-secondary leading-relaxed sm:px-6 sm:py-6"
 							>
 								{terminalContent}
 								<DemoToast visible={toast.visible} />

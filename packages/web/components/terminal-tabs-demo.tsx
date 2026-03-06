@@ -948,7 +948,7 @@ export function TerminalTabsDemo() {
 					id={panelId}
 					role="tabpanel"
 					aria-labelledby={activeTabId}
-					className="h-120 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
+					className="h-100 overflow-auto px-4 py-4 text-sm text-foreground-secondary leading-relaxed"
 				>
 					<div className="flex items-start gap-2">
 						<span className="text-foreground shrink-0">$</span>

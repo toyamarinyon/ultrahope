@@ -62,7 +62,7 @@ function renderHintActions(
 						<button
 							type="button"
 							onClick={() => onHintAction(action)}
-							className="cursor-pointer rounded px-0.5 text-foreground-muted/60 transition hover:text-foreground focus-visible:text-foreground focus-visible:outline focus-visible:outline-1 focus-visible:outline-foreground-muted"
+							className="cursor-pointer rounded px-0.5 text-foreground-muted/60 transition hover:text-foreground focus-visible:text-foreground focus-visible:outline-1 focus-visible:outline-foreground-muted"
 						>
 							{WEB_HINT_ACTION_LABELS[action]}
 						</button>
