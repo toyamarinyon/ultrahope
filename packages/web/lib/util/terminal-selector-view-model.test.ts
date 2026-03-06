@@ -202,7 +202,7 @@ describe("terminal-selector-view-model", () => {
 	it("renders default ready hint as actions only in renderSelectorLines", () => {
 		const readyLines = renderSelectorLines(readyState, 0);
 
-		const hintLine = "↑↓ navigate enter confirm | (q)uit";
+		const hintLine = "↑↓ navigate ⏎ confirm | (q)uit";
 		const hintIndex = readyLines.indexOf(hintLine);
 		const summaryLineIndex = readyLines.findIndex((line) =>
 			line.includes("feat: add selector metadata"),

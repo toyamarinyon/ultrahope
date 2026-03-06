@@ -185,10 +185,19 @@ function useTypingAnimation(
 function buildSlotIndices(lines: SelectorRenderLine[]): Map<number, number> {
 	const slotIndices = new Map<number, number>();
 	let slotCount = 0;
+	let currentSlotIndex: number | undefined;
 	for (const [lineIndex, line] of lines.entries()) {
-		if (line.type !== "slot") continue;
-		slotIndices.set(lineIndex, slotCount);
-		slotCount += 1;
+		if (line.type === "slot") {
+			currentSlotIndex = slotCount;
+			slotIndices.set(lineIndex, currentSlotIndex);
+			slotCount += 1;
+			continue;
+		}
+		if (line.type === "slotMeta" && currentSlotIndex != null) {
+			slotIndices.set(lineIndex, currentSlotIndex);
+			continue;
+		}
+		currentSlotIndex = undefined;
 	}
 	return slotIndices;
 }
@@ -551,7 +560,7 @@ export function TerminalTabsDemo() {
 		itemLabelPlural: "commit messages",
 	};
 	const selectorCapabilities = {
-		clickConfirm: true,
+		clickConfirm: false,
 		edit: true,
 		refine: true,
 		escalate: true,
@@ -640,9 +649,9 @@ export function TerminalTabsDemo() {
 					</div>
 
 					{phase === "selector" && selectorState && selectorFrame && (
-						<div className="mt-2 text-sm">
+						<div className="text-sm leading-relaxed">
 							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
-							<div className="mt-2 leading-relaxed text-foreground-secondary">
+							<div className="text-foreground-secondary">
 								<SelectorFrame
 									lines={selectorLines}
 									slotIndices={selectorSlotIndices}
@@ -655,9 +664,9 @@ export function TerminalTabsDemo() {
 					)}
 
 					{phase === "selected" && selectedResult?.selected && (
-						<div className="mt-2 text-sm">
+						<div className="text-sm leading-relaxed">
 							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
-							<div className="mt-2 space-y-1">
+							<div>
 								{selectedPhaseLines.map((line, index) =>
 									line.kind === "success" ? (
 										<SuccessLine

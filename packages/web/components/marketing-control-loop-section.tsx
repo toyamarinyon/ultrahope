@@ -157,11 +157,19 @@ function buildLines(input: BuildSelectorViewModelInput): {
 	const lines = buildSelectorRenderLines(frame);
 	const slotIndices = new Map<number, number>();
 	let slotCounter = 0;
+	let currentSlotIndex: number | undefined;
 	for (let i = 0; i < lines.length; i++) {
 		if (lines[i].type === "slot") {
-			slotIndices.set(i, slotCounter);
-			slotCounter++;
+			currentSlotIndex = slotCounter;
+			slotIndices.set(i, currentSlotIndex);
+			slotCounter += 1;
+			continue;
 		}
+		if (lines[i].type === "slotMeta" && currentSlotIndex != null) {
+			slotIndices.set(i, currentSlotIndex);
+			continue;
+		}
+		currentSlotIndex = undefined;
 	}
 	return { lines, slotIndices };
 }

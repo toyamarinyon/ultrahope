@@ -98,6 +98,9 @@ Visual verification in browser at the marketing page to confirm the demo termina
 - Rebuilt the selected phase to mirror the CLI flow: generated summary, selected summary, and a tab-specific final output line (`git commit -m ...`, `jj describe -r @ -m ...`, or raw translate output).
 - Removed the old demo-only selector helpers and stopped accepting selector keyboard input after confirmation so the selected state stays static like the CLI.
 - Adjusted Web success-line rendering so only the `✔` glyph uses the success color, matching the CLI's color placement for `Found ...` and post-confirm lines.
+- Extended slot interactivity to the metadata line so hovering/clicking model/cost text changes the selected candidate just like hovering the title line.
+- Updated the web hint copy to use the Unicode enter-key symbol for confirm and removed `click confirm` from the homepage demo hint while preserving click-to-confirm behavior.
+- Normalized blank-line rendering to use a full text row instead of a custom short spacer so terminal rows stay visually equidistant while selecting and after confirmation.
 
 ## Validation results
 

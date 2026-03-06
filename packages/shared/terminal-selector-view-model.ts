@@ -185,7 +185,7 @@ const DEFAULT_HINT_LABELS: Record<
 	},
 	web: {
 		navigate: "↑↓ navigate",
-		confirm: "enter confirm",
+		confirm: "⏎ confirm",
 		clickConfirm: "click confirm",
 		edit: "(e)dit",
 		refine: "(r)efine",

@@ -53,7 +53,11 @@ export function RenderLine({
 		case "headerDone":
 			return <SuccessLine text={`${line.label}${line.costSuffix}`} />;
 		case "blank":
-			return <div className="h-2" />;
+			return (
+				<div aria-hidden="true" className="select-none">
+					&nbsp;
+				</div>
+			);
 		case "slot": {
 			if (line.radio === ">" && editableSlot) {
 				return (
@@ -97,7 +101,7 @@ export function RenderLine({
 				return (
 					<button
 						type="button"
-						className="block w-full cursor-pointer rounded pl-4 text-left hover:bg-surface-hover"
+						className="block w-full cursor-pointer rounded pl-4 text-left"
 						onMouseEnter={() => onHover?.(slotIndex)}
 						onClick={() => onClick?.(slotIndex)}
 					>
@@ -109,6 +113,20 @@ export function RenderLine({
 			return <div className="pl-4">{content}</div>;
 		}
 		case "slotMeta":
+			if (interactive && slotIndex != null) {
+				return (
+					<button
+						type="button"
+						className={`block w-full cursor-pointer rounded pl-8 text-left ${
+							line.muted ? "text-foreground-muted/60" : "text-foreground"
+						}`}
+						onMouseEnter={() => onHover?.(slotIndex)}
+						onClick={() => onClick?.(slotIndex)}
+					>
+						{line.text}
+					</button>
+				);
+			}
 			return (
 				<div
 					className={`pl-8 ${line.muted ? "text-foreground-muted/60" : "text-foreground"}`}
