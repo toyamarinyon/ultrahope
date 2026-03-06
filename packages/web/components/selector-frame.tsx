@@ -3,6 +3,7 @@
 import type { KeyboardEvent, RefObject } from "react";
 import {
 	formatSelectorHintActions,
+	type SelectorHintAction,
 	type SelectorRenderLine,
 } from "../../shared/terminal-selector-view-model";
 
@@ -11,6 +12,68 @@ export interface SelectorFrameEditableInput {
 	onChange: (value: string) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	inputRef: RefObject<HTMLInputElement | null>;
+}
+
+const CLICKABLE_HINT_ACTIONS = new Set<SelectorHintAction>([
+	"confirm",
+	"edit",
+	"refine",
+	"escalate",
+]);
+
+const HINT_ACTION_GROUPS: SelectorHintAction[][] = [
+	["navigate", "confirm", "clickConfirm"],
+	["edit", "refine", "escalate"],
+	["quit"],
+];
+
+const WEB_HINT_ACTION_LABELS: Record<SelectorHintAction, string> = {
+	navigate: "↑↓ navigate",
+	confirm: "⏎ confirm",
+	clickConfirm: "click confirm",
+	edit: "(e)dit",
+	refine: "(r)efine",
+	escalate: "(E)scalate",
+	quit: "(q)uit",
+};
+
+function renderHintActions(
+	actions: SelectorHintAction[],
+	onHintAction?: (action: SelectorHintAction) => void,
+) {
+	if (
+		!onHintAction ||
+		!actions.some((action) => CLICKABLE_HINT_ACTIONS.has(action))
+	) {
+		return formatSelectorHintActions(actions, "web");
+	}
+
+	const actionSet = new Set(actions);
+	const groupedActions = HINT_ACTION_GROUPS.map((group) =>
+		group.filter((action) => actionSet.has(action)),
+	).filter((group) => group.length > 0);
+
+	return groupedActions.map((group, groupIndex) => (
+		<span key={group.join("-")}>
+			{group.map((action, actionIndex) => (
+				<span key={action}>
+					{actionIndex > 0 ? " " : null}
+					{CLICKABLE_HINT_ACTIONS.has(action) ? (
+						<button
+							type="button"
+							onClick={() => onHintAction(action)}
+							className="cursor-pointer rounded px-0.5 text-foreground-muted/60 transition hover:text-foreground focus-visible:text-foreground focus-visible:outline focus-visible:outline-1 focus-visible:outline-foreground-muted"
+						>
+							{WEB_HINT_ACTION_LABELS[action]}
+						</button>
+					) : (
+						<span>{WEB_HINT_ACTION_LABELS[action]}</span>
+					)}
+				</span>
+			))}
+			{groupIndex < groupedActions.length - 1 ? <span> | </span> : null}
+		</span>
+	));
 }
 
 export function SuccessLine({ text }: { text: string }) {
@@ -27,6 +90,7 @@ interface RenderLineProps {
 	slotIndex?: number;
 	onHover?: (index: number) => void;
 	onClick?: (index: number) => void;
+	onHintAction?: (action: SelectorHintAction) => void;
 	interactive?: boolean;
 	editableSlot?: SelectorFrameEditableInput;
 	editablePrompt?: SelectorFrameEditableInput;
@@ -37,6 +101,7 @@ export function RenderLine({
 	slotIndex,
 	onHover,
 	onClick,
+	onHintAction,
 	interactive,
 	editableSlot,
 	editablePrompt,
@@ -137,7 +202,7 @@ export function RenderLine({
 		case "promptInput":
 			if (editablePrompt) {
 				return (
-					<div>
+					<div className="pl-4">
 						<span className="text-foreground">{line.prefix}</span>
 						<input
 							ref={editablePrompt.inputRef}
@@ -152,18 +217,18 @@ export function RenderLine({
 				);
 			}
 			return (
-				<div>
+				<div className="pl-4">
 					<span className="text-foreground">{line.prefix}</span>
 					{line.text}
 				</div>
 			);
 		case "placeholder":
-			return <div className="text-foreground-muted/40">{line.text}</div>;
+			return <div className="pl-4 text-foreground-muted/40">{line.text}</div>;
 		case "hint":
 			if (line.actions.length > 0) {
 				return (
 					<div className="pl-4 text-foreground-muted/60">
-						{formatSelectorHintActions(line.actions, "web")}
+						{renderHintActions(line.actions, onHintAction)}
 					</div>
 				);
 			}
@@ -182,6 +247,7 @@ export interface SelectorFrameProps {
 	slotIndices?: Map<number, number>;
 	onHover?: (index: number) => void;
 	onClick?: (index: number) => void;
+	onHintAction?: (action: SelectorHintAction) => void;
 	interactive?: boolean;
 	editableSlot?: SelectorFrameEditableInput;
 	editablePrompt?: SelectorFrameEditableInput;
@@ -192,6 +258,7 @@ export function SelectorFrame({
 	slotIndices,
 	onHover,
 	onClick,
+	onHintAction,
 	interactive,
 	editableSlot,
 	editablePrompt,
@@ -205,6 +272,7 @@ export function SelectorFrame({
 					slotIndex={slotIndices?.get(lineIndex)}
 					onHover={onHover}
 					onClick={onClick}
+					onHintAction={onHintAction}
 					interactive={interactive}
 					editableSlot={editableSlot}
 					editablePrompt={editablePrompt}

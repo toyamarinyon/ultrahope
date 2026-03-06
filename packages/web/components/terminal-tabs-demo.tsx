@@ -29,6 +29,7 @@ import type { PromptKind } from "../../shared/terminal-selector-contract";
 import { normalizeCandidateContentForDisplay } from "../../shared/terminal-selector-helpers";
 import {
 	buildSelectorRenderLines,
+	type SelectorHintAction,
 	type SelectorRenderLine,
 } from "../../shared/terminal-selector-view-model";
 import type {
@@ -617,6 +618,31 @@ export function TerminalTabsDemo() {
 		[onResult, phase, promptState],
 	);
 
+	const confirmSelection = useCallback(() => {
+		if (phase !== "selector" || promptState) return;
+		const result = selectorControllerRef.current?.confirm();
+		if (result) {
+			onResult(result);
+		}
+	}, [onResult, phase, promptState]);
+
+	const startEscalation = useCallback(() => {
+		if (phase !== "selector" || promptState) return;
+		startSelector({
+			models: activeDemo.escalatedModels,
+			fallbacks: activeDemo.escalatedFallbacks,
+			replayGeneration: null,
+			runLine: "Escalating to stronger models",
+			contextNote: "→ Escalate to stronger models",
+		});
+	}, [
+		activeDemo.escalatedFallbacks,
+		activeDemo.escalatedModels,
+		phase,
+		promptState,
+		startSelector,
+	]);
+
 	useEffect(() => {
 		if (!selectorState?.isGenerating) return;
 		const timer = setInterval(() => {
@@ -628,8 +654,11 @@ export function TerminalTabsDemo() {
 	useEffect(() => {
 		if (!promptState) return;
 		const timer = setTimeout(() => {
-			promptInputRef.current?.focus();
-			promptInputRef.current?.select();
+			const input = promptInputRef.current;
+			if (!input) return;
+			input.focus();
+			const cursorPosition = input.value.length;
+			input.setSelectionRange(cursorPosition, cursorPosition);
 		}, 0);
 		return () => clearTimeout(timer);
 	}, [promptState]);
@@ -653,6 +682,28 @@ export function TerminalTabsDemo() {
 			});
 		},
 		[activeDemo.defaultRefineInstruction, phase, promptState, selectorState],
+	);
+
+	const handleHintAction = useCallback(
+		(action: SelectorHintAction) => {
+			switch (action) {
+				case "confirm":
+					confirmSelection();
+					return;
+				case "edit":
+					openPrompt("edit");
+					return;
+				case "refine":
+					openPrompt("refine");
+					return;
+				case "escalate":
+					startEscalation();
+					return;
+				default:
+					return;
+			}
+		},
+		[confirmSelection, openPrompt, startEscalation],
 	);
 
 	const submitPrompt = useCallback(() => {
@@ -756,13 +807,7 @@ export function TerminalTabsDemo() {
 
 			if (event.key === "E" || (event.key === "e" && event.shiftKey)) {
 				event.preventDefault();
-				startSelector({
-					models: activeDemo.escalatedModels,
-					fallbacks: activeDemo.escalatedFallbacks,
-					replayGeneration: null,
-					runLine: "Escalating to stronger models",
-					contextNote: "→ Escalate to stronger models",
-				});
+				startEscalation();
 				return;
 			}
 
@@ -775,13 +820,12 @@ export function TerminalTabsDemo() {
 			onResult(result);
 		},
 		[
-			activeDemo.escalatedFallbacks,
-			activeDemo.escalatedModels,
 			cancelPrompt,
 			onResult,
 			openPrompt,
 			phase,
 			promptState,
+			startEscalation,
 			startSelector,
 		],
 	);
@@ -908,6 +952,7 @@ export function TerminalTabsDemo() {
 									slotIndices={selectorSlotIndices}
 									onHover={handleCandidateHover}
 									onClick={handleCandidateClick}
+									onHintAction={handleHintAction}
 									interactive={!promptState}
 									editableSlot={
 										promptState?.kind === "edit"
