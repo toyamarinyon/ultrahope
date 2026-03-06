@@ -48,7 +48,7 @@ export class InsufficientBalanceError extends Error {
 			}
 		} else {
 			lines.push(
-				"Error: Your free credit has been exhausted. Upgrade to Pro for unlimited requests with $5 included credit.",
+				"Error: Your free credit has been exhausted. Upgrade to Pro for unlimited requests with $1 included credit.",
 			);
 			if (this.actions?.upgrade) {
 				lines.push(`  Upgrade: ${this.actions.upgrade}`);

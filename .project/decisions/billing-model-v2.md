@@ -13,7 +13,7 @@ Adopt a **Zed-style** billing model: subscription fee + included usage credit, t
 | Plan | Monthly Fee | Included Credit | Overage |
 |------|-------------|-----------------|---------|
 | Free | $0 | $0.40 | N/A (hard cap) |
-| Pro | $10 | $5 | Actual cost, no markup |
+| Pro | $3 | $1 | Actual cost, no markup |
 
 ## Rationale
 
@@ -71,7 +71,7 @@ Polar.sh meter credits use integers, but AI costs are sub-cent (e.g., `$0.00123`
 | Value | USD | Microdollars |
 |-------|-----|--------------|
 | Free credit | $0.40 | 400,000 |
-| Pro credit | $5.00 | 5,000,000 |
+| Pro credit | $1.00 | 1,000,000 |
 | Typical generation | $0.00123 | 1,230 |
 
 **Why not cents?** A $0.00123 generation = 0.123 cents — still a float. Microdollars ensure all values are clean integers.
@@ -84,7 +84,7 @@ Previous model used token counts with Polar.sh meters. New model:
 |--------|-------|
 | Credits = tokens | Credits = microdollars |
 | Free: 400K tokens | Free: 400K microdollars ($0.40) |
-| Pro: 1M tokens | Pro: 5M microdollars ($5.00) |
+| Pro: 1M tokens | Pro: 1M microdollars ($1.00) |
 | Meter: sum of totalTokens | Meter: sum of cost (microdollars) |
 
 ### Polar.sh Changes
@@ -180,7 +180,7 @@ When credits are exhausted, return a structured 402 response with actionable lin
   "actions": {
     "upgrade": "https://ultrahope.dev/pricing"
   },
-  "hint": "Upgrade to Pro for $10/month with $5 included credit and one-time credit purchases."
+  "hint": "Upgrade to Pro for $3/month with $1 included credit and one-time credit purchases."
 }
 ```
 
@@ -188,7 +188,7 @@ When credits are exhausted, return a structured 402 response with actionable lin
 
 **Products:**
 - Free: free price, $0.40 credit benefit (no rollover)
-- Pro: $10/month fixed price, $5 credit benefit (no rollover), **no metered price**
+- Pro: $3/month fixed price, $1 credit benefit (no rollover), **no metered price**
 - Credit $10: $10 one-time, $10 credit benefit (rollover: true)
 - Credit $20: $20 one-time, $20 credit benefit (rollover: true)
 

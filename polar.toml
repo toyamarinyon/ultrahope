@@ -1,0 +1,105 @@
+# Polar sync configuration for Ultrahope.
+# Money amounts are expressed in cents.
+# Meter credit units are expressed in microdollars (1 USD = 1_000_000 units).
+
+[[meters]]
+key = "usage_cost"
+name = "Usage Cost"
+
+[meters.filter]
+conjunction = "and"
+
+[[meters.filter.clauses]]
+property = "name"
+operator = "eq"
+value = "usage"
+
+[meters.aggregation]
+func = "sum"
+property = "cost"
+
+[[benefits]]
+key = "pro_credits"
+type = "meter_credit"
+description = "$1 included credit"
+meterKey = "usage_cost"
+units = 1_000_000
+rollover = false
+
+[[benefits]]
+key = "founder_credits"
+type = "meter_credit"
+description = "Founder unlimited credit"
+meterKey = "usage_cost"
+units = 999_000_000
+rollover = false
+
+[[benefits]]
+key = "credit_10"
+type = "meter_credit"
+description = "$10 credit top-up"
+meterKey = "usage_cost"
+units = 10_000_000
+rollover = true
+
+[[benefits]]
+key = "credit_20"
+type = "meter_credit"
+description = "$20 credit top-up"
+meterKey = "usage_cost"
+units = 20_000_000
+rollover = true
+
+[[products]]
+key = "product_free"
+name = "Free"
+description = "Free plan with 5 requests/day"
+recurringInterval = "month"
+benefitKeys = []
+
+[[products.prices]]
+amountType = "free"
+
+[[products]]
+key = "product_pro"
+name = "Pro"
+description = "Pro plan with $1 included credit"
+recurringInterval = "month"
+benefitKeys = ["pro_credits"]
+
+[[products.prices]]
+amountType = "fixed"
+priceAmount = 300
+priceCurrency = "usd"
+
+[[products]]
+key = "product_founder"
+name = "Founder"
+description = "Internal founder plan"
+recurringInterval = "month"
+benefitKeys = ["founder_credits"]
+
+[[products.prices]]
+amountType = "free"
+
+[[oneTimeProducts]]
+key = "product_credit_10"
+name = "Credit $10"
+description = "Add $10 usage credit to your account"
+benefitKeys = ["credit_10"]
+
+[[oneTimeProducts.prices]]
+amountType = "fixed"
+priceAmount = 1000
+priceCurrency = "usd"
+
+[[oneTimeProducts]]
+key = "product_credit_20"
+name = "Credit $20"
+description = "Add $20 usage credit to your account"
+benefitKeys = ["credit_20"]
+
+[[oneTimeProducts.prices]]
+amountType = "fixed"
+priceAmount = 2000
+priceCurrency = "usd"

@@ -12,6 +12,7 @@
 		"check:write": "biome check --write",
 		"knip": "knip",
 		"ok": "turbo run ok",
+		"polar-sync": "bun run packages/polar-sync/index.ts",
 		"scripts:run": "bun run --cwd scripts",
 		"bench:commit-message": "bun run --cwd packages/commit-message-benchmark generate",
 		"bench:commit-message:add": "bun run --cwd packages/commit-message-benchmark add",

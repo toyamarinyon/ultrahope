@@ -43,11 +43,11 @@ const plans = [
 	},
 	{
 		name: "Pro",
-		price: "$10",
+		price: "$3",
 		description: "For power users",
 		features: [
 			{ key: "requests", content: "Unlimited requests" },
-			{ key: "credits", content: "$5 included credit/month" },
+			{ key: "credits", content: "$1 included credit/month" },
 			{ key: "overage", content: "Pay-as-you-go overage at actual cost" },
 			{ key: "support", content: "Priority support" },
 		],

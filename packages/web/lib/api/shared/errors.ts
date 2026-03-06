@@ -58,7 +58,7 @@ export function invalidModelErrorBody(model: string): InvalidModelBody {
 export function createDailyLimitExceededBody(
 	error: DailyLimitExceededError,
 	baseUrl: string,
-	hint = "Upgrade to Pro for unlimited requests with $5 included credit.",
+	hint = "Upgrade to Pro for unlimited requests with $1 included credit.",
 ): DailyLimitExceededBody {
 	return {
 		error: "daily_limit_exceeded",

@@ -15,7 +15,7 @@
     },
     "packages/cli": {
       "name": "ultrahope",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "bin": {
         "ultrahope": "dist/index.js",
         "git-ultrahope": "dist/git-ultrahope.js",
@@ -46,6 +46,19 @@
       "devDependencies": {
         "@types/bun": "1.3.9",
         "@types/node": "25.0.8",
+        "typescript": "5.9.3",
+      },
+    },
+    "packages/polar-sync": {
+      "name": "@ultrahope/polar-sync",
+      "version": "0.1.0",
+      "dependencies": {
+        "@polar-sh/sdk": "^0.42.2",
+        "smol-toml": "^1.4.1",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.9",
+        "@types/node": "^25.0.10",
         "typescript": "5.9.3",
       },
     },
@@ -93,7 +106,6 @@
       "name": "scripts",
       "dependencies": {
         "@libsql/client": "^0.17.0",
-        "@polar-sh/sdk": "^0.42.2",
         "@tursodatabase/api": "*",
         "@vercel/sdk": "*",
       },
@@ -695,6 +707,8 @@
     "@typespec/ts-http-runtime": ["@typespec/ts-http-runtime@0.3.2", "", { "dependencies": { "http-proxy-agent": "^7.0.0", "https-proxy-agent": "^7.0.0", "tslib": "^2.6.2" } }, "sha512-IlqQ/Gv22xUC1r/WQm4StLkYQmaaTsXAhUVsNE0+xiyf0yRFiH5++q78U3bw6bLKDCTmh0uqKB9eG9+Bt75Dkg=="],
 
     "@ultrahope/commit-message-benchmark": ["@ultrahope/commit-message-benchmark@workspace:packages/commit-message-benchmark"],
+
+    "@ultrahope/polar-sync": ["@ultrahope/polar-sync@workspace:packages/polar-sync"],
 
     "@ultrahope/story": ["@ultrahope/story@workspace:packages/story"],
 

@@ -5,14 +5,12 @@
 	"dependencies": {
 		"@libsql/client": "^0.17.0",
 		"@tursodatabase/api": "*",
-		"@vercel/sdk": "*",
-		"@polar-sh/sdk": "^0.42.2"
+		"@vercel/sdk": "*"
 	},
 	"scripts": {
 		"translate": "bun run translate.ts",
 		"fork-db": "bun run fork-db.ts",
 		"randomize-port": "bun run randomize-port.ts",
-		"polar-sync": "bun run polar-sync.ts",
 		"delete-user": "bun run delete-user.ts"
 	}
 }
