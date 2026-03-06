@@ -11,10 +11,10 @@ import type { SelectorSlot } from "../../shared/terminal-selector-contract";
 import {
 	type BuildSelectorViewModelInput,
 	buildSelectorRenderLines,
-	formatSelectorHintActions,
 	type SelectorRenderLine,
 	selectorRenderFrame,
 } from "../../shared/terminal-selector-view-model";
+import { SelectorFrame, SuccessLine } from "./selector-frame";
 import { TerminalWindow } from "./terminal-window";
 
 type ControlStepId = "compare" | "edit" | "refine" | "escalate";
@@ -166,203 +166,6 @@ function buildLines(input: BuildSelectorViewModelInput): {
 	return { lines, slotIndices };
 }
 
-// --- Render a single SelectorRenderLine to React ---
-
-function RenderLine({
-	line,
-	slotIndex,
-	onHover,
-	onClick,
-	interactive,
-	editableSlot,
-	editablePrompt,
-}: {
-	line: SelectorRenderLine;
-	slotIndex?: number;
-	onHover?: (index: number) => void;
-	onClick?: (index: number) => void;
-	interactive?: boolean;
-	editableSlot?: {
-		value: string;
-		onChange: (v: string) => void;
-		onKeyDown: (e: React.KeyboardEvent) => void;
-		inputRef: React.RefObject<HTMLInputElement | null>;
-	};
-	editablePrompt?: {
-		value: string;
-		onChange: (v: string) => void;
-		onKeyDown: (e: React.KeyboardEvent) => void;
-		inputRef: React.RefObject<HTMLInputElement | null>;
-	};
-}) {
-	switch (line.type) {
-		case "headerRunning":
-			return (
-				<div className="text-foreground-secondary">
-					<span className="text-blue-400">{line.spinner}</span> {line.label}{" "}
-					{line.progress}
-					{line.costSuffix}
-				</div>
-			);
-		case "headerDone":
-			return (
-				<div>
-					<span className="text-emerald-400">✔</span>{" "}
-					<span className="text-foreground">
-						{line.label}
-						{line.costSuffix}
-					</span>
-				</div>
-			);
-		case "blank":
-			return <div className="h-2" />;
-		case "slot": {
-			if (line.radio === ">" && editableSlot) {
-				return (
-					<div className="pl-4">
-						<span className="text-emerald-400">&gt;</span>{" "}
-						<input
-							ref={editableSlot.inputRef}
-							type="text"
-							value={editableSlot.value}
-							onChange={(e) => editableSlot.onChange(e.target.value)}
-							onKeyDown={editableSlot.onKeyDown}
-							className="bg-transparent text-foreground font-bold outline-none border-none w-[calc(100%-2rem)] caret-emerald-400"
-							aria-label="Edit commit message"
-						/>
-					</div>
-				);
-			}
-
-			const content = (
-				<>
-					<span
-						className={
-							line.selected ? "text-emerald-400" : "text-foreground-muted/60"
-						}
-					>
-						{line.radio}
-					</span>{" "}
-					<span
-						className={
-							line.selected
-								? "text-foreground font-bold"
-								: "text-foreground-muted/60"
-						}
-					>
-						{line.title}
-					</span>
-				</>
-			);
-
-			if (interactive && slotIndex != null) {
-				return (
-					<button
-						type="button"
-						className="block w-full pl-4 text-left hover:bg-surface-hover rounded cursor-pointer"
-						onMouseEnter={() => onHover?.(slotIndex)}
-						onClick={() => onClick?.(slotIndex)}
-					>
-						{content}
-					</button>
-				);
-			}
-
-			return <div className="pl-4">{content}</div>;
-		}
-		case "slotMeta":
-			return (
-				<div
-					className={`pl-8 ${line.muted ? "text-foreground-muted/60" : "text-foreground"}`}
-				>
-					{line.text}
-				</div>
-			);
-		case "promptInput":
-			if (editablePrompt) {
-				return (
-					<div>
-						<span className="text-foreground">{line.prefix}</span>
-						<input
-							ref={editablePrompt.inputRef}
-							type="text"
-							value={editablePrompt.value}
-							onChange={(e) => editablePrompt.onChange(e.target.value)}
-							onKeyDown={editablePrompt.onKeyDown}
-							className="bg-transparent text-foreground-secondary outline-none border-none w-[calc(100%-8rem)] caret-foreground"
-							aria-label="Refine instruction"
-						/>
-					</div>
-				);
-			}
-			return (
-				<div>
-					<span className="text-foreground">{line.prefix}</span>
-					{line.text}
-				</div>
-			);
-		case "placeholder":
-			return <div className="text-foreground-muted/40">{line.text}</div>;
-		case "hint":
-			if (line.actions.length > 0) {
-				const text = formatSelectorHintActions(line.actions, "web");
-				return <div className="text-foreground-muted/60 pl-4">{text}</div>;
-			}
-			return <div className="text-foreground-muted/60 pl-4">{line.text}</div>;
-		case "editedSummary":
-			return (
-				<div>
-					<span className="text-emerald-400">Edited:</span> {line.text}
-				</div>
-			);
-	}
-}
-
-function SelectorFrame({
-	lines,
-	slotIndices,
-	onHover,
-	onClick,
-	interactive,
-	editableSlot,
-	editablePrompt,
-}: {
-	lines: SelectorRenderLine[];
-	slotIndices?: Map<number, number>;
-	onHover?: (index: number) => void;
-	onClick?: (index: number) => void;
-	interactive?: boolean;
-	editableSlot?: {
-		value: string;
-		onChange: (v: string) => void;
-		onKeyDown: (e: React.KeyboardEvent) => void;
-		inputRef: React.RefObject<HTMLInputElement | null>;
-	};
-	editablePrompt?: {
-		value: string;
-		onChange: (v: string) => void;
-		onKeyDown: (e: React.KeyboardEvent) => void;
-		inputRef: React.RefObject<HTMLInputElement | null>;
-	};
-}) {
-	return (
-		<>
-			{lines.map((line, lineIndex) => (
-				<RenderLine
-					key={`${line.type}-${lineIndex}`}
-					line={line}
-					slotIndex={slotIndices?.get(lineIndex)}
-					onHover={onHover}
-					onClick={onClick}
-					interactive={interactive}
-					editableSlot={editableSlot}
-					editablePrompt={editablePrompt}
-				/>
-			))}
-		</>
-	);
-}
-
 // --- Demo toast ---
 
 function useDemoToast(durationMs = 2000) {
@@ -399,7 +202,7 @@ function CommandPreamble() {
 	return (
 		<>
 			<div className="text-foreground">$ git ultrahope commit</div>
-			<div className="text-emerald-400">✔ Found staged changes</div>
+			<SuccessLine text="Found staged changes" />
 		</>
 	);
 }
@@ -612,10 +415,7 @@ function EscalateTerminal() {
 		<div>
 			<CommandPreamble />
 			<div className="mt-1 text-sm text-foreground-secondary leading-relaxed">
-				<div>
-					<span className="text-emerald-400">✔</span>{" "}
-					<span className="text-foreground">{prevGeneratedLine}</span>
-				</div>
+				<SuccessLine text={prevGeneratedLine} />
 				<div className="text-foreground-muted/60 pl-4">→ Escalate</div>
 				<SelectorFrame lines={escalateLines} slotIndices={slotIndices} />
 			</div>

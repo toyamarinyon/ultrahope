@@ -1,18 +1,11 @@
 "use client";
 
-import {
-	type ReactNode,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import commitMessageStreamCapture from "@/lib/demo/commit-message-stream.capture.json";
 import {
 	type CandidateWithModel,
 	type CreateCandidates,
 	createTerminalSelectorController,
-	renderSelectorLinesFromRenderFrame,
 	type SelectorResult,
 	type SelectorState,
 	SPINNER_FRAMES,
@@ -26,16 +19,16 @@ import {
 	pickLatestReplayGeneration,
 	pickLatestReplayRun,
 } from "@/lib/util/terminal-selector-replay";
-import { formatCost } from "../../shared/terminal-selector-helpers";
+import { normalizeCandidateContentForDisplay } from "../../shared/terminal-selector-helpers";
 import {
-	formatSelectorHintActions,
-	type SelectorSlotViewModel,
-	type SelectorViewModel,
+	buildSelectorRenderLines,
+	type SelectorRenderLine,
 } from "../../shared/terminal-selector-view-model";
 import type {
 	TerminalStreamReplayCapture,
 	TerminalStreamReplayGeneration,
 } from "../../shared/terminal-stream-replay";
+import { SelectorFrame, SuccessLine } from "./selector-frame";
 import { TerminalWindow } from "./terminal-window";
 
 interface DemoTab {
@@ -46,7 +39,10 @@ interface DemoTab {
 	fallbacks: string[];
 	foundLine: string;
 	runLine: string;
-	applyLine: string;
+	confirmOutput:
+		| { kind: "gitCommit" }
+		| { kind: "jjDescribe"; revision: string }
+		| { kind: "translate" };
 	models: string[];
 	replayGeneration?: TerminalStreamReplayGeneration | null;
 }
@@ -95,7 +91,7 @@ index 9c9e8f7..6d2f8a1 100644
 		],
 		foundLine: "✔ Found staged changes",
 		runLine: "Generating commit messages",
-		applyLine: "✔ Running git commit",
+		confirmOutput: { kind: "gitCommit" },
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -120,7 +116,7 @@ index 4f8d4e1..7b3c8a2 100644
 		],
 		foundLine: "✔ Found current revision diff",
 		runLine: "Generating description candidates",
-		applyLine: "✔ Running jj describe -r @",
+		confirmOutput: { kind: "jjDescribe", revision: "@" },
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -146,7 +142,7 @@ index a1b2c3d..d4e5f6g 100644
 		],
 		foundLine: "✔ Reading input from stdin",
 		runLine: "Generating commit message translations",
-		applyLine: "✔ Copying selected message to output",
+		confirmOutput: { kind: "translate" },
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
 	},
@@ -158,8 +154,6 @@ type DemoPhase =
 	| "waitingEnter"
 	| "selector"
 	| "selected";
-
-const SPINNER_FRAME_SET = new Set(SPINNER_FRAMES);
 
 function useTypingAnimation(
 	command: string,
@@ -188,62 +182,76 @@ function useTypingAnimation(
 	return typedText;
 }
 
-function renderSelectorLinesWithSpinner(
-	lines: string[],
-	showSpinner: boolean,
-	spinnerCharacter: string,
-): ReactNode[] {
-	const nodes: ReactNode[] = [];
-	const lineCounts = new Map<string, number>();
-	let lineIndex = 0;
-
-	for (const line of lines) {
-		const count = (lineCounts.get(line) ?? 0) + 1;
-		lineCounts.set(line, count);
-		const key = `${line}-${count}`;
-
-		if (!showSpinner || lineIndex !== 0) {
-			nodes.push(
-				<span key={key}>
-					{line}
-					{"\n"}
-				</span>,
-			);
-			lineIndex += 1;
-			continue;
-		}
-
-		const firstCharacter = line.slice(0, 1);
-		if (!SPINNER_FRAME_SET.has(firstCharacter)) {
-			nodes.push(
-				<span key={key}>
-					{line}
-					{"\n"}
-				</span>,
-			);
-			lineIndex += 1;
-			continue;
-		}
-
-		nodes.push(
-			<span key={key}>
-				{spinnerCharacter}
-				{line.slice(1)}
-				{"\n"}
-			</span>,
-		);
-		lineIndex += 1;
+function buildSlotIndices(lines: SelectorRenderLine[]): Map<number, number> {
+	const slotIndices = new Map<number, number>();
+	let slotCount = 0;
+	for (const [lineIndex, line] of lines.entries()) {
+		if (line.type !== "slot") continue;
+		slotIndices.set(lineIndex, slotCount);
+		slotCount += 1;
 	}
-
-	return nodes;
+	return slotIndices;
 }
 
-function renderSlotLines(slot: SelectorSlotViewModel): string[] {
-	const lines = [`${slot.radio} ${slot.title}`];
-	if (slot.meta) {
-		lines.push(`   ${slot.meta}`);
+type DemoOutputLine =
+	| { kind: "success"; text: string }
+	| { kind: "plain"; text: string };
+
+function formatSelectedOutputLine(
+	tab: DemoTab,
+	selected: string,
+): DemoOutputLine {
+	switch (tab.confirmOutput.kind) {
+		case "gitCommit":
+			return {
+				kind: "success",
+				text: `git commit -m ${JSON.stringify(selected)}`,
+			};
+		case "jjDescribe":
+			return {
+				kind: "success",
+				text: `jj describe -r ${tab.confirmOutput.revision} -m ${JSON.stringify(selected)}`,
+			};
+		case "translate":
+			return {
+				kind: "plain",
+				text: selected,
+			};
 	}
+}
+
+function buildSelectedPhaseLines(input: {
+	tab: DemoTab;
+	result: SelectorResult;
+	generatedLabel: string;
+	totalCostLabel?: string;
+}): DemoOutputLine[] {
+	const selected = input.result.selected ?? "";
+	const selectedTitle =
+		normalizeCandidateContentForDisplay(selected) || selected;
+	const costSuffix = input.totalCostLabel
+		? ` (total: ${input.totalCostLabel})`
+		: "";
+	const lines: DemoOutputLine[] = [
+		{
+			kind: "success",
+			text: `${input.generatedLabel}${costSuffix}`,
+		},
+	];
+
+	if (selectedTitle) {
+		lines.push({
+			kind: "success",
+			text: `Selected: ${selectedTitle}`,
+		});
+	}
+
+	lines.push(formatSelectedOutputLine(input.tab, selected));
 	return lines;
+}
+
+function stripSuccessPrefix(text: string): string {
+	return text.startsWith("✔ ") ? text.slice(2) : text;
 }
 
 function isInteractiveKeyTarget(target: EventTarget | null): boolean {
@@ -427,8 +435,9 @@ export function TerminalTabsDemo() {
 	}, [destroySelector]);
 
 	const handleReplay = useCallback(() => {
+		destroySelector();
 		setPhase("initial");
-	}, []);
+	}, [destroySelector]);
 
 	useEffect(() => {
 		if (canAutoRun) return;
@@ -516,7 +525,7 @@ export function TerminalTabsDemo() {
 				return;
 			}
 
-			if (phase !== "selector" && phase !== "selected") return;
+			if (phase !== "selector") return;
 			if (isInteractiveKeyTarget(event.target)) return;
 
 			const result = selectorControllerRef.current?.handleKey({
@@ -537,40 +546,37 @@ export function TerminalTabsDemo() {
 
 	const selectorCopy = {
 		runningLabel: `${activeDemo.runLine}...`,
+		selectionLabel: "Select a commit message",
+		itemLabelSingular: "commit message",
+		itemLabelPlural: "commit messages",
 	};
 	const selectorCapabilities = {
 		clickConfirm: true,
+		edit: true,
+		refine: true,
+		escalate: true,
 	};
 	const selectorFrame =
 		selectorState !== null
 			? selectorRenderFrame({
 					state: selectorState,
-					nowMs: 0,
+					nowMs: spinnerFrameIndex * 80,
 					spinnerFrames: SPINNER_FRAMES,
 					copy: selectorCopy,
 					capabilities: selectorCapabilities,
 				})
 			: null;
-	const selectorViewModel: SelectorViewModel | null = selectorFrame
-		? selectorFrame.viewModel
-		: null;
-	const renderedSelectorLines = selectorFrame
-		? renderSelectorLinesFromRenderFrame(selectorFrame, {
-				copy: selectorCopy,
-				capabilities: selectorCapabilities,
-			})
-		: [];
-	const renderedSelectorHintLine = selectorViewModel
-		? formatSelectorHintActions(selectorViewModel.hint.actions, "web")
-		: "";
-	const isSelectorRunning = selectorState?.isGenerating ?? false;
-	const renderedSelectorHeaderLines =
-		selectorFrame !== null
-			? renderSelectorLinesWithSpinner(
-					[renderedSelectorLines[0]].filter((line) => line.trim() !== ""),
-					isSelectorRunning,
-					SPINNER_FRAMES[spinnerFrameIndex],
-				)
+	const selectorLines =
+		selectorFrame !== null ? buildSelectorRenderLines(selectorFrame) : [];
+	const selectorSlotIndices = buildSlotIndices(selectorLines);
+	const selectedPhaseLines =
+		selectorFrame !== null && selectedResult?.selected
+			? buildSelectedPhaseLines({
+					tab: activeDemo,
+					result: selectedResult,
+					generatedLabel: selectorFrame.viewModel.header.generatedLabel,
+					totalCostLabel: selectorFrame.viewModel.header.totalCostLabel,
+				})
 			: [];
 	const panelId = "terminal-demo-panel";
 	const activeTabId = `terminal-demo-tab-${activeDemo.id}`;
@@ -633,93 +639,41 @@ export function TerminalTabsDemo() {
 						)}
 					</div>
 
-					{(phase === "selector" || phase === "selected") &&
-						selectorState &&
-						selectorViewModel && (
-							<div className="mt-2 text-sm">
-								<p className="text-green-400">{activeDemo.foundLine}</p>
-								{renderedSelectorHeaderLines.length > 0 && (
-									<pre className="mt-2 whitespace-pre-wrap text-foreground-secondary">
-										{renderedSelectorHeaderLines[0]}
-									</pre>
-								)}
-								<div className="mt-2 space-y-1">
-									{selectorViewModel.slots.map((slot, index) => {
-										const sourceSlot = selectorState.slots[index];
-										const isSelected = slot.selected;
-										const isReady = slot.status === "ready";
-										const isInteractive = phase === "selector" && isReady;
-										const lines = renderSlotLines(slot);
-										const slotKey =
-											sourceSlot?.status === "ready"
-												? sourceSlot.candidate.slotId
-												: sourceSlot?.slotId;
-
-										if (!isInteractive) {
-											return (
-												<div
-													key={slotKey ?? `slot-${index}`}
-													className="rounded px-2 py-1 text-left font-mono text-foreground-muted/60"
-												>
-													<span className="block">{lines[0]}</span>
-													{lines[1] && (
-														<span className="mt-0.5 block pl-3 text-foreground-muted/80">
-															{lines[1]}
-														</span>
-													)}
-												</div>
-											);
-										}
-
-										return (
-											<button
-												key={slotKey ?? `slot-${index}`}
-												type="button"
-												onMouseEnter={() => handleCandidateHover(index)}
-												onClick={() => handleCandidateClick(index)}
-												className={`w-full rounded px-2 py-1 text-left font-mono ${
-													isSelected
-														? "bg-surface-hover text-foreground"
-														: "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
-												}`}
-											>
-												<span className="flex items-start justify-between gap-3">
-													<span className="block">{lines[0]}</span>
-													{isSelected && (
-														<span className="shrink-0 text-[11px] text-foreground-muted/80">
-															Enter to confirm / Click to confirm
-														</span>
-													)}
-												</span>
-												{lines[1] && (
-													<span className="mt-0.5 block pl-3 text-foreground-muted">
-														{lines[1]}
-													</span>
-												)}
-											</button>
-										);
-									})}
-								</div>
-								{renderedSelectorHintLine !== "" && (
-									<p className="mt-2 text-xs text-foreground-muted">
-										{renderedSelectorHintLine}
-									</p>
-								)}
+					{phase === "selector" && selectorState && selectorFrame && (
+						<div className="mt-2 text-sm">
+							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
+							<div className="mt-2 leading-relaxed text-foreground-secondary">
+								<SelectorFrame
+									lines={selectorLines}
+									slotIndices={selectorSlotIndices}
+									onHover={handleCandidateHover}
+									onClick={handleCandidateClick}
+									interactive
+								/>
 							</div>
-						)}
+						</div>
+					)}
 
 					{phase === "selected" && selectedResult?.selected && (
-						<div className="mt-4">
-							<p className="text-green-400">✔ Candidate selected</p>
-							<p className="text-green-400">{activeDemo.applyLine}</p>
-							<p className="mt-1 text-foreground-muted">
-								{selectedResult.selected}
-							</p>
-							{selectedResult.selectedCandidate?.cost != null && (
-								<p className="text-foreground-muted/80">
-									Cost: {formatCost(selectedResult.selectedCandidate.cost)}
-								</p>
-							)}
+						<div className="mt-2 text-sm">
+							<SuccessLine text={stripSuccessPrefix(activeDemo.foundLine)} />
+							<div className="mt-2 space-y-1">
+								{selectedPhaseLines.map((line, index) =>
+									line.kind === "success" ? (
+										<SuccessLine
+											key={`${line.text}-${index}`}
+											text={line.text}
+										/>
+									) : (
+										<p
+											key={`${line.text}-${index}`}
+											className="text-foreground"
+										>
+											{line.text}
+										</p>
+									),
+								)}
+							</div>
 							<button
 								type="button"
 								onClick={handleReplay}
