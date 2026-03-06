@@ -1,5 +1,6 @@
 "use client";
 
+import { RotateCcw } from "lucide-react";
 import {
 	type KeyboardEvent as ReactKeyboardEvent,
 	useCallback,
@@ -61,10 +62,8 @@ interface DemoTab {
 
 const DEFAULT_REPLAY_MODELS = ["mock-0", "mock-1", "mock-2"];
 const ESCALATED_MODELS = [
-	"claude-sonnet-4-20250514",
-	"gpt-4.1",
-	"gemini-2.5-pro",
-	"grok-code-fast-1",
+	"anthropic/claude-sonnet-4.6",
+	"openai/gpt-5.3-codex",
 ];
 
 function resolveReplay(capture: TerminalStreamReplayCapture): {
@@ -120,8 +119,6 @@ index 9c9e8f7..6d2f8a1 100644
 		escalatedFallbacks: [
 			"feat(cli): add multi-model commit message generation with clearer candidate selection",
 			"refactor(cli): streamline commit message generation for parallel model runs",
-			"fix(cli): preserve commit generation reliability when multiple models are configured",
-			"feat(cli): improve staged diff commit message generation across multiple models",
 		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
@@ -159,8 +156,6 @@ index 4f8d4e1..7b3c8a2 100644
 		escalatedFallbacks: [
 			"feat(jj): format revision input before generating describe candidates",
 			"refactor(jj): route describe generation through normalized revision formatting",
-			"fix(jj): keep revision descriptions stable when pre-formatting input",
-			"feat(jj): improve describe candidate quality with formatted revision context",
 		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
@@ -199,8 +194,6 @@ index a1b2c3d..d4e5f6g 100644
 		escalatedFallbacks: [
 			"feat(cli): turn staged stdin diff input into clearer VCS commit messages",
 			"refactor(core): tighten translation from stdin patches to commit message output",
-			"fix(cli): keep multiline stdin translation stable for commit message generation",
-			"feat(api): improve commit message translation quality for streamed stdin input",
 		],
 		models: SHARED_REPLAY.models,
 		replayGeneration: SHARED_REPLAY.generation,
@@ -239,6 +232,39 @@ function useTypingAnimation(
 	}, [typedText, command, enabled, speedMs]);
 
 	return typedText;
+}
+
+function DelayedReplayAction({ onReplay }: { onReplay: () => void }) {
+	const [isVisible, setIsVisible] = useState(false);
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setIsVisible(true);
+		}, 1000);
+
+		return () => clearTimeout(timer);
+	}, []);
+
+	return (
+		<div className="mt-6 min-h-6 pl-4">
+			<button
+				type="button"
+				onClick={onReplay}
+				tabIndex={isVisible ? 0 : -1}
+				aria-hidden={!isVisible}
+				className={`inline-flex items-center gap-2 border-b border-transparent pb-0.5 text-sm text-foreground-muted transition-[opacity,color,border-color] duration-200 ease-out hover:border-current hover:text-foreground focus-visible:border-current focus-visible:text-foreground ${
+					isVisible ? "opacity-100" : "pointer-events-none opacity-0"
+				}`}
+			>
+				<RotateCcw
+					aria-hidden="true"
+					className="h-3.5 w-3.5 shrink-0"
+					strokeWidth={1.9}
+				/>
+				<span>Watch that flow again</span>
+			</button>
+		</div>
+	);
 }
 
 function buildSlotIndices(lines: SelectorRenderLine[]): Map<number, number> {
@@ -1010,13 +1036,7 @@ export function TerminalTabsDemo() {
 									),
 								)}
 							</div>
-							<button
-								type="button"
-								onClick={handleReplay}
-								className="mt-4 inline-flex rounded border border-border-subtle bg-surface/70 px-3 py-1.5 text-foreground transition hover:border-foreground-muted hover:text-foreground"
-							>
-								Replay from start
-							</button>
+							<DelayedReplayAction onReplay={handleReplay} />
 						</div>
 					)}
 				</div>
