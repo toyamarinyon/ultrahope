@@ -1,3 +1,4 @@
+import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getAuth, getPolarClient } from "@/lib/auth/auth";
@@ -10,14 +11,6 @@ export async function POST() {
 
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
-
-	const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
-	if (!freeProductId) {
-		return NextResponse.json(
-			{ error: "Free product is not configured." },
-			{ status: 500 },
-		);
 	}
 
 	const userId = String(session.user.id);
@@ -57,21 +50,17 @@ export async function POST() {
 			),
 		);
 
-		const hasFreeSubscription = customerState.activeSubscriptions.some(
-			(sub) => sub.productId === freeProductId,
-		);
-		if (!hasFreeSubscription) {
-			await polarClient.subscriptions.create({
-				productId: freeProductId,
-				externalCustomerId: userId,
-			});
-		}
-
 		return NextResponse.json({
 			success: true,
-			message: "Downgraded to Free plan.",
+			message: "Paid subscription cancelled. Your account is now on Free.",
 		});
 	} catch (error) {
+		if (error instanceof ResourceNotFound) {
+			return NextResponse.json(
+				{ error: "You do not have an active Pro subscription." },
+				{ status: 400 },
+			);
+		}
 		console.error("[subscription/downgrade] Failed to downgrade plan:", error);
 		return NextResponse.json(
 			{ error: "Failed to downgrade plan." },

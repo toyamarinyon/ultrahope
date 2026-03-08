@@ -12,14 +12,15 @@ npm install -g ultrahope
 
 ### Login
 
-Authenticate with your ultrahope account using device flow:
+You can try Ultrahope without logging in first. The CLI automatically creates an anonymous session and allows up to 5 runs with the same limits as the Free plan.
+
+When you want to keep going, authenticate with your Ultrahope account using device flow:
 
 ```bash
 ultrahope login
 ```
 
-This will display a URL and code. Open the URL in your browser, sign in, and enter the code to authorize the CLI.
-On first successful login, `${XDG_CONFIG_HOME:-~/.config}/ultrahope/config.toml` is created automatically if missing.
+This will display a URL and code. Open the URL in your browser, sign in, and enter the code to authorize the CLI. On successful login, the CLI replaces the anonymous session with your authenticated one.
 
 ### Translate
 

@@ -57,17 +57,18 @@ export default async function SettingsPage() {
 
 	const userId = String(session.user.id);
 	const userIdNumber = Number.parseInt(userId, 10);
-	const [activeSubscriptions, billingHistory] = await Promise.all([
-		getActiveSubscriptions(userId),
-		getBillingHistory(userId, 10),
-	]);
-	const billingInfo = Number.isFinite(userIdNumber)
-		? await getUserBillingInfo(userIdNumber)
-		: null;
+	const activeSubscriptions = await getActiveSubscriptions(userId);
 	const currentPlan = resolveCurrentPlan(activeSubscriptions);
 	const hasProPlan = activeSubscriptions.some(
 		(subscription) => subscription.plan === "pro",
 	);
+	const hasPaidBillingContext = hasProPlan;
+	const [billingHistory, billingInfo] = hasPaidBillingContext
+		? await Promise.all([
+				getBillingHistory(userId, 10),
+				Number.isFinite(userIdNumber) ? getUserBillingInfo(userIdNumber) : null,
+			])
+		: [[], null];
 
 	return (
 		<main className="min-h-screen px-8 py-12">
@@ -88,7 +89,8 @@ export default async function SettingsPage() {
 				>
 					<h2 className="text-xl font-semibold">Billing & plan</h2>
 					<p className="mt-2 text-sm text-foreground-secondary">
-						Manage your subscription, invoices, and payment method.
+						Free accounts stay in the app database only. Paid billing appears
+						here after you upgrade.
 					</p>
 					<div className="mt-4">
 						<p className="text-sm text-foreground-secondary">Current plan</p>
@@ -97,18 +99,20 @@ export default async function SettingsPage() {
 						</p>
 					</div>
 					<div className="mt-4 flex flex-wrap gap-3">
-						<a
-							href="/api/auth/customer/portal"
-							className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground no-underline hover:bg-surface-hover"
-						>
-							Open billing portal
-						</a>
 						<Link
 							href="/pricing"
 							className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground no-underline hover:bg-surface-hover"
 						>
 							View plans
 						</Link>
+						{hasPaidBillingContext ? (
+							<a
+								href="/api/auth/customer/portal"
+								className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground no-underline hover:bg-surface-hover"
+							>
+								Open billing portal
+							</a>
+						) : null}
 					</div>
 					{hasProPlan ? (
 						<div className="mt-4 border-t border-border-subtle pt-4">
@@ -130,46 +134,50 @@ export default async function SettingsPage() {
 							</p>
 						</div>
 					) : null}
-					<div className="mt-4 border-t border-border-subtle pt-4">
-						<BillingSettingsControls />
-					</div>
+					{hasPaidBillingContext ? (
+						<div className="mt-4 border-t border-border-subtle pt-4">
+							<BillingSettingsControls />
+						</div>
+					) : null}
 				</div>
 
-				<div className="rounded-2xl border border-border-subtle bg-surface px-6 py-6">
-					<h2 className="text-xl font-semibold">Billing history</h2>
-					<p className="mt-2 text-sm text-foreground-secondary">
-						Recent invoices and payments from your account.
-					</p>
-					{billingHistory.length === 0 ? (
-						<p className="mt-4 text-sm text-foreground-secondary">
-							No billing records yet.
+				{hasPaidBillingContext ? (
+					<div className="rounded-2xl border border-border-subtle bg-surface px-6 py-6">
+						<h2 className="text-xl font-semibold">Billing history</h2>
+						<p className="mt-2 text-sm text-foreground-secondary">
+							Recent invoices and payments from your account.
 						</p>
-					) : (
-						<ul className="mt-4 space-y-3">
-							{billingHistory.map((order) => (
-								<li
-									key={order.id}
-									className="rounded-lg border border-border-subtle px-4 py-3"
-								>
-									<div className="flex flex-wrap items-center justify-between gap-2">
-										<p className="text-sm font-medium text-foreground">
-											{order.description}
-										</p>
-										<p className="text-sm font-semibold text-foreground">
-											{formatAmount(order.totalAmount, order.currency)}
-										</p>
-									</div>
-									<div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground-secondary">
-										<span>{formatDate(order.createdAt)}</span>
-										<span>Invoice #{order.invoiceNumber}</span>
-										<span className="uppercase">{order.status}</span>
-										<span>{order.paid ? "Paid" : "Unpaid"}</span>
-									</div>
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
+						{billingHistory.length === 0 ? (
+							<p className="mt-4 text-sm text-foreground-secondary">
+								No billing records yet.
+							</p>
+						) : (
+							<ul className="mt-4 space-y-3">
+								{billingHistory.map((order) => (
+									<li
+										key={order.id}
+										className="rounded-lg border border-border-subtle px-4 py-3"
+									>
+										<div className="flex flex-wrap items-center justify-between gap-2">
+											<p className="text-sm font-medium text-foreground">
+												{order.description}
+											</p>
+											<p className="text-sm font-semibold text-foreground">
+												{formatAmount(order.totalAmount, order.currency)}
+											</p>
+										</div>
+										<div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground-secondary">
+											<span>{formatDate(order.createdAt)}</span>
+											<span>Invoice #{order.invoiceNumber}</span>
+											<span className="uppercase">{order.status}</span>
+											<span>{order.paid ? "Paid" : "Unpaid"}</span>
+										</div>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				) : null}
 
 				<div className="rounded-2xl border border-red-400/40 bg-surface px-6 py-6">
 					<h2 className="text-xl font-semibold text-red-500">Danger zone</h2>

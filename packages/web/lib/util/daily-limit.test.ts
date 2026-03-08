@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+	AnonymousTrialExceededError,
+	assertAnonymousTrialNotExceeded,
 	assertDailyLimitNotExceeded,
 	DailyLimitExceededError,
 	getDailyUsageInfo,
@@ -50,6 +52,12 @@ describe("daily-limit", () => {
 		await expect(
 			assertDailyLimitNotExceeded(createDb(3) as never, 1),
 		).resolves.toBeUndefined();
+	});
+
+	it("throws when anonymous trial exceeds total quota", async () => {
+		await expect(
+			assertAnonymousTrialNotExceeded(createDb(5) as never, 1),
+		).rejects.toThrow(AnonymousTrialExceededError);
 	});
 
 	it("returns remaining usage stats for user", async () => {

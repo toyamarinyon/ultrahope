@@ -1,3 +1,4 @@
+import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import { getPolarClient } from "@/lib/auth/auth";
 
 export type UserPlan = "free" | "pro";
@@ -20,13 +21,9 @@ export type BillingHistoryItem = {
 };
 
 function resolvePlanFromProductId(productId: string): UserPlan | null {
-	const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
 	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
 	const founderProductId = process.env.POLAR_PRODUCT_FOUNDER_ID;
 
-	if (freeProductId && productId === freeProductId) {
-		return "free";
-	}
 	if (
 		(proProductId && productId === proProductId) ||
 		(founderProductId && productId === founderProductId)
@@ -65,6 +62,9 @@ export async function getActiveSubscriptions(
 				return subscription !== null;
 			});
 	} catch (error) {
+		if (error instanceof ResourceNotFound) {
+			return [];
+		}
 		console.error("[polar] Failed to load active subscriptions:", error);
 		return [];
 	}
@@ -105,6 +105,9 @@ export async function getBillingHistory(
 			description: order.description,
 		}));
 	} catch (error) {
+		if (error instanceof ResourceNotFound) {
+			return [];
+		}
 		console.error("[polar] Failed to load billing history:", error);
 		return [];
 	}

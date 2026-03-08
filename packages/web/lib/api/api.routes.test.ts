@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { DailyLimitExceededError } from "@/lib/util/daily-limit";
+import {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+} from "@/lib/util/daily-limit";
 import type { ApiDependencies } from "./dependencies";
 import { createApiApp } from "./index";
 import {
@@ -55,11 +58,8 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 				ingest: () => Promise.resolve(),
 			},
 		}),
-		getUserBillingInfo: async () => ({
-			plan: "free",
-			balance: 10,
-			meterId: "meter",
-		}),
+		getUserBillingInfo: async () => null,
+		assertAnonymousTrialNotExceeded: async () => {},
 		assertDailyLimitNotExceeded: async () => {},
 		getDailyUsageInfo: async () => ({
 			count: 2,
@@ -150,7 +150,9 @@ function withAuth(unauthorized = false, session: unknown = null) {
 	return {
 		api: {
 			getSession: async () =>
-				unauthorized ? null : (session ?? { user: { id: "1001" } }),
+				unauthorized
+					? null
+					: (session ?? { user: { id: "1001", isAnonymous: false } }),
 		},
 	} as unknown as ReturnType<ApiDependencies["getAuth"]>;
 }
@@ -225,6 +227,29 @@ describe("API route contracts", () => {
 
 		expect(response.status).toBe(402);
 		expect(body.error).toBe("daily_limit_exceeded");
+	});
+
+	it("returns 402 for anonymous command execution when trial is exhausted", async () => {
+		const deps = createDeps({
+			getAuth: () =>
+				withAuth(false, { user: { id: "1001", isAnonymous: true } }),
+			assertAnonymousTrialNotExceeded: async () => {
+				throw new AnonymousTrialExceededError(5, 5);
+			},
+		});
+		const app = createApiApp(deps);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: { input: "a", target: "vcs-commit-message" },
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("anonymous_trial_exceeded");
 	});
 
 	it("returns 400 for command execution when free input exceeds limit", async () => {
@@ -442,11 +467,6 @@ describe("API route contracts", () => {
 		let receivedGuide: string | undefined;
 		const app = createApiApp(
 			createDeps({
-				getUserBillingInfo: async () => ({
-					plan: "free",
-					balance: 10,
-					meterId: "meter",
-				}),
 				generateCommitMessageStream: (_input, options) => {
 					receivedGuide = options.guide;
 					const textStream = {
@@ -495,15 +515,7 @@ describe("API route contracts", () => {
 	});
 
 	it("returns 400 for free stream commit message when input exceeds limit", async () => {
-		const app = createApiApp(
-			createDeps({
-				getUserBillingInfo: async () => ({
-					plan: "free",
-					balance: 10,
-					meterId: "meter",
-				}),
-			}),
-		);
+		const app = createApiApp(createDeps({}));
 		const response = await request(app, "/api/v1/commit-message/stream", {
 			cliSessionId: "cli-1",
 			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
@@ -522,11 +534,6 @@ describe("API route contracts", () => {
 		let receivedGuide: string | undefined;
 		const app = createApiApp(
 			createDeps({
-				getUserBillingInfo: async () => ({
-					plan: "free",
-					balance: 10,
-					meterId: "meter",
-				}),
 				generateCommitMessageStream: (_input, options) => {
 					receivedGuide = options.guide;
 					const textStream = {

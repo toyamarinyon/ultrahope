@@ -8,20 +8,18 @@ create the token for production or sandbox.
 ### Runtime (Next.js / Vercel)
 
 `packages/web/src/lib/auth.ts` uses the Better Auth Polar plugin with:
-- `createCustomerOnSignUp: true`
 - `checkout(...)`
 - `portal()`
 - `webhooks(...)` (signature verification only)
 
 Required scopes:
-- `customers:write` - create customers on signup (`POST /v1/customers/`)
-- `customers:read` - get customer state for idempotency check (`GET /v1/customers/external/{id}/state`)
+- `customers:read` - get customer state for paid-plan resolution and billing pages (`GET /v1/customers/external/{id}/state`)
 - `checkouts:write` - create checkout sessions (`POST /v1/checkouts/`)
 - `customer_sessions:write` - create customer portal sessions (`POST /v1/customer-sessions/`)
-- `subscriptions:write` - auto-create free subscription on signup (`POST /v1/subscriptions/`)
+- `subscriptions:write` - revoke active paid subscriptions on downgrade (`POST /v1/subscriptions/{id}/revoke`)
 - `orders:read` - list user billing history on the settings page (`GET /v1/orders/`)
 - `events:write` - ingest token consumption events for usage-based billing (`POST /v1/events/ingest`)
-- `customer_meters:read` - check token balance before API calls (`GET /v1/customer-meters/`)
+- `customer_meters:read` - check paid-plan token balance before API calls (`GET /v1/customer-meters/`)
 
 No OAT scope is required for webhook signature verification itself.
 

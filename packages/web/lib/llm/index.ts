@@ -1,3 +1,4 @@
+import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import { getPolarClient } from "@/lib/auth/auth";
 
 export {
@@ -12,10 +13,15 @@ export { generatePrTitleBody } from "./pr-title-body";
 type UserBillingInfo = {
 	balance: number;
 	meterId: string;
-	plan: UserPlan;
+	plan: "pro";
 };
 
-type UserPlan = "free" | "pro";
+function getPaidProductIds(): string[] {
+	return [
+		process.env.POLAR_PRODUCT_PRO_ID,
+		process.env.POLAR_PRODUCT_FOUNDER_ID,
+	].filter((id): id is string => id != null && id.length > 0);
+}
 
 export async function getUserBillingInfo(
 	externalCustomerId: number,
@@ -33,49 +39,46 @@ export async function getUserBillingInfo(
 		return null;
 	}
 
-	const proProductId = process.env.POLAR_PRODUCT_PRO_ID;
-	/**
-	 * Founder Plan: unlisted developer-only plan. Free but grants $999/month in credits.
-	 * Grouped into {@link paidProductIds} so it is treated the same as Pro.
-	 */
-	const founderProductId = process.env.POLAR_PRODUCT_FOUNDER_ID;
 	const externalCustomerIdString = externalCustomerId.toString();
 
 	try {
 		const polarClient = getPolarClient();
-		const [meterResponse, customerState] = await Promise.all([
-			polarClient.customerMeters.list({
-				externalCustomerId: externalCustomerIdString,
-				meterId: usageCostMeterId,
-				limit: 1,
-			}),
-			polarClient.customers.getStateExternal({
-				externalId: externalCustomerIdString,
-			}),
-		]);
+		const customerState = await polarClient.customers.getStateExternal({
+			externalId: externalCustomerIdString,
+		});
 
-		const meters = meterResponse.result.items;
-		if (meters.length === 0) {
-			return null;
-		}
-
-		const meter = meters[0];
-		// Treat both Pro and Founder subscriptions as the "pro" plan
-		const paidProductIds = [proProductId, founderProductId].filter(
-			(id): id is string => id != null,
-		);
+		const paidProductIds = getPaidProductIds();
 		const isPro =
 			paidProductIds.length > 0 &&
 			customerState.activeSubscriptions.some((sub: { productId: string }) =>
 				paidProductIds.includes(sub.productId),
 			);
 
+		if (!isPro) {
+			return null;
+		}
+
+		const meterResponse = await polarClient.customerMeters.list({
+			externalCustomerId: externalCustomerIdString,
+			meterId: usageCostMeterId,
+			limit: 1,
+		});
+		const meters = meterResponse.result.items;
+		if (meters.length === 0) {
+			return null;
+		}
+
+		const meter = meters[0];
+
 		return {
 			balance: meter.balance,
 			meterId: meter.meterId,
-			plan: isPro ? "pro" : "free",
+			plan: "pro",
 		};
 	} catch (error) {
+		if (error instanceof ResourceNotFound) {
+			return null;
+		}
 		console.error("[polar] Failed to get user billing info:", error);
 		if (options?.throwOnError) {
 			throw error;

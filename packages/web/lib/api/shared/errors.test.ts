@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { DailyLimitExceededError } from "@/lib/util/daily-limit";
-import { createDailyLimitExceededBody } from "./errors";
+import {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+} from "@/lib/util/daily-limit";
+import {
+	createAnonymousTrialExceededBody,
+	createDailyLimitExceededBody,
+} from "./errors";
 
 describe("errors", () => {
 	it("uses the updated Pro upgrade hint", () => {
@@ -11,5 +17,16 @@ describe("errors", () => {
 
 		expect(body.hint).toContain("$1 included credit");
 		expect(body.hint).not.toContain("$5 included credit");
+	});
+
+	it("returns login action for anonymous trial exhaustion", () => {
+		const body = createAnonymousTrialExceededBody(
+			new AnonymousTrialExceededError(5, 5),
+			"https://example.com",
+		);
+
+		expect(body.error).toBe("anonymous_trial_exceeded");
+		expect(body.actions.login).toBe("https://example.com/login");
+		expect(body.hint).toContain("ultrahope login");
 	});
 });

@@ -1,7 +1,9 @@
+import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getAuth, getPolarClient } from "@/lib/auth/auth";
+import { getActiveSubscriptions } from "@/lib/billing/billing";
 import { CheckoutButton } from "./checkout-button";
 import { ResetTime } from "./reset-time";
 
@@ -32,10 +34,11 @@ const plans = [
 	{
 		name: "Free",
 		price: "$0",
-		description: "Get started with Ultrahope",
+		description: "Sign in for the free plan or try the CLI anonymously first",
 		features: [
 			{ key: "requests", content: "5 requests/day" },
 			{ key: "inputLimit", content: "40000 character input limit per request" },
+			{ key: "trial", content: "CLI trial: 5 runs without login" },
 			{ key: "reset", content: <ResetTime /> },
 			{ key: "support", content: "Community support" },
 		],
@@ -55,34 +58,37 @@ const plans = [
 	},
 ];
 
-const productIdToSlug: Record<string, string> = {
-	[process.env.POLAR_PRODUCT_FREE_ID ?? ""]: "free",
-	[process.env.POLAR_PRODUCT_PRO_ID ?? ""]: "pro",
-};
-
-type SubscriptionInfo = {
-	slug: string;
+type LegacyFreeSubscription = {
 	subscriptionId: string;
-	productId: string;
 };
 
-async function getActiveSubscriptions(
+async function getLegacyFreeSubscription(
 	userId: string,
-): Promise<SubscriptionInfo[]> {
+): Promise<LegacyFreeSubscription | null> {
+	const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
+	if (!freeProductId) {
+		return null;
+	}
+
 	try {
 		const polarClient = getPolarClient();
 		const customerState = await polarClient.customers.getStateExternal({
 			externalId: userId,
 		});
-		return customerState.activeSubscriptions
-			.map((sub) => ({
-				slug: productIdToSlug[sub.productId],
-				subscriptionId: sub.id,
-				productId: sub.productId,
-			}))
-			.filter((info): info is SubscriptionInfo => info.slug != null);
-	} catch {
-		return [];
+		const subscription = customerState.activeSubscriptions.find(
+			(sub) => sub.productId === freeProductId,
+		);
+		if (!subscription) {
+			return null;
+		}
+		return {
+			subscriptionId: subscription.id,
+		};
+	} catch (error) {
+		if (error instanceof ResourceNotFound) {
+			return null;
+		}
+		return null;
 	}
 }
 
@@ -92,12 +98,19 @@ export default async function PricingPage() {
 		headers: await headers(),
 	});
 
-	const activeSubscriptions = session
-		? await getActiveSubscriptions(session.user.id)
-		: [];
-
-	const activeSlugs = activeSubscriptions.map((s) => s.slug);
-	const freeSubscription = activeSubscriptions.find((s) => s.slug === "free");
+	const [activePaidSubscriptions, legacyFreeSubscription] = session
+		? await Promise.all([
+				getActiveSubscriptions(session.user.id),
+				getLegacyFreeSubscription(session.user.id),
+			])
+		: [[], null];
+	const currentPlan = activePaidSubscriptions.some(
+		(subscription) => subscription.plan === "pro",
+	)
+		? "pro"
+		: session
+			? "free"
+			: null;
 
 	return (
 		<main className="min-h-screen px-8 py-16">
@@ -114,19 +127,19 @@ export default async function PricingPage() {
 
 				<section className="mt-12 grid gap-6 md:grid-cols-2">
 					{plans.map((plan) => {
-						const isActive = activeSlugs.includes(plan.slug);
+						const isCurrent = currentPlan === plan.slug;
 						return (
 							<article
 								key={plan.name}
 								className={`rounded-lg border ${
-									isActive ? "border-foreground" : "border-border-subtle"
+									isCurrent ? "border-foreground" : "border-border-subtle"
 								} bg-surface p-6 flex flex-col gap-4`}
 							>
 								<div className="flex items-center justify-between">
 									<h2 className="text-2xl font-semibold tracking-tight">
 										{plan.name}
 									</h2>
-									{isActive && (
+									{isCurrent && (
 										<span className="text-xs text-foreground-secondary border border-border px-2 py-1 rounded-full">
 											Current
 										</span>
@@ -145,9 +158,13 @@ export default async function PricingPage() {
 									))}
 								</ul>
 								{session ? (
-									isActive ? (
+									isCurrent ? (
 										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
 											Current Plan
+										</span>
+									) : plan.slug === "free" ? (
+										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
+											Included with your account
 										</span>
 									) : (
 										<CheckoutButton
@@ -155,9 +172,10 @@ export default async function PricingPage() {
 											planName={plan.name}
 											className="inline-flex items-center justify-center px-4 py-2 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60"
 											upgradeFrom={
-												plan.slug === "pro" && freeSubscription
+												plan.slug === "pro" && legacyFreeSubscription
 													? {
-															subscriptionId: freeSubscription.subscriptionId,
+															subscriptionId:
+																legacyFreeSubscription.subscriptionId,
 															targetProductId:
 																process.env.POLAR_PRODUCT_PRO_ID ?? "",
 														}
@@ -165,6 +183,13 @@ export default async function PricingPage() {
 											}
 										/>
 									)
+								) : plan.slug === "free" ? (
+									<Link
+										href="/signup"
+										className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface-hover"
+									>
+										Create free account
+									</Link>
 								) : (
 									<Link
 										href="/login"

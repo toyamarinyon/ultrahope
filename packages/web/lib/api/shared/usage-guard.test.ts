@@ -1,6 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+} from "@/lib/util/daily-limit";
+import {
+	enforceAnonymousTrialOr402,
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
@@ -111,7 +115,7 @@ describe("usage-guard", () => {
 				},
 				{
 					plan: "free",
-					billingInfo: { plan: "free", balance: 0 },
+					billingInfo: null,
 					generationAbortController: new AbortController(),
 					set: {},
 				},
@@ -156,5 +160,29 @@ describe("usage-guard", () => {
 				set: {},
 			}),
 		).toBeNull();
+	});
+
+	it("returns anonymous trial response when anonymous quota is exhausted", async () => {
+		const result = await enforceAnonymousTrialOr402(
+			{
+				assertAnonymousTrialNotExceeded: async () => {
+					throw new AnonymousTrialExceededError(5, 5);
+				},
+				baseUrl: "https://example.com",
+			},
+			{
+				db: null as unknown as never,
+				userId: 1,
+				generationAbortController: new AbortController(),
+				set: {},
+			},
+		);
+
+		expect(result?.status).toBe(402);
+		if (result?.status !== 402) {
+			throw new Error("unexpected non-402");
+		}
+		expect(result.errorBody.error).toBe("anonymous_trial_exceeded");
+		expect(result.errorBody.actions.login).toBe("https://example.com/login");
 	});
 });

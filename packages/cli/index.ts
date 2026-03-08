@@ -41,11 +41,15 @@ Usage: ultrahope <command>
 Commands:
   translate  Translate input to various formats
   jj         Jujutsu integration commands
-  login      Authenticate with device flow
+  login      Authenticate with device flow and unlock full account usage
 
 Options:
   --version, -v  Show version
-  --help, -h     Show this help message`);
+  --help, -h     Show this help message
+
+Anonymous trial:
+  Most generation commands work without login for up to 5 runs.
+  Run 'ultrahope login' to continue after the trial or to use your account.`);
 }
 
 main().catch((err) => {

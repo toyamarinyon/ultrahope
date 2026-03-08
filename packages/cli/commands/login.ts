@@ -1,9 +1,14 @@
 import { createApiClient } from "../lib/api-client";
-import { saveToken } from "../lib/auth";
+import { getCredentials, saveToken } from "../lib/auth";
 import { ensureGlobalConfigFile } from "../lib/config";
 
 export async function login(_args: string[]) {
 	const api = createApiClient();
+	const existingCredentials = await getCredentials();
+	const anonymousToken =
+		existingCredentials?.authKind === "anonymous"
+			? existingCredentials.accessToken
+			: null;
 
 	console.log("Requesting device code...");
 	const deviceCode = await api.requestDeviceCode();
@@ -21,8 +26,18 @@ export async function login(_args: string[]) {
 		deviceCode.expires_in,
 	);
 
-	await saveToken(token);
+	await saveToken(token, "authenticated");
 	await ensureGlobalConfigFile();
+	if (anonymousToken) {
+		try {
+			await createApiClient(anonymousToken).deleteAnonymousUser();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(
+				`Warning: Failed to delete anonymous trial session. ${message}`,
+			);
+		}
+	}
 	console.log("Successfully authenticated!");
 }
 

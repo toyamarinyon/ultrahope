@@ -76,7 +76,7 @@ We may throttle, delay, reject, or suspend requests that exceed applicable limit
 
 ### Accounts and access
 
-Certain features require an account. You agree to provide accurate account information and to keep it up to date.
+Certain features require an account. Some CLI functionality may be available through a limited anonymous trial before login. You agree to provide accurate account information and to keep it up to date.
 
 If you choose to sign in through a third-party authentication provider (such as GitHub), you authorize us to receive account information from that provider as permitted by your authorization settings and the provider's policies. Your use of such provider is also subject to that provider's terms and policies.
 

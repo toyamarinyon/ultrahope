@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { createApiClient } from "./api-client";
 import {
+	AnonymousTrialExceededError,
 	type CommandExecutionRequest,
 	type CommandExecutionResponse,
 	DailyLimitExceededError,
@@ -73,6 +74,23 @@ export async function handleCommandExecutionError(
 		);
 		console.error("");
 		console.error("  \x1b[36multrahope login\x1b[0m");
+		console.error("");
+		process.exit(1);
+	}
+
+	if (error instanceof AnonymousTrialExceededError) {
+		const additionalLines = options?.additionalLinesToClear ?? 0;
+		if (additionalLines > 0) {
+			process.stdout.write(`\x1b[${additionalLines}A`);
+			process.stdout.write("\x1b[0J");
+		}
+		console.error(
+			"\x1b[31m✖\x1b[0m Anonymous trial limit reached on this machine.",
+		);
+		console.error("");
+		console.error(
+			`  Trial used: ${error.count}/${error.limit}. Run \x1b[36multrahope login\x1b[0m to continue.`,
+		);
 		console.error("");
 		process.exit(1);
 	}

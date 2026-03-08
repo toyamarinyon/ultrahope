@@ -5,6 +5,9 @@ export const user = sqliteTable("user", {
 	id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
 	name: text("name").notNull(),
 	email: text("email").notNull().unique(),
+	isAnonymous: integer("is_anonymous", { mode: "boolean" })
+		.default(false)
+		.notNull(),
 	emailVerified: integer("email_verified", { mode: "boolean" })
 		.default(false)
 		.notNull(),

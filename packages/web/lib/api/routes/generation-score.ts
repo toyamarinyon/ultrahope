@@ -7,6 +7,7 @@ import { GenerationScoreBodySchema } from "../shared/validators";
 type ApiSession = {
 	user: {
 		id: number;
+		isAnonymous: boolean;
 	};
 };
 

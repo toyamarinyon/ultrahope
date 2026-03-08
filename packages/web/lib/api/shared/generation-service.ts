@@ -11,6 +11,7 @@ import type { ApiStorage } from "./storage";
 
 export type GenerateContext = {
 	userId: number;
+	isAnonymous: boolean;
 	cliSessionId: string;
 	model: string;
 	abortSignal: AbortSignal;
@@ -38,7 +39,7 @@ export type ExecuteGenerationResult =
 export type GenerationServiceDeps = {
 	getUserBillingInfo: (externalCustomerId: number) => Promise<{
 		balance: number;
-		plan: "free" | "pro";
+		plan: "pro";
 	} | null>;
 	getDailyUsageInfo: (
 		db: Db,
@@ -62,8 +63,10 @@ export async function executeGeneration(
 	deps: GenerationServiceDeps,
 	startedAt = Date.now(),
 ): Promise<ExecuteGenerationResult> {
-	const billingInfo = await deps.getUserBillingInfo(ctx.userId);
-	const plan = billingInfo?.plan ?? "free";
+	const billingInfo = ctx.isAnonymous
+		? null
+		: await deps.getUserBillingInfo(ctx.userId);
+	const plan = ctx.isAnonymous ? "free" : (billingInfo?.plan ?? "free");
 
 	if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
 		return {
@@ -93,14 +96,16 @@ export async function executeGeneration(
 		: 0;
 
 	if (response.generationId) {
-		ingestUsageEvent({
-			getPolarClient: deps.getPolarClient,
-			userId: ctx.userId,
-			costInMicrodollars,
-			model: response.model,
-			vendor: response.vendor,
-			generationId: response.generationId,
-		});
+		if (plan === "pro") {
+			ingestUsageEvent({
+				getPolarClient: deps.getPolarClient,
+				userId: ctx.userId,
+				costInMicrodollars,
+				model: response.model,
+				vendor: response.vendor,
+				generationId: response.generationId,
+			});
+		}
 
 		if (commandExecutionId) {
 			void deps.storage.insertGeneration({
@@ -128,7 +133,7 @@ export async function executeGeneration(
 		response: { output: response.content, ...response },
 	};
 
-	if (plan === "free") {
+	if (!ctx.isAnonymous && plan === "free") {
 		const usageInfo = await deps.getDailyUsageInfo(ctx.db, ctx.userId);
 		result.quota = {
 			remaining: usageInfo.remaining,
@@ -148,6 +153,7 @@ export async function finalizeStreamingGeneration(
 	},
 	args: {
 		ctx: GenerateContext;
+		plan: "free" | "pro";
 		model: string;
 		responseText: string;
 		startedAt: number;
@@ -186,14 +192,16 @@ export async function finalizeStreamingGeneration(
 		: 0;
 
 	if (response.generationId) {
-		ingestUsageEvent({
-			getPolarClient: args.getPolarClient,
-			userId: args.ctx.userId,
-			costInMicrodollars,
-			model: response.model,
-			vendor: response.vendor,
-			generationId: response.generationId,
-		});
+		if (args.plan === "pro") {
+			ingestUsageEvent({
+				getPolarClient: args.getPolarClient,
+				userId: args.ctx.userId,
+				costInMicrodollars,
+				model: response.model,
+				vendor: response.vendor,
+				generationId: response.generationId,
+			});
+		}
 
 		const commandExecutionId = await args.storage.findCommandExecutionId({
 			db: args.db,

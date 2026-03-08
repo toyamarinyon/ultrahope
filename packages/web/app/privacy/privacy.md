@@ -153,8 +153,9 @@ We share personal information with these categories of third parties:
 
 Polar data sharing details:
 
-- On signup, we create a Polar customer record
-- For metered billing, we send customer ID, generation cost (microdollars), model, provider, and generation ID
+- We use Polar only for paid billing flows
+- If you start a paid plan, we create or reference a Polar customer record for checkout, invoicing, and billing portal access
+- For paid metered billing, we send customer ID, generation cost (microdollars), model, provider, and generation ID
 
 We also share information when required for business transfers (for example merger, acquisition, financing, or asset sale).
 

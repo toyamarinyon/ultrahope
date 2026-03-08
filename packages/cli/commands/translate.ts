@@ -94,11 +94,6 @@ async function handleVcsCommitMessage(
 
 	try {
 		const token = await getToken();
-		if (!token) {
-			console.error("Error: Not authenticated. Run `ultrahope login` first.");
-			process.exit(1);
-		}
-
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
@@ -227,11 +222,6 @@ async function handleGenericTarget(
 	args: string[],
 ): Promise<void> {
 	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
 	const api = createApiClient(token);
 	const models = resolveModels(options.cliModels);
 	const requestPayload =

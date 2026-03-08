@@ -168,11 +168,6 @@ async function initCommandExecutionContext(
 	isSessionActive?: () => boolean,
 ): Promise<CommandExecutionContext> {
 	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
 	const api = createApiClient(token);
 	const { commandExecutionPromise, abortController, cliSessionId } =
 		startCommandExecution({

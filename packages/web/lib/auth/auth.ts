@@ -2,6 +2,7 @@ import { checkout, polar, portal, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { anonymous } from "better-auth/plugins";
 import { bearer } from "better-auth/plugins/bearer";
 import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { Resend } from "resend";
@@ -61,51 +62,6 @@ export function getAuth() {
 				});
 			},
 		},
-		databaseHooks: {
-			user: {
-				create: {
-					after: async (user) => {
-						const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
-						if (!freeProductId) {
-							console.error(
-								"[polar] POLAR_PRODUCT_FREE_ID not set, skipping free subscription creation",
-							);
-							return;
-						}
-
-						try {
-							const customerState =
-								await polarClient.customers.getStateExternal({
-									externalId: user.id,
-								});
-
-							const hasFreePlan = customerState.activeSubscriptions.some(
-								(sub) => sub.productId === freeProductId,
-							);
-							if (hasFreePlan) {
-								console.log(
-									`[polar] User ${user.id} already has free subscription, skipping`,
-								);
-								return;
-							}
-
-							await polarClient.subscriptions.create({
-								productId: freeProductId,
-								externalCustomerId: user.id,
-							});
-							console.log(
-								`[polar] Created free subscription for user ${user.id}`,
-							);
-						} catch (error) {
-							console.error(
-								`[polar] Failed to create free subscription for user ${user.id}:`,
-								error,
-							);
-						}
-					},
-				},
-			},
-		},
 		plugins: [
 			bearer(),
 			deviceAuthorization({
@@ -115,16 +71,13 @@ export function getAuth() {
 					return clientId === "ultrahope-cli";
 				},
 			}),
+			anonymous(),
 			polar({
 				client: polarClient,
-				createCustomerOnSignUp: true,
+				createCustomerOnSignUp: false,
 				use: [
 					checkout({
 						products: [
-							{
-								productId: process.env.POLAR_PRODUCT_FREE_ID ?? "",
-								slug: "free",
-							},
 							{
 								productId: process.env.POLAR_PRODUCT_PRO_ID ?? "",
 								slug: "pro",

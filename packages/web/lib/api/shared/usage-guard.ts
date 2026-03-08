@@ -1,7 +1,12 @@
 import type { Db } from "@/db/client";
-import type { DailyLimitExceededError } from "@/lib/util/daily-limit";
+import type {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+} from "@/lib/util/daily-limit";
 import {
+	type AnonymousTrialExceededBody,
 	type BillingUnavailableBody,
+	createAnonymousTrialExceededBody,
 	createBillingUnavailableBody,
 	createDailyLimitExceededBody,
 	createInputLengthExceededBody,
@@ -55,7 +60,7 @@ export function combineAbortSignals(
 }
 
 type BillingInfo = {
-	plan?: "free" | "pro";
+	plan?: "pro";
 	balance?: number;
 } | null;
 
@@ -89,13 +94,18 @@ export async function getBillingInfoOr503(args: {
 
 export async function enforceDailyLimitOr402(
 	deps: {
-		assertDailyLimitNotExceeded: (db: Db, userId: number) => Promise<void>;
+		assertDailyLimitNotExceeded: (
+			db: Db,
+			userId: number,
+			options?: { excludeCliSessionId?: string },
+		) => Promise<void>;
 		baseUrl: string;
 	},
 	args: {
 		db: Db;
 		userId: number;
 		plan: "free" | "pro";
+		currentCliSessionId?: string;
 		generationAbortController: AbortController;
 		set: { status?: number | string };
 	},
@@ -115,7 +125,9 @@ export async function enforceDailyLimitOr402(
 	}
 
 	try {
-		await deps.assertDailyLimitNotExceeded(args.db, args.userId);
+		await deps.assertDailyLimitNotExceeded(args.db, args.userId, {
+			excludeCliSessionId: args.currentCliSessionId,
+		});
 		return null;
 	} catch (error) {
 		if (error instanceof Error && error.name === "DailyLimitExceededError") {
@@ -125,6 +137,47 @@ export async function enforceDailyLimitOr402(
 				status: 402,
 				errorBody: createDailyLimitExceededBody(
 					error as DailyLimitExceededError,
+					deps.baseUrl,
+				),
+			};
+		}
+		throw error;
+	}
+}
+
+export async function enforceAnonymousTrialOr402(
+	deps: {
+		assertAnonymousTrialNotExceeded: (
+			db: Db,
+			userId: number,
+			options?: { excludeCliSessionId?: string },
+		) => Promise<void>;
+		baseUrl: string;
+	},
+	args: {
+		db: Db;
+		userId: number;
+		currentCliSessionId?: string;
+		generationAbortController: AbortController;
+		set: { status?: number | string };
+	},
+): Promise<null | { status: 402; errorBody: AnonymousTrialExceededBody }> {
+	try {
+		await deps.assertAnonymousTrialNotExceeded(args.db, args.userId, {
+			excludeCliSessionId: args.currentCliSessionId,
+		});
+		return null;
+	} catch (error) {
+		if (
+			error instanceof Error &&
+			error.name === "AnonymousTrialExceededError"
+		) {
+			args.generationAbortController.abort("anonymous_trial_exceeded");
+			args.set.status = 402;
+			return {
+				status: 402,
+				errorBody: createAnonymousTrialExceededBody(
+					error as AnonymousTrialExceededError,
 					deps.baseUrl,
 				),
 			};

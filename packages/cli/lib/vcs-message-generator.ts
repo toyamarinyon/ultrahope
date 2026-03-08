@@ -72,11 +72,6 @@ export async function* generateCommitMessages(
 	});
 
 	const token = await getToken();
-	if (!token) {
-		console.error("Error: Not authenticated. Run `ultrahope login` first.");
-		process.exit(1);
-	}
-
 	const api = createApiClient(token);
 
 	const generateWithRetry = async function* (payload: {

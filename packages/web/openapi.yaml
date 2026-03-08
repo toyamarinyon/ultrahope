@@ -312,6 +312,46 @@
                         "message",
                         "count",
                         "limit",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "anonymous_trial_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "login"
+                          ],
+                          "properties": {
+                            "login": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -655,6 +695,46 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "anonymous_trial_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "login"
+                          ],
+                          "properties": {
+                            "login": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
                     {
                       "type": "object",
                       "required": [
@@ -1119,6 +1199,46 @@
                         "message",
                         "count",
                         "limit",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "anonymous_trial_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "login"
+                          ],
+                          "properties": {
+                            "login": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -1576,6 +1696,46 @@
                         "message",
                         "count",
                         "limit",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "anonymous_trial_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "login"
+                          ],
+                          "properties": {
+                            "login": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -1935,6 +2095,46 @@
               "application/json": {
                 "schema": {
                   "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "count",
+                        "limit",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "anonymous_trial_exceeded",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "login"
+                          ],
+                          "properties": {
+                            "login": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
                     {
                       "type": "object",
                       "required": [

@@ -1,5 +1,8 @@
 import { ALLOWED_MODEL_IDS } from "@/lib/llm/models";
-import type { DailyLimitExceededError } from "@/lib/util/daily-limit";
+import type {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+} from "@/lib/util/daily-limit";
 import type { InvalidModelBody } from "./validators";
 
 type UnauthorizedBody = {
@@ -33,6 +36,17 @@ export type InsufficientBalanceBody = {
 export type BillingUnavailableBody = {
 	error: "billing_unavailable";
 	message: string;
+};
+
+export type AnonymousTrialExceededBody = {
+	error: "anonymous_trial_exceeded";
+	message: string;
+	count: number;
+	limit: number;
+	actions: {
+		login: string;
+	};
+	hint: string;
 };
 
 export type InputLengthExceededBody = {
@@ -98,6 +112,23 @@ export function createBillingUnavailableBody(): BillingUnavailableBody {
 	return {
 		error: "billing_unavailable",
 		message: "Unable to verify billing info.",
+	};
+}
+
+export function createAnonymousTrialExceededBody(
+	error: AnonymousTrialExceededError,
+	baseUrl: string,
+	hint = "Run `ultrahope login` to continue without the anonymous trial limit.",
+): AnonymousTrialExceededBody {
+	return {
+		error: "anonymous_trial_exceeded",
+		message: "Anonymous trial limit reached.",
+		count: error.count,
+		limit: error.limit,
+		actions: {
+			login: `${baseUrl}/login`,
+		},
+		hint,
 	};
 }
 

@@ -157,11 +157,6 @@ export async function commit(args: string[]) {
 
 	try {
 		const token = await getToken();
-		if (!token) {
-			console.error("Error: Not authenticated. Run `ultrahope login` first.");
-			process.exit(1);
-		}
-
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;

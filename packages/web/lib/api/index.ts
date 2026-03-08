@@ -25,12 +25,15 @@ function createAuthPlugin(deps: ApiDependencies) {
 				if (session === null) {
 					return { session: undefined };
 				}
+				const isAnonymous =
+					"isAnonymous" in session.user && session.user.isAnonymous === true;
 				return {
 					session: {
 						session,
 						user: {
 							...session.user,
 							id: Number.parseInt(session.user.id, 10),
+							isAnonymous,
 						},
 					},
 				};

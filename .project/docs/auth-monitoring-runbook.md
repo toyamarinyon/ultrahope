@@ -47,6 +47,5 @@ Required environment variables for auth flows:
 - `GITHUB_CLIENT_SECRET` — GitHub OAuth
 - `RESEND_API_KEY` — Password reset email delivery
 - `EMAIL_FROM` — Sender address for emails
-- `POLAR_PRODUCT_FREE_ID` — Free plan assignment on account creation
 - `POLAR_ACCESS_TOKEN` — Polar API
 - `POLAR_WEBHOOK_SECRET` — Polar webhook verification

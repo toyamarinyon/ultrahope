@@ -84,6 +84,16 @@ export const GenerateErrorResponseSchemas = {
 	}),
 	402: t.Union([
 		t.Object({
+			error: t.Literal("anonymous_trial_exceeded"),
+			message: t.String(),
+			count: t.Number(),
+			limit: t.Number(),
+			actions: t.Object({
+				login: t.String(),
+			}),
+			hint: t.String(),
+		}),
+		t.Object({
 			error: t.Literal("daily_limit_exceeded"),
 			message: t.String(),
 			count: t.Number(),
@@ -127,6 +137,16 @@ export const CommandExecutionResponseSchemas = {
 		error: t.String(),
 	}),
 	402: t.Union([
+		t.Object({
+			error: t.Literal("anonymous_trial_exceeded"),
+			message: t.String(),
+			count: t.Number(),
+			limit: t.Number(),
+			actions: t.Object({
+				login: t.String(),
+			}),
+			hint: t.String(),
+		}),
 		t.Object({
 			error: t.Literal("daily_limit_exceeded"),
 			message: t.String(),

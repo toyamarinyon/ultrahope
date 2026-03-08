@@ -69,6 +69,18 @@ export class DailyLimitExceededError extends Error {
 	}
 }
 
+export class AnonymousTrialExceededError extends Error {
+	constructor(
+		public count: number,
+		public limit: number,
+		public hint?: string,
+		public actions?: Record<string, string>,
+	) {
+		super("Anonymous trial limit reached");
+		this.name = "AnonymousTrialExceededError";
+	}
+}
+
 export class UnauthorizedError extends Error {
 	constructor() {
 		super("Unauthorized");
@@ -141,6 +153,15 @@ interface TokenResponse {
 	error?: string;
 }
 
+interface AnonymousAuthResponse {
+	token: string;
+	user: {
+		id: string;
+		email: string;
+		name: string;
+	};
+}
+
 export type CommitMessageStreamEvent =
 	| ({ atMs?: number } & { type: "commit-message"; commitMessage: string })
 	| {
@@ -203,6 +224,7 @@ function parseSseEvents(buffer: string): {
 function handle402Error(error: unknown): never {
 	const payload = error as
 		| {
+				error?: string;
 				balance?: number;
 				plan?: string;
 				hint?: string;
@@ -212,6 +234,17 @@ function handle402Error(error: unknown): never {
 				resetsAt?: string;
 		  }
 		| undefined;
+	if (payload?.error === "anonymous_trial_exceeded") {
+		const count = typeof payload.count === "number" ? payload.count : 0;
+		const limit = typeof payload.limit === "number" ? payload.limit : 0;
+		log("generate error (402 anonymous_trial_exceeded)", error);
+		throw new AnonymousTrialExceededError(
+			count,
+			limit,
+			payload.hint,
+			payload.actions,
+		);
+	}
 	if (typeof payload?.balance === "number") {
 		log("generate error (402 insufficient_balance)", error);
 		const plan =
@@ -639,6 +672,32 @@ export function createApiClient(token?: string) {
 				throw new Error(`API error: ${res.status} ${text}`);
 			}
 			return res.json();
+		},
+
+		async signInAnonymous(): Promise<AnonymousAuthResponse> {
+			const res = await fetch(`${API_BASE_URL}/api/auth/sign-in/anonymous`, {
+				method: "POST",
+				headers,
+			});
+			if (!res.ok) {
+				const text = await res.text();
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+			return res.json();
+		},
+
+		async deleteAnonymousUser(): Promise<void> {
+			const res = await fetch(
+				`${API_BASE_URL}/api/auth/delete-anonymous-user`,
+				{
+					method: "POST",
+					headers,
+				},
+			);
+			if (!res.ok) {
+				const text = await res.text();
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
 		},
 	};
 }

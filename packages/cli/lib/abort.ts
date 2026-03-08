@@ -1,6 +1,11 @@
-import { DailyLimitExceededError, UnauthorizedError } from "./api-client";
+import {
+	AnonymousTrialExceededError,
+	DailyLimitExceededError,
+	UnauthorizedError,
+} from "./api-client";
 
 export type CommandAbortReason =
+	| "anonymous_trial"
 	| "daily_limit"
 	| "unauthorized"
 	| "user"
@@ -40,12 +45,17 @@ function commandAbortReason(
 ): CommandAbortReason | undefined {
 	if (!signal?.aborted) return undefined;
 	const reason = signal.reason;
-	if (reason === "daily_limit" || reason === "unauthorized") {
+	if (
+		reason === "anonymous_trial" ||
+		reason === "daily_limit" ||
+		reason === "unauthorized"
+	) {
 		return reason;
 	}
 	if (reason === "user" || reason === "internal") {
 		return reason;
 	}
+	if (reason instanceof AnonymousTrialExceededError) return "anonymous_trial";
 	if (reason instanceof DailyLimitExceededError) return "daily_limit";
 	if (reason instanceof UnauthorizedError) return "unauthorized";
 	return "internal";
@@ -53,10 +63,15 @@ function commandAbortReason(
 
 export function isCommandExecutionAbort(signal?: AbortSignal): boolean {
 	const reason = commandAbortReason(signal);
-	return reason === "daily_limit" || reason === "unauthorized";
+	return (
+		reason === "anonymous_trial" ||
+		reason === "daily_limit" ||
+		reason === "unauthorized"
+	);
 }
 
 export function abortReasonForError(error: unknown): CommandAbortReason {
+	if (error instanceof AnonymousTrialExceededError) return "anonymous_trial";
 	if (error instanceof DailyLimitExceededError) return "daily_limit";
 	if (error instanceof UnauthorizedError) return "unauthorized";
 	return "internal";
