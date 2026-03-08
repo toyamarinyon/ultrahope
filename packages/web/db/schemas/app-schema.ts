@@ -15,6 +15,7 @@ export const commandExecution = sqliteTable(
 			autoIncrement: true,
 		}),
 		cliSessionId: text("cli_session_id").notNull(),
+		installationId: text("installation_id"),
 		userId: integer("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
@@ -27,6 +28,7 @@ export const commandExecution = sqliteTable(
 	},
 	(table) => [
 		index("command_execution_command_idx").on(table.command),
+		index("command_execution_installation_id_idx").on(table.installationId),
 		index("command_execution_started_at_idx").on(table.startedAt),
 		index("command_execution_finished_at_idx").on(table.finishedAt),
 	],

@@ -1,19 +1,16 @@
 import type { Db } from "@/db/client";
-import type {
-	AnonymousTrialExceededError,
-	DailyLimitExceededError,
-} from "@/lib/util/daily-limit";
+import type { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import {
-	type AnonymousTrialExceededBody,
 	type BillingUnavailableBody,
-	createAnonymousTrialExceededBody,
 	createBillingUnavailableBody,
 	createDailyLimitExceededBody,
 	createInputLengthExceededBody,
 	createInsufficientBalanceBody,
+	createSubscriptionRequiredBody,
 	type DailyLimitExceededBody,
 	type InputLengthExceededBody,
 	type InsufficientBalanceBody,
+	type SubscriptionRequiredBody,
 } from "./errors";
 
 const MOCKING = process.env.MOCKING === "1";
@@ -68,19 +65,38 @@ type GetBillingInfo = (userId: number) => Promise<BillingInfo>;
 
 export async function getBillingInfoOr503(args: {
 	userId: number;
+	isAnonymous: boolean;
 	getUserBillingInfo: GetBillingInfo;
+	baseUrl: string;
 	set: { status?: number | string };
 	generationAbortController?: AbortController;
 }): Promise<
-	| { status: 200; billingInfo: BillingInfo; plan: "free" | "pro" }
+	| { status: 200; billingInfo: BillingInfo; plan: "anonymous" | "pro" }
+	| { status: 402; errorBody: SubscriptionRequiredBody }
 	| { status: 503; errorBody: BillingUnavailableBody }
 > {
+	if (args.isAnonymous) {
+		return {
+			status: 200,
+			billingInfo: null,
+			plan: "anonymous",
+		};
+	}
+
 	try {
 		const billingInfo = await args.getUserBillingInfo(args.userId);
+		if (!billingInfo) {
+			args.generationAbortController?.abort("subscription_required");
+			args.set.status = 402;
+			return {
+				status: 402,
+				errorBody: createSubscriptionRequiredBody(args.baseUrl),
+			};
+		}
 		return {
 			status: 200,
 			billingInfo,
-			plan: billingInfo?.plan ?? "free",
+			plan: billingInfo.plan ?? "pro",
 		};
 	} catch (_error) {
 		args.generationAbortController?.abort("billing_unavailable");
@@ -96,21 +112,21 @@ export async function enforceDailyLimitOr402(
 	deps: {
 		assertDailyLimitNotExceeded: (
 			db: Db,
-			userId: number,
+			installationId: string,
 			options?: { excludeCliSessionId?: string },
 		) => Promise<void>;
 		baseUrl: string;
 	},
 	args: {
 		db: Db;
-		userId: number;
-		plan: "free" | "pro";
+		installationId: string;
+		plan: "anonymous" | "pro";
 		currentCliSessionId?: string;
 		generationAbortController: AbortController;
 		set: { status?: number | string };
 	},
 ): Promise<null | { status: 402; errorBody: DailyLimitExceededBody }> {
-	if (args.plan !== "free") {
+	if (args.plan !== "anonymous") {
 		return null;
 	}
 
@@ -125,7 +141,7 @@ export async function enforceDailyLimitOr402(
 	}
 
 	try {
-		await deps.assertDailyLimitNotExceeded(args.db, args.userId, {
+		await deps.assertDailyLimitNotExceeded(args.db, args.installationId, {
 			excludeCliSessionId: args.currentCliSessionId,
 		});
 		return null;
@@ -145,53 +161,12 @@ export async function enforceDailyLimitOr402(
 	}
 }
 
-export async function enforceAnonymousTrialOr402(
-	deps: {
-		assertAnonymousTrialNotExceeded: (
-			db: Db,
-			userId: number,
-			options?: { excludeCliSessionId?: string },
-		) => Promise<void>;
-		baseUrl: string;
-	},
-	args: {
-		db: Db;
-		userId: number;
-		currentCliSessionId?: string;
-		generationAbortController: AbortController;
-		set: { status?: number | string };
-	},
-): Promise<null | { status: 402; errorBody: AnonymousTrialExceededBody }> {
-	try {
-		await deps.assertAnonymousTrialNotExceeded(args.db, args.userId, {
-			excludeCliSessionId: args.currentCliSessionId,
-		});
-		return null;
-	} catch (error) {
-		if (
-			error instanceof Error &&
-			error.name === "AnonymousTrialExceededError"
-		) {
-			args.generationAbortController.abort("anonymous_trial_exceeded");
-			args.set.status = 402;
-			return {
-				status: 402,
-				errorBody: createAnonymousTrialExceededBody(
-					error as AnonymousTrialExceededError,
-					deps.baseUrl,
-				),
-			};
-		}
-		throw error;
-	}
-}
-
 export function enforceProBalanceOr402(
 	deps: {
 		baseUrl: string;
 	},
 	args: {
-		plan: "free" | "pro";
+		plan: "anonymous" | "pro";
 		billingInfo: BillingInfo;
 		generationAbortController: AbortController;
 		set: { status?: number | string };
@@ -220,12 +195,12 @@ export function enforceProBalanceOr402(
 }
 
 export function enforceInputLengthLimitOr400(args: {
-	plan: "free" | "pro";
+	plan: "anonymous" | "pro";
 	input: string;
 	limit: number;
 	set: { status?: number | string };
 }): null | { status: 400; errorBody: InputLengthExceededBody } {
-	if (args.plan !== "free") {
+	if (args.plan !== "anonymous") {
 		return null;
 	}
 

@@ -1,10 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import {
-	AnonymousTrialExceededError,
-	DailyLimitExceededError,
-} from "@/lib/util/daily-limit";
-import {
-	enforceAnonymousTrialOr402,
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
@@ -16,11 +12,13 @@ describe("usage-guard", () => {
 	it("returns billing info when available", async () => {
 		const result = await getBillingInfoOr503({
 			userId: 42,
+			isAnonymous: false,
 			getUserBillingInfo: async () => ({
 				plan: "pro",
 				balance: 10,
 				meterId: "m",
 			}),
+			baseUrl: "https://example.com",
 			set: {},
 			generationAbortController: new AbortController(),
 		});
@@ -34,9 +32,11 @@ describe("usage-guard", () => {
 	it("returns billing-unavailable response when billing lookup fails", async () => {
 		const result = await getBillingInfoOr503({
 			userId: 42,
+			isAnonymous: false,
 			getUserBillingInfo: async () => {
 				throw new Error("downstream");
 			},
+			baseUrl: "https://example.com",
 			set: {},
 			generationAbortController: new AbortController(),
 		});
@@ -49,7 +49,27 @@ describe("usage-guard", () => {
 		expect(result.errorBody.message).toContain("Unable to verify billing info");
 	});
 
-	it("returns daily limit response for free users when limit reached", async () => {
+	it("returns subscription-required response for authenticated unpaid users", async () => {
+		const result = await getBillingInfoOr503({
+			userId: 42,
+			isAnonymous: false,
+			getUserBillingInfo: async () => null,
+			baseUrl: "https://example.com",
+			set: {},
+			generationAbortController: new AbortController(),
+		});
+
+		expect(result.status).toBe(402);
+		if (result.status !== 402) {
+			throw new Error("unexpected status");
+		}
+		expect(result.errorBody.error).toBe("subscription_required");
+		expect(result.errorBody.actions.subscribe).toBe(
+			"https://example.com/checkout/start",
+		);
+	});
+
+	it("returns daily limit response for anonymous users when limit reached", async () => {
 		const limitError = new DailyLimitExceededError(
 			5,
 			5,
@@ -65,8 +85,8 @@ describe("usage-guard", () => {
 			},
 			{
 				db: null as unknown as never,
-				userId: 1,
-				plan: "free",
+				installationId: "installation-1",
+				plan: "anonymous",
 				generationAbortController: new AbortController(),
 				set: {},
 			},
@@ -107,14 +127,14 @@ describe("usage-guard", () => {
 		);
 	});
 
-	it("does not enforce balance check when plan is free", () => {
+	it("does not enforce balance check when plan is anonymous", () => {
 		expect(
 			enforceProBalanceOr402(
 				{
 					baseUrl: "https://example.com",
 				},
 				{
-					plan: "free",
+					plan: "anonymous",
 					billingInfo: null,
 					generationAbortController: new AbortController(),
 					set: {},
@@ -123,10 +143,10 @@ describe("usage-guard", () => {
 		).toBeNull();
 	});
 
-	it("does not enforce input length when input is within free plan limit", () => {
+	it("does not enforce input length when input is within anonymous plan limit", () => {
 		expect(
 			enforceInputLengthLimitOr400({
-				plan: "free",
+				plan: "anonymous",
 				input: "a".repeat(FREE_INPUT_LENGTH_LIMIT),
 				limit: FREE_INPUT_LENGTH_LIMIT,
 				set: {},
@@ -134,9 +154,9 @@ describe("usage-guard", () => {
 		).toBeNull();
 	});
 
-	it("returns input length exceeded error for free plan when input exceeds limit", () => {
+	it("returns input length exceeded error for anonymous plan when input exceeds limit", () => {
 		const result = enforceInputLengthLimitOr400({
-			plan: "free",
+			plan: "anonymous",
 			input: "a".repeat(FREE_INPUT_LENGTH_LIMIT + 1),
 			limit: FREE_INPUT_LENGTH_LIMIT,
 			set: {},
@@ -151,7 +171,7 @@ describe("usage-guard", () => {
 		expect(result?.errorBody.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
 	});
 
-	it("does not enforce input length for non-free plans", () => {
+	it("does not enforce input length for pro plans", () => {
 		expect(
 			enforceInputLengthLimitOr400({
 				plan: "pro",
@@ -160,29 +180,5 @@ describe("usage-guard", () => {
 				set: {},
 			}),
 		).toBeNull();
-	});
-
-	it("returns anonymous trial response when anonymous quota is exhausted", async () => {
-		const result = await enforceAnonymousTrialOr402(
-			{
-				assertAnonymousTrialNotExceeded: async () => {
-					throw new AnonymousTrialExceededError(5, 5);
-				},
-				baseUrl: "https://example.com",
-			},
-			{
-				db: null as unknown as never,
-				userId: 1,
-				generationAbortController: new AbortController(),
-				set: {},
-			},
-		);
-
-		expect(result?.status).toBe(402);
-		if (result?.status !== 402) {
-			throw new Error("unexpected non-402");
-		}
-		expect(result.errorBody.error).toBe("anonymous_trial_exceeded");
-		expect(result.errorBody.actions.login).toBe("https://example.com/login");
 	});
 });

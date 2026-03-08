@@ -229,7 +229,7 @@ Our controls include:
 - Better-Auth based account/session management
 - Authenticated session and bearer-token based API protection
 - Device authorization flow for CLI sign-in
-- Free-tier daily request quota controls to reduce abuse
+- Anonymous daily request quota controls to reduce abuse
 - Single-use password reset token flow via email
 - Managed hosting and data infrastructure (Vercel and Turso)
 - Secret handling through environment variables (no client-side hardcoded secrets)

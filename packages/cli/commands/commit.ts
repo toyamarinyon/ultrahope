@@ -5,7 +5,7 @@ import {
 	mergeAbortSignals,
 } from "../lib/abort";
 import { createApiClient, InvalidModelError } from "../lib/api-client";
-import { getToken } from "../lib/auth";
+import { getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
@@ -157,6 +157,7 @@ export async function commit(args: string[]) {
 
 	try {
 		const token = await getToken();
+		const installationId = await getInstallationId();
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
@@ -188,6 +189,7 @@ export async function commit(args: string[]) {
 			const { commandExecutionPromise, abortController, cliSessionId } =
 				startCommandExecution({
 					api,
+					installationId,
 					command: "commit",
 					args,
 					apiPath,

@@ -18,6 +18,7 @@ export type ApiStorage = {
 	insertCommandExecution: (args: {
 		db: Db;
 		cliSessionId: string;
+		installationId?: string;
 		userId: number;
 		command: string;
 		args: string;
@@ -57,6 +58,7 @@ export function createDefaultApiStorage(): ApiStorage {
 		async insertCommandExecution({
 			db,
 			cliSessionId,
+			installationId,
 			userId,
 			command,
 			args,
@@ -68,6 +70,7 @@ export function createDefaultApiStorage(): ApiStorage {
 				.insert(commandExecution)
 				.values({
 					cliSessionId,
+					installationId,
 					userId,
 					command,
 					args,

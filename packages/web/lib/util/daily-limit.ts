@@ -2,8 +2,7 @@ import { and, asc, eq, gte, ne, sql } from "drizzle-orm";
 import { commandExecution } from "@/db";
 import type { Db } from "@/db/client";
 
-const FREE_DAILY_LIMIT = 5;
-const ANONYMOUS_TRIAL_LIMIT = 5;
+const ANONYMOUS_DAILY_LIMIT = 5;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export class DailyLimitExceededError extends Error {
@@ -11,32 +10,26 @@ export class DailyLimitExceededError extends Error {
 		public count: number,
 		public limit: number,
 		public resetsAt: Date,
+		public plan: "anonymous" = "anonymous",
 	) {
 		super(`Daily limit exceeded: ${count}/${limit}`);
 		this.name = "DailyLimitExceededError";
 	}
 }
 
-export class AnonymousTrialExceededError extends Error {
-	constructor(
-		public count: number,
-		public limit: number,
-	) {
-		super(`Anonymous trial exceeded: ${count}/${limit}`);
-		this.name = "AnonymousTrialExceededError";
-	}
-}
-
 function createUsageWhere(args: {
-	userId: number;
+	installationId: string;
 	sinceMs?: number;
 	excludeCliSessionId?: string;
 }) {
-	const userClause = eq(commandExecution.userId, args.userId);
+	const installationClause = eq(
+		commandExecution.installationId,
+		args.installationId,
+	);
 
 	if (typeof args.sinceMs === "number" && args.excludeCliSessionId) {
 		return and(
-			userClause,
+			installationClause,
 			gte(commandExecution.startedAt, new Date(args.sinceMs)),
 			ne(commandExecution.cliSessionId, args.excludeCliSessionId),
 		);
@@ -44,24 +37,24 @@ function createUsageWhere(args: {
 
 	if (typeof args.sinceMs === "number") {
 		return and(
-			userClause,
+			installationClause,
 			gte(commandExecution.startedAt, new Date(args.sinceMs)),
 		);
 	}
 
 	if (args.excludeCliSessionId) {
 		return and(
-			userClause,
+			installationClause,
 			ne(commandExecution.cliSessionId, args.excludeCliSessionId),
 		);
 	}
 
-	return userClause;
+	return installationClause;
 }
 
 async function getUsageCount(
 	db: Db,
-	userId: number,
+	installationId: string,
 	options?: {
 		sinceMs?: number;
 		excludeCliSessionId?: string;
@@ -72,7 +65,7 @@ async function getUsageCount(
 		.from(commandExecution)
 		.where(
 			createUsageWhere({
-				userId,
+				installationId,
 				sinceMs: options?.sinceMs,
 				excludeCliSessionId: options?.excludeCliSessionId,
 			}),
@@ -83,7 +76,7 @@ async function getUsageCount(
 
 async function getResetTime(
 	db: Db,
-	userId: number,
+	installationId: string,
 	sinceMs: number,
 	excludeCliSessionId?: string,
 ): Promise<Date> {
@@ -92,7 +85,7 @@ async function getResetTime(
 		.from(commandExecution)
 		.where(
 			createUsageWhere({
-				userId,
+				installationId,
 				sinceMs,
 				excludeCliSessionId,
 			}),
@@ -109,33 +102,26 @@ async function getResetTime(
 
 export async function assertDailyLimitNotExceeded(
 	db: Db,
-	userId: number,
+	installationId: string,
 	options?: { excludeCliSessionId?: string },
 ): Promise<void> {
 	const sinceMs = Date.now() - WINDOW_MS;
-	const count = await getUsageCount(db, userId, {
+	const count = await getUsageCount(db, installationId, {
 		sinceMs,
 		excludeCliSessionId: options?.excludeCliSessionId,
 	});
-	if (count >= FREE_DAILY_LIMIT) {
+	if (count >= ANONYMOUS_DAILY_LIMIT) {
 		throw new DailyLimitExceededError(
 			count,
-			FREE_DAILY_LIMIT,
-			await getResetTime(db, userId, sinceMs, options?.excludeCliSessionId),
+			ANONYMOUS_DAILY_LIMIT,
+			await getResetTime(
+				db,
+				installationId,
+				sinceMs,
+				options?.excludeCliSessionId,
+			),
+			"anonymous",
 		);
-	}
-}
-
-export async function assertAnonymousTrialNotExceeded(
-	db: Db,
-	userId: number,
-	options?: { excludeCliSessionId?: string },
-): Promise<void> {
-	const count = await getUsageCount(db, userId, {
-		excludeCliSessionId: options?.excludeCliSessionId,
-	});
-	if (count >= ANONYMOUS_TRIAL_LIMIT) {
-		throw new AnonymousTrialExceededError(count, ANONYMOUS_TRIAL_LIMIT);
 	}
 }
 
@@ -148,15 +134,15 @@ export interface DailyUsageInfo {
 
 export async function getDailyUsageInfo(
 	db: Db,
-	userId: number,
+	installationId: string,
 ): Promise<DailyUsageInfo> {
 	const sinceMs = Date.now() - WINDOW_MS;
-	const count = await getUsageCount(db, userId, { sinceMs });
-	const resetsAt = await getResetTime(db, userId, sinceMs);
+	const count = await getUsageCount(db, installationId, { sinceMs });
+	const resetsAt = await getResetTime(db, installationId, sinceMs);
 	return {
 		count,
-		limit: FREE_DAILY_LIMIT,
-		remaining: Math.max(0, FREE_DAILY_LIMIT - count),
+		limit: ANONYMOUS_DAILY_LIMIT,
+		remaining: Math.max(0, ANONYMOUS_DAILY_LIMIT - count),
 		resetsAt,
 	};
 }

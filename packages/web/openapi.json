@@ -35,6 +35,7 @@
                 "required": [
                   "commandExecutionId",
                   "cliSessionId",
+                  "installationId",
                   "command",
                   "args",
                   "api",
@@ -45,6 +46,9 @@
                     "type": "string"
                   },
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "command": {
@@ -100,6 +104,7 @@
                 "required": [
                   "commandExecutionId",
                   "cliSessionId",
+                  "installationId",
                   "command",
                   "args",
                   "api",
@@ -110,6 +115,9 @@
                     "type": "string"
                   },
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "command": {
@@ -165,6 +173,7 @@
                 "required": [
                   "commandExecutionId",
                   "cliSessionId",
+                  "installationId",
                   "command",
                   "args",
                   "api",
@@ -175,6 +184,9 @@
                     "type": "string"
                   },
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "command": {
@@ -273,7 +285,7 @@
                       "type": "number"
                     },
                     "plan": {
-                      "const": "free",
+                      "const": "anonymous",
                       "type": "string"
                     }
                   }
@@ -312,46 +324,6 @@
                         "message",
                         "count",
                         "limit",
-                        "actions",
-                        "hint"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "anonymous_trial_exceeded",
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "count": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "actions": {
-                          "type": "object",
-                          "required": [
-                            "login"
-                          ],
-                          "properties": {
-                            "login": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "hint": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "error",
-                        "message",
-                        "count",
-                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -375,7 +347,7 @@
                           "type": "string"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         },
                         "actions": {
@@ -418,7 +390,7 @@
                         "plan": {
                           "anyOf": [
                             {
-                              "const": "free",
+                              "const": "anonymous",
                               "type": "string"
                             },
                             {
@@ -434,6 +406,43 @@
                           ],
                           "properties": {
                             "buyCredits": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "subscription_required",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "authenticated_unpaid",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "subscribe"
+                          ],
+                          "properties": {
+                            "subscribe": {
                               "type": "string"
                             }
                           }
@@ -471,11 +480,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -495,11 +508,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -519,11 +536,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -661,7 +682,7 @@
                           "type": "number"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         }
                       }
@@ -702,46 +723,6 @@
                         "message",
                         "count",
                         "limit",
-                        "actions",
-                        "hint"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "anonymous_trial_exceeded",
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "count": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "actions": {
-                          "type": "object",
-                          "required": [
-                            "login"
-                          ],
-                          "properties": {
-                            "login": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "hint": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "error",
-                        "message",
-                        "count",
-                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -765,7 +746,7 @@
                           "type": "string"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         },
                         "actions": {
@@ -808,7 +789,7 @@
                         "plan": {
                           "anyOf": [
                             {
-                              "const": "free",
+                              "const": "anonymous",
                               "type": "string"
                             },
                             {
@@ -848,6 +829,43 @@
                           "type": "string"
                         }
                       }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "subscription_required",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "authenticated_unpaid",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "subscribe"
+                          ],
+                          "properties": {
+                            "subscribe": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -877,11 +895,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -901,11 +923,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -925,11 +951,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -968,11 +998,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -992,11 +1026,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -1016,11 +1054,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -1158,7 +1200,7 @@
                           "type": "number"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         }
                       }
@@ -1199,46 +1241,6 @@
                         "message",
                         "count",
                         "limit",
-                        "actions",
-                        "hint"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "anonymous_trial_exceeded",
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "count": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "actions": {
-                          "type": "object",
-                          "required": [
-                            "login"
-                          ],
-                          "properties": {
-                            "login": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "hint": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "error",
-                        "message",
-                        "count",
-                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -1262,7 +1264,7 @@
                           "type": "string"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         },
                         "actions": {
@@ -1305,7 +1307,7 @@
                         "plan": {
                           "anyOf": [
                             {
-                              "const": "free",
+                              "const": "anonymous",
                               "type": "string"
                             },
                             {
@@ -1345,6 +1347,43 @@
                           "type": "string"
                         }
                       }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "subscription_required",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "authenticated_unpaid",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "subscribe"
+                          ],
+                          "properties": {
+                            "subscribe": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -1374,11 +1413,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -1398,11 +1441,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -1422,11 +1469,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "model",
                   "originalMessage"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "model": {
@@ -1465,11 +1516,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -1489,11 +1544,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -1513,11 +1572,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -1655,7 +1718,7 @@
                           "type": "number"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         }
                       }
@@ -1696,46 +1759,6 @@
                         "message",
                         "count",
                         "limit",
-                        "actions",
-                        "hint"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "anonymous_trial_exceeded",
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "count": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "actions": {
-                          "type": "object",
-                          "required": [
-                            "login"
-                          ],
-                          "properties": {
-                            "login": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "hint": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "error",
-                        "message",
-                        "count",
-                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -1759,7 +1782,7 @@
                           "type": "string"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         },
                         "actions": {
@@ -1802,7 +1825,7 @@
                         "plan": {
                           "anyOf": [
                             {
-                              "const": "free",
+                              "const": "anonymous",
                               "type": "string"
                             },
                             {
@@ -1839,6 +1862,43 @@
                           "type": "string"
                         },
                         "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "subscription_required",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "authenticated_unpaid",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "subscribe"
+                          ],
+                          "properties": {
+                            "subscribe": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
                           "type": "string"
                         }
                       }
@@ -1871,11 +1931,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -1895,11 +1959,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -1919,11 +1987,15 @@
                 "type": "object",
                 "required": [
                   "cliSessionId",
+                  "installationId",
                   "input",
                   "model"
                 ],
                 "properties": {
                   "cliSessionId": {
+                    "type": "string"
+                  },
+                  "installationId": {
                     "type": "string"
                   },
                   "input": {
@@ -2061,7 +2133,7 @@
                           "type": "number"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         }
                       }
@@ -2102,46 +2174,6 @@
                         "message",
                         "count",
                         "limit",
-                        "actions",
-                        "hint"
-                      ],
-                      "properties": {
-                        "error": {
-                          "const": "anonymous_trial_exceeded",
-                          "type": "string"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "count": {
-                          "type": "number"
-                        },
-                        "limit": {
-                          "type": "number"
-                        },
-                        "actions": {
-                          "type": "object",
-                          "required": [
-                            "login"
-                          ],
-                          "properties": {
-                            "login": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "hint": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "error",
-                        "message",
-                        "count",
-                        "limit",
                         "resetsAt",
                         "plan",
                         "actions",
@@ -2165,7 +2197,7 @@
                           "type": "string"
                         },
                         "plan": {
-                          "const": "free",
+                          "const": "anonymous",
                           "type": "string"
                         },
                         "actions": {
@@ -2208,7 +2240,7 @@
                         "plan": {
                           "anyOf": [
                             {
-                              "const": "free",
+                              "const": "anonymous",
                               "type": "string"
                             },
                             {
@@ -2245,6 +2277,43 @@
                           "type": "string"
                         },
                         "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error",
+                        "message",
+                        "plan",
+                        "actions",
+                        "hint"
+                      ],
+                      "properties": {
+                        "error": {
+                          "const": "subscription_required",
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "plan": {
+                          "const": "authenticated_unpaid",
+                          "type": "string"
+                        },
+                        "actions": {
+                          "type": "object",
+                          "required": [
+                            "subscribe"
+                          ],
+                          "properties": {
+                            "subscribe": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "hint": {
                           "type": "string"
                         }
                       }

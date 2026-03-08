@@ -38,9 +38,7 @@ export async function showDailyLimitPrompt(
 		);
 	}
 	console.log("");
-	console.log(
-		`${theme.primary}Commit message generation was skipped${theme.reset}`,
-	);
+	console.log(`${theme.primary}Generation was skipped${theme.reset}`);
 	console.log("");
 	console.log(
 		ui.bullet(`Daily request limit reached (${info.count} / ${info.limit})`),
@@ -54,7 +52,7 @@ export async function showDailyLimitPrompt(
 		);
 		console.log(`  ${ui.link("ultrahope jj describe")}`);
 		console.log("");
-		console.log(`${theme.primary}Or upgrade your plan:${theme.reset}`);
+		console.log(`${theme.primary}Or upgrade to Pro:${theme.reset}`);
 		console.log(`  ${ui.link(PRICING_URL)}`);
 		return;
 	}
@@ -65,7 +63,7 @@ export async function showDailyLimitPrompt(
 		`${theme.secondary}  1) Retry after the daily limit resets${theme.reset}`,
 	);
 	console.log(
-		`${theme.secondary}  2) Upgrade your plan to continue immediately${theme.reset}`,
+		`${theme.secondary}  2) Upgrade to Pro to continue immediately${theme.reset}`,
 	);
 	console.log("");
 

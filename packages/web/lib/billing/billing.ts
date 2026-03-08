@@ -1,7 +1,7 @@
 import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import { getPolarClient } from "@/lib/auth/auth";
 
-export type UserPlan = "free" | "pro";
+export type UserPlan = "anonymous" | "pro";
 
 export type ActiveSubscription = {
 	id: string;
@@ -35,6 +35,7 @@ function resolvePlanFromProductId(productId: string): UserPlan | null {
 
 export async function getActiveSubscriptions(
 	externalCustomerId: string,
+	options?: { throwOnError?: boolean },
 ): Promise<ActiveSubscription[]> {
 	if (!process.env.POLAR_ACCESS_TOKEN) {
 		return [];
@@ -66,6 +67,9 @@ export async function getActiveSubscriptions(
 			return [];
 		}
 		console.error("[polar] Failed to load active subscriptions:", error);
+		if (options?.throwOnError) {
+			throw error;
+		}
 		return [];
 	}
 }
@@ -75,7 +79,7 @@ export function resolveCurrentPlan(
 ): UserPlan {
 	return subscriptions.some((subscription) => subscription.plan === "pro")
 		? "pro"
-		: "free";
+		: "anonymous";
 }
 
 export async function getBillingHistory(

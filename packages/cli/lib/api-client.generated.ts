@@ -176,6 +176,7 @@ export interface operations {
 				"application/json": {
 					commandExecutionId: string;
 					cliSessionId: string;
+					installationId: string;
 					command: string;
 					args: string[];
 					api: string;
@@ -191,6 +192,7 @@ export interface operations {
 				"application/x-www-form-urlencoded": {
 					commandExecutionId: string;
 					cliSessionId: string;
+					installationId: string;
 					command: string;
 					args: string[];
 					api: string;
@@ -206,6 +208,7 @@ export interface operations {
 				"multipart/form-data": {
 					commandExecutionId: string;
 					cliSessionId: string;
+					installationId: string;
 					command: string;
 					args: string[];
 					api: string;
@@ -245,7 +248,7 @@ export interface operations {
 						count: number;
 						limit: number;
 						/** @constant */
-						plan: "free";
+						plan: "anonymous";
 					};
 				};
 			};
@@ -275,7 +278,7 @@ export interface operations {
 								limit: number;
 								resetsAt: string;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 								actions: {
 									upgrade: string;
 								};
@@ -286,7 +289,7 @@ export interface operations {
 								error: "insufficient_balance";
 								message: string;
 								balance: number;
-								plan: "free" | "pro";
+								plan: "anonymous" | "pro";
 								actions: {
 									buyCredits: string;
 								};
@@ -307,18 +310,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
@@ -370,7 +376,7 @@ export interface operations {
 								count: number;
 								limit: number;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 						  };
 				};
 			};
@@ -400,7 +406,7 @@ export interface operations {
 								limit: number;
 								resetsAt: string;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 								actions: {
 									upgrade: string;
 								};
@@ -411,7 +417,7 @@ export interface operations {
 								error: "insufficient_balance";
 								message: string;
 								balance: number;
-								plan: "free" | "pro";
+								plan: "anonymous" | "pro";
 								actions: {
 									buyCredits: string;
 								};
@@ -437,18 +443,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
@@ -468,18 +477,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
@@ -531,7 +543,7 @@ export interface operations {
 								count: number;
 								limit: number;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 						  };
 				};
 			};
@@ -561,7 +573,7 @@ export interface operations {
 								limit: number;
 								resetsAt: string;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 								actions: {
 									upgrade: string;
 								};
@@ -572,7 +584,7 @@ export interface operations {
 								error: "insufficient_balance";
 								message: string;
 								balance: number;
-								plan: "free" | "pro";
+								plan: "anonymous" | "pro";
 								actions: {
 									buyCredits: string;
 								};
@@ -598,18 +610,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					model: string;
 					originalMessage: string;
 					refineInstruction?: string;
@@ -629,18 +644,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
@@ -692,7 +710,7 @@ export interface operations {
 								count: number;
 								limit: number;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 						  };
 				};
 			};
@@ -722,7 +740,7 @@ export interface operations {
 								limit: number;
 								resetsAt: string;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 								actions: {
 									upgrade: string;
 								};
@@ -733,7 +751,7 @@ export interface operations {
 								error: "insufficient_balance";
 								message: string;
 								balance: number;
-								plan: "free" | "pro";
+								plan: "anonymous" | "pro";
 								actions: {
 									buyCredits: string;
 								};
@@ -759,18 +777,21 @@ export interface operations {
 			content: {
 				"application/json": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"application/x-www-form-urlencoded": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
 				};
 				"multipart/form-data": {
 					cliSessionId: string;
+					installationId: string;
 					input: string;
 					model: string;
 					guide?: string;
@@ -822,7 +843,7 @@ export interface operations {
 								count: number;
 								limit: number;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 						  };
 				};
 			};
@@ -852,7 +873,7 @@ export interface operations {
 								limit: number;
 								resetsAt: string;
 								/** @constant */
-								plan: "free";
+								plan: "anonymous";
 								actions: {
 									upgrade: string;
 								};
@@ -863,7 +884,7 @@ export interface operations {
 								error: "insufficient_balance";
 								message: string;
 								balance: number;
-								plan: "free" | "pro";
+								plan: "anonymous" | "pro";
 								actions: {
 									buyCredits: string;
 								};

@@ -12,9 +12,8 @@ import {
 	generatePrTitleBody,
 	getUserBillingInfo,
 } from "@/lib/llm";
-import { baseUrl } from "@/lib/util/base-url";
+import { resolveBaseURL } from "@/lib/util/base-url";
 import {
-	assertAnonymousTrialNotExceeded,
 	assertDailyLimitNotExceeded,
 	getDailyUsageInfo,
 } from "@/lib/util/daily-limit";
@@ -30,7 +29,6 @@ export type ApiDependencies = {
 	getDb: () => Db;
 	getPolarClient: () => ReturnType<typeof getPolarClient>;
 	getUserBillingInfo: typeof getUserBillingInfo;
-	assertAnonymousTrialNotExceeded: typeof assertAnonymousTrialNotExceeded;
 	assertDailyLimitNotExceeded: typeof assertDailyLimitNotExceeded;
 	getDailyUsageInfo: typeof getDailyUsageInfo;
 	generateCommitMessage: typeof generateCommitMessage;
@@ -73,7 +71,6 @@ export function createDefaultApiDependencies(): ApiDependencies {
 		getDb,
 		getPolarClient,
 		getUserBillingInfo,
-		assertAnonymousTrialNotExceeded,
 		assertDailyLimitNotExceeded,
 		getDailyUsageInfo,
 		generateCommitMessage,
@@ -83,7 +80,7 @@ export function createDefaultApiDependencies(): ApiDependencies {
 		generatePrIntent,
 		generatePrTitleBody,
 		storage: createDefaultApiStorage(),
-		baseUrl,
+		baseUrl: resolveBaseURL(),
 		microDollarsPerUsd: MICRODOLLARS_PER_USD,
 		createBillingUnavailableBody,
 		createDailyLimitExceededBody,

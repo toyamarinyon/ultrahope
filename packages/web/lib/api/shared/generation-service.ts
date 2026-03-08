@@ -12,6 +12,7 @@ import type { ApiStorage } from "./storage";
 export type GenerateContext = {
 	userId: number;
 	isAnonymous: boolean;
+	installationId: string;
 	cliSessionId: string;
 	model: string;
 	abortSignal: AbortSignal;
@@ -43,7 +44,7 @@ export type GenerationServiceDeps = {
 	} | null>;
 	getDailyUsageInfo: (
 		db: Db,
-		userId: number,
+		installationId: string,
 	) => Promise<{
 		remaining: number;
 		limit: number;
@@ -66,7 +67,9 @@ export async function executeGeneration(
 	const billingInfo = ctx.isAnonymous
 		? null
 		: await deps.getUserBillingInfo(ctx.userId);
-	const plan = ctx.isAnonymous ? "free" : (billingInfo?.plan ?? "free");
+	const plan = ctx.isAnonymous
+		? "anonymous"
+		: (billingInfo?.plan ?? "anonymous");
 
 	if (plan === "pro" && billingInfo && billingInfo.balance <= 0) {
 		return {
@@ -133,8 +136,8 @@ export async function executeGeneration(
 		response: { output: response.content, ...response },
 	};
 
-	if (!ctx.isAnonymous && plan === "free") {
-		const usageInfo = await deps.getDailyUsageInfo(ctx.db, ctx.userId);
+	if (plan === "anonymous") {
+		const usageInfo = await deps.getDailyUsageInfo(ctx.db, ctx.installationId);
 		result.quota = {
 			remaining: usageInfo.remaining,
 			limit: usageInfo.limit,
@@ -153,7 +156,7 @@ export async function finalizeStreamingGeneration(
 	},
 	args: {
 		ctx: GenerateContext;
-		plan: "free" | "pro";
+		plan: "anonymous" | "pro";
 		model: string;
 		responseText: string;
 		startedAt: number;

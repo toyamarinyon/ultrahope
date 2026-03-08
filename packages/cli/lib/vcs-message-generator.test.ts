@@ -49,6 +49,7 @@ mock.module("./api-client", () => ({
 
 mock.module("./auth", () => ({
 	getToken: async () => "fake-token",
+	getInstallationId: async () => "installation-id",
 }));
 
 async function collectCandidates(args: {
@@ -102,6 +103,7 @@ describe("generateCommitMessages", () => {
 		expect(state.refineCalls).toBe(0);
 		expect(state.standardRequest).toMatchObject({
 			cliSessionId: "session-id",
+			installationId: "installation-id",
 			model: "mistral/ministral-3b",
 			input: "diff body",
 		});
@@ -132,6 +134,7 @@ describe("generateCommitMessages", () => {
 		expect(state.standardCalls).toBe(0);
 		expect(state.refineRequest).toMatchObject({
 			cliSessionId: "session-id",
+			installationId: "installation-id",
 			model: "mistral/ministral-3b",
 			originalMessage: "feat: add feature",
 			refineInstruction: "Make shorter",

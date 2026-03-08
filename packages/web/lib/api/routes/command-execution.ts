@@ -3,7 +3,6 @@ import type { Db } from "@/db/client";
 import type { ApiDependencies } from "../dependencies";
 import { unauthorizedBody } from "../shared/errors";
 import {
-	enforceAnonymousTrialOr402,
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
@@ -26,6 +25,7 @@ type CommandExecutionRouteContext = {
 	body: {
 		commandExecutionId: string;
 		cliSessionId: string;
+		installationId: string;
 		command: string;
 		args: string[];
 		api: string;
@@ -59,92 +59,69 @@ export function createCommandExecutionRoutes(deps: ApiDependencies): Elysia {
 			}
 
 			const generationAbortController = new AbortController();
-			if (session.user.isAnonymous) {
-				const inputLengthResult = enforceInputLengthLimitOr400({
-					plan: "free",
-					input: body.requestPayload.input,
-					limit: FREE_INPUT_LENGTH_LIMIT,
-					set,
-				});
-				if (inputLengthResult) {
-					return inputLengthResult.errorBody;
-				}
+			const billingInfoResult = await getBillingInfoOr503({
+				userId: session.user.id,
+				isAnonymous: session.user.isAnonymous,
+				getUserBillingInfo: (userId) =>
+					deps.getUserBillingInfo(userId, { throwOnError: true }),
+				baseUrl: deps.baseUrl,
+				set,
+				generationAbortController,
+			});
+			if (billingInfoResult.status === 402) {
+				return billingInfoResult.errorBody;
+			}
+			if (billingInfoResult.status === 503) {
+				return billingInfoResult.errorBody;
+			}
+			const { billingInfo, plan } = billingInfoResult;
 
-				const anonymousTrialResult = await enforceAnonymousTrialOr402(
-					{
-						assertAnonymousTrialNotExceeded:
-							deps.assertAnonymousTrialNotExceeded,
-						baseUrl: deps.baseUrl,
-					},
-					{
-						db,
-						userId: session.user.id,
-						generationAbortController,
-						set,
-					},
-				);
-				if (anonymousTrialResult) {
-					return anonymousTrialResult.errorBody;
-				}
-			} else {
-				const billingInfoResult = await getBillingInfoOr503({
-					userId: session.user.id,
-					getUserBillingInfo: (userId) =>
-						deps.getUserBillingInfo(userId, { throwOnError: true }),
-					set,
-					generationAbortController,
-				});
-				if (billingInfoResult.status === 503) {
-					return billingInfoResult.errorBody;
-				}
-				const { billingInfo, plan } = billingInfoResult;
+			const inputLengthResult = enforceInputLengthLimitOr400({
+				plan,
+				input: body.requestPayload.input,
+				limit: FREE_INPUT_LENGTH_LIMIT,
+				set,
+			});
+			if (inputLengthResult) {
+				return inputLengthResult.errorBody;
+			}
 
-				const inputLengthResult = enforceInputLengthLimitOr400({
+			const dailyLimitResult = await enforceDailyLimitOr402(
+				{
+					assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+					baseUrl: deps.baseUrl,
+				},
+				{
+					db,
+					installationId: body.installationId,
 					plan,
-					input: body.requestPayload.input,
-					limit: FREE_INPUT_LENGTH_LIMIT,
+					generationAbortController,
 					set,
-				});
-				if (inputLengthResult) {
-					return inputLengthResult.errorBody;
-				}
+				},
+			);
+			if (dailyLimitResult) {
+				return dailyLimitResult.errorBody;
+			}
 
-				const dailyLimitResult = await enforceDailyLimitOr402(
-					{
-						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-						baseUrl: deps.baseUrl,
-					},
-					{
-						db,
-						userId: session.user.id,
-						plan,
-						generationAbortController,
-						set,
-					},
-				);
-				if (dailyLimitResult) {
-					return dailyLimitResult.errorBody;
-				}
-
-				const balanceResult = enforceProBalanceOr402(
-					{
-						baseUrl: deps.baseUrl,
-					},
-					{
-						plan,
-						billingInfo,
-						generationAbortController,
-						set,
-					},
-				);
-				if (balanceResult) {
-					return balanceResult.errorBody;
-				}
+			const balanceResult = enforceProBalanceOr402(
+				{
+					baseUrl: deps.baseUrl,
+				},
+				{
+					plan,
+					billingInfo,
+					generationAbortController,
+					set,
+				},
+			);
+			if (balanceResult) {
+				return balanceResult.errorBody;
 			}
 
 			await deps.storage.insertCommandExecution({
 				db,
 				cliSessionId: body.cliSessionId,
+				installationId: body.installationId,
 				userId: session.user.id,
 				command: body.command,
 				args: JSON.stringify(body.args),

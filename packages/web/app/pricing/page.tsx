@@ -1,9 +1,10 @@
-import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { getAuth, getPolarClient } from "@/lib/auth/auth";
+import { redirect } from "next/navigation";
+import { getAuth } from "@/lib/auth/auth";
 import { getActiveSubscriptions } from "@/lib/billing/billing";
+import { getAuthenticatedUserEntitlement } from "@/lib/billing/entitlement";
 import { CheckoutButton } from "./checkout-button";
 import { ResetTime } from "./reset-time";
 
@@ -32,17 +33,17 @@ export const dynamic = "force-dynamic";
 
 const plans = [
 	{
-		name: "Free",
+		name: "Anonymous",
 		price: "$0",
-		description: "Sign in for the free plan or try the CLI anonymously first",
+		description: "Try Ultrahope without logging in",
 		features: [
 			{ key: "requests", content: "5 requests/day" },
 			{ key: "inputLimit", content: "40000 character input limit per request" },
-			{ key: "trial", content: "CLI trial: 5 runs without login" },
+			{ key: "access", content: "No login required in the CLI" },
 			{ key: "reset", content: <ResetTime /> },
 			{ key: "support", content: "Community support" },
 		],
-		slug: "free",
+		slug: "anonymous",
 	},
 	{
 		name: "Pro",
@@ -58,58 +59,35 @@ const plans = [
 	},
 ];
 
-type LegacyFreeSubscription = {
-	subscriptionId: string;
-};
-
-async function getLegacyFreeSubscription(
-	userId: string,
-): Promise<LegacyFreeSubscription | null> {
-	const freeProductId = process.env.POLAR_PRODUCT_FREE_ID;
-	if (!freeProductId) {
-		return null;
-	}
-
-	try {
-		const polarClient = getPolarClient();
-		const customerState = await polarClient.customers.getStateExternal({
-			externalId: userId,
-		});
-		const subscription = customerState.activeSubscriptions.find(
-			(sub) => sub.productId === freeProductId,
-		);
-		if (!subscription) {
-			return null;
-		}
-		return {
-			subscriptionId: subscription.id,
-		};
-	} catch (error) {
-		if (error instanceof ResourceNotFound) {
-			return null;
-		}
-		return null;
-	}
-}
-
 export default async function PricingPage() {
 	const auth = getAuth();
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});
 
-	const [activePaidSubscriptions, legacyFreeSubscription] = session
-		? await Promise.all([
-				getActiveSubscriptions(session.user.id),
-				getLegacyFreeSubscription(session.user.id),
-			])
-		: [[], null];
+	const isAnonymous =
+		session &&
+		"isAnonymous" in session.user &&
+		session.user.isAnonymous === true;
+
+	if (session && !isAnonymous) {
+		const entitlement = await getAuthenticatedUserEntitlement(session.user.id, {
+			throwOnError: true,
+		});
+		if (entitlement !== "pro") {
+			redirect("/checkout/start?returnTo=%2Fpricing");
+		}
+	}
+
+	const activePaidSubscriptions = session
+		? await getActiveSubscriptions(session.user.id)
+		: [];
 	const currentPlan = activePaidSubscriptions.some(
 		(subscription) => subscription.plan === "pro",
 	)
 		? "pro"
 		: session
-			? "free"
+			? "anonymous"
 			: null;
 
 	return (
@@ -162,33 +140,25 @@ export default async function PricingPage() {
 										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
 											Current Plan
 										</span>
-									) : plan.slug === "free" ? (
+									) : plan.slug === "anonymous" ? (
 										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
-											Included with your account
+											No account required
 										</span>
 									) : (
 										<CheckoutButton
 											slug={plan.slug}
 											planName={plan.name}
 											className="inline-flex items-center justify-center px-4 py-2 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60"
-											upgradeFrom={
-												plan.slug === "pro" && legacyFreeSubscription
-													? {
-															subscriptionId:
-																legacyFreeSubscription.subscriptionId,
-															targetProductId:
-																process.env.POLAR_PRODUCT_PRO_ID ?? "",
-														}
-													: undefined
-											}
 										/>
 									)
-								) : plan.slug === "free" ? (
+								) : plan.slug === "anonymous" ? (
 									<Link
-										href="/signup"
+										href="https://github.com/toyamarinyon/ultrahope"
+										target="_blank"
+										rel="noopener noreferrer"
 										className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface-hover"
 									>
-										Create free account
+										Use in CLI
 									</Link>
 								) : (
 									<Link

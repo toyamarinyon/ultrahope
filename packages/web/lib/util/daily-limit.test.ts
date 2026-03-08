@@ -1,7 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import {
-	AnonymousTrialExceededError,
-	assertAnonymousTrialNotExceeded,
 	assertDailyLimitNotExceeded,
 	DailyLimitExceededError,
 	getDailyUsageInfo,
@@ -44,25 +42,22 @@ function createDb(count: number, resetAt?: Date): unknown {
 describe("daily-limit", () => {
 	it("throws when usage exceeds quota", async () => {
 		await expect(
-			assertDailyLimitNotExceeded(createDb(5) as never, 1),
+			assertDailyLimitNotExceeded(createDb(5) as never, "installation-1"),
 		).rejects.toThrow(DailyLimitExceededError);
 	});
 
 	it("allows requests below quota", async () => {
 		await expect(
-			assertDailyLimitNotExceeded(createDb(3) as never, 1),
+			assertDailyLimitNotExceeded(createDb(3) as never, "installation-1"),
 		).resolves.toBeUndefined();
 	});
 
-	it("throws when anonymous trial exceeds total quota", async () => {
-		await expect(
-			assertAnonymousTrialNotExceeded(createDb(5) as never, 1),
-		).rejects.toThrow(AnonymousTrialExceededError);
-	});
-
-	it("returns remaining usage stats for user", async () => {
+	it("returns remaining usage stats for installation", async () => {
 		const resetsAt = new Date("2026-02-01T00:00:00.000Z");
-		const usage = await getDailyUsageInfo(createDb(3, resetsAt) as never, 1);
+		const usage = await getDailyUsageInfo(
+			createDb(3, resetsAt) as never,
+			"installation-1",
+		);
 
 		expect(usage.limit).toBe(5);
 		expect(usage.remaining).toBe(2);

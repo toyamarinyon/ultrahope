@@ -1,8 +1,5 @@
 import { ALLOWED_MODEL_IDS } from "@/lib/llm/models";
-import type {
-	AnonymousTrialExceededError,
-	DailyLimitExceededError,
-} from "@/lib/util/daily-limit";
+import type { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import type { InvalidModelBody } from "./validators";
 
 type UnauthorizedBody = {
@@ -15,7 +12,7 @@ export type DailyLimitExceededBody = {
 	count: number;
 	limit: number;
 	resetsAt: string;
-	plan: "free";
+	plan: "anonymous";
 	actions: {
 		upgrade: string;
 	};
@@ -26,7 +23,7 @@ export type InsufficientBalanceBody = {
 	error: "insufficient_balance";
 	message: string;
 	balance: number;
-	plan: "free" | "pro";
+	plan: "anonymous" | "pro";
 	actions: {
 		buyCredits: string;
 	};
@@ -38,13 +35,12 @@ export type BillingUnavailableBody = {
 	message: string;
 };
 
-export type AnonymousTrialExceededBody = {
-	error: "anonymous_trial_exceeded";
+export type SubscriptionRequiredBody = {
+	error: "subscription_required";
 	message: string;
-	count: number;
-	limit: number;
+	plan: "authenticated_unpaid";
 	actions: {
-		login: string;
+		subscribe: string;
 	};
 	hint: string;
 };
@@ -54,7 +50,7 @@ export type InputLengthExceededBody = {
 	message: string;
 	count: number;
 	limit: number;
-	plan: "free";
+	plan: "anonymous";
 };
 
 export const unauthorizedBody: UnauthorizedBody = {
@@ -80,7 +76,7 @@ export function createDailyLimitExceededBody(
 		count: error.count,
 		limit: error.limit,
 		resetsAt: error.resetsAt.toISOString(),
-		plan: "free",
+		plan: "anonymous",
 		actions: {
 			upgrade: `${baseUrl}/pricing`,
 		},
@@ -91,7 +87,7 @@ export function createDailyLimitExceededBody(
 export function createInsufficientBalanceBody(
 	params: {
 		balance: number;
-		plan: "free" | "pro";
+		plan: "anonymous" | "pro";
 	},
 	baseUrl: string,
 	hint = "Purchase additional credits to continue.",
@@ -115,18 +111,16 @@ export function createBillingUnavailableBody(): BillingUnavailableBody {
 	};
 }
 
-export function createAnonymousTrialExceededBody(
-	error: AnonymousTrialExceededError,
+export function createSubscriptionRequiredBody(
 	baseUrl: string,
-	hint = "Run `ultrahope login` to continue without the anonymous trial limit.",
-): AnonymousTrialExceededBody {
+	hint = "This account needs an active Pro subscription. Complete checkout to continue.",
+): SubscriptionRequiredBody {
 	return {
-		error: "anonymous_trial_exceeded",
-		message: "Anonymous trial limit reached.",
-		count: error.count,
-		limit: error.limit,
+		error: "subscription_required",
+		message: "Active Pro subscription required.",
+		plan: "authenticated_unpaid",
 		actions: {
-			login: `${baseUrl}/login`,
+			subscribe: `${baseUrl}/checkout/start`,
 		},
 		hint,
 	};
@@ -141,7 +135,7 @@ export function createInputLengthExceededBody(params: {
 		message: `Input exceeds ${params.limit} characters.`,
 		count: params.count,
 		limit: params.limit,
-		plan: "free",
+		plan: "anonymous",
 	};
 }
 

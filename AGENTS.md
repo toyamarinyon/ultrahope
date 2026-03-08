@@ -26,8 +26,24 @@ Each package has its own `AGENTS.md` with package-specific guidance.
 The `.project/` directory holds tasks, decisions, and reference docs. See [.project/AGENTS.md](.project/AGENTS.md) for the full layout.
 
 - `tasks/` — Task board (`active/`, `backlog/`, `blocked/`, `done/`)
+- `tests/` — Scenario-based manual/agent test definitions and execution reports
 - `decisions/` — ADR-style decision records
 - `docs/` — External documentation references (Polar, Next.js, etc.)
+
+### Test scenario requests
+
+If the user asks to execute or verify a specific scenario file under `./.project/tests/scenarios/`, use the [`test-scenario-runner`](./.agents/skills/test-scenario-runner/SKILL.md) skill first.
+
+Examples:
+
+- `./.project/tests/scenarios/auth/anonymous-cli-first-run.md テストして`
+- `[anonymous-cli-first-run.md](.project/tests/scenarios/auth/anonymous-cli-first-run.md) test this`
+
+For these requests:
+
+- treat the scenario file as the source of truth
+- follow `./.project/tests/AGENTS.md`
+- write a report under `./.project/tests/reports/YYYY-MM-DD/`
 
 ## File Change Workflow
 

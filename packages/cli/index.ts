@@ -47,9 +47,9 @@ Options:
   --version, -v  Show version
   --help, -h     Show this help message
 
-Anonymous trial:
-  Most generation commands work without login for up to 5 runs.
-  Run 'ultrahope login' to continue after the trial or to use your account.`);
+Plans:
+  Anonymous: 5 requests/day and 40,000 chars/request in the CLI without login
+  Pro: login required, paid usage, no anonymous limits`);
 }
 
 main().catch((err) => {

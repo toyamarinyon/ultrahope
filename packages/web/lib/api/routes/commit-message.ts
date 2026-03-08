@@ -15,7 +15,6 @@ import {
 } from "../shared/stream-service";
 import {
 	combineAbortSignals,
-	enforceAnonymousTrialOr402,
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
 	enforceProBalanceOr402,
@@ -40,6 +39,7 @@ type ApiSession = {
 type CommitMessageRouteContext = {
 	body: {
 		cliSessionId: string;
+		installationId: string;
 		input: string;
 		model: string;
 		guide?: string;
@@ -55,6 +55,7 @@ type CommitMessageRouteContext = {
 type CommitMessageRefineRouteContext = {
 	body: {
 		cliSessionId: string;
+		installationId: string;
 		model: string;
 		originalMessage: string;
 		refineInstruction?: string;
@@ -87,18 +88,12 @@ async function resolveRouteBillingInfo(args: {
 	deps: ApiDependencies;
 	generationAbortController?: AbortController;
 }): Promise<RouteBillingInfoResult> {
-	if (args.session.user.isAnonymous) {
-		return {
-			status: 200,
-			billingInfo: null,
-			plan: "free",
-		};
-	}
-
 	return getBillingInfoOr503({
 		userId: args.session.user.id,
+		isAnonymous: args.session.user.isAnonymous,
 		getUserBillingInfo: (userId) =>
 			args.deps.getUserBillingInfo(userId, { throwOnError: true }),
+		baseUrl: args.deps.baseUrl,
 		set: args.set,
 		generationAbortController: args.generationAbortController,
 	});
@@ -134,6 +129,9 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					set,
 					deps,
 				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -149,47 +147,28 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				}
 
 				const generationAbortController = new AbortController();
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan: billingInfoResult.plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan: billingInfoResult.plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const ctx = {
 					userId: session.user.id,
 					isAnonymous: session.user.isAnonymous,
+					installationId: body.installationId,
 					cliSessionId: body.cliSessionId,
 					model: body.model,
 					abortSignal: request.signal,
@@ -255,6 +234,7 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				const ctx = {
 					userId: session.user.id,
 					isAnonymous: session.user.isAnonymous,
+					installationId: body.installationId,
 					cliSessionId: body.cliSessionId,
 					model: body.model,
 					abortSignal: request.signal,
@@ -274,6 +254,9 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					deps,
 					generationAbortController,
 				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -290,42 +273,22 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					return inputLengthResult.errorBody;
 				}
 
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const balanceResult = enforceProBalanceOr402(
@@ -473,6 +436,9 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					set,
 					deps,
 				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -488,47 +454,28 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				}
 
 				const generationAbortController = new AbortController();
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan: billingInfoResult.plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan: billingInfoResult.plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const ctx = {
 					userId: session.user.id,
 					isAnonymous: session.user.isAnonymous,
+					installationId: body.installationId,
 					cliSessionId: body.cliSessionId,
 					model: body.model,
 					abortSignal: request.signal,
@@ -595,6 +542,7 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 				const ctx = {
 					userId: session.user.id,
 					isAnonymous: session.user.isAnonymous,
+					installationId: body.installationId,
 					cliSessionId: body.cliSessionId,
 					model: body.model,
 					abortSignal: request.signal,
@@ -614,6 +562,9 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					deps,
 					generationAbortController,
 				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -630,42 +581,22 @@ export function createCommitMessageRoutes(deps: ApiDependencies): Elysia {
 					return inputLengthResult.errorBody;
 				}
 
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const balanceResult = enforceProBalanceOr402(

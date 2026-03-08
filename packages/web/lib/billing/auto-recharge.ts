@@ -1,5 +1,5 @@
 import { getPolarClient } from "@/lib/auth/auth";
-import { baseUrl } from "@/lib/util/base-url";
+import { resolveBaseURL } from "@/lib/util/base-url";
 
 export const MICRODOLLARS_PER_USD = 1_000_000;
 
@@ -26,10 +26,11 @@ export async function createCreditCheckout(
 	}
 
 	const polarClient = getPolarClient();
+	const baseURL = resolveBaseURL();
 	const checkout = await polarClient.checkouts.create({
 		products: [productId],
 		externalCustomerId: userId.toString(),
-		successUrl: `${baseUrl}/settings/billing?checkout_id={CHECKOUT_ID}&credits=true`,
+		successUrl: `${baseURL}/settings/billing?checkout_id={CHECKOUT_ID}&credits=true`,
 	});
 
 	return {

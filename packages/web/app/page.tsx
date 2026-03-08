@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { MarketingHome } from "@/components/marketing-home";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getAuth } from "@/lib/auth/auth";
+import { getAuthenticatedUserEntitlement } from "@/lib/billing/entitlement";
 
 export const metadata: Metadata = {
 	title: "Ultrahope",
@@ -36,6 +38,21 @@ export default async function RootPage() {
 
 	if (!session) {
 		return <MarketingHome />;
+	}
+
+	const isAnonymous =
+		"isAnonymous" in session.user && session.user.isAnonymous === true;
+
+	if (isAnonymous) {
+		return <MarketingHome />;
+	}
+
+	const entitlement = await getAuthenticatedUserEntitlement(session.user.id, {
+		throwOnError: true,
+	});
+
+	if (entitlement !== "pro") {
+		redirect("/checkout/start?returnTo=%2F");
 	}
 
 	return (

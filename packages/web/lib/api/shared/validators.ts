@@ -9,6 +9,7 @@ export type InvalidModelBody = {
 
 export const GenerateBodySchema = t.Object({
 	cliSessionId: t.String(),
+	installationId: t.String(),
 	input: t.String(),
 	model: t.String(),
 	guide: t.Optional(t.String()),
@@ -16,6 +17,7 @@ export const GenerateBodySchema = t.Object({
 
 export const CommitMessageRefineBodySchema = t.Object({
 	cliSessionId: t.String(),
+	installationId: t.String(),
 	model: t.String(),
 	originalMessage: t.String(),
 	refineInstruction: t.Optional(t.String()),
@@ -24,6 +26,7 @@ export const CommitMessageRefineBodySchema = t.Object({
 export const CommandExecutionBodySchema = t.Object({
 	commandExecutionId: t.String(),
 	cliSessionId: t.String(),
+	installationId: t.String(),
 	command: t.String(),
 	args: t.Array(t.String()),
 	api: t.String(),
@@ -76,7 +79,7 @@ export const GenerateErrorResponseSchemas = {
 			message: t.String(),
 			count: t.Number(),
 			limit: t.Number(),
-			plan: t.Literal("free"),
+			plan: t.Literal("anonymous"),
 		}),
 	]),
 	401: t.Object({
@@ -84,22 +87,12 @@ export const GenerateErrorResponseSchemas = {
 	}),
 	402: t.Union([
 		t.Object({
-			error: t.Literal("anonymous_trial_exceeded"),
-			message: t.String(),
-			count: t.Number(),
-			limit: t.Number(),
-			actions: t.Object({
-				login: t.String(),
-			}),
-			hint: t.String(),
-		}),
-		t.Object({
 			error: t.Literal("daily_limit_exceeded"),
 			message: t.String(),
 			count: t.Number(),
 			limit: t.Number(),
 			resetsAt: t.String(),
-			plan: t.Literal("free"),
+			plan: t.Literal("anonymous"),
 			actions: t.Object({
 				upgrade: t.String(),
 			}),
@@ -109,7 +102,7 @@ export const GenerateErrorResponseSchemas = {
 			error: t.Literal("insufficient_balance"),
 			message: t.String(),
 			balance: t.Number(),
-			plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+			plan: t.Union([t.Literal("anonymous"), t.Literal("pro")]),
 			actions: t.Object({
 				buyCredits: t.String(),
 			}),
@@ -118,6 +111,15 @@ export const GenerateErrorResponseSchemas = {
 		t.Object({
 			error: t.Literal("billing_unavailable"),
 			message: t.String(),
+		}),
+		t.Object({
+			error: t.Literal("subscription_required"),
+			message: t.String(),
+			plan: t.Literal("authenticated_unpaid"),
+			actions: t.Object({
+				subscribe: t.String(),
+			}),
+			hint: t.String(),
 		}),
 	]),
 };
@@ -131,29 +133,19 @@ export const CommandExecutionResponseSchemas = {
 		message: t.String(),
 		count: t.Number(),
 		limit: t.Number(),
-		plan: t.Literal("free"),
+		plan: t.Literal("anonymous"),
 	}),
 	401: t.Object({
 		error: t.String(),
 	}),
 	402: t.Union([
 		t.Object({
-			error: t.Literal("anonymous_trial_exceeded"),
-			message: t.String(),
-			count: t.Number(),
-			limit: t.Number(),
-			actions: t.Object({
-				login: t.String(),
-			}),
-			hint: t.String(),
-		}),
-		t.Object({
 			error: t.Literal("daily_limit_exceeded"),
 			message: t.String(),
 			count: t.Number(),
 			limit: t.Number(),
 			resetsAt: t.String(),
-			plan: t.Literal("free"),
+			plan: t.Literal("anonymous"),
 			actions: t.Object({
 				upgrade: t.String(),
 			}),
@@ -163,9 +155,18 @@ export const CommandExecutionResponseSchemas = {
 			error: t.Literal("insufficient_balance"),
 			message: t.String(),
 			balance: t.Number(),
-			plan: t.Union([t.Literal("free"), t.Literal("pro")]),
+			plan: t.Union([t.Literal("anonymous"), t.Literal("pro")]),
 			actions: t.Object({
 				buyCredits: t.String(),
+			}),
+			hint: t.String(),
+		}),
+		t.Object({
+			error: t.Literal("subscription_required"),
+			message: t.String(),
+			plan: t.Literal("authenticated_unpaid"),
+			actions: t.Object({
+				subscribe: t.String(),
 			}),
 			hint: t.String(),
 		}),

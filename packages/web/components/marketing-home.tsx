@@ -72,7 +72,7 @@ export function MarketingHome() {
 									href="/signup"
 									className="inline-flex items-center justify-center px-3 py-1.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
 								>
-									Get Started for Free →
+									Get Started →
 								</Link>
 								<p className="pl-1 text-sm text-foreground-muted">
 									Or,{" "}

@@ -1,0 +1,7 @@
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[permissions.network]
+enabled = true
+mode = "limited"
+allowed_domains = ["localhost"]

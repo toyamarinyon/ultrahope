@@ -52,7 +52,8 @@ export async function POST() {
 
 		return NextResponse.json({
 			success: true,
-			message: "Paid subscription cancelled. Your account is now on Free.",
+			message:
+				"Paid subscription cancelled. This account now requires a new Pro checkout before it can be used again.",
 		});
 	} catch (error) {
 		if (error instanceof ResourceNotFound) {

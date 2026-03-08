@@ -1,14 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import {
-	AnonymousTrialExceededError,
-	DailyLimitExceededError,
-} from "@/lib/util/daily-limit";
+import { DailyLimitExceededError } from "@/lib/util/daily-limit";
 import type { ApiDependencies } from "./dependencies";
 import { createApiApp } from "./index";
 import {
 	createBillingUnavailableBody,
 	createDailyLimitExceededBody,
 	createInsufficientBalanceBody,
+	createSubscriptionRequiredBody,
 	unauthorizedBody,
 } from "./shared/errors";
 import type { ApiStorage } from "./shared/storage";
@@ -49,7 +47,7 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 		getAuth: () =>
 			({
 				api: {
-					getSession: async () => ({ user: { id: "1001" } }),
+					getSession: async () => ({ user: { id: "1001", isAnonymous: true } }),
 				},
 			}) as unknown as ReturnType<ApiDependencies["getAuth"]>,
 		getDb: () => ({}) as never,
@@ -59,7 +57,6 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 			},
 		}),
 		getUserBillingInfo: async () => null,
-		assertAnonymousTrialNotExceeded: async () => {},
 		assertDailyLimitNotExceeded: async () => {},
 		getDailyUsageInfo: async () => ({
 			count: 2,
@@ -141,6 +138,7 @@ function createDeps(overrides: Partial<ApiDependencies> = {}): ApiDependencies {
 		createBillingUnavailableBody,
 		createDailyLimitExceededBody,
 		createInsufficientBalanceBody,
+		createSubscriptionRequiredBody,
 		getPackageVersion: () => "0.0.1",
 		...overrides,
 	} as ApiDependencies;
@@ -163,15 +161,33 @@ async function request(
 	body?: unknown,
 	method = "POST",
 ) {
+	const withCliDefaults =
+		body &&
+		typeof body === "object" &&
+		body !== null &&
+		(path === "/api/v1/command_execution" ||
+			path === "/api/v1/commit-message" ||
+			path === "/api/v1/commit-message/stream" ||
+			path === "/api/v1/commit-message/refine" ||
+			path === "/api/v1/commit-message/refine/stream" ||
+			path === "/api/v1/pr-title-body" ||
+			path === "/api/v1/pr-intent")
+			? {
+					cliSessionId: "cli-1",
+					installationId: "installation-1",
+					...body,
+				}
+			: body;
+
 	return app.handle(
 		new Request(`http://localhost${path}`, {
 			method,
-			headers: body
+			headers: withCliDefaults
 				? {
 						"content-type": "application/json",
 					}
 				: undefined,
-			body: body ? JSON.stringify(body) : undefined,
+			body: withCliDefaults ? JSON.stringify(withCliDefaults) : undefined,
 		}),
 	);
 }
@@ -229,12 +245,16 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("daily_limit_exceeded");
 	});
 
-	it("returns 402 for anonymous command execution when trial is exhausted", async () => {
+	it("returns 402 for anonymous command execution when daily limit is exhausted", async () => {
 		const deps = createDeps({
 			getAuth: () =>
 				withAuth(false, { user: { id: "1001", isAnonymous: true } }),
-			assertAnonymousTrialNotExceeded: async () => {
-				throw new AnonymousTrialExceededError(5, 5);
+			assertDailyLimitNotExceeded: async () => {
+				throw new DailyLimitExceededError(
+					5,
+					5,
+					new Date("2026-01-01T00:00:00.000Z"),
+				);
 			},
 		});
 		const app = createApiApp(deps);
@@ -249,10 +269,31 @@ describe("API route contracts", () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(402);
-		expect(body.error).toBe("anonymous_trial_exceeded");
+		expect(body.error).toBe("daily_limit_exceeded");
 	});
 
-	it("returns 400 for command execution when free input exceeds limit", async () => {
+	it("returns 402 for authenticated unpaid command execution", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: { input: "a", target: "vcs-commit-message" },
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("subscription_required");
+		expect(body.plan).toBe("authenticated_unpaid");
+	});
+
+	it("returns 400 for command execution when anonymous input exceeds limit", async () => {
 		const app = createApiApp(createDeps());
 		const response = await request(app, "/api/v1/command_execution", {
 			commandExecutionId: "cmd-1",
@@ -271,10 +312,10 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("input_too_long");
 		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-		expect(body.plan).toBe("free");
+		expect(body.plan).toBe("anonymous");
 	});
 
-	it("returns 200 for command execution for free user at input limit", async () => {
+	it("returns 200 for command execution for anonymous user at input limit", async () => {
 		const storage = createStorage();
 		const app = createApiApp(createDeps({ storage }));
 		const response = await request(app, "/api/v1/command_execution", {
@@ -298,6 +339,8 @@ describe("API route contracts", () => {
 	it("returns 200 for command execution for pro user even when input exceeds limit", async () => {
 		const app = createApiApp(
 			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
 				getUserBillingInfo: async () => ({
 					plan: "pro",
 					balance: 10,
@@ -325,7 +368,8 @@ describe("API route contracts", () => {
 	it("creates command execution record for valid request", async () => {
 		const storage = createStorage();
 		const deps = createDeps({
-			getAuth: () => withAuth(false, { user: { id: "1001" } }),
+			getAuth: () =>
+				withAuth(false, { user: { id: "1001", isAnonymous: true } }),
 			storage,
 		});
 		const app = createApiApp(deps);
@@ -361,7 +405,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("invalid_model");
 	});
 
-	it("returns 400 for free commit message when input exceeds limit", async () => {
+	it("returns 400 for anonymous commit message when input exceeds limit", async () => {
 		const app = createApiApp(createDeps());
 		const response = await request(app, "/api/v1/commit-message", {
 			cliSessionId: "cli-1",
@@ -374,10 +418,10 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("input_too_long");
 		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-		expect(body.plan).toBe("free");
+		expect(body.plan).toBe("anonymous");
 	});
 
-	it("returns 200 for free commit message at input limit", async () => {
+	it("returns 200 for anonymous commit message at input limit", async () => {
 		const app = createApiApp(createDeps());
 		const response = await request(app, "/api/v1/commit-message", {
 			cliSessionId: "cli-1",
@@ -393,6 +437,8 @@ describe("API route contracts", () => {
 	it("returns 200 for pro commit message when input exceeds limit", async () => {
 		const app = createApiApp(
 			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
 				getUserBillingInfo: async () => ({
 					plan: "pro",
 					balance: 10,
@@ -413,6 +459,8 @@ describe("API route contracts", () => {
 
 	it("returns 402 for commit message when balance is depleted", async () => {
 		const deps = createDeps({
+			getAuth: () =>
+				withAuth(false, { user: { id: "1001", isAnonymous: false } }),
 			getUserBillingInfo: async () => ({
 				plan: "pro",
 				balance: 0,
@@ -429,6 +477,23 @@ describe("API route contracts", () => {
 
 		expect(response.status).toBe(402);
 		expect(body.error).toBe("insufficient_balance");
+	});
+
+	it("returns 402 for commit message when authenticated user is unpaid", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+			}),
+		);
+		const response = await request(app, "/api/v1/commit-message", {
+			input: "diff",
+			model: "mistral/ministral-3b",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("subscription_required");
 	});
 
 	it("returns commit message generation success", async () => {
@@ -514,7 +579,7 @@ describe("API route contracts", () => {
 		expect(receivedGuide).toBe("Security advisory context");
 	});
 
-	it("returns 400 for free stream commit message when input exceeds limit", async () => {
+	it("returns 400 for anonymous stream commit message when input exceeds limit", async () => {
 		const app = createApiApp(createDeps({}));
 		const response = await request(app, "/api/v1/commit-message/stream", {
 			cliSessionId: "cli-1",
@@ -527,7 +592,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("input_too_long");
 		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-		expect(body.plan).toBe("free");
+		expect(body.plan).toBe("anonymous");
 	});
 
 	it("streams commit message at input limit", async () => {
@@ -611,7 +676,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("invalid_model");
 	});
 
-	it("returns 400 for free commit message refine when input exceeds limit", async () => {
+	it("returns 400 for anonymous commit message refine when input exceeds limit", async () => {
 		const app = createApiApp(createDeps());
 		const response = await request(app, "/api/v1/commit-message/refine", {
 			cliSessionId: "cli-1",
@@ -624,7 +689,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("input_too_long");
 		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-		expect(body.plan).toBe("free");
+		expect(body.plan).toBe("anonymous");
 	});
 
 	it("returns commit message refine success and forwards payload", async () => {
@@ -701,7 +766,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("invalid_model");
 	});
 
-	it("returns 400 for free stream commit message refine when input exceeds limit", async () => {
+	it("returns 400 for anonymous stream commit message refine when input exceeds limit", async () => {
 		const app = createApiApp(createDeps());
 		const response = await request(
 			app,
@@ -718,7 +783,7 @@ describe("API route contracts", () => {
 		expect(body.error).toBe("input_too_long");
 		expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 		expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-		expect(body.plan).toBe("free");
+		expect(body.plan).toBe("anonymous");
 	});
 
 	it("returns 402 for stream commit message refine when daily limit exceeded", async () => {
@@ -751,6 +816,8 @@ describe("API route contracts", () => {
 	it("returns 402 for stream commit message refine when balance is depleted", async () => {
 		const app = createApiApp(
 			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
 				getUserBillingInfo: async () => ({
 					plan: "pro",
 					balance: 0,
@@ -861,7 +928,7 @@ describe("API route contracts", () => {
 			expect(body.error).toBe("invalid_model");
 		});
 
-		it(`returns 400 for free ${path} when input exceeds limit`, async () => {
+		it(`returns 400 for anonymous ${path} when input exceeds limit`, async () => {
 			const app = createApiApp(createDeps());
 			const response = await request(app, path, {
 				cliSessionId: "cli-1",
@@ -873,10 +940,10 @@ describe("API route contracts", () => {
 			expect(body.error).toBe("input_too_long");
 			expect(body.count).toBe(FREE_INPUT_LENGTH_LIMIT + 1);
 			expect(body.limit).toBe(FREE_INPUT_LENGTH_LIMIT);
-			expect(body.plan).toBe("free");
+			expect(body.plan).toBe("anonymous");
 		});
 
-		it(`returns 200 for free ${path} at input limit`, async () => {
+		it(`returns 200 for anonymous ${path} at input limit`, async () => {
 			const app = createApiApp(createDeps());
 			const response = await request(app, path, {
 				cliSessionId: "cli-1",
@@ -891,6 +958,8 @@ describe("API route contracts", () => {
 		it(`returns 200 for pro ${path} when input exceeds limit`, async () => {
 			const app = createApiApp(
 				createDeps({
+					getAuth: () =>
+						withAuth(false, { user: { id: "1001", isAnonymous: false } }),
 					getUserBillingInfo: async () => ({
 						plan: "pro",
 						balance: 10,

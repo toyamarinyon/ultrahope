@@ -7,7 +7,7 @@ import {
 	InsufficientBalanceError,
 	InvalidModelError,
 } from "./api-client";
-import { getToken } from "./auth";
+import { getInstallationId, getToken } from "./auth";
 import { log } from "./logger";
 import type { StreamCaptureRecorder } from "./stream-capture";
 
@@ -72,6 +72,7 @@ export async function* generateCommitMessages(
 	});
 
 	const token = await getToken();
+	const installationId = await getInstallationId();
 	const api = createApiClient(token);
 
 	const generateWithRetry = async function* (payload: {
@@ -86,6 +87,7 @@ export async function* generateCommitMessages(
 					? api.streamCommitMessageRefine(
 							{
 								cliSessionId,
+								installationId,
 								model: payload.model,
 								originalMessage: options.refine.originalMessage,
 								refineInstruction: options.refine.refineInstruction,
@@ -95,6 +97,7 @@ export async function* generateCommitMessages(
 					: api.streamCommitMessage(
 							{
 								...payload,
+								installationId,
 								input: diff,
 								guide: options.guide,
 							},

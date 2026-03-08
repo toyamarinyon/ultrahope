@@ -10,6 +10,11 @@
 │   ├── backlog/
 │   ├── blocked/
 │   └── done/
+├── tests/                     # Executable/manual test scenarios and result logs
+│   ├── AGENTS.md
+│   ├── scenarios/
+│   ├── reports/
+│   └── templates/
 ├── decisions/                 # ADR-like decision records
 │   ├── AGENTS.md
 │   └── ...
@@ -39,6 +44,7 @@
 ## Naming conventions
 
 - `tasks/` — operational status tracking (`active`/`backlog`/`blocked`/`done`) by directory only.
+- `tests/` — scenario definitions, shared templates, and execution reports.
 - `decisions/` — decisions and rationale (why we did it this way).
 - `docs/` — local copies of external resources in a model-friendly format.
 

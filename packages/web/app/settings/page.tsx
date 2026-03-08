@@ -12,6 +12,7 @@ import {
 	getBillingHistory,
 	resolveCurrentPlan,
 } from "@/lib/billing/billing";
+import { getAuthenticatedUserEntitlement } from "@/lib/billing/entitlement";
 import { getUserBillingInfo } from "@/lib/llm";
 import { buildNoIndexMetadata } from "@/lib/util/seo";
 
@@ -55,6 +56,21 @@ export default async function SettingsPage() {
 		redirect("/login");
 	}
 
+	const isAnonymous =
+		"isAnonymous" in session.user && session.user.isAnonymous === true;
+
+	if (isAnonymous) {
+		redirect("/checkout/start?returnTo=%2Fsettings");
+	}
+
+	const entitlement = await getAuthenticatedUserEntitlement(session.user.id, {
+		throwOnError: true,
+	});
+
+	if (entitlement !== "pro") {
+		redirect("/checkout/start?returnTo=%2Fsettings");
+	}
+
 	const userId = String(session.user.id);
 	const userIdNumber = Number.parseInt(userId, 10);
 	const activeSubscriptions = await getActiveSubscriptions(userId);
@@ -89,8 +105,8 @@ export default async function SettingsPage() {
 				>
 					<h2 className="text-xl font-semibold">Billing & plan</h2>
 					<p className="mt-2 text-sm text-foreground-secondary">
-						Free accounts stay in the app database only. Paid billing appears
-						here after you upgrade.
+						Manage your active Pro subscription, billing portal access, and
+						usage credit from here.
 					</p>
 					<div className="mt-4">
 						<p className="text-sm text-foreground-secondary">Current plan</p>
@@ -117,7 +133,8 @@ export default async function SettingsPage() {
 					{hasProPlan ? (
 						<div className="mt-4 border-t border-border-subtle pt-4">
 							<p className="text-sm text-foreground-secondary">
-								Want to move back to Free immediately?
+								Cancel Pro immediately. After cancellation, this account will be
+								blocked until a new checkout is completed.
 							</p>
 							<div className="mt-2">
 								<DowngradePlanButton />

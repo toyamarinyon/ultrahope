@@ -9,7 +9,7 @@ import {
 	InsufficientBalanceError,
 	InvalidModelError,
 } from "../lib/api-client";
-import { getToken } from "../lib/auth";
+import { getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
@@ -94,6 +94,7 @@ async function handleVcsCommitMessage(
 
 	try {
 		const token = await getToken();
+		const installationId = await getInstallationId();
 		const api = createApiClient(token);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
@@ -126,6 +127,7 @@ async function handleVcsCommitMessage(
 			const { commandExecutionPromise, abortController, cliSessionId } =
 				startCommandExecution({
 					api,
+					installationId,
 					command: "translate",
 					args,
 					apiPath,
@@ -222,6 +224,7 @@ async function handleGenericTarget(
 	args: string[],
 ): Promise<void> {
 	const token = await getToken();
+	const installationId = await getInstallationId();
 	const api = createApiClient(token);
 	const models = resolveModels(options.cliModels);
 	const requestPayload =
@@ -235,6 +238,7 @@ async function handleGenericTarget(
 		commandExecutionPromise,
 	} = startCommandExecution({
 		api,
+		installationId,
 		command: "translate",
 		args,
 		apiPath: TARGET_TO_API_PATH[options.target],
@@ -257,6 +261,7 @@ async function handleGenericTarget(
 
 	const generateFn = (req: {
 		cliSessionId: string;
+		installationId: string;
 		input: string;
 		model: string;
 	}) => {
@@ -275,7 +280,7 @@ async function handleGenericTarget(
 		const maxAttempts = 3;
 		for (let attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				return await generateFn({ cliSessionId, input, model });
+				return await generateFn({ cliSessionId, installationId, input, model });
 			} catch (error) {
 				if (isAbortError(error) || abortController.signal.aborted) throw error;
 				if (isInvalidCliSessionIdError(error) && attempt < maxAttempts - 1) {

@@ -1,4 +1,0 @@
-prefix_rule(
-  pattern=["mise", "run", "web:dev"],
-  decision="allow"
-)

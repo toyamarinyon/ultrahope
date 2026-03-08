@@ -8,7 +8,7 @@ import { deviceAuthorization } from "better-auth/plugins/device-authorization";
 import { Resend } from "resend";
 import { getDb } from "@/db";
 import * as schema from "@/db/schemas";
-import { baseUrl } from "@/lib/util/base-url";
+import { resolveBaseURL } from "@/lib/util/base-url";
 
 let cachedAuth: ReturnType<typeof betterAuth> | null = null;
 let cachedPolarClient: Polar | null = null;
@@ -32,6 +32,7 @@ export function getAuth() {
 	if (cachedAuth) return cachedAuth;
 
 	const polarClient = getPolarClient();
+	const baseURL = resolveBaseURL();
 
 	const db = getDb();
 
@@ -41,7 +42,7 @@ export function getAuth() {
 			schema,
 		}),
 		basePath: "/api/auth",
-		baseURL: baseUrl,
+		baseURL,
 		socialProviders: {
 			github: {
 				clientId: process.env.GITHUB_CLIENT_ID ?? "",
@@ -53,7 +54,7 @@ export function getAuth() {
 			disableSignUp: false,
 			sendResetPassword: async ({ user, token }) => {
 				const resend = new Resend(process.env.RESEND_API_KEY);
-				const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+				const resetUrl = `${baseURL}/reset-password?token=${encodeURIComponent(token)}`;
 				await resend.emails.send({
 					from: process.env.EMAIL_FROM ?? "noreply@ultrahope.dev",
 					to: user.email,

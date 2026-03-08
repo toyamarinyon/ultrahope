@@ -12,7 +12,7 @@ npm install -g ultrahope
 
 ### Login
 
-You can try Ultrahope without logging in first. The CLI automatically creates an anonymous session and allows up to 5 runs with the same limits as the Free plan.
+You can try Ultrahope without logging in first. The CLI automatically creates an anonymous session and allows up to 5 requests per day with the Anonymous plan limits.
 
 When you want to keep going, authenticate with your Ultrahope account using device flow:
 
@@ -20,7 +20,7 @@ When you want to keep going, authenticate with your Ultrahope account using devi
 ultrahope login
 ```
 
-This will display a URL and code. Open the URL in your browser, sign in, and enter the code to authorize the CLI. On successful login, the CLI replaces the anonymous session with your authenticated one.
+This will display a URL and code. Open the URL in your browser, sign in, and enter the code to authorize the CLI. On successful login, the CLI replaces the anonymous session with your authenticated one while keeping the local installation identity.
 
 ### Translate
 
@@ -107,7 +107,7 @@ models = ["mistral/ministral-3b", "xai/grok-code-fast-1"]
 
 ### Credentials
 
-Credentials are stored in `~/.config/ultrahope/credentials.json`.
+Credentials and the local installation ID are stored in `~/.config/ultrahope/credentials.json`.
 
 ## Development
 

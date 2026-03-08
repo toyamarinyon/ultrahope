@@ -5,7 +5,7 @@ import {
 	mergeAbortSignals,
 } from "../lib/abort";
 import { createApiClient, InvalidModelError } from "../lib/api-client";
-import { getToken } from "../lib/auth";
+import { getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
@@ -164,6 +164,7 @@ async function initCommandExecutionContext(
 	models: string[],
 	diff: string,
 	apiPath: string,
+	installationId: string,
 	guide?: string,
 	isSessionActive?: () => boolean,
 ): Promise<CommandExecutionContext> {
@@ -172,6 +173,7 @@ async function initCommandExecutionContext(
 	const { commandExecutionPromise, abortController, cliSessionId } =
 		startCommandExecution({
 			api,
+			installationId,
 			command: "jj",
 			args: ["describe", ...args],
 			apiPath,
@@ -290,6 +292,7 @@ async function describe(args: string[]) {
 		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
 		let isEscalation = false;
+		const installationId = await getInstallationId();
 		while (true) {
 			const sessionId = ++commandExecutionRun;
 			const isRefineAttempt = refineMessage !== undefined;
@@ -300,6 +303,7 @@ async function describe(args: string[]) {
 				isRefineAttempt
 					? "/v1/commit-message/refine"
 					: "/v1/commit-message/stream",
+				installationId,
 				composeGuidance(options.guide, guideHint),
 				() => sessionId === commandExecutionRun,
 			);

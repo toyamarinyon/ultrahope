@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { resolveBaseUrl } from "@/lib/util/base-url";
+import { resolveBaseURL } from "@/lib/util/base-url";
 
 type CanonicalEnv = Record<string, string | undefined>;
 
@@ -10,7 +10,7 @@ export const DEFAULT_DESCRIPTION =
 export function resolveCanonicalOrigin(
 	env: CanonicalEnv = process.env,
 ): string {
-	return resolveBaseUrl(env);
+	return resolveBaseURL(env);
 }
 
 export function toAbsoluteCanonical(

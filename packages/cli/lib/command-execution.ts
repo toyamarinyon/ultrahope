@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { createApiClient } from "./api-client";
 import {
-	AnonymousTrialExceededError,
 	type CommandExecutionRequest,
 	type CommandExecutionResponse,
 	DailyLimitExceededError,
 	InputLengthExceededError,
 	InsufficientBalanceError,
+	SubscriptionRequiredError,
 	UnauthorizedError,
 } from "./api-client";
 import { showDailyLimitPrompt } from "./daily-limit-prompt";
@@ -22,6 +22,7 @@ type CommandExecutionContext = {
 
 type StartCommandExecutionOptions = {
 	api: ApiClient;
+	installationId: string;
 	command: string;
 	args: string[];
 	apiPath: string;
@@ -38,6 +39,7 @@ export function startCommandExecution(
 	const commandExecutionPromise = options.api.commandExecution({
 		commandExecutionId,
 		cliSessionId,
+		installationId: options.installationId,
 		command: options.command,
 		args: options.args,
 		api: options.apiPath,
@@ -78,23 +80,6 @@ export async function handleCommandExecutionError(
 		process.exit(1);
 	}
 
-	if (error instanceof AnonymousTrialExceededError) {
-		const additionalLines = options?.additionalLinesToClear ?? 0;
-		if (additionalLines > 0) {
-			process.stdout.write(`\x1b[${additionalLines}A`);
-			process.stdout.write("\x1b[0J");
-		}
-		console.error(
-			"\x1b[31m✖\x1b[0m Anonymous trial limit reached on this machine.",
-		);
-		console.error("");
-		console.error(
-			`  Trial used: ${error.count}/${error.limit}. Run \x1b[36multrahope login\x1b[0m to continue.`,
-		);
-		console.error("");
-		process.exit(1);
-	}
-
 	if (error instanceof DailyLimitExceededError) {
 		await showDailyLimitPrompt({
 			count: error.count,
@@ -110,8 +95,13 @@ export async function handleCommandExecutionError(
 		process.exit(1);
 	}
 
+	if (error instanceof SubscriptionRequiredError) {
+		console.error(error.formatMessage());
+		process.exit(1);
+	}
+
 	if (error instanceof InputLengthExceededError) {
-		console.error("\x1b[31m✖\x1b[0m Input is too long for the Free plan.");
+		console.error("\x1b[31m✖\x1b[0m Input is too long for anonymous usage.");
 		console.error(
 			`  Max allowed characters: ${error.limit}. Received: ${error.count}.`,
 		);

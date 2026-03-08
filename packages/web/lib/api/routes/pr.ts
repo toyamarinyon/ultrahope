@@ -4,7 +4,6 @@ import type { ApiDependencies } from "../dependencies";
 import { invalidModelErrorBody, unauthorizedBody } from "../shared/errors";
 import { executeGeneration } from "../shared/generation-service";
 import {
-	enforceAnonymousTrialOr402,
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
 	FREE_INPUT_LENGTH_LIMIT,
@@ -27,6 +26,7 @@ type ApiSession = {
 type PrRouteContext = {
 	body: {
 		cliSessionId: string;
+		installationId: string;
 		input: string;
 		model: string;
 	};
@@ -56,14 +56,17 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 					return invalidModelErrorBody(body.model);
 				}
 
-				const billingInfoResult = session.user.isAnonymous
-					? { status: 200 as const, billingInfo: null, plan: "free" as const }
-					: await getBillingInfoOr503({
-							userId: session.user.id,
-							getUserBillingInfo: (userId) =>
-								deps.getUserBillingInfo(userId, { throwOnError: true }),
-							set,
-						});
+				const billingInfoResult = await getBillingInfoOr503({
+					userId: session.user.id,
+					isAnonymous: session.user.isAnonymous,
+					getUserBillingInfo: (userId) =>
+						deps.getUserBillingInfo(userId, { throwOnError: true }),
+					baseUrl: deps.baseUrl,
+					set,
+				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -79,48 +82,29 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 				}
 
 				const generationAbortController = new AbortController();
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan: billingInfoResult.plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan: billingInfoResult.plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const result = await executeGeneration(
 					{
 						userId: session.user.id,
 						isAnonymous: session.user.isAnonymous,
+						installationId: body.installationId,
 						cliSessionId: body.cliSessionId,
 						model: body.model,
 						abortSignal: request.signal,
@@ -172,14 +156,17 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 					return invalidModelErrorBody(body.model);
 				}
 
-				const billingInfoResult = session.user.isAnonymous
-					? { status: 200 as const, billingInfo: null, plan: "free" as const }
-					: await getBillingInfoOr503({
-							userId: session.user.id,
-							getUserBillingInfo: (userId) =>
-								deps.getUserBillingInfo(userId, { throwOnError: true }),
-							set,
-						});
+				const billingInfoResult = await getBillingInfoOr503({
+					userId: session.user.id,
+					isAnonymous: session.user.isAnonymous,
+					getUserBillingInfo: (userId) =>
+						deps.getUserBillingInfo(userId, { throwOnError: true }),
+					baseUrl: deps.baseUrl,
+					set,
+				});
+				if (billingInfoResult.status === 402) {
+					return billingInfoResult.errorBody;
+				}
 				if (billingInfoResult.status === 503) {
 					return billingInfoResult.errorBody;
 				}
@@ -195,48 +182,29 @@ export function createPrRoutes(deps: ApiDependencies): Elysia {
 				}
 
 				const generationAbortController = new AbortController();
-				if (session.user.isAnonymous) {
-					const anonymousTrialResult = await enforceAnonymousTrialOr402(
-						{
-							assertAnonymousTrialNotExceeded:
-								deps.assertAnonymousTrialNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (anonymousTrialResult) {
-						return anonymousTrialResult.errorBody;
-					}
-				} else {
-					const dailyLimitResult = await enforceDailyLimitOr402(
-						{
-							assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
-							baseUrl: deps.baseUrl,
-						},
-						{
-							db,
-							userId: session.user.id,
-							plan: billingInfoResult.plan,
-							currentCliSessionId: body.cliSessionId,
-							generationAbortController,
-							set,
-						},
-					);
-					if (dailyLimitResult) {
-						return dailyLimitResult.errorBody;
-					}
+				const dailyLimitResult = await enforceDailyLimitOr402(
+					{
+						assertDailyLimitNotExceeded: deps.assertDailyLimitNotExceeded,
+						baseUrl: deps.baseUrl,
+					},
+					{
+						db,
+						installationId: body.installationId,
+						plan: billingInfoResult.plan,
+						currentCliSessionId: body.cliSessionId,
+						generationAbortController,
+						set,
+					},
+				);
+				if (dailyLimitResult) {
+					return dailyLimitResult.errorBody;
 				}
 
 				const result = await executeGeneration(
 					{
 						userId: session.user.id,
 						isAnonymous: session.user.isAnonymous,
+						installationId: body.installationId,
 						cliSessionId: body.cliSessionId,
 						model: body.model,
 						abortSignal: request.signal,

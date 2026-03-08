@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "next dev",
+		"dev": "portless run next dev",
 		"build": "next build",
 		"postbuild": "bun run generate:openapi",
 		"generate:openapi": "tsx scripts/generate-openapi.ts",

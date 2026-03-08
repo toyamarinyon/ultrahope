@@ -29,7 +29,7 @@ export type CommandExecutionResponse =
 export class InsufficientBalanceError extends Error {
 	constructor(
 		public balance: number,
-		public plan: "free" | "pro" = "free",
+		public plan: "anonymous" | "pro" = "anonymous",
 		public hint?: string,
 		public actions?: Record<string, string>,
 	) {
@@ -48,7 +48,7 @@ export class InsufficientBalanceError extends Error {
 			}
 		} else {
 			lines.push(
-				"Error: Your free credit has been exhausted. Upgrade to Pro for unlimited requests with $1 included credit.",
+				"Error: Anonymous usage is limited. Upgrade to Pro for unlimited requests with $1 included credit.",
 			);
 			if (this.actions?.upgrade) {
 				lines.push(`  Upgrade: ${this.actions.upgrade}`);
@@ -63,21 +63,10 @@ export class DailyLimitExceededError extends Error {
 		public count: number,
 		public limit: number,
 		public resetsAt: string,
+		public plan: "anonymous" | "pro" = "anonymous",
 	) {
 		super("Daily request limit reached");
 		this.name = "DailyLimitExceededError";
-	}
-}
-
-export class AnonymousTrialExceededError extends Error {
-	constructor(
-		public count: number,
-		public limit: number,
-		public hint?: string,
-		public actions?: Record<string, string>,
-	) {
-		super("Anonymous trial limit reached");
-		this.name = "AnonymousTrialExceededError";
 	}
 }
 
@@ -85,6 +74,29 @@ export class UnauthorizedError extends Error {
 	constructor() {
 		super("Unauthorized");
 		this.name = "UnauthorizedError";
+	}
+}
+
+export class SubscriptionRequiredError extends Error {
+	constructor(
+		public subscribeUrl?: string,
+		public hint?: string,
+	) {
+		super("Active Pro subscription required");
+		this.name = "SubscriptionRequiredError";
+	}
+
+	formatMessage(): string {
+		const lines = [
+			"Error: This signed-in account requires an active Pro subscription.",
+		];
+		if (this.hint) {
+			lines.push(`  ${this.hint}`);
+		}
+		if (this.subscribeUrl) {
+			lines.push(`  Subscribe: ${this.subscribeUrl}`);
+		}
+		return lines.join("\n");
 	}
 }
 
@@ -103,7 +115,7 @@ export class InputLengthExceededError extends Error {
 	constructor(
 		public count: number,
 		public limit: number,
-		public plan: "free" = "free",
+		public plan: "anonymous" = "anonymous",
 		message?: string,
 	) {
 		super(
@@ -234,21 +246,16 @@ function handle402Error(error: unknown): never {
 				resetsAt?: string;
 		  }
 		| undefined;
-	if (payload?.error === "anonymous_trial_exceeded") {
-		const count = typeof payload.count === "number" ? payload.count : 0;
-		const limit = typeof payload.limit === "number" ? payload.limit : 0;
-		log("generate error (402 anonymous_trial_exceeded)", error);
-		throw new AnonymousTrialExceededError(
-			count,
-			limit,
+	if (payload?.error === "subscription_required") {
+		log("generate error (402 subscription_required)", error);
+		throw new SubscriptionRequiredError(
+			payload.actions?.subscribe,
 			payload.hint,
-			payload.actions,
 		);
 	}
 	if (typeof payload?.balance === "number") {
 		log("generate error (402 insufficient_balance)", error);
-		const plan =
-			payload.plan === "pro" || payload.plan === "free" ? payload.plan : "free";
+		const plan = payload.plan === "pro" ? "pro" : "anonymous";
 		throw new InsufficientBalanceError(
 			payload.balance,
 			plan,
@@ -259,8 +266,9 @@ function handle402Error(error: unknown): never {
 	const count = typeof payload?.count === "number" ? payload.count : 0;
 	const limit = typeof payload?.limit === "number" ? payload.limit : 0;
 	const resetsAt = payload?.resetsAt ?? "";
+	const plan = payload?.plan === "pro" ? "pro" : "anonymous";
 	log("generate error (402 daily_limit)", error);
-	throw new DailyLimitExceededError(count, limit, resetsAt);
+	throw new DailyLimitExceededError(count, limit, resetsAt, plan);
 }
 
 function throwInputLengthExceededError(error: unknown): never {
@@ -274,7 +282,7 @@ function throwInputLengthExceededError(error: unknown): never {
 		| undefined;
 	const count = typeof payload?.count === "number" ? payload.count : 0;
 	const limit = typeof payload?.limit === "number" ? payload.limit : 0;
-	const plan = payload?.plan === "free" ? payload.plan : "free";
+	const plan = payload?.plan === "anonymous" ? "anonymous" : "anonymous";
 	const message =
 		typeof payload?.message === "string"
 			? payload.message
@@ -308,16 +316,22 @@ function handle400Error(error: unknown): never {
 }
 
 export function createApiClient(token?: string) {
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-	};
+	const authHeaders: Record<string, string> = {};
 	if (token) {
-		headers.Authorization = `Bearer ${token}`;
+		authHeaders.Authorization = `Bearer ${token}`;
+	}
+
+	function jsonHeaders(extra?: HeadersInit): HeadersInit {
+		return {
+			...authHeaders,
+			"Content-Type": "application/json",
+			...extra,
+		};
 	}
 
 	const client = createClient<paths>({
 		baseUrl: API_BASE_URL,
-		headers,
+		headers: authHeaders,
 	});
 
 	return {
@@ -328,10 +342,7 @@ export function createApiClient(token?: string) {
 			log("streamCommitMessage request", req);
 			const res = await fetch(`${API_BASE_URL}/api/v1/commit-message/stream`, {
 				method: "POST",
-				headers: {
-					...headers,
-					Accept: "text/event-stream",
-				},
+				headers: jsonHeaders({ Accept: "text/event-stream" }),
 				body: JSON.stringify(req),
 				signal: options?.signal,
 			});
@@ -402,10 +413,7 @@ export function createApiClient(token?: string) {
 				`${API_BASE_URL}/api/v1/commit-message/refine/stream`,
 				{
 					method: "POST",
-					headers: {
-						...headers,
-						Accept: "text/event-stream",
-					},
+					headers: jsonHeaders({ Accept: "text/event-stream" }),
 					body: JSON.stringify(req),
 					signal: options?.signal,
 				},
@@ -472,7 +480,7 @@ export function createApiClient(token?: string) {
 			log("generation_score request", req);
 			const res = await fetch(`${API_BASE_URL}/api/v1/generation_score`, {
 				method: "POST",
-				headers,
+				headers: jsonHeaders(),
 				body: JSON.stringify(req),
 			});
 			if (!res.ok) {
@@ -647,7 +655,7 @@ export function createApiClient(token?: string) {
 		async requestDeviceCode(): Promise<DeviceCodeResponse> {
 			const res = await fetch(`${API_BASE_URL}/api/auth/device/code`, {
 				method: "POST",
-				headers,
+				headers: jsonHeaders(),
 				body: JSON.stringify({ client_id: "ultrahope-cli" }),
 			});
 			if (!res.ok) {
@@ -660,7 +668,7 @@ export function createApiClient(token?: string) {
 		async pollDeviceToken(deviceCode: string): Promise<TokenResponse> {
 			const res = await fetch(`${API_BASE_URL}/api/auth/device/token`, {
 				method: "POST",
-				headers,
+				headers: jsonHeaders(),
 				body: JSON.stringify({
 					grant_type: "urn:ietf:params:oauth:grant-type:device_code",
 					device_code: deviceCode,
@@ -677,7 +685,8 @@ export function createApiClient(token?: string) {
 		async signInAnonymous(): Promise<AnonymousAuthResponse> {
 			const res = await fetch(`${API_BASE_URL}/api/auth/sign-in/anonymous`, {
 				method: "POST",
-				headers,
+				headers: jsonHeaders(),
+				body: JSON.stringify({}),
 			});
 			if (!res.ok) {
 				const text = await res.text();
@@ -691,7 +700,8 @@ export function createApiClient(token?: string) {
 				`${API_BASE_URL}/api/auth/delete-anonymous-user`,
 				{
 					method: "POST",
-					headers,
+					headers: jsonHeaders(),
+					body: JSON.stringify({}),
 				},
 			);
 			if (!res.ok) {

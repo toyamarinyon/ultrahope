@@ -20,14 +20,14 @@ export default function SignupPage() {
 
 	useEffect(() => {
 		if (session) {
-			router.push("/");
+			router.push("/checkout/start");
 		}
 	}, [session, router]);
 
 	const handleGitHubSignIn = () => {
 		void signIn.social({
 			provider: "github",
-			callbackURL: "/",
+			callbackURL: "/checkout/start",
 		});
 	};
 
@@ -63,7 +63,7 @@ export default function SignupPage() {
 				name: trimmedName,
 				email: normalizedEmail,
 				password,
-				callbackURL: "/",
+				callbackURL: "/checkout/start",
 			});
 			if (result.error) {
 				const mapped = mapAuthClientError(result.error, "signup");
@@ -72,7 +72,7 @@ export default function SignupPage() {
 				return;
 			}
 
-			router.push("/");
+			router.push("/checkout/start");
 		} catch (error) {
 			const mapped = mapAuthClientError(error, "signup");
 			console.error("[auth][signup] email sign-up threw", mapped.internal);

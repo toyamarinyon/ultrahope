@@ -14,7 +14,7 @@ export function DowngradePlanButton() {
 		setSuccess(null);
 
 		const ok = window.confirm(
-			"Downgrade to Free now? Your Pro subscription will be cancelled immediately.",
+			"Cancel Pro now? Your subscription will be revoked immediately and this account will require checkout again before it can be used.",
 		);
 		if (!ok) {
 			return;
@@ -34,7 +34,10 @@ export function DowngradePlanButton() {
 				return;
 			}
 
-			setSuccess(data.message ?? "Downgraded to Free plan.");
+			setSuccess(
+				data.message ??
+					"Pro cancelled. This account now requires a new checkout before it can be used again.",
+			);
 			router.refresh();
 		} catch (submissionError) {
 			setError(
@@ -55,7 +58,7 @@ export function DowngradePlanButton() {
 				disabled={isLoading}
 				className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground no-underline hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
 			>
-				{isLoading ? "Downgrading..." : "Downgrade to Free"}
+				{isLoading ? "Cancelling..." : "Cancel Pro"}
 			</button>
 			{error ? <p className="text-sm text-red-500">{error}</p> : null}
 			{success ? <p className="text-sm text-emerald-500">{success}</p> : null}
