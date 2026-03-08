@@ -24,11 +24,21 @@ Manual verification checklist for the anonymous CLI trial, DB-only Free accounts
   Expected:
   The command succeeds without requiring `ultrahope login`, and `~/.config/ultrahope/credentials.json` is created with `auth_kind: "anonymous"`.
 
+- [x] Anonymous CLI first run works without login
+  2026-03-09:
+  Command: `jj diff --git -r fa1b4a9a | mise exec --env sandbox -- bun --cwd packages/cli index.ts translate --target vcs-commit-message`
+  Result: First anonymous run succeeded. Credentials were created without `ultrahope login`.
+
 - [ ] Anonymous CLI usage is limited to 5 total runs
   Operation:
   Repeat the same CLI generation command until the sixth run.
   Expected:
   Runs 1 through 5 succeed. Run 6 fails with an anonymous trial limit message that tells the user to run `ultrahope login`.
+
+- [x] Anonymous CLI usage is limited to 5 total runs
+  2026-03-09:
+  Command: `jj diff --git -r fa1b4a9a | mise exec --env sandbox -- bun --cwd packages/cli index.ts translate --target vcs-commit-message`
+  Result: After 5 runs, the 6th run failed with `Anonymous trial limit reached on this machine.` and `Trial used: 5/5. Run ultrahope login to continue.`
 
 - [ ] Logging in from anonymous state replaces the stored credentials
   Operation:
