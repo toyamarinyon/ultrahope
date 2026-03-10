@@ -2,13 +2,6 @@
 node = "latest"
 pnpm = "latest"
 
-[tasks.ok]
-description = "Run format, typecheck, tests, and knip checks"
-run = "bun run ok"
-
-[tasks."web:dev"]
-run = "bun --cwd packages/web dev"
-
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
 run = "mise exec --env sandbox -- bun run polar-sync --server sandbox --recreate"
@@ -24,10 +17,6 @@ run = "bun --cwd packages/web drizzle-kit migrate"
 [tasks."db:generate-migration"]
 description = "Generate a new migration"
 run = "bun --cwd packages/web drizzle-kit generate"
-
-[tasks."clear-test-user"]
-description = "Clear test user from Turso and Polar"
-run = "bun -C packages/web scripts/clear-test-user.ts {{arg(name='email')}}"
 
 [tasks."delete-user:dry-run"]
 description = "Dry-run account deletion workflow by email"
