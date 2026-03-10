@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
+import openapiJson from "@ultrahope/web/openapi.json" with { type: "json" };
 import openapiTS, { astToString, type OpenAPI3 } from "openapi-typescript";
-import openapiJson from "../../web/openapi.json" with { type: "json" };
 
 const ast = await openapiTS(openapiJson as unknown as OpenAPI3);
 const contents = astToString(ast);
