@@ -1,6 +1,6 @@
 "use client";
 import { ScrollArea } from "@base-ui/react/scroll-area";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import benchmarkDatasetJson from "@/lib/demo/commit-message-benchmark.dataset.json";
 
 type BenchmarkTier = "small" | "frontier";
@@ -47,6 +47,7 @@ type BenchmarkDataset = {
 };
 
 const benchmarkDataset = benchmarkDatasetJson as BenchmarkDataset;
+const scenarios = benchmarkDataset.scenarios;
 
 function countDiffStats(diff: string): {
 	additions: number;
@@ -133,6 +134,14 @@ function isSuccessful(result: BenchmarkResult): boolean {
 	return result.status === "success";
 }
 
+const modelLabelMap = new Map(
+	benchmarkDataset.models.map((model) => [model.id, model.label]),
+);
+
+const scenarioDiffStatsMap = new Map(
+	scenarios.map((scenario) => [scenario.id, countDiffStats(scenario.diff)]),
+);
+
 function formatModelName(
 	modelId: string,
 	modelLabelMap: Map<string, string>,
@@ -141,26 +150,10 @@ function formatModelName(
 }
 
 export function MarketingCommitMessageBenchmark() {
-	const scenarios = benchmarkDataset.scenarios;
 	const [activeScenarioId, setActiveScenarioId] = useState(
 		scenarios[0]?.id ?? "",
 	);
 	const [sortKey, setSortKey] = useState<BenchmarkSortKey>("latency");
-	const modelLabelMap = useMemo(
-		() =>
-			new Map(benchmarkDataset.models.map((model) => [model.id, model.label])),
-		[],
-	);
-	const scenarioDiffStatsMap = useMemo(
-		() =>
-			new Map(
-				scenarios.map((scenario) => [
-					scenario.id,
-					countDiffStats(scenario.diff),
-				]),
-			),
-		[scenarios],
-	);
 
 	const activeScenario =
 		scenarios.find((scenario) => scenario.id === activeScenarioId) ??

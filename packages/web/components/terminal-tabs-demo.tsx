@@ -1023,11 +1023,13 @@ export function TerminalTabsDemo() {
 								{selectedPhaseLines.map((line, index) =>
 									line.kind === "success" ? (
 										<SuccessLine
+											// biome-ignore lint/suspicious/noArrayIndexKey: static render-only list, no reordering
 											key={`${line.text}-${index}`}
 											text={line.text}
 										/>
 									) : (
 										<p
+											// biome-ignore lint/suspicious/noArrayIndexKey: static render-only list, no reordering
 											key={`${line.text}-${index}`}
 											className="text-foreground"
 										>

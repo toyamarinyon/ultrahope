@@ -267,6 +267,7 @@ export function SelectorFrame({
 		<>
 			{lines.map((line, lineIndex) => (
 				<RenderLine
+					// biome-ignore lint/suspicious/noArrayIndexKey: static render-only list, no reordering
 					key={`${line.type}-${lineIndex}`}
 					line={line}
 					slotIndex={slotIndices?.get(lineIndex)}
