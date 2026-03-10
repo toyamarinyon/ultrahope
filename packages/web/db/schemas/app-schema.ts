@@ -15,7 +15,8 @@ export const commandExecution = sqliteTable(
 			autoIncrement: true,
 		}),
 		cliSessionId: text("cli_session_id").notNull(),
-		installationId: text("installation_id"),
+		// Records created before installationId was implemented have "legacy" as the value.
+		installationId: text("installation_id").notNull(),
 		userId: integer("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
