@@ -294,6 +294,17 @@ export interface operations {
 									buyCredits: string;
 								};
 								hint: string;
+						  }
+						| {
+								/** @constant */
+								error: "subscription_required";
+								message: string;
+								/** @constant */
+								plan: "authenticated_unpaid";
+								actions: {
+									subscribe: string;
+								};
+								hint: string;
 						  };
 				};
 			};
@@ -427,6 +438,17 @@ export interface operations {
 								/** @constant */
 								error: "billing_unavailable";
 								message: string;
+						  }
+						| {
+								/** @constant */
+								error: "subscription_required";
+								message: string;
+								/** @constant */
+								plan: "authenticated_unpaid";
+								actions: {
+									subscribe: string;
+								};
+								hint: string;
 						  };
 				};
 			};
@@ -594,6 +616,17 @@ export interface operations {
 								/** @constant */
 								error: "billing_unavailable";
 								message: string;
+						  }
+						| {
+								/** @constant */
+								error: "subscription_required";
+								message: string;
+								/** @constant */
+								plan: "authenticated_unpaid";
+								actions: {
+									subscribe: string;
+								};
+								hint: string;
 						  };
 				};
 			};
@@ -761,6 +794,17 @@ export interface operations {
 								/** @constant */
 								error: "billing_unavailable";
 								message: string;
+						  }
+						| {
+								/** @constant */
+								error: "subscription_required";
+								message: string;
+								/** @constant */
+								plan: "authenticated_unpaid";
+								actions: {
+									subscribe: string;
+								};
+								hint: string;
 						  };
 				};
 			};
@@ -894,6 +938,17 @@ export interface operations {
 								/** @constant */
 								error: "billing_unavailable";
 								message: string;
+						  }
+						| {
+								/** @constant */
+								error: "subscription_required";
+								message: string;
+								/** @constant */
+								plan: "authenticated_unpaid";
+								actions: {
+									subscribe: string;
+								};
+								hint: string;
 						  };
 				};
 			};
