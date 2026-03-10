@@ -18,7 +18,7 @@ export type ApiStorage = {
 	insertCommandExecution: (args: {
 		db: Db;
 		cliSessionId: string;
-		installationId?: string;
+		installationId: string;
 		userId: number;
 		command: string;
 		args: string;
