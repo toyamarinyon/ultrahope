@@ -16,7 +16,7 @@
 		"//#check:write": {},
 		"//#knip": {},
 		"ok": {
-			"dependsOn": ["//#check:write", "typecheck", "test", "//#knip"],
+			"dependsOn": ["//#check:write", "typecheck", "test", "//#knip", "build"],
 			"cache": false
 		}
 	}
