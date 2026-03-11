@@ -7,7 +7,7 @@ import {
 	type SelectorRenderLine,
 } from "../../shared/terminal-selector-view-model";
 
-export interface SelectorFrameEditableInput {
+interface SelectorFrameEditableInput {
 	value: string;
 	onChange: (value: string) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
@@ -96,7 +96,7 @@ interface RenderLineProps {
 	editablePrompt?: SelectorFrameEditableInput;
 }
 
-export function RenderLine({
+function RenderLine({
 	line,
 	slotIndex,
 	onHover,

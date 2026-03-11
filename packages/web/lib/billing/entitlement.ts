@@ -1,13 +1,10 @@
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { getDb, user } from "@/db";
 import { getPolarClient } from "@/lib/auth/auth";
 import { resolveBaseURL } from "@/lib/util/base-url";
 import { getActiveSubscriptions } from "./billing";
 
 export type AuthenticatedEntitlement = "pro" | "authenticated_unpaid";
-export type SessionEntitlement = "anonymous" | "pro" | "authenticated_unpaid";
-
 export async function getAuthenticatedUserEntitlement(
 	userId: string,
 	options?: { throwOnError?: boolean },
@@ -57,19 +54,4 @@ export async function createProCheckoutUrl(args: {
 	});
 
 	return checkout.url;
-}
-
-export async function redirectAuthenticatedUnpaidToCheckout(args: {
-	userId: string;
-	returnTo?: string;
-}) {
-	const searchParams = new URLSearchParams();
-	if (args.returnTo) {
-		searchParams.set("returnTo", args.returnTo);
-	}
-	redirect(
-		`/checkout/start${
-			searchParams.size > 0 ? `?${searchParams.toString()}` : ""
-		}`,
-	);
 }

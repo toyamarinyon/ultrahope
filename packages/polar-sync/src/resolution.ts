@@ -74,7 +74,7 @@ export function buildResolvedBenefitLookup(
 	return lookup;
 }
 
-export function buildResolvedProductLookup(
+function buildResolvedProductLookup(
 	configs: SyncableProductConfig[],
 	discovered: DiscoveredProducts,
 ): Map<string, Product> {

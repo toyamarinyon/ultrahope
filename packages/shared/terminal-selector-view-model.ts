@@ -53,7 +53,7 @@ interface SelectorHintViewModel {
 	actions: SelectorHintAction[];
 }
 
-export interface SelectorSlotViewModel {
+interface SelectorSlotViewModel {
 	status: SelectorSlot["status"];
 	selected: boolean;
 	radio: "○" | "●" | ">";
