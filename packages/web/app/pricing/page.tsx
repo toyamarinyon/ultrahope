@@ -135,23 +135,7 @@ export default async function PricingPage() {
 										<li key={feature.key}>• {feature.content}</li>
 									))}
 								</ul>
-								{session ? (
-									isCurrent ? (
-										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
-											Current Plan
-										</span>
-									) : plan.slug === "anonymous" ? (
-										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
-											No account required
-										</span>
-									) : (
-										<CheckoutButton
-											slug={plan.slug}
-											planName={plan.name}
-											className="inline-flex items-center justify-center px-4 py-2 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60"
-										/>
-									)
-								) : plan.slug === "anonymous" ? (
+								{plan.slug === "anonymous" ? (
 									<Link
 										href="https://github.com/toyamarinyon/ultrahope"
 										target="_blank"
@@ -160,6 +144,18 @@ export default async function PricingPage() {
 									>
 										Use in CLI
 									</Link>
+								) : session ? (
+									isCurrent ? (
+										<span className="inline-flex items-center justify-center px-4 py-2 border border-border text-foreground-secondary rounded-md">
+											Current Plan
+										</span>
+									) : (
+										<CheckoutButton
+											slug={plan.slug}
+											planName={plan.name}
+											className="inline-flex items-center justify-center px-4 py-2 bg-foreground text-canvas font-medium rounded-md hover:opacity-90 disabled:opacity-60"
+										/>
+									)
 								) : (
 									<Link
 										href="/login"
