@@ -48,8 +48,8 @@ Options:
   --help, -h     Show this help message
 
 Plans:
-  Anonymous: 5 requests/day and 40,000 chars/request in the CLI without login
-  Pro: login required, paid usage, no anonymous limits`);
+  Free: 5 requests/day and 40,000 chars/request in the CLI without login
+  Pro: login required, paid usage, no Free plan limits`);
 }
 
 main().catch((err) => {

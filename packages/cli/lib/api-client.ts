@@ -48,7 +48,7 @@ export class InsufficientBalanceError extends Error {
 			}
 		} else {
 			lines.push(
-				"Error: Anonymous usage is limited. Upgrade to Pro for unlimited requests with $1 included credit.",
+				"Error: Free plan usage is limited. Upgrade to Pro for unlimited requests with $1 included credit.",
 			);
 			if (this.actions?.upgrade) {
 				lines.push(`  Upgrade: ${this.actions.upgrade}`);

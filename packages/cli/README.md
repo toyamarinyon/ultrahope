@@ -12,7 +12,7 @@ npm install -g ultrahope
 
 ### Login
 
-You can try Ultrahope without logging in first. The CLI automatically creates an anonymous session and allows up to 5 requests per day with the Anonymous plan limits.
+You can try Ultrahope without logging in first. The CLI automatically creates an anonymous session and allows up to 5 requests per day with the Free plan limits.
 
 When you want to keep going, authenticate with your Ultrahope account using device flow:
 

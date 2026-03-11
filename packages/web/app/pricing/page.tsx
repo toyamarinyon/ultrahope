@@ -33,9 +33,9 @@ export const dynamic = "force-dynamic";
 
 const plans = [
 	{
-		name: "Anonymous",
+		name: "Free",
 		price: "$0",
-		description: "Try Ultrahope without logging in",
+		description: "Try Ultrahope before subscribing",
 		features: [
 			{ key: "requests", content: "5 requests/day" },
 			{ key: "inputLimit", content: "40000 character input limit per request" },

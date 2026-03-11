@@ -42,10 +42,10 @@ export function MarketingHome() {
 						</Link>
 						<span className="inline-flex p-1">
 							<Link
-								href="/signup"
+								href="/pricing"
 								className="inline-flex items-center justify-center px-3 py-1.5 text-sm bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
 							>
-								Get Started
+								Try Free
 							</Link>
 						</span>
 					</div>
@@ -68,29 +68,18 @@ export function MarketingHome() {
 								<p>Tweak until it reads like you wrote it.</p>
 							</div>
 							<div className="mt-6 flex flex-col items-start gap-3 sm:mt-7">
-								<Link
-									href="/signup"
-									className="inline-flex items-center justify-center px-3 py-1.5 bg-foreground text-canvas font-medium rounded-md no-underline hover:opacity-90 transition-opacity"
-								>
-									Get Started →
-								</Link>
+								<MarketingInstallCommand />
 								<p className="pl-1 text-sm text-foreground-muted">
-									Or,{" "}
+									Free — no account needed.{" "}
 									<Link
 										href="https://github.com/toyamarinyon/ultrahope"
 										className="text-inherit hover:opacity-80 underline underline-offset-2 decoration-current transition-opacity"
 										target="_blank"
 										rel="noopener noreferrer"
 									>
-										view on GitHub.
+										Open source.
 									</Link>
 								</p>
-								{/*<Link
-												href="/pricing"
-												className="inline-flex items-center justify-center px-6 py-3 border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface transition-colors"
-											>
-												Pricing
-											</Link>*/}
 							</div>
 						</div>
 
@@ -106,13 +95,16 @@ export function MarketingHome() {
 								<TerminalTabsDemo />
 							</div>
 						</div>
-						<div className="mt-6 sm:mt-8 flex flex-col items-center">
-							<div>
-								<p className="text-center text-sm text-foreground-muted">
-									Install and run it locally
-								</p>
-								<MarketingInstallCommand />
-							</div>
+						<div className="mt-6 sm:mt-8 flex flex-col items-center gap-2">
+							<p className="text-center text-sm text-foreground-muted">
+								Need unlimited requests?
+							</p>
+							<Link
+								href="/pricing"
+								className="inline-flex items-center justify-center px-4 py-2 text-sm border border-border text-foreground font-medium rounded-md no-underline hover:bg-surface-hover transition-colors"
+							>
+								See Pro plan →
+							</Link>
 						</div>
 					</div>
 				</div>
