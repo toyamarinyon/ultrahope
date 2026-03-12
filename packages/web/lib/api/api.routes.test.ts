@@ -220,6 +220,86 @@ describe("API route contracts", () => {
 		expect(body).toEqual(unauthorizedBody);
 	});
 
+	it("returns anonymous entitlement for anonymous session", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: true } }),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/entitlement",
+			undefined,
+			"GET",
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body).toEqual({ entitlement: "anonymous" });
+	});
+
+	it("returns authenticated_unpaid entitlement for unpaid authenticated users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/entitlement",
+			undefined,
+			"GET",
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body).toEqual({ entitlement: "authenticated_unpaid" });
+	});
+
+	it("returns pro entitlement for pro users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+				getUserBillingInfo: async () => ({
+					plan: "pro",
+					balance: 12,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/entitlement",
+			undefined,
+			"GET",
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body).toEqual({ entitlement: "pro" });
+	});
+
+	it("returns 401 for unauthenticated entitlement", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () => withAuth(true),
+			}),
+		);
+		const response = await request(
+			app,
+			"/api/v1/entitlement",
+			undefined,
+			"GET",
+		);
+		const body = await response.json();
+
+		expect(response.status).toBe(401);
+		expect(body).toEqual(unauthorizedBody);
+	});
+
 	it("returns 402 for command execution when daily limit exceeded", async () => {
 		const deps = createDeps({
 			assertDailyLimitNotExceeded: async () => {
@@ -291,6 +371,113 @@ describe("API route contracts", () => {
 		expect(response.status).toBe(402);
 		expect(body.error).toBe("subscription_required");
 		expect(body.plan).toBe("authenticated_unpaid");
+	});
+
+	it("allows default-tier models in command execution for anonymous users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: true } }),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a",
+				target: "vcs-commit-message",
+				model: "mistral/ministral-3b",
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.commandExecutionId).toBe("cmd-1");
+	});
+
+	it("rejects pro-tier models in command execution for anonymous users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: true } }),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a",
+				target: "vcs-commit-message",
+				models: ["anthropic/claude-sonnet-4.6"],
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("subscription_required");
+		expect(body.plan).toBe("authenticated_unpaid");
+	});
+
+	it("rejects pro-tier models in command execution for authenticated unpaid users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a",
+				target: "vcs-commit-message",
+				models: ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"],
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(402);
+		expect(body.error).toBe("subscription_required");
+		expect(body.plan).toBe("authenticated_unpaid");
+	});
+
+	it("allows pro-tier models in command execution for pro users", async () => {
+		const app = createApiApp(
+			createDeps({
+				getAuth: () =>
+					withAuth(false, { user: { id: "1001", isAnonymous: false } }),
+				getUserBillingInfo: async () => ({
+					plan: "pro",
+					balance: 10,
+					meterId: "meter",
+				}),
+			}),
+		);
+		const response = await request(app, "/api/v1/command_execution", {
+			commandExecutionId: "cmd-1",
+			cliSessionId: "cli-1",
+			command: "git status",
+			args: ["--short"],
+			api: "cli",
+			requestPayload: {
+				input: "a",
+				target: "vcs-commit-message",
+				models: ["anthropic/claude-sonnet-4.6"],
+			},
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.commandExecutionId).toBe("cmd-1");
 	});
 
 	it("returns 400 for command execution when anonymous input exceeds limit", async () => {

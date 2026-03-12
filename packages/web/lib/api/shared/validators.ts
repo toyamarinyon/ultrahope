@@ -124,6 +124,14 @@ export const GenerateErrorResponseSchemas = {
 	]),
 };
 
+export const EntitlementResponseSchema = t.Object({
+	entitlement: t.Union([
+		t.Literal("anonymous"),
+		t.Literal("authenticated_unpaid"),
+		t.Literal("pro"),
+	]),
+});
+
 export const CommandExecutionResponseSchemas = {
 	200: t.Object({
 		commandExecutionId: t.String(),

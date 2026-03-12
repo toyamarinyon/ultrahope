@@ -5,7 +5,7 @@ import {
 	mergeAbortSignals,
 } from "../lib/abort";
 import { createApiClient, InvalidModelError } from "../lib/api-client";
-import { getInstallationId, getToken } from "../lib/auth";
+import { getCredentials, getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
@@ -16,6 +16,10 @@ import {
 	resolveModels,
 } from "../lib/config";
 import { formatDiffStats, getJjDiffStats } from "../lib/diff-stats";
+import {
+	type EntitlementCapability,
+	resolveEntitlementCapability,
+} from "../lib/entitlement-capability";
 import { formatResetTime } from "../lib/format-time";
 import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
 import {
@@ -258,6 +262,7 @@ async function runInteractiveDescribe(
 	context: CommandExecutionContext,
 	guideHint?: string,
 	isEscalation?: boolean,
+	capabilities?: EntitlementCapability,
 ): Promise<SelectorResult> {
 	return selectCandidate({
 		createCandidates,
@@ -267,6 +272,7 @@ async function runInteractiveDescribe(
 		inlineEditPrompt: true,
 		initialGuideHint: guideHint,
 		isEscalation,
+		capabilities,
 	});
 }
 
@@ -285,6 +291,12 @@ async function describe(args: string[]) {
 	});
 
 	try {
+		const existingCredentials = await getCredentials();
+		const authKind = existingCredentials?.authKind ?? "anonymous";
+		const token = await getToken();
+		const api = createApiClient(token);
+		const capabilities = await resolveEntitlementCapability(api, authKind);
+
 		const stats = getJjDiffStats(options.revision);
 		console.log(ui.success(`Found ${formatDiffStats(stats)}`));
 
@@ -321,6 +333,7 @@ async function describe(args: string[]) {
 				context,
 				guideHint,
 				isEscalation,
+				capabilities,
 			);
 
 			if (result.action === "abort") {

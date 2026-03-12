@@ -26,6 +26,18 @@ const TWO_CANDIDATES: CandidateWithModel[] = [
 	{ content: "fix: fix bug", slotId: "slot-1" },
 ];
 
+function createCollectingOutput() {
+	const chunks: string[] = [];
+	const output = new PassThrough();
+	output.on("data", (chunk) => {
+		chunks.push(typeof chunk === "string" ? chunk : chunk.toString("utf-8"));
+	});
+	return {
+		output,
+		getText: () => chunks.join(""),
+	};
+}
+
 function waitForGeneration(): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -205,5 +217,67 @@ describe("selectCandidate", () => {
 			content: "feat: add feature",
 			slotId: "slot-0",
 		});
+	});
+
+	it("does not show escalate when capability is disabled", async () => {
+		const input = new FakeInputStream();
+		const { output, getText } = createCollectingOutput();
+
+		const result = selectCandidate({
+			createCandidates: fakeCandidates(TWO_CANDIDATES),
+			maxSlots: 2,
+			capabilities: { escalate: false },
+			io: { input, output },
+		});
+
+		await waitForGeneration();
+		input.write("q");
+
+		const value = await result;
+		expect(value.action).toBe("abort");
+		expect(getText()).not.toContain("(E)scalate");
+	});
+
+	it("shows escalate when capability is enabled", async () => {
+		const input = new FakeInputStream();
+		const { output, getText } = createCollectingOutput();
+
+		const result = selectCandidate({
+			createCandidates: fakeCandidates(TWO_CANDIDATES),
+			maxSlots: 2,
+			capabilities: { escalate: true },
+			io: { input, output },
+		});
+
+		await waitForGeneration();
+		input.write("q");
+
+		const value = await result;
+		expect(value.action).toBe("abort");
+		expect(getText()).toContain("(E)scalate");
+	});
+
+	it("can disable escalate after background resolution updates", async () => {
+		const input = new FakeInputStream();
+		const { output } = createCollectingOutput();
+		const capabilities = { escalate: true };
+
+		const result = selectCandidate({
+			createCandidates: fakeCandidates(TWO_CANDIDATES),
+			maxSlots: 2,
+			capabilities,
+			io: { input, output },
+		});
+
+		await waitForGeneration();
+		capabilities.escalate = false;
+		await waitForGeneration();
+		input.write("E");
+		await waitForGeneration();
+		input.write("\r");
+
+		const value = await result;
+		expect(value.action).toBe("confirm");
+		expect(value.selected).toBe("feat: add feature");
 	});
 });

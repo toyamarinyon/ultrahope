@@ -31,6 +31,7 @@ describe("openapi contract", () => {
 
 		const trackedPaths = {
 			"/api/v1/command_execution": ["post"],
+			"/api/v1/entitlement": ["get"],
 			"/api/v1/commit-message": ["post"],
 			"/api/v1/commit-message/stream": ["post"],
 			"/api/v1/commit-message/refine": ["post"],

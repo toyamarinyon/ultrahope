@@ -1,7 +1,11 @@
 import { Elysia } from "elysia";
 import type { Db } from "@/db/client";
+import { getModelTier } from "@/lib/llm/models";
 import type { ApiDependencies } from "../dependencies";
-import { unauthorizedBody } from "../shared/errors";
+import {
+	createSubscriptionRequiredBody,
+	unauthorizedBody,
+} from "../shared/errors";
 import {
 	enforceDailyLimitOr402,
 	enforceInputLengthLimitOr400,
@@ -45,6 +49,23 @@ type CommandExecutionRouteContext = {
 	};
 };
 
+function getRequestedModels(payload: {
+	model?: string;
+	models?: string[];
+}): string[] {
+	if (payload.models && payload.models.length > 0) {
+		return payload.models;
+	}
+	if (payload.model) {
+		return [payload.model];
+	}
+	return [];
+}
+
+function hasProModel(models: string[]): boolean {
+	return models.some((model) => getModelTier(model) === "pro");
+}
+
 export function createCommandExecutionRoutes(deps: ApiDependencies): Elysia {
 	return new Elysia().post(
 		"/v1/command_execution",
@@ -75,6 +96,13 @@ export function createCommandExecutionRoutes(deps: ApiDependencies): Elysia {
 				return billingInfoResult.errorBody;
 			}
 			const { billingInfo, plan } = billingInfoResult;
+			if (
+				hasProModel(getRequestedModels(body.requestPayload)) &&
+				plan !== "pro"
+			) {
+				set.status = 402;
+				return createSubscriptionRequiredBody(deps.baseUrl);
+			}
 
 			const inputLengthResult = enforceInputLengthLimitOr400({
 				plan,

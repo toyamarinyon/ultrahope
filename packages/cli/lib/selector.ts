@@ -54,6 +54,9 @@ interface SelectorOptions {
 	initialGuideHint?: string;
 	inlineEditPrompt?: boolean;
 	isEscalation?: boolean;
+	capabilities?: {
+		escalate?: boolean;
+	};
 	io?: {
 		input: NodeJS.ReadableStream;
 		output: NodeJS.WritableStream;
@@ -70,6 +73,15 @@ const selectorRenderCapabilities = {
 	escalate: true,
 	clickConfirm: false,
 };
+
+function resolveSelectorCapabilities(
+	options?: SelectorOptions["capabilities"],
+): typeof selectorRenderCapabilities {
+	return {
+		...selectorRenderCapabilities,
+		escalate: options?.escalate ?? selectorRenderCapabilities.escalate,
+	};
+}
 
 function renderError(
 	error: unknown,
@@ -242,10 +254,15 @@ export async function selectCandidate(
 		let generationRun = 0;
 		let generationController: AbortController | null = null;
 		let isPromptOpen = false;
+		let dynamicCapabilities = resolveSelectorCapabilities(options.capabilities);
 
 		const ttyReader = ttyInput;
 		const ttyWriter = ttyOutput;
 		const renderer = createRenderer(ttyWriter as NodeJS.WriteStream);
+
+		const updateDynamicCapabilities = () => {
+			dynamicCapabilities = resolveSelectorCapabilities(options.capabilities);
+		};
 
 		const setRawModeSafe = (enabled: boolean) => {
 			try {
@@ -263,6 +280,7 @@ export async function selectCandidate(
 		ttyReader.resume();
 
 		const render = () => {
+			updateDynamicCapabilities();
 			const allowPromptRender =
 				context.mode === "prompt" && context.promptKind === "edit";
 			if (!cleanedUp && (!isPromptOpen || allowPromptRender)) {
@@ -276,7 +294,7 @@ export async function selectCandidate(
 					nowMs: Date.now(),
 					spinnerFrames: SPINNER_FRAMES,
 					copy: renderCopy,
-					capabilities: selectorRenderCapabilities,
+					capabilities: dynamicCapabilities,
 				});
 				renderer.render(renderSelectorTextFromRenderFrame(frame));
 			}
@@ -293,7 +311,7 @@ export async function selectCandidate(
 				nowMs: Date.now(),
 				spinnerFrames: SPINNER_FRAMES,
 				copy: renderCopy,
-				capabilities: selectorRenderCapabilities,
+				capabilities: dynamicCapabilities,
 			});
 			const selected =
 				result.selectedCandidate?.content ?? result.selected ?? "";
@@ -446,7 +464,7 @@ export async function selectCandidate(
 						nowMs: Date.now(),
 						spinnerFrames: SPINNER_FRAMES,
 						copy: renderCopy,
-						capabilities: selectorRenderCapabilities,
+						capabilities: dynamicCapabilities,
 					});
 					const costSuffix = frame.viewModel.header.totalCostLabel
 						? ` (total: ${frame.viewModel.header.totalCostLabel})`
@@ -581,7 +599,7 @@ export async function selectCandidate(
 							nowMs: Date.now(),
 							spinnerFrames: SPINNER_FRAMES,
 							copy: renderCopy,
-							capabilities: selectorRenderCapabilities,
+							capabilities: dynamicCapabilities,
 							bufferText: buffer.getText(),
 						});
 						const prompt = frame.prompt;
@@ -665,7 +683,7 @@ export async function selectCandidate(
 								nowMs: Date.now(),
 								spinnerFrames: SPINNER_FRAMES,
 								copy: renderCopy,
-								capabilities: selectorRenderCapabilities,
+								capabilities: dynamicCapabilities,
 								bufferText: buffer.getText(),
 							});
 							const prompt = frame.prompt;
@@ -766,6 +784,8 @@ export async function selectCandidate(
 				}
 				if (key.name === "e" && key.shift) {
 					if (!hasReadySlot(context.slots)) return;
+					updateDynamicCapabilities();
+					if (!dynamicCapabilities.escalate) return;
 					applyResult(transitionSelectorFlow(context, { type: "ESCALATE" }));
 					return;
 				}

@@ -5,7 +5,7 @@ import {
 	mergeAbortSignals,
 } from "../lib/abort";
 import { createApiClient, InvalidModelError } from "../lib/api-client";
-import { getInstallationId, getToken } from "../lib/auth";
+import { getCredentials, getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
@@ -16,6 +16,7 @@ import {
 	resolveModels,
 } from "../lib/config";
 import { formatDiffStats, getGitStagedStats } from "../lib/diff-stats";
+import { resolveEntitlementCapability } from "../lib/entitlement-capability";
 import { formatResetTime } from "../lib/format-time";
 import { createRenderer, SPINNER_FRAMES } from "../lib/renderer";
 import { type QuotaInfo, selectCandidate } from "../lib/selector";
@@ -156,9 +157,12 @@ export async function commit(args: string[]) {
 	}
 
 	try {
+		const existingCredentials = await getCredentials();
+		const authKind = existingCredentials?.authKind ?? "anonymous";
 		const token = await getToken();
 		const installationId = await getInstallationId();
 		const api = createApiClient(token);
+		const capabilities = await resolveEntitlementCapability(api, authKind);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
 		let guideHint: string | undefined;
 		let refineMessage: string | undefined;
@@ -252,6 +256,7 @@ export async function commit(args: string[]) {
 				inlineEditPrompt: true,
 				initialGuideHint: guideHint,
 				isEscalation,
+				capabilities,
 			});
 
 			if (result.action === "abort") {

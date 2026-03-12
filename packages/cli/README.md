@@ -22,6 +22,10 @@ ultrahope login
 
 This will display a URL and code. Open the URL in your browser, sign in, and enter the code to authorize the CLI. On successful login, the CLI replaces the anonymous session with your authenticated one while keeping the local installation identity.
 
+Escalation (`Shift+E`) uses the Pro model set (`anthropic/claude-sonnet-4.6`,
+`openai/gpt-5.3-codex`). If your account is not Pro, escalation is not shown and
+requesting Pro-only models is rejected by the API.
+
 ### Translate
 
 Translate input to various formats. Pipe content to the command:

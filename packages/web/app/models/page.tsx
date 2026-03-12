@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ALLOWED_MODELS } from "@/lib/llm/models";
 
+const defaultModels = ALLOWED_MODELS.filter(
+	(model) => model.tier === "default",
+);
+const proModels = ALLOWED_MODELS.filter((model) => model.tier === "pro");
+
 export const metadata: Metadata = {
 	title: "Models | Ultrahope",
 	description: "AI models and providers used by Ultrahope",
@@ -31,8 +36,7 @@ export default function ModelsPage() {
 						>
 							Vercel AI Gateway
 						</a>{" "}
-						to multiple AI providers. The default models may change as we
-						evaluate new options.
+						to multiple AI providers.
 					</p>
 				</header>
 
@@ -41,7 +45,38 @@ export default function ModelsPage() {
 						Default Models
 					</h2>
 					<ul className="space-y-4">
-						{ALLOWED_MODELS.map((model) => (
+						{defaultModels.map((model) => (
+							<li
+								key={model.id}
+								className="rounded-lg border border-border-subtle bg-surface p-4"
+							>
+								<p className="font-mono text-sm mb-1">{model.id}</p>
+								<p className="text-sm text-foreground-secondary">
+									Provider:{" "}
+									<a
+										href={model.providerUrl}
+										className="underline hover:opacity-80"
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										{model.provider}
+									</a>
+								</p>
+							</li>
+						))}
+					</ul>
+				</section>
+
+				<section className="mt-10">
+					<h2 className="text-xl font-semibold tracking-tight mb-4">
+						Pro Models
+					</h2>
+					<p className="text-sm text-foreground-secondary mb-3">
+						These are only available to users with an active Pro plan. They are
+						used when pressing <code>Shift+E</code> to escalate.
+					</p>
+					<ul className="space-y-4">
+						{proModels.map((model) => (
 							<li
 								key={model.id}
 								className="rounded-lg border border-border-subtle bg-surface p-4"

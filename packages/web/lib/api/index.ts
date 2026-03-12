@@ -6,6 +6,7 @@ import {
 } from "./dependencies";
 import { createCommandExecutionRoutes } from "./routes/command-execution";
 import { createCommitMessageRoutes } from "./routes/commit-message";
+import { createEntitlementRoutes } from "./routes/entitlement";
 import { createGenerationScoreRoutes } from "./routes/generation-score";
 import { createHealthRoute } from "./routes/health";
 import { createPrRoutes } from "./routes/pr";
@@ -83,6 +84,7 @@ export function createApiApp(
 			});
 		})
 		.use(createCommandExecutionRoutes(deps))
+		.use(createEntitlementRoutes(deps))
 		.use(createCommitMessageRoutes(deps))
 		.use(createPrRoutes(deps))
 		.use(createGenerationScoreRoutes(deps))

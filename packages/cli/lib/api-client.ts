@@ -20,6 +20,10 @@ export type GenerateStreamResponse = {
 	quota?: { remaining: number; limit: number; resetsAt: string };
 };
 
+export type EntitlementResponse = {
+	entitlement: "anonymous" | "authenticated_unpaid" | "pro";
+};
+
 export type CommandExecutionRequest =
 	paths["/api/v1/command_execution"]["post"]["requestBody"]["content"]["application/json"];
 
@@ -521,6 +525,24 @@ export function createApiClient(token?: string) {
 			}
 			log("command_execution response", data);
 			return data;
+		},
+
+		async getEntitlement(): Promise<EntitlementResponse> {
+			log("entitlement request");
+			const res = await fetch(`${API_BASE_URL}/api/v1/entitlement`, {
+				method: "GET",
+				headers: jsonHeaders(),
+			});
+			if (res.status === 401) {
+				log("entitlement error (401)");
+				throw new UnauthorizedError();
+			}
+			if (!res.ok) {
+				const text = await getErrorText(res, null);
+				log("entitlement error", { status: res.status, text });
+				throw new Error(`API error: ${res.status} ${text}`);
+			}
+			return res.json();
 		},
 
 		async generateCommitMessage(

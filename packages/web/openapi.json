@@ -461,6 +461,63 @@
         "operationId": "postApiV1Command_execution"
       }
     },
+    "/api/v1/entitlement": {
+      "get": {
+        "summary": "Get current authentication entitlement",
+        "tags": [
+          "entitlement"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response for status 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "entitlement"
+                  ],
+                  "properties": {
+                    "entitlement": {
+                      "type": "string",
+                      "enum": [
+                        "anonymous",
+                        "authenticated_unpaid",
+                        "pro"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response for status 401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getApiV1Entitlement"
+      }
+    },
     "/api/v1/commit-message": {
       "post": {
         "summary": "Generate a commit message from a diff",
