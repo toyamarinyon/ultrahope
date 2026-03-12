@@ -38,7 +38,13 @@ Run manual verification for the `git ultrahope commit` flow in a separate Git re
 
 ## Acceptance Criteria
 
-- [ ] `git ultrahope commit` hides `Escalate` for anonymous users
-- [ ] `git ultrahope commit --models <pro-model>` is rejected with `subscription_required`
-- [ ] No regression is observed in normal interactive commit selection
+- [x] `git ultrahope commit` hides `Escalate` for anonymous users
+- [x] `git ultrahope commit --models <pro-model>` is rejected with `subscription_required`
+- [x] No regression is observed in normal interactive commit selection
 
+## Outcome
+
+- Verified on 2026-03-13.
+- `git ultrahope commit` no longer displays `Escalate` for anonymous users.
+- `git ultrahope commit --models <pro-model>` returns `subscription_required`.
+- No regression observed in normal interactive commit selector flow.
