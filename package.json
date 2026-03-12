@@ -17,7 +17,8 @@
 		"bench:commit-message": "bun run --cwd packages/commit-message-benchmark generate",
 		"bench:commit-message:add": "bun run --cwd packages/commit-message-benchmark add",
 		"test": "turbo run test",
-		"start-story": "bun run --cwd packages/story start"
+		"start-story": "bun run --cwd packages/story start",
+		"web:dev": "bun run --cwd packages/web dev"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.6",

@@ -72,12 +72,16 @@ npx opensrc <owner>/<repo>      # GitHub repo (e.g., npx opensrc vercel/ai)
 
 <!-- opensrc:end -->
 
-## Environment Variables for Scripts
+## Browse Devserver
 
-When running scripts that require access tokens or API keys, use `mise -E amp env` to load environment variables:
+Run `bun run web:dev` to start the dev server. It uses portless, so you can access it with `agent-browser open http://ultrahope.localhost:1355`.
+If the dev server is already running, the command may return an error, but that is fine because the server is already available.
 
-```bash
-eval "$(mise -E amp env)" && <your-command>
+If you are in a worktree, the branch name is added as a prefix.
 ```
+# Main worktree -- no prefix
+portless run next dev   # -> http://myapp.localhost:1355
 
-If authentication or authorization fails due to missing values, please notify the user.
+# Linked worktree on branch "fix-ui"
+portless run next dev   # -> http://fix-ui.myapp.localhost:1355
+```
