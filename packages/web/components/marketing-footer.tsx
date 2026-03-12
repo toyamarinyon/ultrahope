@@ -30,10 +30,10 @@ export function MarketingFooter() {
 								Docs
 							</Link>
 							<Link
-								href="/signup"
+								href="/docs#quickstart"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>
-								Getting Started
+								Get Started
 							</Link>
 							<Link
 								href="/login"
