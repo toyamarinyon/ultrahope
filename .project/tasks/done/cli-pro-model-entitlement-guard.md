@@ -16,7 +16,7 @@ The goal is to make Pro-tier models available only to Pro users, while preservin
 
 ## Next Action
 
-- Implement the Web entitlement endpoint and Pro-tier model guard in `command_execution`, then wire CLI entitlement cache and selector capability updates.
+- Completed. Follow-up work, if needed, should be tracked separately for cache invalidation refinements or model-catalog sharing.
 
 ## Product Policy
 
@@ -266,25 +266,25 @@ packages/
 
 ## Acceptance Criteria
 
-- [ ] Server defines model tier metadata with `default` and `pro`
-- [ ] `GET /api/v1/entitlement` returns `anonymous`, `authenticated_unpaid`, or `pro`
-- [ ] `command_execution` rejects Pro-tier model requests from non-Pro users with `402 subscription_required`
-- [ ] CLI anonymous users do not see `Escalate`
-- [ ] CLI authenticated users use local entitlement cache when available
-- [ ] CLI authenticated users fetch entitlement in the background without blocking startup
-- [ ] Selector can hide `Escalate` after background entitlement resolution without changing the shared ViewModel contract
-- [ ] Existing generation abort path remains the mechanism for stopping execution after `command_execution` failure
-- [ ] Documentation explains model tiers, Pro-tier access, and why escalation requires Pro
+- [x] Server defines model tier metadata with `default` and `pro`
+- [x] `GET /api/v1/entitlement` returns `anonymous`, `authenticated_unpaid`, or `pro`
+- [x] `command_execution` rejects Pro-tier model requests from non-Pro users with `402 subscription_required`
+- [x] CLI anonymous users do not see `Escalate`
+- [x] CLI authenticated users use local entitlement cache when available
+- [x] CLI authenticated users fetch entitlement in the background without blocking startup
+- [x] Selector can hide `Escalate` after background entitlement resolution without changing the shared ViewModel contract
+- [x] Existing generation abort path remains the mechanism for stopping execution after `command_execution` failure
+- [x] Documentation explains model tiers, Pro-tier access, and why escalation requires Pro
 
 ## Test Plan
 
 ### Web
 
-- [ ] Add tests for `GET /api/v1/entitlement`
+- [x] Add tests for `GET /api/v1/entitlement`
   - anonymous session returns `anonymous`
   - authenticated unpaid session returns `authenticated_unpaid`
   - Pro session returns `pro`
-- [ ] Add tests for `command_execution`
+- [x] Add tests for `command_execution`
   - `default` tier models allowed for anonymous users
   - `pro` tier models rejected for anonymous users
   - `pro` tier models rejected for authenticated unpaid users
@@ -292,17 +292,28 @@ packages/
 
 ### CLI
 
-- [ ] Add cache tests
+- [x] Add cache tests
   - fresh `pro` cache enables `Escalate`
   - fresh `authenticated_unpaid` cache disables `Escalate`
   - stale cache triggers background refresh path
-- [ ] Add selector capability tests
+- [x] Add selector capability tests
   - anonymous initial render hides `Escalate`
   - authenticated optimistic render shows `Escalate`
   - background entitlement resolution can remove `Escalate` from later renders
+
+## Execution Notes
+
+- Added Web-side model tier metadata and used it to gate Pro-tier model requests in `command_execution`.
+- Added `GET /api/v1/entitlement`, updated OpenAPI, and covered the entitlement and command-execution matrix in API route tests.
+- Added CLI entitlement cache and background entitlement resolution, then wired selector capabilities so `Escalate` visibility updates without changing the shared selector contract.
+- Updated CLI documentation to explain `default` / `pro` model tiers and that escalation requires Pro.
+
+## Validation
+
+- Verified the task acceptance criteria against the current codebase and updated the checklist to reflect shipped behavior.
+- Ran `mise run format` successfully after updating the task record.
 
 ## Open Questions
 
 - Should model tier metadata remain Web-local, or be moved into `packages/shared` later if the CLI starts depending on the same catalog directly?
 - Should CLI update entitlement cache immediately when it receives `subscription_required`, in addition to normal TTL refresh?
-
