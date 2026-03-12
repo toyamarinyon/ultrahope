@@ -5,6 +5,7 @@ import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DocsNav, type TocEntry } from "@/components/docs-nav";
+import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
 	title: "Documentation",
@@ -46,21 +47,38 @@ function extractToc(markdown: string): TocEntry[] {
 	return entries;
 }
 
+function UltrahopeLogo() {
+	return (
+		<span className="inline-flex items-center gap-2">
+			<span className="inline-flex size-8 shrink-0 items-center justify-center text-foreground sm:size-10">
+				<Logo className="h-7 w-7 sm:h-9 sm:w-9" />
+			</span>
+			<span className="text-xl tracking-tighter leading-none sm:text-2xl font-logo">
+				Ultrahope
+			</span>
+		</span>
+	);
+}
+
 export default function DocsPage() {
 	const mdPath = path.join(process.cwd(), "app/docs/docs.md");
 	const content = fs.readFileSync(mdPath, "utf-8");
 	const toc = extractToc(content);
 
 	return (
-		<main className="min-h-screen px-8 py-12">
-			<div className="mx-auto w-full max-w-6xl">
-				<Link
-					href="/"
-					className="inline-block text-3xl font-black tracking-tighter mb-10 no-underline hover:opacity-80 transition-opacity"
-					aria-label="Go to Ultrahope top page"
-				>
-					ULTRAHOPE
-				</Link>
+		<main className="min-h-screen px-4 pb-12 sm:px-8">
+			<div className="mx-auto w-full max-w-7xl">
+				<header>
+					<div className="h-20 flex items-center justify-between gap-4">
+						<Link
+							href="/"
+							className="text-foreground no-underline"
+							aria-label="Go to Ultrahope top page"
+						>
+							<UltrahopeLogo />
+						</Link>
+					</div>
+				</header>
 
 				<div className="flex gap-16">
 					<aside className="w-56 shrink-0">
