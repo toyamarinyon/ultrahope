@@ -9,15 +9,25 @@ import {
 	InsufficientBalanceError,
 	InvalidModelError,
 } from "../lib/api-client";
-import { getInstallationId, getToken } from "../lib/auth";
+import { getCredentials, getInstallationId, getToken } from "../lib/auth";
 import {
 	handleCommandExecutionError,
 	startCommandExecution,
 } from "../lib/command-execution";
-import { parseModelsArg, resolveModels } from "../lib/config";
-import { type CandidateWithModel, selectCandidate } from "../lib/selector";
+import {
+	parseModelsArg,
+	resolveEscalationModels,
+	resolveModels,
+} from "../lib/config";
+import { resolveEntitlementCapability } from "../lib/entitlement-capability";
+import {
+	type CandidateWithModel,
+	type SelectorResult,
+	selectCandidate,
+} from "../lib/selector";
 import { stdin } from "../lib/stdin";
 import { createStreamCaptureRecorder } from "../lib/stream-capture";
+import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
 type Target = "vcs-commit-message" | "pr-title-body" | "pr-intent";
@@ -51,6 +61,91 @@ function exitWithInvalidModelError(error: InvalidModelError): never {
 function composeGuidance(guideHint: string | undefined): string | undefined {
 	const normalizedGuideHint = guideHint?.trim() ?? "";
 	return normalizedGuideHint || undefined;
+}
+
+interface VcsCommitMessageSelectionState {
+	models: string[];
+	guideHint?: string;
+	refineMessage?: string;
+	isEscalation: boolean;
+}
+
+type VcsCommitMessageSelectionDecision =
+	| {
+			kind: "continue";
+			state: VcsCommitMessageSelectionState;
+	  }
+	| {
+			kind: "escalate";
+			state: VcsCommitMessageSelectionState;
+	  }
+	| {
+			kind: "refine";
+			state: VcsCommitMessageSelectionState;
+			guideHint: string | undefined;
+			refineMessage: string | undefined;
+	  }
+	| {
+			kind: "confirm";
+			state: VcsCommitMessageSelectionState;
+			selected: string;
+			selectedCandidateGenerationId?: string;
+	  }
+	| {
+			kind: "abort";
+			state: VcsCommitMessageSelectionState;
+			error?: unknown;
+	  };
+
+export function decideVcsCommitMessageSelection(
+	state: VcsCommitMessageSelectionState,
+	result: SelectorResult,
+	escalationModels: string[],
+): VcsCommitMessageSelectionDecision {
+	if (result.action === "escalate") {
+		return {
+			kind: "escalate",
+			state: {
+				...state,
+				models: escalationModels,
+				guideHint: undefined,
+				refineMessage: undefined,
+				isEscalation: true,
+			},
+		};
+	}
+
+	if (result.action === "refine") {
+		return {
+			kind: "refine",
+			state: {
+				...state,
+				guideHint: result.guide,
+				refineMessage: result.selected ?? result.selectedCandidate?.content,
+			},
+			guideHint: result.guide,
+			refineMessage: result.selected ?? result.selectedCandidate?.content,
+		};
+	}
+
+	if (result.action === "confirm" && result.selected) {
+		return {
+			kind: "confirm",
+			state,
+			selected: result.selected,
+			selectedCandidateGenerationId: result.selectedCandidate?.generationId,
+		};
+	}
+
+	if (result.action === "abort") {
+		return {
+			kind: "abort",
+			state,
+			error: result.error,
+		};
+	}
+
+	return { kind: "continue", state };
 }
 
 export async function translate(args: string[]) {
@@ -90,15 +185,21 @@ async function handleVcsCommitMessage(
 		args,
 		apiPath: "/v1/commit-message/stream",
 	});
-	const models = resolveModels(options.cliModels);
+	const baseModels = resolveModels(options.cliModels);
+	const escalationModels = resolveEscalationModels();
+	let state: VcsCommitMessageSelectionState = {
+		models: baseModels,
+		isEscalation: false,
+	};
 
 	try {
+		const existingCredentials = await getCredentials();
+		const authKind = existingCredentials?.authKind ?? "anonymous";
 		const token = await getToken();
 		const installationId = await getInstallationId();
 		const api = createApiClient(token);
+		const capabilities = await resolveEntitlementCapability(api, authKind);
 		const apiClient: ReturnType<typeof createApiClient> | null = api;
-		let guideHint: string | undefined;
-		let refineMessage: string | undefined;
 		let commandExecutionRun = 0;
 
 		const recordSelection = async (generationId?: string) => {
@@ -117,13 +218,15 @@ async function handleVcsCommitMessage(
 			}
 		};
 
-		const startCommandExecutionSession = (isRefineAttempt: boolean) => {
+		const startCommandExecutionSession = (
+			isRefineAttempt: boolean,
+			currentModels: string[],
+		) => {
 			const sessionId = ++commandExecutionRun;
-			const requestGuide = composeGuidance(guideHint);
-			const apiPath =
-				isRefineAttempt && options.target === "vcs-commit-message"
-					? "/v1/commit-message/refine"
-					: TARGET_TO_API_PATH[options.target];
+			const requestGuide = composeGuidance(state.guideHint);
+			const apiPath = isRefineAttempt
+				? "/v1/commit-message/refine"
+				: TARGET_TO_API_PATH[options.target];
 			const { commandExecutionPromise, abortController, cliSessionId } =
 				startCommandExecution({
 					api,
@@ -132,9 +235,9 @@ async function handleVcsCommitMessage(
 					args,
 					apiPath,
 					requestPayload: {
-						...(models.length === 1
-							? { input, target: "vcs-commit-message", model: models[0] }
-							: { input, target: "vcs-commit-message", models }),
+						...(currentModels.length === 1
+							? { input, target: "vcs-commit-message", model: currentModels[0] }
+							: { input, target: "vcs-commit-message", models: currentModels }),
 						...(requestGuide ? { guide: requestGuide } : {}),
 					},
 				});
@@ -145,7 +248,7 @@ async function handleVcsCommitMessage(
 				}
 				abortController.abort(abortReasonForError(error));
 				await handleCommandExecutionError(error, {
-					progress: { ready: 0, total: models.length },
+					progress: { ready: 0, total: currentModels.length },
 				});
 			});
 
@@ -157,39 +260,48 @@ async function handleVcsCommitMessage(
 		};
 
 		while (true) {
-			const isRefineAttempt = refineMessage !== undefined;
+			const isRefineAttempt = state.refineMessage !== undefined;
 			const { commandExecutionSignal, commandExecutionPromise, cliSessionId } =
-				startCommandExecutionSession(isRefineAttempt);
+				startCommandExecutionSession(isRefineAttempt, state.models);
 			const createCandidates = (signal: AbortSignal) =>
 				generateCommitMessages({
 					diff: input,
-					models,
-					guide: composeGuidance(guideHint),
+					models: state.models,
+					guide: composeGuidance(state.guideHint),
 					signal: mergeAbortSignals(signal, commandExecutionSignal),
 					cliSessionId,
 					commandExecutionPromise,
 					streamCaptureRecorder: captureRecorder,
 					refine:
-						refineMessage !== undefined
+						state.refineMessage !== undefined
 							? {
-									originalMessage: refineMessage,
-									refineInstruction: guideHint,
+									originalMessage: state.refineMessage,
+									refineInstruction: state.guideHint,
 								}
 							: undefined,
 				});
 
 			const result = await selectCandidate({
 				createCandidates,
-				maxSlots: models.length,
+				maxSlots: state.models.length,
 				abortSignal: commandExecutionSignal,
-				models,
+				models: state.models,
 				inlineEditPrompt: true,
-				initialGuideHint: guideHint,
+				initialGuideHint: state.guideHint,
+				isEscalation: state.isEscalation,
+				capabilities,
 			});
 
-			if (result.action === "abort") {
-				if (result.error instanceof InvalidModelError) {
-					exitWithInvalidModelError(result.error);
+			const transition = decideVcsCommitMessageSelection(
+				state,
+				result,
+				escalationModels,
+			);
+			state = transition.state;
+
+			if (transition.kind === "abort") {
+				if (transition.error instanceof InvalidModelError) {
+					exitWithInvalidModelError(transition.error);
 				}
 				if (isCommandExecutionAbort(commandExecutionSignal)) {
 					return;
@@ -198,15 +310,18 @@ async function handleVcsCommitMessage(
 				process.exit(1);
 			}
 
-			if (result.action === "refine") {
-				guideHint = result.guide;
-				refineMessage = result.selected ?? result.selectedCandidate?.content;
+			if (transition.kind === "escalate") {
+				console.log(ui.hint("  -> Escalate"));
 				continue;
 			}
 
-			if (result.action === "confirm" && result.selected) {
-				await recordSelection(result.selectedCandidate?.generationId);
-				console.log(result.selected);
+			if (transition.kind === "refine") {
+				continue;
+			}
+
+			if (transition.kind === "confirm") {
+				await recordSelection(transition.selectedCandidateGenerationId);
+				console.log(transition.selected);
 				return;
 			}
 		}
