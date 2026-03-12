@@ -114,10 +114,10 @@ When candidates are ready, Ultrahope presents an interactive selector:
 
 ### Escalation
 
-Press `Shift+E` during selection to re-generate using the escalation models. This is useful when the default (fast, cheap) models produce unsatisfying results and you want a stronger model to take a second pass.
+Press `Shift+E` during selection to re-generate using the `pro` tier escalation models. This is useful when the `default` tier models produce unsatisfying results and you want a stronger second pass.
 
 `Shift+E` is available only to users with a Pro entitlement. For anonymous users and
-authenticated users who are not currently subscribed to Pro, the option is hidden.
+authenticated users who are not currently subscribed to Pro, the option is hidden because Pro-tier model usage requires the Pro plan.
 
 ## Configuration
 
@@ -140,7 +140,7 @@ Settings are resolved in this order (first match wins):
 # Models to use for generation (each model produces one candidate)
 models = ["mistral/ministral-3b", "xai/grok-code-fast-1"]
 
-# Models to use when pressing Shift+E to escalate
+# Models to use when pressing Shift+E to escalate to the pro tier
 escalation_models = ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"]
 ```
 
@@ -156,7 +156,7 @@ including which models are Pro-only.
 Override models for a single invocation:
 
 Escalation models are configured in `escalation_models` in your config file and are
-typically Pro-only.
+typically `pro` tier models.
 
 Use this flag to override defaults for a single command:
 
@@ -165,7 +165,7 @@ Use this flag to override defaults for a single command:
 git ultrahope commit --models "anthropic/claude-sonnet-4.6,openai/gpt-5.3-codex"
 ```
 
-Running this command without Pro will still start, but Pro-only models will be rejected
+Running this command without Pro will still start, but `pro` tier models will be rejected
 at generation time if selected.
 
 ## Authentication

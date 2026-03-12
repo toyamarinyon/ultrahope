@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { getAuth } from "@/lib/auth/auth";
 import { getActiveSubscriptions } from "@/lib/billing/billing";
 import { getAuthenticatedUserEntitlement } from "@/lib/billing/entitlement";
@@ -31,15 +32,53 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+function ModelTierTooltip(props: {
+	label: string;
+	tier: "default" | "pro";
+	description: string;
+}) {
+	return (
+		<span className="group relative inline-flex">
+			<button
+				type="button"
+				aria-label={`${props.tier} tier details`}
+				className="decoration-border inline text-current underline decoration-dotted underline-offset-3 outline-none transition-colors hover:text-foreground focus:text-foreground"
+			>
+				{props.label}
+			</button>
+			<span className="pointer-events-none absolute left-0 top-full z-10 w-64 pt-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+				<span className="block rounded-lg border border-border-subtle bg-canvas px-3 py-2 text-xs leading-5 text-foreground shadow-lg">
+					{props.description}{" "}
+					<Link href="/models" className="underline underline-offset-2">
+						See models
+					</Link>
+					.
+				</span>
+			</span>
+		</span>
+	);
+}
+
 const plans = [
 	{
 		name: "Free",
 		price: "$0",
-		description: "Try Ultrahope before subscribing",
+		description: (
+			<>
+				Use the{" "}
+				<ModelTierTooltip
+					label="default model tier"
+					tier="default"
+					description="The default tier is used for standard CLI generation and is available on the Free plan."
+				/>{" "}
+				in the CLI before subscribing
+			</>
+		),
 		features: [
 			{ key: "requests", content: "5 requests/day" },
 			{ key: "inputLimit", content: "40000 character input limit per request" },
-			{ key: "access", content: "No login required in the CLI" },
+			{ key: "access", content: "Default-tier CLI generation" },
+			{ key: "anonymous", content: "No login required in the CLI" },
 			{ key: "reset", content: <ResetTime /> },
 			{ key: "support", content: "Community support" },
 		],
@@ -48,16 +87,33 @@ const plans = [
 	{
 		name: "Pro",
 		price: "$3",
-		description: "For power users",
+		description: (
+			<>
+				Unlock{" "}
+				<ModelTierTooltip
+					label="Pro-tier models"
+					tier="pro"
+					description="The Pro tier is used when you escalate from the selector for a stronger second pass and requires the Pro plan."
+				/>{" "}
+				for escalation and stronger generations
+			</>
+		),
 		features: [
 			{ key: "requests", content: "Unlimited requests" },
+			{ key: "models", content: "Access to Pro-tier models" },
 			{ key: "credits", content: "$1 included credit/month" },
 			{ key: "overage", content: "Pay-as-you-go overage at actual cost" },
 			{ key: "support", content: "Priority support" },
 		],
 		slug: "pro",
 	},
-];
+] satisfies Array<{
+	name: string;
+	price: string;
+	description: ReactNode;
+	features: Array<{ key: string; content: ReactNode }>;
+	slug: "anonymous" | "pro";
+}>;
 
 export default async function PricingPage() {
 	const auth = getAuth();
@@ -99,7 +155,8 @@ export default async function PricingPage() {
 					</p>
 					<h1 className="text-4xl font-bold tracking-tight mb-4">Plans</h1>
 					<p className="text-lg text-foreground-secondary">
-						Choose the plan that fits your needs. Upgrade or downgrade any time.
+						Choose the plan that fits your CLI workflow. Upgrade or downgrade
+						any time.
 					</p>
 				</header>
 
