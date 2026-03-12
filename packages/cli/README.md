@@ -46,7 +46,7 @@ git diff --staged | ultrahope translate --target vcs-commit-message --models mis
 
 ### Guide context for commit/message generation
 
-In `git ultrahope commit` and `ultrahope jj describe`, you can use `--guide <text>` to provide intent that is not obvious from the diff alone.
+In `git ultrahope commit`, `ultrahope jj commit`, and `ultrahope jj describe`, you can use `--guide <text>` to provide intent that is not obvious from the diff alone.
 
 ```bash
 # Additional guidance for git commit generation
@@ -54,6 +54,9 @@ git add -A && git ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason
 
 # Additional guidance for jj describe generation
 jj ultrahope describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
+
+# Additional guidance for jj commit generation
+jj ultrahope commit --guide "GHSA-gq3j-xvxp-8hrf: override reason"
 ```
 
 If you run `git ultrahope commit` with no staged files, it exits immediately:
@@ -65,7 +68,11 @@ Error: No staged changes. Stage files with `git add` first.
 ```
 If no files are staged, the command exits immediately and requires `git add` to stage changes first.
 
-In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, and `ultrahope translate --target vcs-commit-message`, use `r` to refine the generated results with additional instructions.
+In interactive mode for `git ultrahope commit`, `ultrahope jj describe`, `ultrahope jj commit`, and `ultrahope translate --target vcs-commit-message`, use `r` to refine the generated results with additional instructions.
+
+In Jujutsu:
+- `ultrahope jj describe` updates an existing revision message.
+- `ultrahope jj commit` creates a new working-copy commit using the generated message.
 
 #### Difference Between `guide` And Refine Instructions
 

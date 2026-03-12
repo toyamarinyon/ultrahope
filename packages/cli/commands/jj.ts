@@ -31,7 +31,9 @@ import { createStreamCaptureRecorder } from "../lib/stream-capture";
 import { ui } from "../lib/ui";
 import { generateCommitMessages } from "../lib/vcs-message-generator";
 
-interface DescribeOptions {
+type JjCommitMode = "describe" | "commit";
+
+interface JjCommandOptions {
 	revision: string;
 	cliModels?: string[];
 	captureStreamPath?: string;
@@ -82,7 +84,10 @@ function composeGuidance(
 	return `${normalizedBase}\n\nRefinement: ${normalizedGuideHint}`;
 }
 
-function parseDescribeArgs(args: string[]): DescribeOptions {
+function parseJjCommandArgs(
+	args: string[],
+	options: { allowRevision: boolean },
+): JjCommandOptions {
 	let revision = "@";
 	let cliModels: string[] | undefined;
 	let captureStreamPath: string | undefined;
@@ -91,6 +96,12 @@ function parseDescribeArgs(args: string[]): DescribeOptions {
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "-r") {
+			if (!options.allowRevision) {
+				console.error(
+					"Error: -r is not supported for `jj commit`; commit always targets `@`.",
+				);
+				process.exit(1);
+			}
 			revision = args[++i] || "@";
 		} else if (arg === "--no-interactive") {
 			console.error(
@@ -143,17 +154,33 @@ function getJjDiff(revision: string): string {
 	}
 }
 
-function describeRevision(revision: string, message: string): string {
+function applyJjMessage(
+	mode: JjCommitMode,
+	revision: string,
+	message: string,
+): string {
 	try {
 		const result = spawnSync(
 			"jj",
-			["describe", "-r", revision, "-m", message],
+			mode === "describe"
+				? ["describe", "-r", revision, "-m", message]
+				: ["commit", "-m", message],
 			{ stdio: "pipe", encoding: "utf-8" },
 		);
 		return [result.stdout, result.stderr].filter(Boolean).join("").trim();
 	} catch {
 		process.exit(1);
 	}
+}
+
+function buildJjExecutionLabel(
+	mode: JjCommitMode,
+	revision: string,
+	message: string,
+): string {
+	return mode === "commit"
+		? `jj commit -m ${JSON.stringify(message)}`
+		: `jj describe -r ${revision} -m ${JSON.stringify(message)}`;
 }
 
 function assertDiffAvailable(revision: string, diff: string): void {
@@ -179,7 +206,7 @@ async function initCommandExecutionContext(
 			api,
 			installationId,
 			command: "jj",
-			args: ["describe", ...args],
+			args,
 			apiPath,
 			requestPayload: {
 				input: diff,
@@ -276,8 +303,11 @@ async function runInteractiveDescribe(
 	});
 }
 
-async function describe(args: string[]) {
-	const options = parseDescribeArgs(args);
+async function runJjMessageFlow(
+	mode: JjCommitMode,
+	options: JjCommandOptions,
+	args: string[],
+) {
 	const baseModels = resolveModels(options.cliModels);
 	const escalationModels = resolveEscalationModels();
 	let models = baseModels;
@@ -285,8 +315,8 @@ async function describe(args: string[]) {
 	assertDiffAvailable(options.revision, diff);
 	const captureRecorder = createStreamCaptureRecorder({
 		path: options.captureStreamPath,
-		command: "ultrahope jj describe",
-		args: ["describe", ...args],
+		command: `ultrahope jj ${mode}`,
+		args: [mode, ...args],
 		apiPath: "/v1/commit-message/stream",
 	});
 
@@ -309,7 +339,7 @@ async function describe(args: string[]) {
 			const sessionId = ++commandExecutionRun;
 			const isRefineAttempt = refineMessage !== undefined;
 			const context = await initCommandExecutionContext(
-				args,
+				[mode, ...args],
 				models,
 				diff,
 				isRefineAttempt
@@ -367,10 +397,14 @@ async function describe(args: string[]) {
 					context.apiClient,
 					result.selectedCandidate?.generationId,
 				);
-				const label = `jj describe -r ${options.revision} -m ${JSON.stringify(result.selected)}`;
+				const label = buildJjExecutionLabel(
+					mode,
+					options.revision,
+					result.selected,
+				);
 				const renderer = createRenderer(process.stderr);
 				renderer.render(`${SPINNER_FRAMES[0]} ${label}\n`);
-				const output = describeRevision(options.revision, result.selected);
+				const output = applyJjMessage(mode, options.revision, result.selected);
 				renderer.clearAll();
 				console.log(ui.success(label));
 				if (output) {
@@ -393,6 +427,17 @@ async function describe(args: string[]) {
 	}
 }
 
+async function describe(args: string[]) {
+	const options = parseJjCommandArgs(args, { allowRevision: true });
+	await runJjMessageFlow("describe", options, args);
+}
+
+async function commit(args: string[]) {
+	const options = parseJjCommandArgs(args, { allowRevision: false });
+	options.revision = "@";
+	await runJjMessageFlow("commit", options, args);
+}
+
 function setup() {
 	try {
 		const existing = execFileSync(
@@ -402,7 +447,11 @@ function setup() {
 		).trim();
 		if (existing) {
 			console.log(ui.success("jj alias 'ultrahope' is already configured."));
-			console.log(ui.hint("  Run `jj ultrahope describe` to use it."));
+			console.log(
+				ui.hint(
+					"  Run `jj ultrahope describe` to use it, or `jj ultrahope commit` to create a commit.",
+				),
+			);
 			return;
 		}
 	} catch {
@@ -423,7 +472,7 @@ function setup() {
 	console.log(ui.success("Added jj alias 'ultrahope'."));
 	console.log(
 		ui.hint(
-			"  You can now run `jj ultrahope describe` instead of `ultrahope jj describe`.",
+			"  You can now run `jj ultrahope describe` or `jj ultrahope commit`.",
 		),
 	);
 }
@@ -432,8 +481,13 @@ function printHelp() {
 	console.log(`Usage: ultrahope jj <command>
 
 Commands:
-   describe    Generate commit description from changes
+   describe    Generate commit description for a revision
+   commit      Generate and apply a commit message for the working-copy change
    setup       Register 'ultrahope' as a jj alias
+
+Behavior:
+   describe    Updates the selected revision's commit description only
+   commit      Creates a new working-copy commit with the selected message
 
 Describe options:
    -r <revset>       Revision to describe (default: @)
@@ -441,12 +495,18 @@ Describe options:
    --models <list>   Comma-separated model list (overrides config)
    --capture-stream <path>  Save candidate stream as replay JSON
 
+Commit options:
+   --guide <text>     Additional context to guide message generation
+   --models <list>   Comma-separated model list (overrides config)
+   --capture-stream <path>  Save candidate stream as replay JSON
+
 Examples:
-   ultrahope jj describe              # interactive mode
-   ultrahope jj describe -r @-        # for parent revision
-   ultrahope jj describe --guide "GHSA-gq3j-xvxp-8hrf: override reason"
-   ultrahope jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
-   ultrahope jj setup                 # enable \`jj ultrahope\` alias`);
+   ultrahope jj describe                 # interactive mode for target revision
+   ultrahope jj describe -r @-           # describe parent revision
+   ultrahope jj describe --guide "GHSA..."
+   ultrahope jj commit                   # create a commit from working-copy changes
+   ultrahope jj commit --guide "GHSA..."
+   ultrahope jj setup                    # enable \`jj ultrahope\` alias`);
 }
 
 export async function jj(args: string[]) {
@@ -455,6 +515,9 @@ export async function jj(args: string[]) {
 	switch (command) {
 		case "describe":
 			await describe(rest);
+			break;
+		case "commit":
+			await commit(rest);
 			break;
 		case "setup":
 			setup();

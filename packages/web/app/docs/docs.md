@@ -83,6 +83,23 @@ jj ultrahope describe -r @-
 
 The `--guide` flag works the same as in `git ultrahope commit`.
 
+### commit
+
+Generate and apply a commit message as a new working-copy commit:
+
+```shell
+jj ultrahope commit
+```
+
+By default it operates on the working copy (`@`) and runs `jj commit -m <message>`.
+
+The `--guide` flag works the same as in `git ultrahope commit` and `jj ultrahope describe`.
+
+### Behavioral difference
+
+- `jj ultrahope describe` updates the target revision metadata (message) and does not create a new commit.
+- `jj ultrahope commit` always creates a new working-copy change with the generated message.
+
 ## Translate
 
 Pipe arbitrary text into `ultrahope translate` to generate structured output:
