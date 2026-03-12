@@ -1,7 +1,7 @@
 <p align="center"><code>npm i -g ultrahope</code></p>
 <p align="center">Your diff becomes commit message candidates — right in the terminal.<br />Pick one, tweak it, or escalate to a stronger model. You have the final word.</p>
 <p align="center">
-  <img src="https://github.com/toyamarinyon/ultrahope/blob/main/.github/demo.gif" alt="Ultrahope demo" width="80%" />
+  <img src=".github/demo.gif" alt="Ultrahope demo" width="80%" />
 </p>
 
 ---
