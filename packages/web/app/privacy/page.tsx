@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const metadata: Metadata = {
 	title: "Privacy Policy",
@@ -40,7 +41,7 @@ export default function PrivacyPage() {
 					ULTRAHOPE
 				</Link>
 				<article className="privacy-content">
-					<Markdown>{content}</Markdown>
+					<Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
 				</article>
 			</div>
 		</main>

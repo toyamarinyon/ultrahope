@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "portless run next dev",
+		"dev": "portless ultrahope next dev",
 		"build": "next build",
 		"postbuild": "bun run generate:openapi",
 		"generate:openapi": "tsx scripts/generate-openapi.ts",
@@ -31,6 +31,7 @@
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
 		"react-markdown": "10.1.0",
+		"remark-gfm": "^4.0.1",
 		"resend": "^4.5.1",
 		"tailwindcss": "^4.1.18",
 		"zod": "4.3.6"

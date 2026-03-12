@@ -3,6 +3,7 @@ import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { DocsNav, type TocEntry } from "@/components/docs-nav";
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default function DocsPage() {
 
 					<article className="docs-content min-w-0 max-w-3xl flex-1">
 						<Markdown
+							remarkPlugins={[remarkGfm]}
 							components={{
 								h1: ({ children }) => (
 									<h1 className="text-3xl font-bold tracking-tight mb-6">
