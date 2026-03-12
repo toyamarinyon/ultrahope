@@ -24,6 +24,12 @@ export function MarketingFooter() {
 					<div className="flex gap-16 text-sm mt-8">
 						<div className="flex flex-col gap-3">
 							<Link
+								href="/docs"
+								className="text-foreground-secondary hover:text-foreground transition-colors"
+							>
+								Docs
+							</Link>
+							<Link
 								href="/signup"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>

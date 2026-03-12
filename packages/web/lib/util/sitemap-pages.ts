@@ -30,4 +30,9 @@ export const canonicalPublicPages = [
 		changeFrequency: "yearly",
 		priority: 0.3,
 	},
+	{
+		path: "/docs",
+		changeFrequency: "weekly",
+		priority: 0.8,
+	},
 ] as const satisfies readonly CanonicalPublicPage[];

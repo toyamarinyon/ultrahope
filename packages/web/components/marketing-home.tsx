@@ -29,6 +29,12 @@ export function MarketingHome() {
 					</Link>
 					<div className="flex items-center gap-2 sm:gap-3">
 						<Link
+							href="/docs"
+							className="inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium text-foreground no-underline hover:opacity-80 sm:px-4"
+						>
+							Docs
+						</Link>
+						<Link
 							href="/pricing"
 							className="inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium text-foreground no-underline hover:opacity-80 sm:px-4"
 						>
