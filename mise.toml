@@ -1,6 +1,6 @@
 [tools]
+bun = "latest"
 node = "latest"
-pnpm = "latest"
 
 [tasks."sandbox:polar-sync"]
 description = "Sync Polar.sh configuration (sandbox)"
