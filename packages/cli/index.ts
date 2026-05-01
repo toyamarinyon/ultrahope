@@ -4,28 +4,28 @@ import { translate } from "./commands/translate";
 import pkg from "./package.json";
 
 const { version } = pkg;
+type CliCommandName = "halo" | "ultrahope";
 
-const [command, ...args] = process.argv.slice(2);
-
-async function main() {
+export async function runCli(commandName: CliCommandName) {
+	const [command, ...args] = process.argv.slice(2);
 	switch (command) {
 		case "translate":
 			await translate(args);
 			break;
 		case "jj":
-			await jj(args);
+			await jj(args, commandName);
 			break;
 		case "login":
 			await login(args);
 			break;
 		case "--version":
 		case "-v":
-			console.log(`ultrahope ${version}`);
+			console.log(`halo ${version}`);
 			break;
 		case "--help":
 		case "-h":
 		case undefined:
-			printHelp();
+			printHelp(commandName);
 			break;
 		default:
 			console.error(`Unknown command: ${command}`);
@@ -33,10 +33,10 @@ async function main() {
 	}
 }
 
-function printHelp() {
-	console.log(`ultrahope ${version}
+function printHelp(commandName: CliCommandName) {
+	console.log(`halo ${version}
 
-Usage: ultrahope <command>
+Usage: ${commandName} <command>
 
 Commands:
   translate  Translate input to various formats
@@ -50,9 +50,8 @@ Options:
 Plans:
   Free: 5 requests/day and 40,000 chars/request in the CLI without login
   Pro: login required, paid usage, no Free plan limits`);
+	if (commandName === "ultrahope") {
+		console.log("");
+		console.log("Note: `halo` is now the primary command name.");
+	}
 }
-
-main().catch((err) => {
-	console.error(err);
-	process.exit(1);
-});

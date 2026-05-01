@@ -10,23 +10,29 @@ import { CheckoutButton } from "./checkout-button";
 import { ResetTime } from "./reset-time";
 
 export const metadata: Metadata = {
-	title: "Pricing",
+	title: "Halo CLI Pricing",
 	description:
-		"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+		"Compare Halo CLI plans and choose the workflow support level that fits your team.",
+	keywords: [
+		"Halo CLI pricing",
+		"Ultrahope pricing",
+		"AI commit message pricing",
+		"developer CLI subscription",
+	],
 	alternates: {
 		canonical: "/pricing",
 	},
 	openGraph: {
-		title: "Ultrahope Pricing",
+		title: "Halo CLI Pricing | Ultrahope",
 		description:
-			"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+			"Compare Halo CLI plans and choose the workflow support level that fits your team.",
 		url: "/pricing",
 	},
 	twitter: {
 		card: "summary",
-		title: "Ultrahope Pricing",
+		title: "Halo CLI Pricing | Ultrahope",
 		description:
-			"Compare Ultrahope plans and choose the workflow support level that fits your team.",
+			"Compare Halo CLI plans and choose the workflow support level that fits your team.",
 	},
 };
 

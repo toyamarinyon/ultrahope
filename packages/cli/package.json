@@ -1,5 +1,5 @@
 {
-	"name": "ultrahope",
+	"name": "@ultrahope/halo",
 	"version": "0.1.12",
 	"description": "LLM-powered development workflow assistant",
 	"type": "module",
@@ -17,10 +17,12 @@
 		"pull-request"
 	],
 	"bin": {
-		"ultrahope": "dist/index.js",
+		"halo": "dist/halo.js",
+		"ultrahope": "dist/ultrahope.js",
+		"git-halo": "dist/git-halo.js",
 		"git-ultrahope": "dist/git-ultrahope.js",
-		"git-hope": "dist/git-ultrahope.js",
-		"git-uh": "dist/git-ultrahope.js"
+		"git-hope": "dist/git-hope.js",
+		"git-uh": "dist/git-uh.js"
 	},
 	"files": [
 		"dist"

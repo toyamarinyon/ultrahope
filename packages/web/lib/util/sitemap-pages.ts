@@ -16,9 +16,19 @@ export const canonicalPublicPages = [
 		priority: 1,
 	},
 	{
+		path: "/docs",
+		changeFrequency: "weekly",
+		priority: 0.95,
+	},
+	{
 		path: "/pricing",
 		changeFrequency: "weekly",
 		priority: 0.9,
+	},
+	{
+		path: "/models",
+		changeFrequency: "weekly",
+		priority: 0.7,
 	},
 	{
 		path: "/terms",
@@ -29,10 +39,5 @@ export const canonicalPublicPages = [
 		path: "/privacy",
 		changeFrequency: "yearly",
 		priority: 0.3,
-	},
-	{
-		path: "/docs",
-		changeFrequency: "weekly",
-		priority: 0.8,
 	},
 ] as const satisfies readonly CanonicalPublicPage[];

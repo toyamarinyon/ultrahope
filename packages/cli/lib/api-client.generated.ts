@@ -16,6 +16,23 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/api/v1/entitlement": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Get current authentication entitlement */
+		get: operations["getApiV1Entitlement"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/api/v1/commit-message": {
 		parameters: {
 			query?: never;
@@ -306,6 +323,40 @@ export interface operations {
 								};
 								hint: string;
 						  };
+				};
+			};
+		};
+	};
+	getApiV1Entitlement: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Response for status 200 */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						/** @enum {string} */
+						entitlement: "anonymous" | "authenticated_unpaid" | "pro";
+					};
+				};
+			};
+			/** @description Response for status 401 */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						error: string;
+					};
 				};
 			};
 		};

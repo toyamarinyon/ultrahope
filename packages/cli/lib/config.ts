@@ -178,7 +178,7 @@ export async function ensureGlobalConfigFile(): Promise<void> {
 	const dir = path.dirname(configPath);
 	await fs.promises.mkdir(dir, { recursive: true });
 
-	const content = `# Ultrahope CLI configuration\n# https://github.com/toyamarinyon/ultrahope\n\n# Models to use for generation (each model produces one candidate)\n# See available models: https://ultrahope.dev/models\nmodels = ["mistral/ministral-3b", "xai/grok-code-fast-1"]\n\n# Models to use when pressing Shift+E to escalate\nescalation_models = ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"]\n`;
+	const content = `# Halo CLI configuration\n# https://github.com/toyamarinyon/ultrahope\n\n# Models to use for generation (each model produces one candidate)\n# See available models: https://ultrahope.dev/models\nmodels = ["mistral/ministral-3b", "xai/grok-code-fast-1"]\n\n# Models to use when pressing Shift+E to escalate\nescalation_models = ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"]\n`;
 
 	await fs.promises.writeFile(configPath, content, { mode: 0o644, flag: "wx" });
 }

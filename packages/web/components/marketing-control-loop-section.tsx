@@ -197,12 +197,12 @@ function DemoToast({ visible }: { visible: boolean }) {
 	);
 }
 
-// --- Preamble: "$ git ultrahope commit" + "✔ Found staged changes" ---
+// --- Preamble: "$ git halo commit" + "✔ Found staged changes" ---
 
 function CommandPreamble() {
 	return (
 		<>
-			<div className="text-foreground">$ git ultrahope commit</div>
+			<div className="text-foreground">$ git halo commit</div>
 			<SuccessLine text="Found staged changes" />
 		</>
 	);
@@ -494,7 +494,7 @@ export function MarketingControlLoopSection() {
 							})}
 						</div>
 
-						<TerminalWindow title="ultrahope" className="font-mono">
+						<TerminalWindow title="halo" className="font-mono">
 							<div
 								id="control-loop-panel"
 								role="tabpanel"

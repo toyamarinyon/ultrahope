@@ -41,8 +41,33 @@ export function DocsNav({ entries }: { entries: TocEntry[] }) {
 	return (
 		<nav
 			className="hidden lg:block sticky top-12 max-h-[calc(100vh-6rem)] overflow-y-auto text-sm"
-			aria-label="Table of contents"
+			aria-label="Halo docs navigation"
 		>
+			<div className="mb-6 border-b border-border-subtle pb-4">
+				<p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-foreground-muted">
+					Halo CLI
+				</p>
+				<div className="space-y-1">
+					<a
+						href="/"
+						className="block no-underline py-1 text-foreground-muted transition-colors hover:text-foreground-secondary"
+					>
+						Overview
+					</a>
+					<a
+						href="/pricing"
+						className="block no-underline py-1 text-foreground-muted transition-colors hover:text-foreground-secondary"
+					>
+						Pricing
+					</a>
+					<a
+						href="#quickstart"
+						className="block no-underline py-1 text-foreground-muted transition-colors hover:text-foreground-secondary"
+					>
+						Install
+					</a>
+				</div>
+			</div>
 			<ul className="space-y-1">
 				{entries.map((entry) => (
 					<li key={entry.id}>

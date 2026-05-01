@@ -1,6 +1,6 @@
-# Ultrahope Documentation
+# Halo CLI Documentation
 
-Ultrahope generates commit message candidates from your diff — right in the terminal.
+Halo generates commit message candidates from your diff — right in the terminal.
 You compare, edit, or escalate. You have the final word.
 
 ## Quickstart
@@ -8,14 +8,14 @@ You compare, edit, or escalate. You have the final word.
 Install once, use from any repo.
 
 ```shell
-npm install -g ultrahope
+npm install -g @ultrahope/halo
 ```
 
 Stage your changes and run:
 
 ```shell
 git add -p
-git ultrahope commit
+git halo commit
 ```
 
 That's it. Works immediately — no account needed.
@@ -29,25 +29,26 @@ The free tier gives you 5 requests per day. If you need more, [see pricing](/pri
 Generate commit messages from staged changes:
 
 ```shell
-git ultrahope commit
+git halo commit
 ```
 
-Ultrahope reads your `git diff --cached`, sends it to the configured models, and presents multiple candidates in an interactive selector.
+Halo reads your `git diff --cached`, sends it to the configured models, and presents multiple candidates in an interactive selector.
 
 #### --guide
 
 Provide additional context to steer the generated messages:
 
 ```shell
-git ultrahope commit --guide "security fix for CVE-2024-1234"
+git halo commit --guide "security fix for CVE-2024-1234"
 ```
 
 The guide text is passed alongside your diff so the model can produce more relevant messages. Maximum 1024 characters.
 
 ### Aliases
 
-The CLI registers shorter names you can use instead of `git ultrahope`:
+The CLI registers compatibility names you can use instead of `git halo`:
 
+- `git ultrahope commit`
 - `git hope commit`
 - `git uh commit`
 
@@ -55,57 +56,57 @@ They behave identically.
 
 ## Jujutsu
 
-Ultrahope supports [Jujutsu](https://jj-vcs.github.io/jj/) as a first-class VCS.
+Halo supports [Jujutsu](https://jj-vcs.github.io/jj/) as a first-class VCS.
 
 ### Setup
 
-Register `ultrahope` as a jj alias:
+Register `halo` as a jj alias:
 
 ```shell
-ultrahope jj setup
+halo jj setup
 ```
 
-This runs `jj config set --user aliases.ultrahope '["util", "exec", "--", "ultrahope", "jj"]'` so you can call it as a jj subcommand.
+This runs `jj config set --user aliases.halo '["util", "exec", "--", "halo", "jj"]'` so you can call it as a jj subcommand. It also keeps/sets `aliases.ultrahope` for compatibility.
 
 ### describe
 
 Generate commit descriptions from revision changes:
 
 ```shell
-jj ultrahope describe
+jj halo describe
 ```
 
 By default it operates on the working-copy revision (`@`). Use `-r` to target a different revision:
 
 ```shell
-jj ultrahope describe -r @-
+jj halo describe -r @-
 ```
 
-The `--guide` flag works the same as in `git ultrahope commit`.
+The `--guide` flag works the same as in `git halo commit`.
 
 ### commit
 
 Generate and apply a commit message as a new working-copy commit:
 
 ```shell
-jj ultrahope commit
+jj halo commit
 ```
 
 By default it operates on the working copy (`@`) and runs `jj commit -m <message>`.
 
-The `--guide` flag works the same as in `git ultrahope commit` and `jj ultrahope describe`.
+The `--guide` flag works the same as in `git halo commit` and `jj halo describe`.
 
 ### Behavioral difference
 
-- `jj ultrahope describe` updates the target revision metadata (message) and does not create a new commit.
-- `jj ultrahope commit` always creates a new working-copy change with the generated message.
+- `jj halo describe` updates the target revision metadata (message) and does not create a new commit.
+- `jj halo commit` always creates a new working-copy change with the generated message.
 
 ## Translate
 
-Pipe arbitrary text into `ultrahope translate` to generate structured output:
+Pipe arbitrary text into `halo translate` to generate structured output:
 
 ```shell
-git diff HEAD~3..HEAD | ultrahope translate --target pr-title-body
+git diff HEAD~3..HEAD | halo translate --target pr-title-body
 ```
 
 Available targets:
@@ -118,7 +119,7 @@ Available targets:
 
 ## Interactive UI
 
-When candidates are ready, Ultrahope presents an interactive selector:
+When candidates are ready, Halo presents an interactive selector:
 
 | Key | Action |
 |-----|--------|
@@ -138,7 +139,7 @@ authenticated users who are not currently subscribed to Pro, the option is hidde
 
 ## Configuration
 
-Ultrahope reads configuration from TOML files. No configuration is required — sensible defaults are provided.
+Halo reads configuration from TOML files. No configuration is required — sensible defaults are provided.
 
 ### Resolution order
 
@@ -163,6 +164,24 @@ escalation_models = ["anthropic/claude-sonnet-4.6", "openai/gpt-5.3-codex"]
 
 Place an `.ultrahope.toml` in your repository root to set project-specific models.
 
+### Rename compatibility
+
+Halo is now the primary CLI product name and command path.
+
+During migration, these compatibility commands remain supported:
+- `ultrahope`
+- `git ultrahope`
+- `git hope`
+- `git uh`
+
+Config and auth file paths intentionally keep the legacy namespace in this pass:
+- `.ultrahope.toml` / `ultrahope.toml`
+- `~/.config/ultrahope/config.toml`
+- `~/.config/ultrahope/credentials.json`
+
+Environment variable compatibility is unchanged:
+- `ULTRAHOPE_API_URL`
+
 ### Models
 
 See the [models page](/models) for the full list of available models and providers,
@@ -179,7 +198,7 @@ Use this flag to override defaults for a single command:
 
 
 ```shell
-git ultrahope commit --models "anthropic/claude-sonnet-4.6,openai/gpt-5.3-codex"
+git halo commit --models "anthropic/claude-sonnet-4.6,openai/gpt-5.3-codex"
 ```
 
 Running this command without Pro will still start, but `pro` tier models will be rejected
@@ -202,7 +221,7 @@ This is not a trial. It is a permanent free tier with these limits.
 To remove limits, create an account and authenticate:
 
 ```shell
-ultrahope login
+halo login
 ```
 
 This opens a browser-based device code flow. Once authorized, the token is saved and used for all subsequent requests.

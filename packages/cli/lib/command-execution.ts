@@ -75,7 +75,7 @@ export async function handleCommandExecutionError(
 			"\x1b[2mPlease run the following command to re-authenticate:\x1b[0m",
 		);
 		console.error("");
-		console.error("  \x1b[36multrahope login\x1b[0m");
+		console.error("  \x1b[36mhalo login\x1b[0m");
 		console.error("");
 		process.exit(1);
 	}

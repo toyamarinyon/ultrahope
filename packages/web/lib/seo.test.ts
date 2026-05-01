@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { metadata as docsMetadata } from "@/app/docs/page";
 import { metadata as homepageMetadata } from "@/app/page";
 import { metadata as pricingMetadata } from "@/app/pricing/page";
 import robots from "@/app/robots";
@@ -82,16 +83,30 @@ describe("key page metadata", () => {
 	it("homepage metadata includes og title/description", () => {
 		const metadata = homepageMetadata as {
 			openGraph?: { title?: string; description?: string };
+			keywords?: string[];
 		};
 		expect(metadata.openGraph?.title).toBeTruthy();
 		expect(metadata.openGraph?.description).toBeTruthy();
+		expect(metadata.keywords).toContain("Halo CLI");
 	});
 
 	it("pricing metadata includes og title/description", () => {
 		const metadata = pricingMetadata as {
 			openGraph?: { title?: string; description?: string };
+			keywords?: string[];
 		};
 		expect(metadata.openGraph?.title).toBeTruthy();
 		expect(metadata.openGraph?.description).toBeTruthy();
+		expect(metadata.keywords).toContain("Halo CLI pricing");
+	});
+
+	it("docs metadata includes og title/description", () => {
+		const metadata = docsMetadata as {
+			openGraph?: { title?: string; description?: string };
+			keywords?: string[];
+		};
+		expect(metadata.openGraph?.title).toBeTruthy();
+		expect(metadata.openGraph?.description).toBeTruthy();
+		expect(metadata.keywords).toContain("Halo CLI docs");
 	});
 });

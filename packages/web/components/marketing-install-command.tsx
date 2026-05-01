@@ -3,7 +3,7 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const INSTALL_COMMAND = "npm i -g ultrahope";
+const INSTALL_COMMAND = "npm i -g @ultrahope/halo";
 
 export function MarketingInstallCommand() {
 	const [installCopied, setInstallCopied] = useState(false);

@@ -153,9 +153,7 @@ export async function translate(args: string[]) {
 	const input = await stdin();
 
 	if (!input.trim()) {
-		console.error(
-			"Error: No input provided. Pipe content to ultrahope translate.",
-		);
+		console.error("Error: No input provided. Pipe content to halo translate.");
 		process.exit(1);
 	}
 
@@ -181,7 +179,7 @@ async function handleVcsCommitMessage(
 ): Promise<void> {
 	const captureRecorder = createStreamCaptureRecorder({
 		path: options.captureStreamPath,
-		command: "ultrahope translate",
+		command: "halo translate",
 		args,
 		apiPath: "/v1/commit-message/stream",
 	});
@@ -535,7 +533,7 @@ function parseArgs(args: string[]): TranslateOptions {
 	if (!target) {
 		console.error("Error: Missing --target option");
 		console.error(
-			"Usage: ultrahope translate --target <vcs-commit-message|pr-title-body|pr-intent>",
+			"Usage: halo translate --target <vcs-commit-message|pr-title-body|pr-intent>",
 		);
 		process.exit(1);
 	}

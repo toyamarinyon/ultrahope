@@ -50,7 +50,7 @@ export async function showDailyLimitPrompt(
 		console.log(
 			`${theme.primary}Run the same command again after the reset:${theme.reset}`,
 		);
-		console.log(`  ${ui.link("ultrahope jj describe")}`);
+		console.log(`  ${ui.link("halo jj describe")}`);
 		console.log("");
 		console.log(`${theme.primary}Or upgrade to Pro:${theme.reset}`);
 		console.log(`  ${ui.link(PRICING_URL)}`);
@@ -158,7 +158,7 @@ function handleRetryLater() {
 	console.log(
 		`${theme.primary}Run the same command again after the reset:${theme.reset}`,
 	);
-	console.log(`  ${ui.link("ultrahope jj describe")}`);
+	console.log(`  ${ui.link("halo jj describe")}`);
 	console.log("");
 
 	return new Promise<void>((resolve) => {

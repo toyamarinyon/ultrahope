@@ -8,23 +8,30 @@ import { DocsNav, type TocEntry } from "@/components/docs-nav";
 import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
-	title: "Documentation",
+	title: "Halo CLI Documentation",
 	description:
-		"Complete reference for the Ultrahope CLI — installation, commands, configuration, and authentication.",
+		"Complete reference for the Halo CLI — installation, commands, configuration, and authentication.",
+	keywords: [
+		"Halo CLI docs",
+		"Halo CLI documentation",
+		"Ultrahope docs",
+		"git halo commit",
+		"jj halo",
+	],
 	alternates: {
 		canonical: "/docs",
 	},
 	openGraph: {
-		title: "Ultrahope Documentation",
+		title: "Halo CLI Documentation | Ultrahope",
 		description:
-			"Complete reference for the Ultrahope CLI — installation, commands, configuration, and authentication.",
+			"Complete reference for the Halo CLI — installation, commands, configuration, and authentication.",
 		url: "/docs",
 	},
 	twitter: {
 		card: "summary",
-		title: "Ultrahope Documentation",
+		title: "Halo CLI Documentation | Ultrahope",
 		description:
-			"Complete reference for the Ultrahope CLI — installation, commands, configuration, and authentication.",
+			"Complete reference for the Halo CLI — installation, commands, configuration, and authentication.",
 	},
 };
 
@@ -47,14 +54,19 @@ function extractToc(markdown: string): TocEntry[] {
 	return entries;
 }
 
-function UltrahopeLogo() {
+function HaloDocsMark() {
 	return (
 		<span className="inline-flex items-center gap-2">
 			<span className="inline-flex size-8 shrink-0 items-center justify-center text-foreground sm:size-10">
 				<Logo className="h-7 w-7 sm:h-9 sm:w-9" />
 			</span>
-			<span className="text-xl tracking-tighter leading-none sm:text-2xl font-logo">
-				Ultrahope
+			<span className="flex min-w-0 flex-col justify-center gap-px leading-none">
+				<span className="text-xl tracking-tighter sm:text-2xl font-logo">
+					Halo
+				</span>
+				<span className="text-[0.62rem] font-medium text-foreground-muted sm:text-[0.68rem]">
+					CLI docs by Ultrahope
+				</span>
 			</span>
 		</span>
 	);
@@ -73,9 +85,9 @@ export default function DocsPage() {
 						<Link
 							href="/"
 							className="text-foreground no-underline"
-							aria-label="Go to Ultrahope top page"
+							aria-label="Go to Halo docs top page"
 						>
-							<UltrahopeLogo />
+							<HaloDocsMark />
 						</Link>
 					</div>
 				</header>

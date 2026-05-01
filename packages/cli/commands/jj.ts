@@ -315,7 +315,7 @@ async function runJjMessageFlow(
 	assertDiffAvailable(options.revision, diff);
 	const captureRecorder = createStreamCaptureRecorder({
 		path: options.captureStreamPath,
-		command: `ultrahope jj ${mode}`,
+		command: `halo jj ${mode}`,
 		args: [mode, ...args],
 		apiPath: "/v1/commit-message/stream",
 	});
@@ -439,6 +439,40 @@ async function commit(args: string[]) {
 }
 
 function setup() {
+	const readAlias = (name: string): string | undefined => {
+		try {
+			const value = execFileSync("jj", ["config", "get", `aliases.${name}`], {
+				encoding: "utf-8",
+				stdio: ["pipe", "pipe", "pipe"],
+			}).trim();
+			return value || undefined;
+		} catch {
+			return undefined;
+		}
+	};
+
+	const setAlias = (name: string, value: string): void => {
+		execFileSync("jj", ["config", "set", "--user", `aliases.${name}`, value], {
+			stdio: "inherit",
+		});
+	};
+
+	const existingHaloAlias = readAlias("halo");
+	if (existingHaloAlias) {
+		console.log(ui.success("jj alias 'halo' is already configured."));
+		console.log(
+			ui.hint(
+				"  Run `jj halo describe` to use it, or `jj halo commit` to create a commit.",
+			),
+		);
+	} else {
+		setAlias("halo", '["util", "exec", "--", "halo", "jj"]');
+		console.log(ui.success("Added jj alias 'halo'."));
+		console.log(
+			ui.hint("  You can now run `jj halo describe` or `jj halo commit`."),
+		);
+	}
+
 	try {
 		const existing = execFileSync(
 			"jj",
@@ -446,44 +480,29 @@ function setup() {
 			{ encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
 		).trim();
 		if (existing) {
-			console.log(ui.success("jj alias 'ultrahope' is already configured."));
 			console.log(
-				ui.hint(
-					"  Run `jj ultrahope describe` to use it, or `jj ultrahope commit` to create a commit.",
-				),
+				ui.hint("Legacy jj alias 'ultrahope' is already configured."),
 			);
 			return;
 		}
 	} catch {
-		// alias not set yet
+		// alias not set yet.
 	}
 
-	execFileSync(
-		"jj",
-		[
-			"config",
-			"set",
-			"--user",
-			"aliases.ultrahope",
-			'["util", "exec", "--", "ultrahope", "jj"]',
-		],
-		{ stdio: "inherit" },
-	);
-	console.log(ui.success("Added jj alias 'ultrahope'."));
+	setAlias("ultrahope", '["util", "exec", "--", "ultrahope", "jj"]');
+	console.log(ui.hint("Added legacy jj alias 'ultrahope' for compatibility."));
 	console.log(
-		ui.hint(
-			"  You can now run `jj ultrahope describe` or `jj ultrahope commit`.",
-		),
+		ui.hint("  Prefer `jj halo ...`; `jj ultrahope ...` remains available."),
 	);
 }
 
-function printHelp() {
-	console.log(`Usage: ultrahope jj <command>
+function printHelp(cliName: "halo" | "ultrahope") {
+	console.log(`Usage: ${cliName} jj <command>
 
 Commands:
    describe    Generate commit description for a revision
    commit      Generate and apply a commit message for the working-copy change
-   setup       Register 'ultrahope' as a jj alias
+   setup       Register 'halo' as a jj alias (keeps 'ultrahope' for compatibility)
 
 Behavior:
    describe    Updates the selected revision's commit description only
@@ -501,15 +520,23 @@ Commit options:
    --capture-stream <path>  Save candidate stream as replay JSON
 
 Examples:
-   ultrahope jj describe                 # interactive mode for target revision
-   ultrahope jj describe -r @-           # describe parent revision
-   ultrahope jj describe --guide "GHSA..."
-   ultrahope jj commit                   # create a commit from working-copy changes
-   ultrahope jj commit --guide "GHSA..."
-   ultrahope jj setup                    # enable \`jj ultrahope\` alias`);
+   halo jj describe                      # interactive mode for target revision
+   halo jj describe -r @-                # describe parent revision
+   halo jj describe --guide "GHSA..."
+   halo jj commit                        # create a commit from working-copy changes
+   halo jj commit --guide "GHSA..."
+   halo jj setup                         # enable \`jj halo\` alias
+   ultrahope jj describe                 # compatibility command`);
+	if (cliName === "ultrahope") {
+		console.log("");
+		console.log("Note: `halo jj ...` is now the primary command path.");
+	}
 }
 
-export async function jj(args: string[]) {
+export async function jj(
+	args: string[],
+	cliName: "halo" | "ultrahope" = "halo",
+) {
 	const [command, ...rest] = args;
 
 	switch (command) {
@@ -525,11 +552,11 @@ export async function jj(args: string[]) {
 		case "--help":
 		case "-h":
 		case undefined:
-			printHelp();
+			printHelp(cliName);
 			break;
 		default:
 			console.error(`Unknown command: ${command}`);
-			console.error("Run `ultrahope jj --help` for usage.");
+			console.error(`Run \`${cliName} jj --help\` for usage.`);
 			process.exit(1);
 	}
 }

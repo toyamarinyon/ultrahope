@@ -1,6 +1,6 @@
 import { runGitCli } from "./git-command";
 
-runGitCli("ultrahope").catch((err) => {
+runGitCli("halo").catch((err) => {
 	console.error(err);
 	process.exit(1);
 });

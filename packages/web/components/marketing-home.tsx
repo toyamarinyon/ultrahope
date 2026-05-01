@@ -6,14 +6,19 @@ import { MarketingFooter } from "./marketing-footer";
 import { MarketingInstallCommand } from "./marketing-install-command";
 import { TerminalTabsDemo } from "./terminal-tabs-demo";
 
-function UltrahopeLogo() {
+function HaloProductMark() {
 	return (
-		<span className="inline-flex items-center gap-2">
+		<span className="inline-flex items-center gap-2.5">
 			<span className="inline-flex size-8 shrink-0 items-center justify-center text-foreground sm:size-10">
 				<Logo className="h-7 w-7 sm:h-9 sm:w-9" />
 			</span>
-			<span className="text-xl tracking-tighter leading-none sm:text-2xl font-logo">
-				Ultrahope
+			<span className="flex min-w-0 flex-col justify-center gap-px leading-none">
+				<span className="font-logo text-lg tracking-tighter sm:text-xl">
+					Halo
+				</span>
+				<span className="text-[0.62rem] font-medium text-foreground-muted sm:text-[0.68rem]">
+					an Ultrahope project
+				</span>
 			</span>
 		</span>
 	);
@@ -25,7 +30,7 @@ export function MarketingHome() {
 			<header>
 				<div className="max-w-7xl mx-auto h-20 flex items-center justify-between gap-4">
 					<Link href="/" className="text-foreground no-underline">
-						<UltrahopeLogo />
+						<HaloProductMark />
 					</Link>
 					<div className="flex items-center gap-2 sm:gap-3">
 						<Link

@@ -140,7 +140,7 @@ export async function commit(args: string[]) {
 	const options = parseArgs(args);
 	const captureRecorder = createStreamCaptureRecorder({
 		path: options.captureStreamPath,
-		command: "git ultrahope commit",
+		command: "git halo commit",
 		args: ["commit", ...args],
 		apiPath: "/v1/commit-message/stream",
 	});

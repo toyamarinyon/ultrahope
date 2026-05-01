@@ -27,13 +27,13 @@ export function MarketingFooter() {
 								href="/docs"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>
-								Docs
+								Halo Docs
 							</Link>
 							<Link
 								href="/docs#quickstart"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>
-								Get Started
+								Install Halo
 							</Link>
 							<Link
 								href="/login"
@@ -45,13 +45,13 @@ export function MarketingFooter() {
 								href="/pricing"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>
-								Pricing
+								Halo Pricing
 							</Link>
 							<Link
 								href="/models"
 								className="text-foreground-secondary hover:text-foreground transition-colors"
 							>
-								Models
+								Halo Models
 							</Link>
 						</div>
 						<div className="flex flex-col gap-3">

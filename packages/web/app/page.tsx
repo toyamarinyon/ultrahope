@@ -8,23 +8,30 @@ import { getAuth } from "@/lib/auth/auth";
 import { getAuthenticatedUserEntitlement } from "@/lib/billing/entitlement";
 
 export const metadata: Metadata = {
-	title: "Ultrahope",
+	title: "Halo CLI by Ultrahope",
 	description:
-		"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
+		"Halo CLI turns your diff into multiple commit message candidates in the terminal so you can compare, refine, and commit faster.",
+	keywords: [
+		"Halo CLI",
+		"Ultrahope",
+		"AI commit messages",
+		"git commit message generator",
+		"terminal developer tool",
+	],
 	alternates: {
 		canonical: "/",
 	},
 	openGraph: {
-		title: "Ultrahope",
+		title: "Halo CLI by Ultrahope",
 		description:
-			"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
+			"Halo CLI turns your diff into multiple commit message candidates in the terminal so you can compare, refine, and commit faster.",
 		url: "/",
 	},
 	twitter: {
 		card: "summary",
-		title: "Ultrahope",
+		title: "Halo CLI by Ultrahope",
 		description:
-			"Fast, multi-candidate AI commit messages for the terminal. AI proposes. You compare. You decide.",
+			"Halo CLI turns your diff into multiple commit message candidates in the terminal so you can compare, refine, and commit faster.",
 	},
 };
 
@@ -95,10 +102,10 @@ export default async function RootPage() {
 							<div className="space-y-6">
 								<div>
 									<p className="text-sm text-foreground-muted mb-2">
-										Install Ultrahope CLI
+										Install Halo CLI
 									</p>
 									<pre className="text-base">
-										<code>npm install -g @ultrahope/cli</code>
+										<code>npm install -g @ultrahope/halo</code>
 									</pre>
 								</div>
 								<div>
@@ -106,7 +113,7 @@ export default async function RootPage() {
 										Authenticate your terminal
 									</p>
 									<pre className="text-base">
-										<code>ultrahope login</code>
+										<code>halo login</code>
 									</pre>
 								</div>
 								<div className="flex flex-wrap gap-3 pt-2">
@@ -153,7 +160,7 @@ export default async function RootPage() {
 									Try a command and feel the warm glow of automated workflows.
 								</p>
 								<pre className="text-sm">
-									<code>git ultrahope commit</code>
+									<code>git halo commit</code>
 								</pre>
 							</div>
 

@@ -17,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
 					"/device",
 					"/checkout",
 				],
-				allow: ["/", "/pricing", "/privacy", "/terms"],
+				allow: ["/", "/docs", "/pricing", "/models", "/privacy", "/terms"],
 			},
 		],
 		sitemap: toAbsoluteCanonical("/sitemap.xml"),

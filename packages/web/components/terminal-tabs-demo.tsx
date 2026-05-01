@@ -83,13 +83,13 @@ function resolveReplay(capture: TerminalStreamReplayCapture): {
 const SHARED_REPLAY = resolveReplay(
 	commitMessageStreamCapture as TerminalStreamReplayCapture,
 );
-// Refresh shared fixture with: ultrahope jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
+// Refresh shared fixture with: halo jj describe --capture-stream packages/web/lib/demo/commit-message-stream.capture.json
 
 const DEMO_TABS: DemoTab[] = [
 	{
 		id: "git-commit",
 		label: "git commit",
-		command: "git ultrahope commit",
+		command: "git halo commit",
 		diff: `diff --git a/packages/cli/commands/commit.ts b/packages/cli/commands/commit.ts
 index 9c9e8f7..6d2f8a1 100644
 --- a/packages/cli/commands/commit.ts
@@ -126,7 +126,7 @@ index 9c9e8f7..6d2f8a1 100644
 	{
 		id: "jj-describe",
 		label: "jj describe",
-		command: "ultrahope jj describe",
+		command: "halo jj describe",
 		diff: `diff --git a/packages/cli/commands/jj.ts b/packages/cli/commands/jj.ts
 index 4f8d4e1..7b3c8a2 100644
 --- a/packages/cli/commands/jj.ts
@@ -163,8 +163,7 @@ index 4f8d4e1..7b3c8a2 100644
 	{
 		id: "unix-style",
 		label: "unix style",
-		command:
-			"git diff --staged | ultrahope translate --target vcs-commit-message",
+		command: "git diff --staged | halo translate --target vcs-commit-message",
 		diff: `diff --git a/packages/web/components/terminal-tabs-demo.tsx b/packages/web/components/terminal-tabs-demo.tsx
 index a1b2c3d..d4e5f6g 100644
 --- a/packages/web/components/terminal-tabs-demo.tsx
